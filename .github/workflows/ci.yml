@@ -111,6 +111,24 @@ jobs:
       NEXT_PUBLIC_API_URL: http://127.0.0.1:8010
       NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
       PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
+      # CI cannot download restricted or bulk real sources, so the E2E suite
+      # runs against the deterministic synthetic demo. Local runs default to
+      # the real records named in the test file.
+      PHILFACILITIES_E2E_SCHOOL_SEARCH: Synthetic Demo School 01
+      PHILFACILITIES_E2E_SCHOOL_NAME: Synthetic Demo School 01
+      PHILFACILITIES_E2E_SCHOOL_SLUG: synthetic-demo-school-01-deped
+      PHILFACILITIES_E2E_PROVINCE_CODE: "9901000000"
+      PHILFACILITIES_E2E_FILTER_SCHOOL_SEARCH: Synthetic Demo School 01
+      PHILFACILITIES_E2E_FILTER_SCHOOL_NAME: Synthetic Demo School 01
+      PHILFACILITIES_E2E_FILTER_PROVINCE_CODE: "9901000000"
+      PHILFACILITIES_E2E_LOCATION_PRECISION: source_gps
+      PHILFACILITIES_E2E_PRECISION_LABEL: Source GPS
+      PHILFACILITIES_E2E_SOURCE_AGENCY: deped
+      PHILFACILITIES_E2E_SOURCE_LABEL: SYNTHETIC-DEMO-SY2024-2025
+      PHILFACILITIES_E2E_SOURCE_ATTRIBUTION: ""
+      PHILFACILITIES_E2E_SOURCE_RECORD_KEY: SYN-DEPED-0001
+      PHILFACILITIES_E2E_MAP_QUERY: Synthetic Demo School 01
+      PHILFACILITIES_E2E_MAP_RESULT_NAME: Synthetic Demo School 01
     steps:
       - uses: actions/checkout@v4
 

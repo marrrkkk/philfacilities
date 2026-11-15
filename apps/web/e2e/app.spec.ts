@@ -1,6 +1,46 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
+// Defaults target the real local database. CI sets these to the deterministic
+// synthetic demo because it cannot download restricted or bulk source files.
+const SCHOOL_SEARCH =
+  process.env.PHILFACILITIES_E2E_SCHOOL_SEARCH ?? "Mulanay Central Elementary";
+const SCHOOL_NAME =
+  process.env.PHILFACILITIES_E2E_SCHOOL_NAME ?? "Mulanay Central Elementary School";
+const SCHOOL_SLUG =
+  process.env.PHILFACILITIES_E2E_SCHOOL_SLUG ?? "mulanay-central-elementary-school-osm";
+const PROVINCE_CODE = process.env.PHILFACILITIES_E2E_PROVINCE_CODE ?? "0405600000";
+const FILTER_SCHOOL_SEARCH =
+  process.env.PHILFACILITIES_E2E_FILTER_SCHOOL_SEARCH ?? "Bantug na Munti Primary School";
+const FILTER_SCHOOL_NAME =
+  process.env.PHILFACILITIES_E2E_FILTER_SCHOOL_NAME ?? "Bantug na Munti Primary School";
+const FILTER_PROVINCE_CODE =
+  process.env.PHILFACILITIES_E2E_FILTER_PROVINCE_CODE ?? "0304900000";
+const LOCATION_PRECISION =
+  process.env.PHILFACILITIES_E2E_LOCATION_PRECISION ?? "map_geocoded";
+const PRECISION_LABEL = process.env.PHILFACILITIES_E2E_PRECISION_LABEL ?? "Map geocoded";
+const SOURCE_AGENCY = process.env.PHILFACILITIES_E2E_SOURCE_AGENCY ?? "osm";
+const SOURCE_LABEL =
+  process.env.PHILFACILITIES_E2E_SOURCE_LABEL ?? "HOT-OSM-PHL-EDUCATION-2026-11-15";
+const SOURCE_ATTRIBUTION =
+  process.env.PHILFACILITIES_E2E_SOURCE_ATTRIBUTION ??
+  "© OpenStreetMap contributors, via HOT and BetterGov.PH";
+const SOURCE_RECORD_KEY = process.env.PHILFACILITIES_E2E_SOURCE_RECORD_KEY ?? "way/313366485";
+const MAP_QUERY =
+  process.env.PHILFACILITIES_E2E_MAP_QUERY ?? "Bantug na Munti Primary School";
+const MAP_RESULT_NAME =
+  process.env.PHILFACILITIES_E2E_MAP_RESULT_NAME ?? "Bantug na Munti Primary School";
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+async function expectSearchQuery(page: Page, expected: string) {
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get("q"))
+    .toBe(expected);
+}
+
 async function readHeaderState(page: Page) {
   return page.evaluate(() => {
     const header = document.querySelector("header");
@@ -48,75 +88,81 @@ test.describe("directory", () => {
   test("search submits from the keyboard", async ({ page }) => {
     await gotoHydrated(page, "/directory");
     await page.locator("#filter-q").focus();
-    await page.keyboard.type("Mulanay Central Elementary");
+    await page.keyboard.type(SCHOOL_SEARCH);
     await page.keyboard.press("Enter");
 
-    await expect(page).toHaveURL(/[?&]q=Mulanay(?:\+|%20)Central(?:\+|%20)Elementary/);
+    await expectSearchQuery(page, SCHOOL_SEARCH);
     await expect(page.getByRole("heading", { name: "1 matching records" })).toBeVisible();
   });
 
   test("search narrows results and preserves the query in the URL", async ({ page }) => {
     await gotoHydrated(page, "/directory");
-    await expect(page.getByRole("heading", { name: /matching records/i })).toBeVisible();
+    // The unfiltered counting query over the full real dataset can take a few
+    // seconds; the default 5s assertion timeout is too tight for that path.
+    await expect(page.getByRole("heading", { name: /matching records/i })).toBeVisible({
+      timeout: 15_000,
+    });
 
-    await page.locator("#filter-q").fill("Mulanay Central Elementary");
+    await page.locator("#filter-q").fill(SCHOOL_SEARCH);
     await page.getByRole("button", { name: "Apply filters" }).click();
 
-    await expect(page).toHaveURL(/[?&]q=Mulanay(?:\+|%20)Central(?:\+|%20)Elementary/);
+    await expectSearchQuery(page, SCHOOL_SEARCH);
     await expect(page.getByRole("heading", { name: "1 matching records" })).toBeVisible();
     await expect(
-      page.getByRole("link", { name: "Mulanay Central Elementary School", exact: true }),
+      page.getByRole("link", { name: SCHOOL_NAME, exact: true }),
     ).toBeVisible();
     await expect(
-      page.locator("article").getByText(/Map geocoded/).first(),
+      page.locator("article").getByText(new RegExp(PRECISION_LABEL)).first(),
     ).toBeVisible();
   });
 
   test("missing coordinates stay labelled as unknown", async ({ page }) => {
     await page.goto("/directory?has_coordinates=false");
-    await expect(page.getByText(/matching records/i)).toBeVisible();
+    await expect(page.getByText(/matching records/i)).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText("Coordinates unknown").first()).toBeVisible();
   });
 
   test("compact search preserves active filters", async ({ page }) => {
     await gotoHydrated(
       page,
-      "/directory?type=school&province_code=0405600000&source=osm",
+      `/directory?type=school&province_code=${PROVINCE_CODE}&source=${SOURCE_AGENCY}`,
     );
     const search = page.getByRole("search");
-    await search.getByRole("searchbox").fill("Mulanay Central Elementary");
+    await search.getByRole("searchbox").fill(SCHOOL_SEARCH);
     await search.getByRole("button", { name: "Search" }).click();
 
-    await expect(page).toHaveURL(/[?&]q=Mulanay(?:\+|%20)Central(?:\+|%20)Elementary/);
+    await expectSearchQuery(page, SCHOOL_SEARCH);
     await expect(page).toHaveURL(/type=school/);
-    await expect(page).toHaveURL(/province_code=0405600000/);
-    await expect(page).toHaveURL(/source=osm/);
+    await expect(page).toHaveURL(new RegExp(`province_code=${PROVINCE_CODE}`));
+    await expect(page).toHaveURL(new RegExp(`source=${SOURCE_AGENCY}`));
     await expect(page.getByRole("heading", { name: "1 matching records" })).toBeVisible();
   });
 });
 
 test.describe("facility profile", () => {
   test("shows provenance, source attribution, and quality caveats", async ({ page }) => {
-    await page.goto("/facilities/mulanay-central-elementary-school-osm");
+    await page.goto(`/facilities/${SCHOOL_SLUG}`);
 
     await expect(
-      page.getByRole("heading", { name: "Mulanay Central Elementary School", level: 1 }),
+      page.getByRole("heading", { name: SCHOOL_NAME, level: 1 }),
     ).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Where this information comes from" }),
     ).toBeVisible();
-    await expect(page.getByText("HOT-OSM-PHL-EDUCATION-2026-11-15").first()).toBeVisible();
-    await expect(page.getByText("© OpenStreetMap contributors, via HOT and BetterGov.PH").first()).toBeVisible();
+    await expect(page.getByText(SOURCE_LABEL).first()).toBeVisible();
+    if (SOURCE_ATTRIBUTION) {
+      await expect(page.getByText(SOURCE_ATTRIBUTION).first()).toBeVisible();
+    }
     await expect(page.getByRole("heading", { name: /Data quality/i })).toBeVisible();
-    await expect(page.getByText("way/313366485", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText(SOURCE_RECORD_KEY, { exact: true }).first()).toBeVisible();
   });
 
   test("keeps wide tables inside their own scroll region on mobile", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "mobile-chromium", "mobile viewport regression");
 
-    await page.goto("/facilities/mulanay-central-elementary-school-osm");
+    await page.goto(`/facilities/${SCHOOL_SLUG}`);
     await expect(
-      page.getByRole("heading", { name: "Mulanay Central Elementary School", level: 1 }),
+      page.getByRole("heading", { name: SCHOOL_NAME, level: 1 }),
     ).toBeVisible();
 
     const viewport = page.viewportSize();
@@ -155,7 +201,7 @@ test.describe("map", () => {
         response.url().includes("/vendor/maplibre-gl/") && response.status() === 200,
     );
 
-    await page.goto("/map?q=Bantug na Munti Primary School");
+    await page.goto(`/map?q=${encodeURIComponent(MAP_QUERY)}`);
     await workerResponse;
     await expect(page.locator("canvas.maplibregl-canvas")).toBeVisible();
     await expect(
@@ -170,7 +216,7 @@ test.describe("map", () => {
     await expect(results).toBeVisible();
     await expect(results.getByRole("heading", { name: "Map results" })).toBeVisible();
     await expect(
-      results.getByRole("button", { name: /Bantug na Munti Primary School/ }).first(),
+      results.getByRole("button", { name: new RegExp(escapeRegExp(MAP_RESULT_NAME)) }).first(),
     ).toBeVisible({
       timeout: 20_000,
     });
@@ -181,7 +227,7 @@ test.describe("map", () => {
   test("keeps the text result list when basemap tiles fail", async ({ page }, testInfo) => {
     await page.route("**/tile.openstreetmap.org/**", (route) => route.abort());
 
-    await page.goto("/map?q=Bantug na Munti Primary School");
+    await page.goto(`/map?q=${encodeURIComponent(MAP_QUERY)}`);
     await expect(page.locator("canvas.maplibregl-canvas")).toBeVisible();
     await expect(page.getByRole("alert").filter({ hasText: /basemap could not load/i })).toBeVisible({
       timeout: 20_000,
@@ -194,7 +240,7 @@ test.describe("map", () => {
     const results = page.getByRole("complementary", { name: "Map results list" });
     await expect(results).toBeVisible();
     await expect(
-      results.getByRole("button", { name: /Bantug na Munti Primary School/ }).first(),
+      results.getByRole("button", { name: new RegExp(escapeRegExp(MAP_RESULT_NAME)) }).first(),
     ).toBeVisible({
       timeout: 20_000,
     });
@@ -204,7 +250,7 @@ test.describe("map", () => {
     page,
   }, testInfo) => {
     await page.goto(
-      "/directory?type=school&location_precision=map_geocoded&province_code=0304900000&updated_since=2026-11-01&q=Bantug+na+Munti+Primary+School",
+      `/directory?type=school&location_precision=${LOCATION_PRECISION}&province_code=${FILTER_PROVINCE_CODE}&updated_since=2026-11-01&q=${encodeURIComponent(FILTER_SCHOOL_SEARCH)}`,
     );
     const mapLink = page.getByRole("link", { name: "View on map" });
     const href = await mapLink.getAttribute("href");
@@ -212,16 +258,16 @@ test.describe("map", () => {
 
     const params = new URL(href ?? "/map", "http://localhost").searchParams;
     expect(params.get("type")).toBe("school");
-    expect(params.get("location_precision")).toBe("map_geocoded");
-    expect(params.get("province_code")).toBe("0304900000");
+    expect(params.get("location_precision")).toBe(LOCATION_PRECISION);
+    expect(params.get("province_code")).toBe(FILTER_PROVINCE_CODE);
     expect(params.get("updated_since")).toBe("2026-11-01");
-    expect(params.get("q")).toBe("Bantug na Munti Primary School");
+    expect(params.get("q")).toBe(FILTER_SCHOOL_SEARCH);
     expect([...params.values()]).not.toContain("undefined");
 
     await mapLink.click();
     await expect(page).toHaveURL(/type=school/);
-    await expect(page).toHaveURL(/location_precision=map_geocoded/);
-    await expect(page).toHaveURL(/province_code=0304900000/);
+    await expect(page).toHaveURL(new RegExp(`location_precision=${LOCATION_PRECISION}`));
+    await expect(page).toHaveURL(new RegExp(`province_code=${FILTER_PROVINCE_CODE}`));
     await expect(page).toHaveURL(/updated_since=2026-11-01/);
 
     if (testInfo.project.name === "mobile-chromium") {
@@ -230,7 +276,7 @@ test.describe("map", () => {
 
     const results = page.getByRole("complementary", { name: "Map results list" });
     await expect(
-      results.getByRole("button", { name: /Bantug na Munti Primary School/ }).first(),
+      results.getByRole("button", { name: new RegExp(escapeRegExp(FILTER_SCHOOL_NAME)) }).first(),
     ).toBeVisible({
       timeout: 20_000,
     });
@@ -306,7 +352,9 @@ test.describe("keyboard access", () => {
 
     await page.keyboard.press("Enter");
     await expect(page).toHaveURL(/\/directory$/);
-    await expect(page.getByRole("heading", { name: /matching records/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /matching records/i })).toBeVisible({
+      timeout: 15_000,
+    });
   });
 });
 
@@ -465,7 +513,7 @@ test.describe("security headers", () => {
     for (const path of [
       "/",
       "/directory",
-      "/facilities/mulanay-central-elementary-school-osm",
+      `/facilities/${SCHOOL_SLUG}`,
       "/data",
       "/data/dictionary",
       "/api",
@@ -489,7 +537,7 @@ test.describe("responsive layout", () => {
       "/",
       "/directory",
       "/map",
-      "/facilities/mulanay-central-elementary-school-osm",
+      `/facilities/${SCHOOL_SLUG}`,
       "/data",
       "/data/dictionary",
       "/api",
@@ -511,7 +559,7 @@ test.describe("accessibility", () => {
   for (const path of [
     "/",
     "/directory",
-    "/facilities/mulanay-central-elementary-school-osm",
+    `/facilities/${SCHOOL_SLUG}`,
     "/data",
     "/data/dictionary",
     "/api",

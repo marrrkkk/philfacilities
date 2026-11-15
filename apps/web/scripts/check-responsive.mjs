@@ -2,11 +2,14 @@ import { chromium } from "@playwright/test";
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:3000";
 const widths = [390, 768, 1024, 1440];
+const schoolPath =
+  process.env.PHILFACILITIES_E2E_SCHOOL_PATH ??
+  "/facilities/mulanay-central-elementary-school-osm";
 const paths = [
   "/",
   "/directory",
   "/map",
-  "/facilities/mulanay-central-elementary-school-osm",
+  schoolPath,
   "/data",
   "/data/dictionary",
   "/api",
