@@ -198,7 +198,7 @@ Only implement these after the corresponding AF1 source is acquired, schema-insp
 
 | ID | Task | Status | Dependencies | Acceptance evidence |
 |---|---|---|---|---|
-| AF8-01 | Publish multi-source release manifest | NOT STARTED | Source release records | Manifest lists exact versions, counts and rights |
+| AF8-01 | Publish multi-source release manifest | DONE | Source release records | `release-manifest` CLI builds a checksummed JSON manifest from published datasets/releases: exact release labels, source and reference dates, rights/publication/coverage states, counts, linked facilities, coordinates, attribution and known gaps. Excluded/blocked datasets are listed with reasons. Tests: `apps/ingest/tests/test_manifest.py`. Evidence: `apps/ingest/philfacilities_ingest/manifest.py`, `docs/reports/08-release-manifest.json`. |
 | AF8-02 | Add source update discovery by source mode | NOT STARTED | Acquisition framework | New release detection works for approved sources |
 | AF8-03 | Add schema drift and unusual count alerts | NOT STARTED | Source parsers | Invalid release quarantines safely |
 | AF8-04 | Add atomic publication/rollback for multi-source release | NOT STARTED | Release manifest | Previous valid release recoverable |

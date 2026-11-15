@@ -44,6 +44,7 @@ from .fixtures import (
     philhealth_pdf,
     psgc_workbook,
 )
+from .manifest import write_release_manifest
 from .matching import (
     MatchingError,
     accept_match_candidate,
@@ -764,6 +765,31 @@ def compare_releases_command(
     ):
         if keys:
             typer.echo(f"sample_{label}: {', '.join(keys)}")
+
+
+@app.command("release-manifest")
+def release_manifest_command(
+    output: Annotated[
+        Path,
+        typer.Option("--output", "-o", help="Write the release manifest to this JSON path."),
+    ] = Path("var/reports/release-manifest.json"),
+) -> None:
+    """Write a versioned manifest of published source releases and known gaps."""
+
+    engine, session = _session()
+    try:
+        manifest = write_release_manifest(session, output)
+    finally:
+        session.close()
+        engine.dispose()
+    totals = manifest["totals"]
+    typer.echo(f"wrote {output}")
+    typer.echo(
+        f"datasets_included={totals['datasets_included']} "
+        f"datasets_excluded={totals['datasets_excluded']} "
+        f"published_facilities={totals['published_facilities']}"
+    )
+    typer.echo(f"checksum={manifest['checksum']}")
 
 
 @app.command("discover-sources")

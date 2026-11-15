@@ -263,14 +263,15 @@ Required data reports are under [`docs/reports/`](docs/reports/):
 - `05-source-rights-report.md`
 - `06-ingestion-runbook.md`
 - `07-real-api-examples.md`
+- `08-release-manifest.json`
 
 ## Known limitations
 
-- Coverage is partial. There is no complete official DepEd, DOH, PSA PSGC, CHED, or TESDA dataset in the public release.
+- Coverage is partial. CHED HEIDA institution records are published under `publicly_available_verified`, but there is no complete official DepEd, DOH, PSA PSGC, or TESDA dataset in the public release; CHED coverage is `NATIONAL_PARTIAL` and not campus-level.
 - No official PSA PSGC workbook has been acquired; the BetterGov Q2 2024 mirror is a labelled supplement, not a substitute for the latest official release.
-- Public coordinates are all OSM bounding-box centres. There are no GPS-verified or field-verified public coordinates.
-- 17,055 public facilities have no current coordinates and remain searchable without map placement.
-- 14,216 located public facilities lack a PSGC assignment; no geography was guessed.
+- Public coordinates are `map_geocoded` (44,663) or `geocoded` (88); there are no GPS-verified or field-verified public coordinates.
+- 21,644 public facilities have no current coordinates and remain searchable without map placement.
+- 5,036 located public facilities lack a PSGC assignment; no geography was guessed.
 - OSM duplicate identifiers and missing names are reported as open quality issues rather than silently merged or dropped.
 - The Antenatal PhilHealth PDF is retained but blocked. Its first successful parse recorded 6,562 rows, then a post-ingestion review found that the two-up PDF's expiry/sector annex (pages 121–240) had been counted as provider rows. All derived records were withdrawn, 3,178 facilities were restored from the parse's `EMCB-ANTE` subtype to their recorded prior values, and 3,184 source-less history events were exported and removed; the corrected parser re-reads 3,221 provider rows, and the release awaits validated re-ingestion. The linked Birthing Homes PDF returns HTTP 404. Neither gap is filled with invented data.
 - Hosted CI, a hosted scheduled run, production monitoring/paging, a licensed production basemap, production backups/PITR, and external security/legal review remain external release gates.
