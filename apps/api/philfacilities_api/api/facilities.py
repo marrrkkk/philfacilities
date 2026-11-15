@@ -27,6 +27,7 @@ from ..pagination import clamp_limit, decode_cursor, encode_cursor
 from ..schemas import (
     AccessClass,
     AccreditationOut,
+    AttributeAssertionOut,
     ChangeListResponse,
     FacilityDetail,
     FacilityKind,
@@ -39,7 +40,12 @@ from ..schemas import (
     OwnershipType,
     SourceEvidence,
 )
-from ..services import build_facility_detail, build_summaries, load_source_evidence
+from ..services import (
+    build_facility_detail,
+    build_summaries,
+    load_attribute_assertions,
+    load_source_evidence,
+)
 from .query import facility_conditions
 
 router = APIRouter(prefix="/facilities", tags=["facilities"])
@@ -340,6 +346,25 @@ def get_facility(facility_id: str, db: Annotated[Session, Depends(get_db)]):
 def get_facility_sources(facility_id: str, db: Annotated[Session, Depends(get_db)]):
     facility = _get_public_facility(db, facility_id)
     return load_source_evidence(db, [facility.id]).get(facility.id, [])
+
+
+@router.get(
+    "/{facility_id}/assertions",
+    response_model=list[AttributeAssertionOut],
+    summary="Field-level source claims behind a facility",
+)
+def get_facility_assertions(
+    facility_id: str,
+    db: Annotated[Session, Depends(get_db)],
+    attribute: str | None = Query(
+        None, max_length=80, description="Only return claims for this canonical attribute."
+    ),
+    limit: int = Query(200, ge=1, le=1000),
+):
+    facility = _get_public_facility(db, facility_id)
+    return load_attribute_assertions(
+        db, facility.id, attribute=attribute, limit=limit
+    )
 
 
 @router.get(

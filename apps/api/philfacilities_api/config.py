@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     max_nearby_radius_m: int = 50_000
     max_map_features: int = 500
     api_version: str = "v1"
+    coverage_stale_after_days: int = 365
 
     @property
     def cors_origin_list(self) -> list[str]:

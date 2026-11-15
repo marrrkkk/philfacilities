@@ -1576,6 +1576,83 @@
         }
       }
     },
+    "/v1/facilities/{facility_id}/assertions": {
+      "get": {
+        "tags": [
+          "facilities"
+        ],
+        "summary": "Field-level source claims behind a facility",
+        "operationId": "get_facility_assertions_v1_facilities__facility_id__assertions_get",
+        "parameters": [
+          {
+            "name": "facility_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Facility Id"
+            }
+          },
+          {
+            "name": "attribute",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only return claims for this canonical attribute.",
+              "title": "Attribute"
+            },
+            "description": "Only return claims for this canonical attribute."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 200,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AttributeAssertionOut"
+                  },
+                  "title": "Response Get Facility Assertions V1 Facilities  Facility Id  Assertions Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/facilities/{facility_id}/accreditations": {
       "get": {
         "tags": [
@@ -4311,6 +4388,85 @@
         ],
         "title": "AdministrativeUnitOut"
       },
+      "AttributeAssertionOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "attribute": {
+            "type": "string",
+            "title": "Attribute"
+          },
+          "source_field": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Field"
+          },
+          "raw_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw Value"
+          },
+          "normalized_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Normalized Value"
+          },
+          "transformation_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transformation Version"
+          },
+          "review_status": {
+            "type": "string",
+            "title": "Review Status"
+          },
+          "asserted_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Asserted At"
+          },
+          "source": {
+            "$ref": "#/components/schemas/SourceEvidence"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "attribute",
+          "review_status",
+          "asserted_at",
+          "source"
+        ],
+        "title": "AttributeAssertionOut",
+        "description": "One source's claim about one canonical field."
+      },
       "ChangeEventOut": {
         "properties": {
           "id": {
@@ -4455,6 +4611,13 @@
             "type": "array",
             "title": "By Category"
           },
+          "by_subtype": {
+            "items": {
+              "$ref": "#/components/schemas/CoverageSubtypeRow"
+            },
+            "type": "array",
+            "title": "By Subtype"
+          },
           "by_ownership_type": {
             "items": {
               "$ref": "#/components/schemas/CoverageRow"
@@ -4482,6 +4645,16 @@
             },
             "type": "array",
             "title": "Source Coverage"
+          },
+          "coverage_stale_after_days": {
+            "type": "integer",
+            "title": "Coverage Stale After Days",
+            "default": 365
+          },
+          "stale_source_count": {
+            "type": "integer",
+            "title": "Stale Source Count",
+            "default": 0
           },
           "caveats": {
             "items": {
@@ -4543,6 +4716,50 @@
           "published_count"
         ],
         "title": "CoverageRow"
+      },
+      "CoverageSubtypeRow": {
+        "properties": {
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "subtype": {
+            "type": "string",
+            "title": "Subtype"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "facility_count": {
+            "type": "integer",
+            "title": "Facility Count"
+          },
+          "published_count": {
+            "type": "integer",
+            "title": "Published Count"
+          },
+          "with_coordinates": {
+            "type": "integer",
+            "title": "With Coordinates",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "category",
+          "subtype",
+          "facility_count",
+          "published_count"
+        ],
+        "title": "CoverageSubtypeRow"
       },
       "DatasetOut": {
         "properties": {
@@ -7665,6 +7882,33 @@
             "type": "string",
             "title": "Publication Status",
             "default": "blocked"
+          },
+          "rights_status": {
+            "type": "string",
+            "title": "Rights Status",
+            "default": "unknown"
+          },
+          "freshness_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Freshness Days"
+          },
+          "is_stale": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Stale"
           }
         },
         "type": "object",

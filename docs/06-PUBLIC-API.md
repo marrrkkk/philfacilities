@@ -39,6 +39,7 @@ GET /v1
 GET /v1/facilities
 GET /v1/facilities/{facility_id}
 GET /v1/facilities/{facility_id}/sources
+GET /v1/facilities/{facility_id}/assertions
 GET /v1/facilities/{facility_id}/history
 GET /v1/facilities/{facility_id}/accreditations
 ```
@@ -59,6 +60,20 @@ Filters for `/v1/facilities`:
 The same geographic, source, location, and reference-period filters apply to
 `/v1/facilities/within`, `/v1/facilities/nearby`, `/v1/schools`, and
 `/v1/health-facilities`.
+
+`GET /v1/facilities/{facility_id}/assertions` returns the exact source claims behind
+canonical fields after the same publication gate as `/sources`: the facility must be
+public and the contributing dataset/release must be rights-cleared and published. Use
+`attribute=` to narrow to one field (for example `location.precision`). A field can have
+multiple claims from different sources; the endpoint does not pick a winner or erase a
+disagreement.
+
+`GET /v1/coverage` reports category/subtype counts, inclusion-class and ownership
+distributions, region counts, and per-dataset rights, reference period, retrieval date,
+parsed row count, freshness in days, and a stale flag. The default stale threshold is
+365 days and is returned in `coverage_stale_after_days`. Freshness is derived from the
+source reference/publication date, not from the download time. Stale means “recheck the
+source”, not “the facility closed”.
 
 ### Domain-specific
 

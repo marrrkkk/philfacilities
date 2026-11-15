@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 import pytest
 from philfacilities_api.taxonomy import (
     DISCOVERY_CANDIDATE,
@@ -11,6 +13,7 @@ from philfacilities_api.taxonomy import (
     derive_inclusion_class,
     ownership_type_from_legacy,
 )
+from sqlalchemy import select
 
 pytestmark = pytest.mark.integration
 
@@ -113,11 +116,142 @@ def test_coverage_reports_source_scope_and_class_counts(client):
             "quarantined",
             "synthetic_demo",
         }
+        assert row["rights_status"]
+        assert row["freshness_days"] is None or row["freshness_days"] >= 0
+        assert row["is_stale"] is None or isinstance(row["is_stale"], bool)
     # The demo release is the only source in the test database; it carries no
     # national-coverage claim.
     assert all(
         row["coverage_scope"] != "NATIONAL_OFFICIAL_INVENTORY" for row in source_rows.values()
     )
+
+
+def test_coverage_reports_subtype_and_freshness_metrics(client):
+    coverage = _items(client, "/v1/coverage")
+    published = coverage["published_records"]
+    subtype_rows = coverage["by_subtype"]
+    assert subtype_rows
+    assert sum(row["facility_count"] for row in subtype_rows) == published
+    assert sum(row["with_coordinates"] for row in subtype_rows) <= published
+    assert coverage["coverage_stale_after_days"] > 0
+    assert coverage["stale_source_count"] == sum(
+        1 for row in coverage["source_coverage"] if row["is_stale"] is True
+    )
+    for row in subtype_rows:
+        assert row["category"]
+        assert row["subtype"]
+        assert row["with_coordinates"] <= row["facility_count"]
+
+
+def test_facility_assertions_expose_field_level_provenance(client):
+    items = _items(client, "/v1/facilities", limit=50)["items"]
+    selected = None
+    claims = []
+    for item in items:
+        candidate_claims = _items(client, f"/v1/facilities/{item['id']}/assertions")
+        if candidate_claims:
+            selected = item
+            claims = candidate_claims
+            break
+    assert selected is not None, "No published facility exposes field-level assertions."
+    assert claims
+    assert any(claim["attribute"] == "display_name" for claim in claims)
+    for claim in claims:
+        assert claim["attribute"]
+        assert claim["source"]["release_label"]
+        assert claim["source"]["source_record_id"]
+        assert claim["source"]["rights_status"]
+        assert claim["source"]["publication_status"] in {"approved", "published"}
+
+    filtered = _items(
+        client,
+        f"/v1/facilities/{selected['id']}/assertions",
+        attribute="display_name",
+    )
+    assert filtered
+    assert {claim["attribute"] for claim in filtered} == {"display_name"}
+
+
+def test_internal_source_assertions_never_leak_through_a_public_facility(db_session):
+    from philfacilities_api.models import (
+        Agency,
+        AttributeAssertion,
+        Dataset,
+        Facility,
+        FacilitySourceLink,
+        Release,
+        SourceRecord,
+    )
+    from philfacilities_api.services import load_attribute_assertions
+
+    facility = db_session.scalars(
+        select(Facility).where(Facility.publication_status == "public").limit(1)
+    ).one()
+    agency = Agency(name="Internal assertion test agency", short_code="internal-assert-test")
+    db_session.add(agency)
+    db_session.flush()
+    dataset = Dataset(
+        agency_id=agency.id,
+        slug="internal-assert-test",
+        name="Internal assertion test dataset",
+        redistribution_status="review_required",
+        publication_status="internal_only",
+        is_public_source=False,
+    )
+    db_session.add(dataset)
+    db_session.flush()
+    release = Release(
+        dataset_id=dataset.id,
+        source_release_label="INTERNAL-ASSERT-TEST",
+        retrieved_at=datetime.now(UTC),
+        sha256="1" * 64,
+        file_format="json",
+        file_size_bytes=2,
+        ingestion_status="published",
+        terms_review_status="review_required",
+        publication_status="blocked",
+        parser_version="test",
+    )
+    db_session.add(release)
+    db_session.flush()
+    record = SourceRecord(
+        release_id=release.id,
+        source_record_key="internal-assert-record",
+        row_number_or_page="1",
+        raw_payload={"secret_claim": "do-not-publish"},
+        raw_record_hash="0" * 64,
+        validation_status="valid",
+    )
+    db_session.add(record)
+    db_session.flush()
+    db_session.add(
+        FacilitySourceLink(
+            facility_id=facility.id,
+            source_record_id=record.id,
+            source_entity_id="internal-assert-record",
+            match_method="test",
+            match_confidence=1,
+            match_status="automatic_high_confidence",
+            evidence={},
+        )
+    )
+    db_session.add(
+        AttributeAssertion(
+            facility_id=facility.id,
+            source_record_id=record.id,
+            attribute_name="secret_claim",
+            source_field="secret_claim",
+            raw_value="do-not-publish",
+            normalized_value="do-not-publish",
+            transformation_version="test",
+        )
+    )
+    try:
+        db_session.flush()
+        visible = load_attribute_assertions(db_session, facility.id, limit=1000)
+        assert all(claim.attribute != "secret_claim" for claim in visible)
+    finally:
+        db_session.rollback()
 
 
 def test_map_query_applies_inclusion_class_filter(client):

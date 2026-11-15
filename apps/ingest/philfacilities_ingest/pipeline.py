@@ -12,6 +12,7 @@ from typing import Any
 from philfacilities_api.models import (
     AdministrativeUnit,
     Agency,
+    AttributeAssertion,
     Dataset,
     EnrollmentObservation,
     Facility,
@@ -354,21 +355,74 @@ def _add_assertion(
     raw_value: Any,
     normalized_value: Any,
     version: str,
+    source_field: str | None = None,
+    existing: set[tuple[str, str]] | None = None,
 ) -> None:
-    from philfacilities_api.models import AttributeAssertion
-
+    normalized = None if normalized_value is None else str(normalized_value)
+    if existing is not None:
+        key = (attribute, normalized or "")
+        if key in existing:
+            return
+        existing.add(key)
     session.add(
         AttributeAssertion(
             facility_id=facility_id,
             attribute_name=attribute,
             source_record_id=source_record_id,
-            source_field=attribute,
+            source_field=source_field or attribute,
             raw_value=None if raw_value is None else str(raw_value),
-            normalized_value=None if normalized_value is None else str(normalized_value),
+            normalized_value=normalized,
             transformation_version=version,
             review_status="source_supplied",
         )
     )
+
+
+def _assert_facility_fields(
+    session: Session,
+    *,
+    facility: Facility,
+    candidate: FacilityCandidate,
+    record: SourceRecord,
+    inclusion_class: str,
+    version: str,
+    existing: set[tuple[str, str]] | None = None,
+) -> None:
+    """Record the source's claim for every canonical field it supplies.
+
+    The pipeline currently preserves typed source rows and links them to a
+    facility, but only a handful of fields had explicit assertions.  These
+    claims are what the facility profile exposes as field-level provenance, so
+    they must be written for the values actually applied rather than inferred
+    later from the canonical row.
+    """
+
+    claims = (
+        ("display_name", candidate.display_name),
+        ("facility_type", candidate.facility_type),
+        ("facility_subtype", candidate.facility_subtype),
+        ("facility_kind", candidate.facility_kind),
+        ("ownership", candidate.ownership),
+        ("ownership_type", candidate.ownership_type),
+        ("operator_type", candidate.operator_type),
+        ("public_access_class", candidate.public_access_class),
+        ("access_conditions", candidate.access_conditions),
+        ("record_status", candidate.record_status),
+        ("inclusion_class", inclusion_class),
+    )
+    for attribute, value in claims:
+        if value in (None, "", "unknown", "UNKNOWN"):
+            continue
+        _add_assertion(
+            session,
+            facility_id=facility.id,
+            source_record_id=record.id,
+            attribute=attribute,
+            raw_value=value,
+            normalized_value=value,
+            version=version,
+            existing=existing,
+        )
 
 
 def _apply_sector_ownership(
@@ -609,6 +663,28 @@ def _apply_candidate(
                     )
                 )
 
+    assertion_keys = {
+        (attribute, normalized or "")
+        for attribute, normalized in session.execute(
+            select(
+                AttributeAssertion.attribute_name,
+                AttributeAssertion.normalized_value,
+            ).where(
+                AttributeAssertion.facility_id == facility.id,
+                AttributeAssertion.source_record_id == record.id,
+            )
+        )
+    }
+    _assert_facility_fields(
+        session,
+        facility=facility,
+        candidate=candidate,
+        record=record,
+        inclusion_class=inclusion_class,
+        version=parser_version,
+        existing=assertion_keys,
+    )
+
     link = None
     if not created:
         link = session.scalars(
@@ -693,6 +769,26 @@ def _apply_candidate(
                 raw_value=location.psgc_code,
                 normalized_value=location.psgc_code,
                 version=parser_version,
+                existing=assertion_keys,
+            )
+        for attribute, value in (
+            ("location.latitude", location.latitude),
+            ("location.longitude", location.longitude),
+            ("location.precision", location.precision),
+            ("location.method", location.method),
+            ("location.address_text", location.address_text),
+        ):
+            if value in (None, ""):
+                continue
+            _add_assertion(
+                session,
+                facility_id=facility.id,
+                source_record_id=record.id,
+                attribute=attribute,
+                raw_value=value,
+                normalized_value=value,
+                version=parser_version,
+                existing=assertion_keys,
             )
 
     for function in candidate.functions:
@@ -723,6 +819,16 @@ def _apply_candidate(
                 )
             )
             stats["functions"] += 1
+            _add_assertion(
+                session,
+                facility_id=facility.id,
+                source_record_id=record.id,
+                attribute="function_code",
+                raw_value=function.source_value or function.function_code,
+                normalized_value=function.function_code,
+                version=parser_version,
+                existing=assertion_keys,
+            )
 
     for service in candidate.services:
         existing_service = session.scalars(
@@ -746,6 +852,16 @@ def _apply_candidate(
                 )
             )
             stats["services"] += 1
+            _add_assertion(
+                session,
+                facility_id=facility.id,
+                source_record_id=record.id,
+                attribute="service_code",
+                raw_value=service.source_field or service.service_code,
+                normalized_value=service.service_code,
+                version=parser_version,
+                existing=assertion_keys,
+            )
 
     for role in candidate.roles:
         existing_role = session.scalars(
@@ -770,6 +886,22 @@ def _apply_candidate(
                 )
             )
             stats["roles"] += 1
+            for attribute, value in (
+                ("role_type", role.role_type),
+                ("role_entity_name", role.entity_name),
+            ):
+                if not value:
+                    continue
+                _add_assertion(
+                    session,
+                    facility_id=facility.id,
+                    source_record_id=record.id,
+                    attribute=attribute,
+                    raw_value=value,
+                    normalized_value=value,
+                    version=parser_version,
+                    existing=assertion_keys,
+                )
 
     if candidate.school:
         school = candidate.school
@@ -797,6 +929,17 @@ def _apply_candidate(
             value = getattr(school, attribute)
             if value is not None:
                 setattr(profile, attribute, value)
+                _add_assertion(
+                    session,
+                    facility_id=facility.id,
+                    source_record_id=record.id,
+                    attribute=f"school.{attribute}",
+                    raw_value=value,
+                    normalized_value=value,
+                    version=parser_version,
+                    existing=assertion_keys,
+                    source_field=attribute,
+                )
         profile.source_record_id = record.id
         for observation in school.enrollment:
             exists = session.scalars(
@@ -852,6 +995,7 @@ def _apply_candidate(
                 raw_value=school.deped_school_id,
                 normalized_value=school.deped_school_id,
                 version=parser_version,
+                existing=assertion_keys,
             )
 
     if candidate.health:
@@ -877,6 +1021,17 @@ def _apply_candidate(
             value = getattr(health, attribute)
             if value is not None:
                 setattr(profile, attribute, value)
+                _add_assertion(
+                    session,
+                    facility_id=facility.id,
+                    source_record_id=record.id,
+                    attribute=f"health.{attribute}",
+                    raw_value=value,
+                    normalized_value=value,
+                    version=parser_version,
+                    existing=assertion_keys,
+                    source_field=attribute,
+                )
         profile.source_record_id = record.id
         if health.doh_facility_id:
             _add_assertion(
@@ -887,6 +1042,7 @@ def _apply_candidate(
                 raw_value=health.doh_facility_id,
                 normalized_value=health.doh_facility_id,
                 version=parser_version,
+                existing=assertion_keys,
             )
 
     for license_data in candidate.licenses:
@@ -1569,28 +1725,10 @@ def run_ingestion(
                 facility_by_entity=facility_by_entity,
                 sector_by_facility=sector_by_facility,
             )
-            # Attribute assertions for user-facing fields; use the applied facility directly
-            # because sessions are configured with autoflush disabled.
+            # Attribute assertions are written by _apply_candidate for every
+            # source-supplied field, including display_name and ownership.
             facility_id = applied_facility.id if applied_facility else None
             if facility_id:
-                _add_assertion(
-                    session,
-                    facility_id=facility_id,
-                    source_record_id=record.id,
-                    attribute="display_name",
-                    raw_value=candidate.display_name,
-                    normalized_value=candidate.display_name,
-                    version=adapter.parser_version,
-                )
-                _add_assertion(
-                    session,
-                    facility_id=facility_id,
-                    source_record_id=record.id,
-                    attribute="ownership",
-                    raw_value=candidate.ownership,
-                    normalized_value=candidate.ownership,
-                    version=adapter.parser_version,
-                )
                 if candidate.location.latitude is None and candidate.location.longitude is None:
                     _record_issues(
                         session,

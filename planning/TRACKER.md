@@ -50,9 +50,12 @@ This is the single source of truth for execution status. Update this file when w
 | Public facilities without coordinates | **21,644** | Quality query; no coordinates invented |
 | Located public facilities without PSGC | **5,036** | Quality query; no geography guessed |
 | Open quality issues | `location_missing` 44,590; `duplicate_osm_id` 3,572; `ownership_not_established` 123; `missing_facility_name` 25; `duplicate_institution_key` 5; `coordinate_outside_philippines_bbox` 1; `missing_address` 1 | `quality.issues` |
-| OpenAPI paths | **39** | `packages/api-client/openapi.json` |
+| OpenAPI paths | **41** | `packages/api-client/openapi.json` |
 | Python tests | **103 passing** | `uv run pytest` |
 | Current-location invariant | **70,311 current rows / 70,311 facilities** | Unique partial index `uq_core_facility_locations_current`; migration `0005_unique_current_location` |
+| Field-level assertions | **659,745** | `core.attribute_assertions`; 342,661 reconstructed by `assertion-backfill-v1` |
+| Coverage subtype rows | **38** | `GET /v1/coverage.by_subtype` |
+| Rights-cleared freshness window | **365 days** | `coverage_stale_after_days`; per-dataset `freshness_days`/`is_stale` |
 
 These counts describe processed source records. They are not the complete national facility universe.
 
@@ -140,7 +143,7 @@ These counts describe processed source records. They are not the complete nation
 | M4-03 | Implement geography endpoints | DONE | M3-02 | Release list/detail, units by level/parent, release-aware crosswalk; tests |
 | M4-04 | Implement school endpoints | DONE | M3-03 to M3-05 | School list/detail, enrollment/resources, reference periods; tests |
 | M4-05 | Implement health/accreditation endpoints | DONE | M3-06/07 | Health list/detail, licenses, accreditations preserving category/expiry; tests |
-| M4-06 | Implement provenance/source endpoints | DONE | M2-03 | `/sources`, `/source-releases`, facility source evidence; tests |
+| M4-06 | Implement provenance/source endpoints | DONE | M2-03 | `/sources`, `/source-releases`, facility source evidence, and rights-gated `/facilities/{id}/assertions` field claims; tests |
 | M4-07 | Implement history/change endpoints | DONE | M2-09 | Facility history and global change feed; tests |
 | M4-08 | Implement bounding-box/nearby endpoints | DONE | M2-10 | `/within` and `/nearby` with area/radius limits, precision filtering, reference-period overlap, and shared facility filters |
 | M4-09 | Generate OpenAPI and TypeScript client | DONE | M4-01 to M4-13 | 39-path `packages/api-client/openapi.json`, generated `schema.ts`; drift test and CI diff gate |
@@ -295,6 +298,7 @@ Append entries here. Every entry should include date, tracker IDs, branch/PR/com
 | 2026-11-15 | AF1-18, AF2-12 | Added and ran the DTI Negosyo Center adapter against the public JSON directory; registered `DTI-NEGOSYO-2026-11-15` and aligned the rights/source registers | 1,427 active center records published as government service units; contact fields withheld; no coordinates, ownership, operator, host, hours or access inferred |
 | 2026-11-15 | M1-13, M8-01, AF1-39, AF2-07 | Added and ran the CHED HEIDA public-directory adapter; registered `CHED-HEIDA-2026-11-15` under `PUBLICLY_AVAILABLE_VERIFIED` and aligned the rights/source registers | 2,716 rows parsed, 2,711 unique institutions published after 5 duplicate rows; 0 coordinates; 527 public educational institutions, 159 LGU colleges/universities, 868 NGO/non-profit, 616 private corporate, 418 religious/faith-based; 123 unknown/CHED-supervised rows internal. No campus-level, operational-status or public-access claim |
 | 2026-11-15 | AF1-02, AF5-01 | Inspected the DILG DRRM-PULSE public facility/map-layer endpoints and supporting pages; recorded the negative/partial finding and security caveat | One validated command-centre feature returned regardless of query parameters; map-layers empty. Bulk ingest remains blocked pending a broader validated export, written terms and emergency-coordinate security review |
+| 2026-11-15 | AF7-01, AF7-03, AF7-04, AF7-05, M4-06 | Added field-level assertions for every applied source field, the `backfill-assertions` reconstruction command, rights-gated `/v1/facilities/{id}/assertions`, subtype coverage rows, and per-dataset rights/freshness/stale reporting; updated the data dictionary, API reference, and expansion tracker | 342,661 claims reconstructed from existing child rows (659,745 total); 18 focused tests pass; OpenAPI/client regenerated at 41 paths. Freshness is source-date based; no operational-status inference |
 
 ## Decision log
 

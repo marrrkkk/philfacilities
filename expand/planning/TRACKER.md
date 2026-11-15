@@ -186,11 +186,11 @@ Only implement these after the corresponding AF1 source is acquired, schema-insp
 
 | ID | Task | Status | Dependencies | Acceptance evidence |
 |---|---|---|---|---|
-| AF7-01 | Implement category/subtype coverage metrics | NOT STARTED | AF0, source releases | Metrics reflect known source universe only |
+| AF7-01 | Implement category/subtype coverage metrics | DONE | AF0, source releases | `GET /v1/coverage` returns `by_category` and `by_subtype` with facility count, published count and coordinate count, plus inclusion/ownership/access/region rows. Subtypes are sorted by category order and count; unknown values remain visible. Evidence: `apps/api/philfacilities_api/api/sources.py`, `tests/test_inclusion_model.py`, live DB endpoint check. |
 | AF7-02 | Implement LGU coverage status | NOT STARTED | AF4 | Participating/selected/national/unknown states visible |
-| AF7-03 | Implement source-date/freshness reporting | NOT STARTED | Release metadata | Source reference date separated from retrieval date |
-| AF7-04 | Implement field-level provenance in facility profiles/API | NOT STARTED | Data model | Claims link to source release/record |
-| AF7-05 | Implement location-precision display/filter | NOT STARTED | Geometry quality | Centroids are visibly approximate |
+| AF7-03 | Implement source-date/freshness reporting | DONE | Release metadata | `source_coverage` rows expose `source_published_at`, `reference_period_start/end`, `retrieved_at`, `freshness_days` and `is_stale`; freshness anchors on reference-period end, then publication date, then retrieval. `coverage_stale_after_days` (default 365) and `stale_source_count` are returned. Evidence: `apps/api/philfacilities_api/api/sources.py`, `tests/test_inclusion_model.py`. |
+| AF7-04 | Implement field-level provenance in facility profiles/API | DONE | Data model | `GET /v1/facilities/{id}/assertions` returns rights-gated claims with source field, raw value, normalized value, parser/backfill version and full source evidence. The pipeline now writes assertions for applied facility fields, location, functions, services, roles, and school/health profile fields. `backfill-assertions` reconstructed 342,661 exact claims from existing child rows; 659,745 assertions are now stored. Web profile lists claims. Evidence: `apps/ingest/philfacilities_ingest/assertions.py`, `tests/test_assertions.py`, live DB query. |
+| AF7-05 | Implement location-precision display/filter | DONE | Geometry quality | Public API exposes `location.precision` on every facility and the `location_precision` filter on list/within/nearby/domain searches; map markers reduce emphasis for approximate points and profiles label the precision. Coordinate counts are reported per subtype. |
 | AF7-06 | Implement facility match review/merge audit | NOT STARTED | Identity matching | False merges can be rejected and undone |
 | AF7-07 | Implement public correction proposal workflow | DEFERRED | Governance design | Corrections reviewed before publication |
 

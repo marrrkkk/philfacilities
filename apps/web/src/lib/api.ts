@@ -10,6 +10,7 @@ export type AdministrativeUnitOut = components["schemas"]["AdministrativeUnitOut
 export type ChangeListResponse = components["schemas"]["ChangeListResponse"];
 export type FacilityQuality = components["schemas"]["FacilityQuality"];
 export type SourceEvidence = components["schemas"]["SourceEvidence"];
+export type AttributeAssertionOut = components["schemas"]["AttributeAssertionOut"];
 export type SchoolProfileOut = components["schemas"]["SchoolProfileOut"];
 export type HealthProfileOut = components["schemas"]["HealthProfileOut"];
 export type AccreditationOut = components["schemas"]["AccreditationOut"];
@@ -91,6 +92,13 @@ export function getFacility(idOrSlug: string, init?: { revalidate?: number }) {
 export function getFacilityChanges(idOrSlug: string, limit = 20) {
   return apiGet<ChangeListResponse>(
     `/v1/facilities/${encodeURIComponent(idOrSlug)}/history`,
+    { limit },
+  );
+}
+
+export function getFacilityAssertions(idOrSlug: string, limit = 100) {
+  return apiGet<AttributeAssertionOut[]>(
+    `/v1/facilities/${encodeURIComponent(idOrSlug)}/assertions`,
     { limit },
   );
 }

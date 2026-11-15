@@ -29,6 +29,7 @@ from .acquisition import (
     send_failure_alert,
     validate_signature,
 )
+from .assertions import backfill_assertions
 from .compare import ReleaseComparisonError, compare_releases
 from .config import get_settings
 from .contracts import ReleaseSpec
@@ -478,6 +479,24 @@ def status() -> None:
                 f"  {run.started_at:%Y-%m-%d %H:%M} {slug}: {run.status} "
                 f"report={run.report_path or '—'}"
             )
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("backfill-assertions")
+def backfill_assertions_command() -> None:
+    """Reconstruct exact field claims from existing source-linked child rows.
+
+    This does not re-download a source and does not guess provenance for
+    facility-level fields that several sources could have supplied.
+    """
+
+    engine, session = _session()
+    try:
+        stats = backfill_assertions(session)
+        session.commit()
+        typer.echo(json.dumps(stats.as_dict(), indent=2))
     finally:
         session.close()
         engine.dispose()

@@ -46,9 +46,15 @@ Bulk: `GET /v1/downloads/facilities.csv`, `GET /v1/downloads/facilities.parquet`
 | `slug` | string or null | Human-readable URL identifier. Not an identity key |
 | `display_name` | string | Name used for display. May be a normalized source value |
 | `official_name` | string or null | Name recorded as official by a source, when one exists |
-| `facility_type` | `school` or `health_facility` | Broad domain. A facility is not both in this release |
-| `facility_subtype` | string or null | Source or normalized subtype. Controlled values vary by domain |
+| `facility_kind` | controlled string | `site`, `building`, `facility_unit`, `infrastructure_asset`, `project`, or `unknown` |
+| `facility_type` | controlled string | Broad category such as `school`, `health_facility`, `public_library`, `port`, or `negosyo_center` |
+| `facility_subtype` | string or null | Source or normalized subtype. Controlled values vary by category |
+| `inclusion_class` | `GOVERNMENT_FACILITY`, `PRIVATE_PUBLIC_SERVICE_PROVIDER`, or `PUBLIC_ACCESS_VENUE` | Public inclusion class. `DISCOVERY_CANDIDATE` is internal-only and never appears in a public response |
 | `ownership` | `government`, `private`, or `unknown` | Source-reported ownership. `unknown` is not assumed to be public |
+| `ownership_type` | controlled string | More specific owner type (for example `NATIONAL_AGENCY`, `LGU`, `GOCC`, `PRIVATE_UNSPECIFIED`) or null |
+| `operator_type` | controlled string or null | Operator type when a source states it. Ownership and operation are separate |
+| `public_access_class` | controlled string | `OPEN_PUBLIC`, `RESTRICTED_PUBLIC`, `SERVICE_ONLY`, `NOT_PUBLIC`, or `UNKNOWN` |
+| `access_conditions` | string or null | Source-stated access condition. A null value does not imply unrestricted access |
 | `record_status` | controlled string | Registry status: `active_in_registry`, `inactive_in_registry`, `unknown`, `under_review`, or `merged` |
 | `publication_status` | string | `public` records appear in the public API. `internal` records do not |
 | `is_synthetic` | boolean | True for generated demonstration records |
@@ -86,6 +92,7 @@ keep a text result list available when tiles fail.
 ## 4. Provenance and source releases
 
 Endpoint: `GET /v1/facilities/{id-or-slug}/sources`  
+Field claims: `GET /v1/facilities/{id-or-slug}/assertions?attribute=`  
 Catalogue: `GET /v1/sources`, `GET /v1/source-releases?dataset=`
 
 Each source evidence row describes one original record:
@@ -106,6 +113,22 @@ Each source evidence row describes one original record:
 | `match_status` | Status of that link |
 | `match_confidence` | Numeric confidence for the recorded link method |
 | `is_synthetic` | Whether the source dataset is synthetic |
+
+Field-level assertions answer “which exact source record supplied this value?”. They are
+returned only for facilities the caller may already see and only for rights-cleared,
+published releases. One field can have several claims; a conflict is evidence, not an
+automatic merge.
+
+| Assertion field | Meaning |
+|---|---|
+| `attribute` | Canonical attribute claimed, for example `display_name`, `ownership`, `location.precision`, `function_code`, `school.offers_shs` |
+| `source_field` | Original source column or field when recorded |
+| `raw_value` | Value as supplied by the source; not normalized |
+| `normalized_value` | Value after parser normalization |
+| `transformation_version` | Parser or backfill version that produced the claim |
+| `review_status` | Review state, normally `source_supplied` |
+| `asserted_at` | When PhilFacilities stored the claim |
+| `source` | The same source-evidence object returned by `/sources` |
 
 Release fields add:
 
@@ -158,7 +181,31 @@ redistribution. The existence of an API endpoint is not a grant of data rights.
 | NMIS NARIS | `approved_with_attribution` / `published` | 357 accredited establishments; factual fields only; many operators private |
 | Official PSA PSGC, DepEd Machine-Ready Files, DOH NHFR/HFSRB, CHED, TESDA | `review_required` / `blocked` | No publication until a verified release and a recorded publication decision exist |
 
-## 5. Identity matching and the review queue
+## 5. Coverage, freshness, and rights reporting
+
+Endpoint: `GET /v1/coverage`
+
+`/v1/coverage` reports only what the registry can support from processed source
+records. It never supplies an invented national denominator.
+
+| Field | Meaning |
+|---|---|
+| `registered_records`, `published_records` | Canonical records in the registry and records currently visible publicly |
+| `by_inclusion_class` | Facility counts for government, private provider, and public-access venue classes. Public and internal counts are not collapsed |
+| `by_category`, `by_subtype` | Counts by broad category and by source/normalized subtype, with the number having coordinates |
+| `by_ownership_type`, `by_access_class` | Owner-type and public-access distributions, preserving unknown values |
+| `by_region` | Counts by PSGC region prefix; records without a resolved location remain outside this breakdown |
+| `source_coverage` | One row per dataset: rights status, latest release, reference period, retrieval time, parsed row count, publication state, freshness in days, and a stale flag |
+| `coverage_stale_after_days` | Configured freshness threshold. The default is 365 days |
+| `stale_source_count` | Number of datasets whose latest release is older than the threshold |
+| `caveats` | Explicit limitations; the counts are not a real-world census |
+
+Freshness is measured from `reference_period_end`, then `source_published_at`, then
+`retrieved_at`, in that order. Re-downloading an old directory does not make its
+information current. A stale flag is a prompt to recheck the source, not proof that a
+facility changed or closed.
+
+## 6. Identity matching and the review queue
 
 Preferred identity evidence, strongest first:
 
@@ -196,7 +243,7 @@ algorithm version. Accepting a candidate records the decision; merging is a sepa
 command that retires the source facility into the candidate facility. The retired facility remains
 an internal `merged` tombstone, and change events preserve the merge audit.
 
-## 6. Geography and PSGC releases
+## 7. Geography and PSGC releases
 
 Endpoints: `GET /v1/geographies`, `GET /v1/geographies/{psgc_code}`,
 `GET /v1/geography-releases`, `GET /v1/geography-crosswalk?from_release=&to_release=`
@@ -214,7 +261,7 @@ A PSGC code is release-scoped. Names are not unique keys. When a code is renamed
 changes, the crosswalk records `renamed`, `recoded`, `split`, `merged`, or `abolished` evidence.
 Do not assume a code means the same thing across every release.
 
-## 7. School domain
+## 8. School domain
 
 Endpoints: `GET /v1/schools`, `GET /v1/schools/{id-or-slug}`,
 `GET /v1/schools/{id-or-slug}/enrollment`, `GET /v1/schools/{id-or-slug}/resources`
@@ -241,7 +288,7 @@ a public observation exists. The canonical DepEd EBEIS NCR rows remain `internal
 these responses; their current source release is published only for institution-level fields. Do not
 interpret an OSM school as an official DepEd school.
 
-## 8. Health domain
+## 9. Health domain
 
 Endpoints: `GET /v1/health-facilities`, `GET /v1/health-facilities/{id-or-slug}`,
 `GET /v1/health-facilities/{id-or-slug}/licenses`,
@@ -266,7 +313,7 @@ DOH licences are normally null because no DOH NHFR/HFSRB source is published. Ph
 describe time-bound benefit-package accreditation, not facility ownership or licensing. An OSM
 health feature is crowd-sourced and may be inactive, renamed, or misplaced.
 
-## 9. Quality issues and status
+## 10. Quality issues and status
 
 Endpoints: `GET /v1/quality/summary`, `GET /v1/quality/issues`
 
@@ -282,7 +329,7 @@ Endpoints: `GET /v1/quality/summary`, `GET /v1/quality/issues`
 Quality counts are measured from records. They are not an editorial trust score, and a clean
 quality summary does not prove the source is correct.
 
-## 10. Change history
+## 11. Change history
 
 Endpoint: `GET /v1/facilities/{id-or-slug}/history`, feed `GET /v1/changes?since=`
 
@@ -297,7 +344,7 @@ Endpoint: `GET /v1/facilities/{id-or-slug}/history`, feed `GET /v1/changes?since
 
 History is append-oriented. A correction creates a new event; it does not rewrite earlier evidence.
 
-## 11. Pagination, errors, and caching
+## 12. Pagination, errors, and caching
 
 - Facility lists are cursor-paginated: send `cursor`, read `next_cursor` and `has_more`. Cursors are
   opaque and capped in length.
@@ -308,7 +355,7 @@ History is append-oriented. A correction creates a new event; it does not rewrit
 - CORS is restricted to configured web origins. There is no authentication for public reads in this
   release, but writes and review actions are not exposed.
 
-## 12. Caveats
+## 13. Caveats
 
 - Coverage counts describe processed source records, not the real-world facility universe. Of
   92,422 canonical facilities, 61,806 are public, 30,616 are non-public (including the 5,055
@@ -326,7 +373,7 @@ History is append-oriented. A correction creates a new event; it does not rewrit
   operations runbooks. The map uses attributed OpenStreetMap demo tiles; a licensed production tile
   provider is not selected.
 
-## 13. Related documents
+## 14. Related documents
 
 - [Data model](04-DATA-MODEL.md)
 - [Source register](03-SOURCE-REGISTER.md)

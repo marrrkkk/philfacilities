@@ -11,9 +11,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ApiError,
   getFacility,
+  getFacilityAssertions,
   getFacilityChanges,
   getHealthDetail,
   getSchoolDetail,
+  type AttributeAssertionOut,
   type FacilityDetail,
   type HealthDetailResponse,
   type SchoolDetailResponse,
@@ -103,11 +105,12 @@ export default async function FacilityPage({ params }: { params: Params }) {
     throw error;
   }
 
-  const [typed, changes] = await Promise.all([
+  const [typed, changes, assertions] = await Promise.all([
     facility.facility_type === "school"
       ? getSchoolDetail(id).catch(() => null)
       : getHealthDetail(id).catch(() => null),
     getFacilityChanges(id).catch(() => null),
+    getFacilityAssertions(id).catch(() => [] as AttributeAssertionOut[]),
   ]);
 
   const school = typed && "enrollment" in typed ? (typed as SchoolDetailResponse) : null;
@@ -540,6 +543,73 @@ export default async function FacilityPage({ params }: { params: Params }) {
               </Section>
             </>
           ) : null}
+
+          <Section
+            id="provenance"
+            title="Field-level source claims"
+            description="Each row is a claim one source record made about one canonical field. Claims can disagree; the registry does not silently merge them. This table is limited to the most recent claims."
+          >
+            {assertions.length > 0 ? (
+              <>
+                <div className="table-scroll border border-[#d1d8e6]" role="region" aria-label="Field-level source claims" tabIndex={0}>
+                  <table className="w-full min-w-[52rem] border-collapse text-left font-sans text-sm">
+                    <thead className="bg-[#f4f7fc] font-ui text-xs uppercase tracking-wide text-[#5a5a58]">
+                      <tr>
+                        <th className="border-b border-[#d1d8e6] p-3">Field</th>
+                        <th className="border-b border-[#d1d8e6] p-3">Claimed value</th>
+                        <th className="border-b border-[#d1d8e6] p-3">Source</th>
+                        <th className="border-b border-[#d1d8e6] p-3">Record / release</th>
+                        <th className="border-b border-[#d1d8e6] p-3">Asserted</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {assertions.slice(0, 50).map((claim) => (
+                        <tr key={claim.id}>
+                          <td className="border-b border-[#d1d8e6] p-3 font-mono text-xs">
+                            {claim.attribute}
+                            {claim.source_field && claim.source_field !== claim.attribute ? (
+                              <span className="mt-1 block text-[#5a5a58]">
+                                source field: {claim.source_field}
+                              </span>
+                            ) : null}
+                          </td>
+                          <td className="border-b border-[#d1d8e6] p-3">
+                            {claim.normalized_value ?? claim.raw_value ?? "Unknown"}
+                          </td>
+                          <td className="border-b border-[#d1d8e6] p-3">
+                            <span className="font-ui text-sm font-bold">{claim.source.agency}</span>
+                            <span className="mt-1 block text-xs text-[#5a5a58]">
+                              {claim.source.dataset}
+                            </span>
+                          </td>
+                          <td className="border-b border-[#d1d8e6] p-3 text-xs">
+                            <code>{claim.source.source_record_id}</code>
+                            <span className="mt-1 block text-[#5a5a58]">
+                              {claim.source.release_label}
+                            </span>
+                          </td>
+                          <td className="border-b border-[#d1d8e6] p-3 text-xs">
+                            {formatDateTime(claim.asserted_at)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {assertions.length > 50 ? (
+                  <p className="mt-3 font-sans text-xs text-[#5a5a58]">
+                    Showing 50 of {assertions.length} loaded claims. Use the API assertions
+                    endpoint with an attribute filter for the full set.
+                  </p>
+                ) : null}
+              </>
+            ) : (
+              <p className="font-sans text-sm text-[#5a5a58]">
+                No field-level claims are published for this record. The source table below still
+                lists the linked source records.
+              </p>
+            )}
+          </Section>
 
           <Section
             id="sources"

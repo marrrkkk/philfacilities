@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from .models import (
     AdministrativeUnit,
     Agency,
+    AttributeAssertion,
     Dataset,
     Facility,
     FacilityFunction,
@@ -27,6 +28,7 @@ from .models import (
 )
 from .rights import PUBLIC_RIGHTS
 from .schemas import (
+    AttributeAssertionOut,
     FacilityFunctionOut,
     FacilityQuality,
     FacilityRelationshipOut,
@@ -164,6 +166,99 @@ def load_source_evidence(
                 )
             )
     return grouped
+
+
+def load_attribute_assertions(
+    session: Session,
+    facility_id: uuid.UUID,
+    *,
+    attribute: str | None = None,
+    limit: int = 200,
+) -> list[AttributeAssertionOut]:
+    """Field-level claims for one public facility.
+
+    Only assertions whose source release is rights-cleared and published are
+    exposed. A facility can be public because of one source while another source
+    contributing to it is internal; the internal claim must not leak.
+    """
+
+    conditions = [
+        AttributeAssertion.facility_id == facility_id,
+        or_(
+            Dataset.is_synthetic.is_(True),
+            and_(
+                Dataset.redistribution_status.in_(tuple(PUBLIC_RIGHTS)),
+                Dataset.publication_status.in_(("approved", "published")),
+                Release.publication_status.in_(("approved", "published")),
+            ),
+        ),
+    ]
+    if attribute:
+        conditions.append(AttributeAssertion.attribute_name == attribute)
+
+    rows = session.execute(
+        select(
+            AttributeAssertion,
+            SourceRecord,
+            Release,
+            Dataset,
+            Agency,
+            FacilitySourceLink,
+        )
+        .join(SourceRecord, AttributeAssertion.source_record_id == SourceRecord.id)
+        .join(Release, SourceRecord.release_id == Release.id)
+        .join(Dataset, Release.dataset_id == Dataset.id)
+        .join(Agency, Dataset.agency_id == Agency.id)
+        .join(
+            FacilitySourceLink,
+            and_(
+                FacilitySourceLink.source_record_id == SourceRecord.id,
+                FacilitySourceLink.facility_id == AttributeAssertion.facility_id,
+            ),
+        )
+        .where(*conditions)
+        .order_by(AttributeAssertion.asserted_at.desc(), AttributeAssertion.attribute_name)
+        .limit(limit)
+    ).all()
+
+    return [
+        AttributeAssertionOut(
+            id=assertion.id,
+            attribute=assertion.attribute_name,
+            source_field=assertion.source_field,
+            raw_value=assertion.raw_value,
+            normalized_value=assertion.normalized_value,
+            transformation_version=assertion.transformation_version,
+            review_status=assertion.review_status,
+            asserted_at=assertion.asserted_at,
+            source=SourceEvidence(
+                id=link.id,
+                agency=agency.name,
+                agency_code=agency.short_code,
+                dataset=dataset.name,
+                dataset_slug=dataset.slug,
+                release_id=release.id,
+                release_label=release.source_release_label,
+                source_record_id=record.source_record_key,
+                source_record_uuid=record.id,
+                row_reference=record.row_number_or_page,
+                source_published_at=release.source_published_at,
+                reference_period_start=release.reference_period_start,
+                reference_period_end=release.reference_period_end,
+                retrieved_at=release.retrieved_at,
+                processed_at=release.processed_at,
+                match_method=link.match_method,
+                match_status=link.match_status,
+                match_confidence=float(link.match_confidence),
+                rights_status=dataset.redistribution_status,
+                publication_status=dataset.publication_status,
+                license_identifier=dataset.license_identifier,
+                attribution_text=dataset.attribution_text,
+                is_synthetic=dataset.is_synthetic,
+            ),
+        )
+        for assertion, record, release, dataset, agency, link in rows
+    ]
 
 
 def load_functions(

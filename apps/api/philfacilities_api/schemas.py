@@ -158,6 +158,20 @@ class SourceEvidence(BaseModel):
     is_synthetic: bool = False
 
 
+class AttributeAssertionOut(BaseModel):
+    """One source's claim about one canonical field."""
+
+    id: uuid.UUID
+    attribute: str
+    source_field: str | None = None
+    raw_value: str | None = None
+    normalized_value: str | None = None
+    transformation_version: str | None = None
+    review_status: str
+    asserted_at: datetime
+    source: SourceEvidence
+
+
 class SchoolProfileOut(BaseModel):
     deped_school_id: str | None = None
     sector: str | None = None
@@ -597,6 +611,15 @@ class CoverageRow(BaseModel):
     with_coordinates: int = 0
 
 
+class CoverageSubtypeRow(BaseModel):
+    category: str
+    subtype: str
+    label: str | None = None
+    facility_count: int
+    published_count: int
+    with_coordinates: int = 0
+
+
 class SourceCoverageRow(BaseModel):
     dataset_slug: str
     dataset_name: str
@@ -609,6 +632,9 @@ class SourceCoverageRow(BaseModel):
     retrieved_at: datetime | None = None
     row_count_parsed: int | None = None
     publication_status: str = "blocked"
+    rights_status: str = "unknown"
+    freshness_days: int | None = None
+    is_stale: bool | None = None
 
 
 class CoverageOut(BaseModel):
@@ -617,10 +643,13 @@ class CoverageOut(BaseModel):
     published_records: int
     by_inclusion_class: list[CoverageRow]
     by_category: list[CoverageRow]
+    by_subtype: list[CoverageSubtypeRow] = Field(default_factory=list)
     by_ownership_type: list[CoverageRow]
     by_access_class: list[CoverageRow]
     by_region: list[CoverageRow]
     source_coverage: list[SourceCoverageRow]
+    coverage_stale_after_days: int = 365
+    stale_source_count: int = 0
     caveats: list[str] = Field(default_factory=list)
 
 

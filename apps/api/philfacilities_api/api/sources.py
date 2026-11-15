@@ -14,6 +14,7 @@ from fastapi.responses import Response
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session, aliased
 
+from ..config import get_settings
 from ..csv_safety import sanitize_csv_cell
 from ..db import get_db
 from ..errors import ApiError
@@ -37,6 +38,7 @@ from ..schemas import (
     ChangeListResponse,
     CoverageOut,
     CoverageRow,
+    CoverageSubtypeRow,
     DatasetOut,
     MatchCandidateListResponse,
     MatchCandidateOut,
@@ -59,6 +61,8 @@ from ..taxonomy import (
 )
 
 router = APIRouter(tags=["sources"])
+
+settings = get_settings()
 
 _MATCH_STATUSES = ("pending", "accepted", "rejected", "merged")
 
@@ -767,6 +771,35 @@ def coverage(request: Request, db: Annotated[Session, Depends(get_db)]):
         for facility_id, row in locations.items()
         if facility_id in coordinate_ids
     )
+    subtype_values = [
+        (row.facility_type, row.facility_subtype or "UNSPECIFIED", facility_id)
+        for facility_id, row in facilities.items()
+    ]
+    subtype_counts = Counter((category, subtype) for category, subtype, _ in subtype_values)
+    subtype_coordinate_counts = Counter(
+        (category, subtype)
+        for category, subtype, identifier in subtype_values
+        if identifier in coordinate_ids
+    )
+    category_order = {category: index for index, category in enumerate(FACILITY_CATEGORIES)}
+    by_subtype = [
+        CoverageSubtypeRow(
+            category=category,
+            subtype=subtype,
+            label=_humanise(subtype),
+            facility_count=subtype_counts[(category, subtype)],
+            published_count=subtype_counts[(category, subtype)],
+            with_coordinates=subtype_coordinate_counts.get((category, subtype), 0),
+        )
+        for category, subtype in sorted(
+            subtype_counts,
+            key=lambda key: (
+                category_order.get(key[0], len(category_order)),
+                -subtype_counts[key],
+                key[1],
+            ),
+        )
+    ]
     region_names = {
         str(prefix): name
         for prefix, name in db.execute(
@@ -777,6 +810,19 @@ def coverage(request: Request, db: Annotated[Session, Depends(get_db)]):
         ).all()
     }
     source_rows: list[SourceCoverageRow] = []
+    today = datetime.now(UTC).date()
+
+    def _freshness(release: Release | None) -> tuple[int | None, bool | None]:
+        if release is None:
+            return None, None
+        anchor = release.reference_period_end
+        if anchor is None and release.source_published_at is not None:
+            anchor = release.source_published_at.date()
+        if anchor is None:
+            anchor = release.retrieved_at.date()
+        days = max((today - anchor).days, 0)
+        return days, days > settings.coverage_stale_after_days
+
     dataset_rows = db.execute(
         select(Dataset, Agency, PublicationGate)
         .join(Agency, Dataset.agency_id == Agency.id)
@@ -789,6 +835,7 @@ def coverage(request: Request, db: Annotated[Session, Depends(get_db)]):
         latest.setdefault(release.dataset_id, release)
     for dataset, agency, _gate in dataset_rows:
         release = latest.get(dataset.id)
+        freshness_days, is_stale = _freshness(release)
         source_rows.append(
             SourceCoverageRow(
                 dataset_slug=dataset.slug,
@@ -802,6 +849,9 @@ def coverage(request: Request, db: Annotated[Session, Depends(get_db)]):
                 retrieved_at=release.retrieved_at if release else None,
                 row_count_parsed=release.row_count_parsed if release else None,
                 publication_status=dataset.publication_status,
+                rights_status=dataset.redistribution_status,
+                freshness_days=freshness_days,
+                is_stale=is_stale,
             )
         )
     registry_total = db.scalar(select(func.count()).select_from(Facility)) or 0
@@ -813,6 +863,7 @@ def coverage(request: Request, db: Annotated[Session, Depends(get_db)]):
             "inclusion_class", PUBLIC_INCLUSION_CLASSES, INCLUSION_CLASS_LABELS
         ),
         by_category=rows_for("facility_type", FACILITY_CATEGORIES, CATEGORY_LABELS),
+        by_subtype=by_subtype,
         by_ownership_type=rows_for("ownership_type", OWNERSHIP_TYPES),
         by_access_class=rows_for("public_access_class", ACCESS_CLASSES),
         by_region=[
@@ -826,6 +877,8 @@ def coverage(request: Request, db: Annotated[Session, Depends(get_db)]):
             for prefix, count in region_counts.most_common()
         ],
         source_coverage=source_rows,
+        coverage_stale_after_days=settings.coverage_stale_after_days,
+        stale_source_count=sum(1 for row in source_rows if row.is_stale),
         caveats=[
             (
                 "Registry totals include internal discovery candidates, but their records "
@@ -834,6 +887,11 @@ def coverage(request: Request, db: Annotated[Session, Depends(get_db)]):
             (
                 "Source coverage scope describes the source, not proof of national "
                 "completeness. Missing records do not prove a facility does not exist."
+            ),
+            (
+                "Freshness is measured from the source's reference period end (or its "
+                "publication/retrieval date when no reference period exists), not from "
+                "real-time operational availability."
             ),
         ],
     )

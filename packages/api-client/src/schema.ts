@@ -89,6 +89,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/facilities/{facility_id}/assertions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Field-level source claims behind a facility */
+        get: operations["get_facility_assertions_v1_facilities__facility_id__assertions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/facilities/{facility_id}/accreditations": {
         parameters: {
             query?: never;
@@ -819,6 +836,35 @@ export interface components {
             /** Valid To */
             valid_to?: string | null;
         };
+        /**
+         * AttributeAssertionOut
+         * @description One source's claim about one canonical field.
+         */
+        AttributeAssertionOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Attribute */
+            attribute: string;
+            /** Source Field */
+            source_field?: string | null;
+            /** Raw Value */
+            raw_value?: string | null;
+            /** Normalized Value */
+            normalized_value?: string | null;
+            /** Transformation Version */
+            transformation_version?: string | null;
+            /** Review Status */
+            review_status: string;
+            /**
+             * Asserted At
+             * Format: date-time
+             */
+            asserted_at: string;
+            source: components["schemas"]["SourceEvidence"];
+        };
         /** ChangeEventOut */
         ChangeEventOut: {
             /**
@@ -876,6 +922,8 @@ export interface components {
             by_inclusion_class: components["schemas"]["CoverageRow"][];
             /** By Category */
             by_category: components["schemas"]["CoverageRow"][];
+            /** By Subtype */
+            by_subtype?: components["schemas"]["CoverageSubtypeRow"][];
             /** By Ownership Type */
             by_ownership_type: components["schemas"]["CoverageRow"][];
             /** By Access Class */
@@ -884,6 +932,16 @@ export interface components {
             by_region: components["schemas"]["CoverageRow"][];
             /** Source Coverage */
             source_coverage: components["schemas"]["SourceCoverageRow"][];
+            /**
+             * Coverage Stale After Days
+             * @default 365
+             */
+            coverage_stale_after_days: number;
+            /**
+             * Stale Source Count
+             * @default 0
+             */
+            stale_source_count: number;
             /** Caveats */
             caveats?: string[];
         };
@@ -891,6 +949,24 @@ export interface components {
         CoverageRow: {
             /** Key */
             key: string;
+            /** Label */
+            label?: string | null;
+            /** Facility Count */
+            facility_count: number;
+            /** Published Count */
+            published_count: number;
+            /**
+             * With Coordinates
+             * @default 0
+             */
+            with_coordinates: number;
+        };
+        /** CoverageSubtypeRow */
+        CoverageSubtypeRow: {
+            /** Category */
+            category: string;
+            /** Subtype */
+            subtype: string;
             /** Label */
             label?: string | null;
             /** Facility Count */
@@ -1858,6 +1934,15 @@ export interface components {
              * @default blocked
              */
             publication_status: string;
+            /**
+             * Rights Status
+             * @default unknown
+             */
+            rights_status: string;
+            /** Freshness Days */
+            freshness_days?: number | null;
+            /** Is Stale */
+            is_stale?: boolean | null;
         };
         /** SourceEvidence */
         SourceEvidence: {
@@ -2252,6 +2337,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SourceEvidence"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_facility_assertions_v1_facilities__facility_id__assertions_get: {
+        parameters: {
+            query?: {
+                /** @description Only return claims for this canonical attribute. */
+                attribute?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                facility_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttributeAssertionOut"][];
                 };
             };
             /** @description Validation Error */
