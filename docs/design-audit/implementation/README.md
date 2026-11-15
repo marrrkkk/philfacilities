@@ -3,7 +3,7 @@
 **Captured:** 15 November 2026  
 **Build:** local production build (`pnpm --filter @philfacilities/web build && pnpm --filter @philfacilities/web start`)  
 **URL:** `http://127.0.0.1:3000`  
-**Data at capture time:** deterministic synthetic demo (22 published facilities; 15 with coordinates). The screenshots are a historical layout record; the current working database serves rights-cleared real data (83,769 public facilities).  
+**Data at capture time:** deterministic synthetic demo (22 published facilities; 15 with coordinates). The screenshots are a historical layout record; the current working database serves real data with recorded publication decisions (61,806 public facilities as of 15 November 2026).  
 **Commands:**
 
 ```bash

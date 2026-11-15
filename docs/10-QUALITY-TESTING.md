@@ -19,6 +19,8 @@ A passing API test is not proof that the source data is correct. PhilFacilities 
 Current ingestion and parser coverage:
 
 - `tests/test_rights.py::test_philhealth_source_keys_keep_repeated_physical_rows_distinct` proves that identical provider text on the same PDF page still receives a distinct source-record key per physical row, so repeated rows cannot collapse.
+- `tests/test_rights.py::test_rights_vocabulary_is_explicit_and_conservative` proves that `publicly_available_verified` is accepted and public-compatible while restricted and review-required states remain non-public.
+- `tests/test_rights.py::test_public_availability_still_requires_an_approved_gate` proves that public availability alone does not bypass the publication gate.
 - `tests/test_rights.py::test_philhealth_two_column_annex_is_not_parsed_as_providers` proves that the two-column expiry/sector annex is not counted as provider rows.
 - `tests/test_pipeline_reprocess.py::test_reprocess_adds_rows_collapsed_by_an_older_key_scheme` runs the real ingestion pipeline twice: an older key scheme collapses four rows to one, then an explicit `reprocess=True` pass restores four distinct records, skips the one unchanged linked row, and preserves the retained record ID and facility link. The test is marked integration and uses synthetic fixture data only.
 - `tests/test_pipeline_reprocess.py::test_failed_new_release_is_quarantined_and_keeps_previous_public_release` ingests a published release, then a second release whose parser raises. The new release is `failed`/`quarantined`, while the first release and its public facility remain published.
@@ -30,8 +32,8 @@ Current ingestion and parser coverage:
 
 ### Current measured state (15 November 2026)
 
-- 88,824 canonical facilities; 83,769 pass the public gate; 5,055 are internal-only; 0 are synthetic.
-- 70,223 public facilities have coordinates, all `map_geocoded`; 13,546 public facilities have no location.
+- 92,422 canonical facilities; 61,806 pass the public gate; 30,616 are non-public, including the 5,055 DepEd EBEIS rows; 0 are synthetic.
+- 44,751 public facilities have coordinates, all `map_geocoded`; 17,055 public facilities have no location.
 - 14,216 located public facilities have no PSGC assignment.
 - Open issues: `location_missing` 30,041; `duplicate_osm_id` 3,572; `missing_facility_name` 25; `coordinate_outside_philippines_bbox` 1.
 - 4,802 unprovenanced Antenatal health profiles and 3 source-less public-status facilities were removed after an earlier parser pass; public-status and API-visible counts now agree.
@@ -154,7 +156,8 @@ address, and locality, with trigram indexes added by migration `0006_search_trig
 Measured search medians after warm-up are 252 ms for `Mulanay` (40 results), 638 ms for `Manila`
 (832), 1,869 ms for `Bacolod` (140), and 88 ms for a no-match term. The unfiltered facility list
 remains about 2.6 s p50, which is still too high for a production launch; query-plan optimization and caching
-remain pre-launch work. Bulk exports take roughly 100 seconds locally for 83,769 rows, so production
+remain pre-launch work. Bulk exports took roughly 100 seconds locally at the earlier 83,769-row
+benchmark, so production
 exports should be pre-generated or cached rather than rebuilt per request. Evidence:
 [`docs/operations/evidence/2026-11-15-real-api/api-benchmark-optimized.txt`](operations/evidence/2026-11-15-real-api/api-benchmark-optimized.txt),
 the pre-fix baseline in
@@ -181,7 +184,7 @@ Set production targets after representative-scale measurements, but test:
 - source release acquired and hashed;
 - parser tests pass;
 - validation thresholds pass;
-- source terms approved for intended publication;
+- source publication decision recorded under `docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`;
 - entity matching reviewed;
 - release notes and known limitations published.
 

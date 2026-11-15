@@ -35,6 +35,8 @@ from ..models import (
 )
 from ..schemas import (
     ChangeListResponse,
+    CoverageOut,
+    CoverageRow,
     DatasetOut,
     MatchCandidateListResponse,
     MatchCandidateOut,
@@ -42,10 +44,19 @@ from ..schemas import (
     QualitySummary,
     ReleaseOut,
     SourceCheckOut,
+    SourceCoverageRow,
     SourceMonitoringOut,
     StatisticsOut,
 )
 from ..services import build_summaries, public_facility_filter
+from ..taxonomy import (
+    ACCESS_CLASSES,
+    CATEGORY_LABELS,
+    FACILITY_CATEGORIES,
+    INCLUSION_CLASS_LABELS,
+    OWNERSHIP_TYPES,
+    PUBLIC_INCLUSION_CLASSES,
+)
 
 router = APIRouter(tags=["sources"])
 
@@ -101,6 +112,8 @@ def _dataset_payload(
         attribution_text=dataset.attribution_text,
         personal_data_status=dataset.personal_data_status,
         publication_status=dataset.publication_status,
+        coverage_scope=dataset.coverage_scope,  # type: ignore[arg-type]
+        coverage_note=dataset.coverage_note,
         update_pattern=dataset.update_pattern,
         schema_version=dataset.schema_version,
         is_public_source=dataset.is_public_source,
@@ -575,16 +588,18 @@ def get_match_candidate(candidate_id: str, db: Annotated[Session, Depends(get_db
     return _match_candidate_payload(row[0], row[1], row[2])
 
 
-@router.get("/statistics", response_model=StatisticsOut, summary="Measured coverage statistics")
-def statistics(request: Request, db: Annotated[Session, Depends(get_db)]):
+def _public_facility_rows(db: Session):
+    """Load the public facility set once, with current location evidence."""
+
     published = public_facility_filter()
-    # Read the public facility set once, with current location evidence, then
-    # aggregate in Python. Repeating the correlated rights EXISTS across several
-    # SQL aggregates dominated latency at national scale.
     rows = db.execute(
         select(
             Facility.id,
             Facility.facility_type,
+            Facility.facility_subtype,
+            Facility.inclusion_class,
+            Facility.ownership_type,
+            Facility.public_access_class,
             Facility.is_synthetic,
             FacilityLocation.id.label("location_id"),
             FacilityLocation.precision,
@@ -615,6 +630,25 @@ def statistics(request: Request, db: Annotated[Session, Depends(get_db)]):
         existing = locations.get(row.id)
         if existing is None or row.location_created_at > existing.location_created_at:
             locations[row.id] = row
+    return facilities, locations
+
+
+def _humanise(value: str) -> str:
+    return value.replace("_", " ").title()
+
+
+def _ordered_counts(values, order: tuple[str, ...]) -> dict[str, int]:
+    counts = Counter(values)
+    ordered = {key: counts.get(key, 0) for key in order if counts.get(key, 0)}
+    for key, count in counts.most_common():
+        if key not in ordered and count:
+            ordered[key] = count
+    return ordered
+
+
+@router.get("/statistics", response_model=StatisticsOut, summary="Measured coverage statistics")
+def statistics(request: Request, db: Annotated[Session, Depends(get_db)]):
+    facilities, locations = _public_facility_rows(db)
     total = len(facilities)
     schools = sum(1 for row in facilities.values() if row.facility_type == "school")
     health = sum(1 for row in facilities.values() if row.facility_type == "health_facility")
@@ -655,6 +689,18 @@ def statistics(request: Request, db: Annotated[Session, Depends(get_db)]):
             }
             for prefix, count in region_rows
         ],
+        by_inclusion_class=_ordered_counts(
+            (row.inclusion_class for row in facilities.values()), PUBLIC_INCLUSION_CLASSES
+        ),
+        by_ownership_type=_ordered_counts(
+            (row.ownership_type for row in facilities.values()), OWNERSHIP_TYPES
+        ),
+        by_category=_ordered_counts(
+            (row.facility_type for row in facilities.values()), FACILITY_CATEGORIES
+        ),
+        by_access_class=_ordered_counts(
+            (row.public_access_class for row in facilities.values()), ACCESS_CLASSES
+        ),
         source_releases=release_count,
         caveats=[
             (
@@ -662,14 +708,136 @@ def statistics(request: Request, db: Annotated[Session, Depends(get_db)]):
                 "national facility universe."
             ),
             (
+                "Government, private public-service and public-access venue counts are "
+                "reported separately; the combined total is never a government-facility "
+                "count."
+            ),
+            (
                 "Synthetic demonstration records are included in these counts and are "
                 "labelled in every facility record."
             ),
         ]
         if synthetic
-        else ["Statistics describe published PhilFacilities records only."],
+        else [
+            "Statistics describe published PhilFacilities records only.",
+            (
+                "Government, private public-service and public-access venue counts are "
+                "reported separately."
+            ),
+        ],
     )
     return conditional_json(request, payload.model_dump(mode="json"), max_age=60)
+
+
+@router.get(
+    "/coverage",
+    response_model=CoverageOut,
+    summary="Registry coverage by class and source",
+)
+def coverage(request: Request, db: Annotated[Session, Depends(get_db)]):
+    facilities, locations = _public_facility_rows(db)
+    coordinate_ids = {
+        facility_id
+        for facility_id, location in locations.items()
+        if location.latitude is not None and location.longitude is not None
+    }
+
+    def rows_for(attribute: str, order: tuple[str, ...], labels=None) -> list[CoverageRow]:
+        values = [(getattr(row, attribute), facility_id) for facility_id, row in facilities.items()]
+        counts = Counter(value for value, _identifier in values)
+        coordinate_counts = Counter(
+            value for value, identifier in values if identifier in coordinate_ids
+        )
+        keys = list(order) + sorted(key for key in counts if key and key not in order)
+        return [
+            CoverageRow(
+                key=key,
+                label=(labels or {}).get(key) or _humanise(key),
+                facility_count=counts.get(key, 0),
+                published_count=counts.get(key, 0),
+                with_coordinates=coordinate_counts.get(key, 0),
+            )
+            for key in keys
+            if counts.get(key, 0)
+        ]
+
+    region_counts = Counter(((row.psgc_code or "")[:2] or "UNKNOWN") for row in locations.values())
+    region_coordinate_counts = Counter(
+        ((row.psgc_code or "")[:2] or "UNKNOWN")
+        for facility_id, row in locations.items()
+        if facility_id in coordinate_ids
+    )
+    region_names = {
+        str(prefix): name
+        for prefix, name in db.execute(
+            select(
+                func.substr(AdministrativeUnit.psgc_code, 1, 2),
+                AdministrativeUnit.name,
+            ).where(AdministrativeUnit.geographic_level == "region")
+        ).all()
+    }
+    source_rows: list[SourceCoverageRow] = []
+    dataset_rows = db.execute(
+        select(Dataset, Agency, PublicationGate)
+        .join(Agency, Dataset.agency_id == Agency.id)
+        .outerjoin(PublicationGate, PublicationGate.dataset_id == Dataset.id)
+        .order_by(Agency.short_code, Dataset.slug)
+    ).all()
+    releases = db.scalars(select(Release).order_by(Release.retrieved_at.desc())).all()
+    latest: dict[uuid.UUID, Release] = {}
+    for release in releases:
+        latest.setdefault(release.dataset_id, release)
+    for dataset, agency, _gate in dataset_rows:
+        release = latest.get(dataset.id)
+        source_rows.append(
+            SourceCoverageRow(
+                dataset_slug=dataset.slug,
+                dataset_name=dataset.name,
+                agency_code=agency.short_code,
+                coverage_scope=dataset.coverage_scope or "UNKNOWN_COVERAGE",
+                coverage_note=dataset.coverage_note,
+                latest_release_label=release.source_release_label if release else None,
+                source_published_at=release.source_published_at if release else None,
+                reference_period_end=release.reference_period_end if release else None,
+                retrieved_at=release.retrieved_at if release else None,
+                row_count_parsed=release.row_count_parsed if release else None,
+                publication_status=dataset.publication_status,
+            )
+        )
+    registry_total = db.scalar(select(func.count()).select_from(Facility)) or 0
+    payload = CoverageOut(
+        as_of=datetime.now(UTC),
+        registry_records=registry_total,
+        published_records=len(facilities),
+        by_inclusion_class=rows_for(
+            "inclusion_class", PUBLIC_INCLUSION_CLASSES, INCLUSION_CLASS_LABELS
+        ),
+        by_category=rows_for("facility_type", FACILITY_CATEGORIES, CATEGORY_LABELS),
+        by_ownership_type=rows_for("ownership_type", OWNERSHIP_TYPES),
+        by_access_class=rows_for("public_access_class", ACCESS_CLASSES),
+        by_region=[
+            CoverageRow(
+                key=prefix,
+                label=region_names.get(prefix) or prefix,
+                facility_count=count,
+                published_count=count,
+                with_coordinates=region_coordinate_counts.get(prefix, 0),
+            )
+            for prefix, count in region_counts.most_common()
+        ],
+        source_coverage=source_rows,
+        caveats=[
+            (
+                "Registry totals include internal discovery candidates, but their records "
+                "are not exposed. Published counts include only rights-cleared sources."
+            ),
+            (
+                "Source coverage scope describes the source, not proof of national "
+                "completeness. Missing records do not prove a facility does not exist."
+            ),
+        ],
+    )
+    return conditional_json(request, payload.model_dump(mode="json"), max_age=120)
 
 
 @router.get("/changes", response_model=ChangeListResponse, summary="Canonical change feed")

@@ -31,7 +31,7 @@ RETRYABLE_STATUS = {408, 425, 429, 500, 502, 503, 504}
 BLOCKER_MARKERS = (
     "just a moment",
     "cf-chl-",
-    "cloudflare",
+    "cloudflare ray id",
     "captcha",
     "access denied",
     "attention required",

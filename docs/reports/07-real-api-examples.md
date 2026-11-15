@@ -4,7 +4,7 @@
 **API:** `http://127.0.0.1:8010`  
 **Source of truth:** a live response from the running PhilFacilities API.
 
-This report is a point-in-time snapshot. It does not claim nationwide coverage, completeness, or a legal review. Counts come from the response body, which only includes records that passed the publication gate.
+This report is a point-in-time snapshot. It does not claim nationwide coverage, completeness, or a legal review. Counts come from the response body, which only includes records that passed the publication gate. Current publication policy is in [`docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`](../14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md); a captured example may predate a registry decision or a re-ingestion.
 
 ## Service health
 

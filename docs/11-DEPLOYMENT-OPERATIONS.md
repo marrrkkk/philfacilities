@@ -107,7 +107,7 @@ production scheduler has been observed. See the
 - rate-limit events;
 - 5xx and 429 rates.
 
-A local baseline against the real database is available from `scripts/api_benchmark.py` (`just benchmark-api`). Use it to detect obvious regressions before deployment; it is not a production load test. The current statistics and facility-list latency are too high for launch; see the measured table in [`docs/10-QUALITY-TESTING.md`](10-QUALITY-TESTING.md). Bulk exports of 83,769 rows take roughly 100 seconds locally, so production should pre-generate or cache them.
+A local baseline against the real database is available from `scripts/api_benchmark.py` (`just benchmark-api`). Use it to detect obvious regressions before deployment; it is not a production load test. The current statistics and facility-list latency are too high for launch; see the measured table in [`docs/10-QUALITY-TESTING.md`](10-QUALITY-TESTING.md). Bulk exports of the earlier 83,769-row public set took roughly 100 seconds locally, so production should pre-generate or cache them.
 
 ### ETL
 

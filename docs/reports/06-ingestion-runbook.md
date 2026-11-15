@@ -34,7 +34,7 @@ uv run philfacilities-ingest --help
 | `load-philhealth [--file NAME] [--reprocess]` | Acquire every current PhilHealth provider-category PDF, or named files, and ingest them. `--reprocess` reparses an already-published release after an explicit parser repair. | Yes, if the source gate permits |
 | `load-osm [--domain health\|education]` | Acquire HOT/OSM GeoParquet extracts and ingest named features. | Yes, if the source gate permits |
 | `load-population [--dataset ID]` | Acquire saved PSA 2024 Census population snapshots from BetterGov and store statistical observations. | Yes, observations are published with attribution |
-| `load-deped-ebeis [--region ncr]` | Acquire a public EBEIS result set and store it `internal_only`. | No |
+| `load-deped-ebeis [--region ncr]` | Acquire a public EBEIS result set and apply the registry publication decision; school-head names stay private. | Per the dataset's recorded decision |
 | `purge-synthetic` | Remove synthetic demonstration records and their derived rows. | Removes synthetic rows only |
 | `load-real` | Run the documented real-data sequence end to end. | Yes, subject to gates |
 | `status` | Show current database counts and source status. | No |
@@ -130,9 +130,9 @@ uv run philfacilities-ingest load-deped-ebeis --region ncr
 
 - Fetches the public EBEIS result set for a verified region key.
 - Stores the aggregated HTML payload and normalizes school rows.
-- The result set includes school-head personal names and has no explicit reuse licence.
-- The dataset is `restricted_non_redistributable` / `internal_only`. Public endpoints, downloads, source evidence, and statistics exclude it.
-- Do not add the adapter output to a public export without a documented rights change and a privacy review.
+- The result set includes school-head personal names; those names stay private and are not published.
+- The current source release is `published` for institution-level fields under `approved_with_attribution`. Canonical facility rows remain `internal` pending field-level mapping and privacy review.
+- Do not add personal fields to a public export without a field-level privacy review.
 
 The official DepEd Machine-Ready Files remain blocked by an HTTP 403 / human terms flow. No official enrollment, facilities, personnel, ICT, or WASH file has been acquired.
 

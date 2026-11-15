@@ -2,7 +2,13 @@ import Link from "next/link";
 import { ArrowUpRight, MapPin } from "lucide-react";
 
 import type { FacilitySummary } from "@/lib/api";
-import { formatDateTime, PRECISION_LABELS, titleCase } from "@/lib/format";
+import {
+  ACCESS_LABELS,
+  formatDateTime,
+  INCLUSION_CLASS_LABELS,
+  PRECISION_LABELS,
+  titleCase,
+} from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 
 export function FacilityCard({ facility }: { facility: FacilitySummary }) {
@@ -14,6 +20,15 @@ export function FacilityCard({ facility }: { facility: FacilitySummary }) {
 
   const latitude = facility.location.latitude;
   const longitude = facility.location.longitude;
+  const categoryLabel =
+    facility.facility_type === "school"
+      ? "School"
+      : facility.facility_type === "health_facility"
+        ? "Health facility"
+        : titleCase(facility.facility_type);
+  const inclusionLabel =
+    INCLUSION_CLASS_LABELS[facility.inclusion_class] ?? titleCase(facility.inclusion_class);
+  const accessLabel = ACCESS_LABELS[facility.public_access_class];
 
   return (
     <article className="group border-b border-[#d1d8e6] bg-white">
@@ -21,14 +36,23 @@ export function FacilityCard({ facility }: { facility: FacilitySummary }) {
         <div className="min-w-0">
           <div className="mb-2 flex flex-wrap gap-1.5">
             <Badge tone={facility.facility_type === "school" ? "default" : "outline"}>
-              {facility.facility_type === "school" ? "School" : "Health facility"}
+              {categoryLabel}
             </Badge>
             {facility.facility_subtype ? (
               <Badge tone="muted">{facility.facility_subtype}</Badge>
             ) : null}
-            <Badge tone="muted">{titleCase(facility.ownership)}</Badge>
+            <Badge tone={facility.inclusion_class === "GOVERNMENT_FACILITY" ? "default" : "outline"}>
+              {inclusionLabel}
+            </Badge>
+            <Badge tone="muted">{titleCase(facility.ownership_type)}</Badge>
+            {accessLabel ? <Badge tone="outline">{accessLabel}</Badge> : null}
             {facility.is_synthetic ? <Badge tone="sun">Synthetic demo</Badge> : null}
           </div>
+          {(facility.functions ?? []).length > 0 ? (
+            <p className="mb-2 font-ui text-xs font-semibold uppercase tracking-wide text-[#5a5a58]">
+              {(facility.functions ?? []).map((value) => titleCase(value)).join(" · ")}
+            </p>
+          ) : null}
           <h3 className="font-display text-2xl font-bold leading-tight">
             <Link
               href={`/facilities/${facility.slug ?? facility.id}`}

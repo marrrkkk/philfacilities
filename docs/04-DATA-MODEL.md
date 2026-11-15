@@ -52,7 +52,7 @@ Do not store `is_operational=true` by default. Operational status is separate, s
 
 `id`, `agency_id`, `name`, `description`, `source_url`, `access_method`, `terms_url`, `license_identifier`, `redistribution_status`, `update_pattern`, `schema_version`, `is_public_source`, `created_at`.
 
-Use explicit `redistribution_status` values such as `unknown`, `restricted`, `permission_required`, `allowed_with_conditions`, `allowed`, and `not_applicable`.
+Use the canonical `redistribution_status` values from `apps/api/philfacilities_api/rights.py`: `unknown`, `review_required`, `approved_public_redistribution`, `approved_with_attribution`, `publicly_available_verified`, `restricted_non_redistributable`, `denied`, and `expired`. The first three public-compatible states are `approved_public_redistribution`, `approved_with_attribution`, and `publicly_available_verified`; publication still requires an approved or published release gate. `publicly_available_verified` means the exact release is verified and publicly available, no explicit prohibition was found, only reviewed institutional fields are published, and provenance, attribution, and a takedown route are recorded. See `docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`.
 
 ### `source.releases`
 
@@ -212,7 +212,7 @@ the surviving facility; the retired facility stays as an internal `merged` tombs
 
 ## 10. Retention and deletion
 
-- Retain source releases only as permitted by source terms.
+- Retain source releases only as permitted by source terms, agreements, and the inclusion/publication policy.
 - If raw file retention is restricted, store only allowed metadata/checksum and document that the source must be reacquired.
-- Support source takedown and correction workflows.
+- Support source takedown and correction workflows, including the process in `docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`.
 - Retain audit trail for deletions where legally appropriate without retaining prohibited personal information.

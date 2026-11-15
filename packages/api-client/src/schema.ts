@@ -548,6 +548,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/coverage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Registry coverage by class and source */
+        get: operations["coverage_v1_coverage_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/changes": {
         parameters: {
             query?: never;
@@ -715,7 +732,7 @@ export interface components {
              * Facility Type
              * @enum {string}
              */
-            facility_type: "school" | "health_facility";
+            facility_type: "school" | "health_facility" | "government_office" | "community_facility" | "emergency_facility" | "library" | "museum" | "social_welfare_facility" | "public_market" | "transport_facility" | "utility_facility" | "environmental_monitoring" | "public_space" | "cultural_facility" | "agricultural_facility" | "justice_facility" | "housing_service" | "other_qualifying_facility";
             /**
              * Is Synthetic
              * @default false
@@ -844,6 +861,48 @@ export interface components {
              */
             has_more: boolean;
         };
+        /** CoverageOut */
+        CoverageOut: {
+            /**
+             * As Of
+             * Format: date-time
+             */
+            as_of: string;
+            /** Registry Records */
+            registry_records: number;
+            /** Published Records */
+            published_records: number;
+            /** By Inclusion Class */
+            by_inclusion_class: components["schemas"]["CoverageRow"][];
+            /** By Category */
+            by_category: components["schemas"]["CoverageRow"][];
+            /** By Ownership Type */
+            by_ownership_type: components["schemas"]["CoverageRow"][];
+            /** By Access Class */
+            by_access_class: components["schemas"]["CoverageRow"][];
+            /** By Region */
+            by_region: components["schemas"]["CoverageRow"][];
+            /** Source Coverage */
+            source_coverage: components["schemas"]["SourceCoverageRow"][];
+            /** Caveats */
+            caveats?: string[];
+        };
+        /** CoverageRow */
+        CoverageRow: {
+            /** Key */
+            key: string;
+            /** Label */
+            label?: string | null;
+            /** Facility Count */
+            facility_count: number;
+            /** Published Count */
+            published_count: number;
+            /**
+             * With Coordinates
+             * @default 0
+             */
+            with_coordinates: number;
+        };
         /** DatasetOut */
         DatasetOut: {
             /**
@@ -882,6 +941,10 @@ export interface components {
              * @default blocked
              */
             publication_status: string;
+            /** Coverage Scope */
+            coverage_scope?: ("NATIONAL_OFFICIAL_INVENTORY" | "NATIONAL_PARTIAL" | "REGIONAL" | "PARTICIPATING_LGUS" | "SELECTED_LGUS" | "SINGLE_LGU" | "DIRECTORY_SUBSET" | "DISCOVERY_LAYER" | "UNKNOWN_COVERAGE") | null;
+            /** Coverage Note */
+            coverage_note?: string | null;
             /** Update Pattern */
             update_pattern?: string | null;
             /** Schema Version */
@@ -928,14 +991,43 @@ export interface components {
              * Facility Type
              * @enum {string}
              */
-            facility_type: "school" | "health_facility";
+            facility_type: "school" | "health_facility" | "government_office" | "community_facility" | "emergency_facility" | "library" | "museum" | "social_welfare_facility" | "public_market" | "transport_facility" | "utility_facility" | "environmental_monitoring" | "public_space" | "cultural_facility" | "agricultural_facility" | "justice_facility" | "housing_service" | "other_qualifying_facility";
             /** Facility Subtype */
             facility_subtype?: string | null;
+            /**
+             * Facility Kind
+             * @default facility
+             * @enum {string}
+             */
+            facility_kind: "facility" | "site" | "building" | "facility_unit" | "infrastructure_asset" | "project";
+            /**
+             * Inclusion Class
+             * @enum {string}
+             */
+            inclusion_class: "GOVERNMENT_FACILITY" | "PRIVATE_PUBLIC_SERVICE_PROVIDER" | "PUBLIC_ACCESS_VENUE" | "DISCOVERY_CANDIDATE";
             /**
              * Ownership
              * @enum {string}
              */
             ownership: "government" | "private" | "unknown";
+            /**
+             * Ownership Type
+             * @default UNKNOWN
+             * @enum {string}
+             */
+            ownership_type: "NATIONAL_GOVERNMENT" | "LOCAL_GOVERNMENT" | "GOCC" | "PUBLIC_EDUCATIONAL_INSTITUTION" | "OTHER_PUBLIC_BODY" | "GOVERNMENT_UNSPECIFIED" | "PRIVATE_CORPORATE" | "PRIVATE_INDIVIDUAL_OR_PARTNERSHIP" | "NGO_NON_PROFIT" | "COOPERATIVE" | "RELIGIOUS_FAITH_BASED" | "PUBLIC_PRIVATE_JOINT" | "PRIVATE_UNSPECIFIED" | "UNKNOWN";
+            /**
+             * Operator Type
+             * @default UNKNOWN
+             * @enum {string}
+             */
+            operator_type: "NATIONAL_GOVERNMENT" | "LOCAL_GOVERNMENT" | "GOCC" | "PUBLIC_EDUCATIONAL_INSTITUTION" | "OTHER_PUBLIC_BODY" | "GOVERNMENT_UNSPECIFIED" | "PRIVATE_CORPORATE" | "PRIVATE_INDIVIDUAL_OR_PARTNERSHIP" | "NGO_NON_PROFIT" | "COOPERATIVE" | "RELIGIOUS_FAITH_BASED" | "PUBLIC_PRIVATE_JOINT" | "PRIVATE_UNSPECIFIED" | "UNKNOWN";
+            /**
+             * Public Access Class
+             * @default UNKNOWN
+             * @enum {string}
+             */
+            public_access_class: "PUBLIC_FREE" | "PUBLIC_PAID_OR_CONDITIONAL" | "SERVICE_USERS_ONLY" | "APPOINTMENT_ONLY" | "MEMBERS_STUDENTS_ONLY" | "STAFF_ONLY" | "RESTRICTED" | "UNKNOWN";
             /**
              * Record Status
              * @enum {string}
@@ -948,6 +1040,8 @@ export interface components {
              * @default false
              */
             is_synthetic: boolean;
+            /** Functions */
+            functions?: string[];
             location: components["schemas"]["LocationOut"];
             geography: components["schemas"]["GeographyOut"];
             /**
@@ -962,10 +1056,20 @@ export interface components {
             updated_at: string;
             /** Official Name */
             official_name?: string | null;
+            /** Access Conditions */
+            access_conditions?: string | null;
             school?: components["schemas"]["SchoolProfileOut"] | null;
             health?: components["schemas"]["HealthProfileOut"] | null;
             /** Accreditations */
             accreditations?: components["schemas"]["AccreditationOut"][];
+            /** Function Details */
+            function_details?: components["schemas"]["FacilityFunctionOut"][];
+            /** Services */
+            services?: components["schemas"]["FacilityServiceOut"][];
+            /** Roles */
+            roles?: components["schemas"]["FacilityRoleOut"][];
+            /** Relationships */
+            relationships?: components["schemas"]["FacilityRelationshipOut"][];
             /** Sources */
             sources?: components["schemas"]["SourceEvidence"][];
             quality: components["schemas"]["FacilityQuality"];
@@ -974,6 +1078,25 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** FacilityFunctionOut */
+        FacilityFunctionOut: {
+            /** Function Code */
+            function_code: string;
+            /** Source Value */
+            source_value?: string | null;
+            /** Source Record Id */
+            source_record_id?: string | null;
+            /** Valid From */
+            valid_from?: string | null;
+            /** Valid To */
+            valid_to?: string | null;
+            /** Capacity Value */
+            capacity_value?: number | null;
+            /** Capacity Unit */
+            capacity_unit?: string | null;
+            /** Designation Status */
+            designation_status?: string | null;
         };
         /** FacilityListResponse */
         FacilityListResponse: {
@@ -1026,6 +1149,54 @@ export interface components {
              */
             source_count: number;
         };
+        /** FacilityRelationshipOut */
+        FacilityRelationshipOut: {
+            /** Relationship Type */
+            relationship_type: string;
+            /**
+             * Related Facility Id
+             * Format: uuid
+             */
+            related_facility_id: string;
+            /** Related Facility Name */
+            related_facility_name?: string | null;
+            /** Related Facility Slug */
+            related_facility_slug?: string | null;
+        };
+        /** FacilityRoleOut */
+        FacilityRoleOut: {
+            /** Role Type */
+            role_type: string;
+            /** Entity Name */
+            entity_name: string;
+            /** Entity Type */
+            entity_type?: string | null;
+            /** Source Record Id */
+            source_record_id?: string | null;
+            /** Valid From */
+            valid_from?: string | null;
+            /** Valid To */
+            valid_to?: string | null;
+            /** Evidence */
+            evidence?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /** FacilityServiceOut */
+        FacilityServiceOut: {
+            /** Service Code */
+            service_code: string;
+            /** Service Name */
+            service_name?: string | null;
+            /** Source Field */
+            source_field?: string | null;
+            /** Source Record Id */
+            source_record_id?: string | null;
+            /** Valid From */
+            valid_from?: string | null;
+            /** Valid To */
+            valid_to?: string | null;
+        };
         /** FacilitySummary */
         FacilitySummary: {
             /**
@@ -1041,14 +1212,43 @@ export interface components {
              * Facility Type
              * @enum {string}
              */
-            facility_type: "school" | "health_facility";
+            facility_type: "school" | "health_facility" | "government_office" | "community_facility" | "emergency_facility" | "library" | "museum" | "social_welfare_facility" | "public_market" | "transport_facility" | "utility_facility" | "environmental_monitoring" | "public_space" | "cultural_facility" | "agricultural_facility" | "justice_facility" | "housing_service" | "other_qualifying_facility";
             /** Facility Subtype */
             facility_subtype?: string | null;
+            /**
+             * Facility Kind
+             * @default facility
+             * @enum {string}
+             */
+            facility_kind: "facility" | "site" | "building" | "facility_unit" | "infrastructure_asset" | "project";
+            /**
+             * Inclusion Class
+             * @enum {string}
+             */
+            inclusion_class: "GOVERNMENT_FACILITY" | "PRIVATE_PUBLIC_SERVICE_PROVIDER" | "PUBLIC_ACCESS_VENUE" | "DISCOVERY_CANDIDATE";
             /**
              * Ownership
              * @enum {string}
              */
             ownership: "government" | "private" | "unknown";
+            /**
+             * Ownership Type
+             * @default UNKNOWN
+             * @enum {string}
+             */
+            ownership_type: "NATIONAL_GOVERNMENT" | "LOCAL_GOVERNMENT" | "GOCC" | "PUBLIC_EDUCATIONAL_INSTITUTION" | "OTHER_PUBLIC_BODY" | "GOVERNMENT_UNSPECIFIED" | "PRIVATE_CORPORATE" | "PRIVATE_INDIVIDUAL_OR_PARTNERSHIP" | "NGO_NON_PROFIT" | "COOPERATIVE" | "RELIGIOUS_FAITH_BASED" | "PUBLIC_PRIVATE_JOINT" | "PRIVATE_UNSPECIFIED" | "UNKNOWN";
+            /**
+             * Operator Type
+             * @default UNKNOWN
+             * @enum {string}
+             */
+            operator_type: "NATIONAL_GOVERNMENT" | "LOCAL_GOVERNMENT" | "GOCC" | "PUBLIC_EDUCATIONAL_INSTITUTION" | "OTHER_PUBLIC_BODY" | "GOVERNMENT_UNSPECIFIED" | "PRIVATE_CORPORATE" | "PRIVATE_INDIVIDUAL_OR_PARTNERSHIP" | "NGO_NON_PROFIT" | "COOPERATIVE" | "RELIGIOUS_FAITH_BASED" | "PUBLIC_PRIVATE_JOINT" | "PRIVATE_UNSPECIFIED" | "UNKNOWN";
+            /**
+             * Public Access Class
+             * @default UNKNOWN
+             * @enum {string}
+             */
+            public_access_class: "PUBLIC_FREE" | "PUBLIC_PAID_OR_CONDITIONAL" | "SERVICE_USERS_ONLY" | "APPOINTMENT_ONLY" | "MEMBERS_STUDENTS_ONLY" | "STAFF_ONLY" | "RESTRICTED" | "UNKNOWN";
             /**
              * Record Status
              * @enum {string}
@@ -1061,6 +1261,8 @@ export interface components {
              * @default false
              */
             is_synthetic: boolean;
+            /** Functions */
+            functions?: string[];
             location: components["schemas"]["LocationOut"];
             geography: components["schemas"]["GeographyOut"];
             /**
@@ -1626,6 +1828,37 @@ export interface components {
             /** Next Check At */
             next_check_at?: string | null;
         };
+        /** SourceCoverageRow */
+        SourceCoverageRow: {
+            /** Dataset Slug */
+            dataset_slug: string;
+            /** Dataset Name */
+            dataset_name: string;
+            /** Agency Code */
+            agency_code: string;
+            /**
+             * Coverage Scope
+             * @default UNKNOWN_COVERAGE
+             */
+            coverage_scope: string;
+            /** Coverage Note */
+            coverage_note?: string | null;
+            /** Latest Release Label */
+            latest_release_label?: string | null;
+            /** Source Published At */
+            source_published_at?: string | null;
+            /** Reference Period End */
+            reference_period_end?: string | null;
+            /** Retrieved At */
+            retrieved_at?: string | null;
+            /** Row Count Parsed */
+            row_count_parsed?: number | null;
+            /**
+             * Publication Status
+             * @default blocked
+             */
+            publication_status: string;
+        };
         /** SourceEvidence */
         SourceEvidence: {
             /**
@@ -1765,6 +1998,22 @@ export interface components {
             by_region: {
                 [key: string]: unknown;
             }[];
+            /** By Inclusion Class */
+            by_inclusion_class?: {
+                [key: string]: number;
+            };
+            /** By Ownership Type */
+            by_ownership_type?: {
+                [key: string]: number;
+            };
+            /** By Category */
+            by_category?: {
+                [key: string]: number;
+            };
+            /** By Access Class */
+            by_access_class?: {
+                [key: string]: number;
+            };
             /** Source Releases */
             source_releases: number;
             /** Caveats */
@@ -1795,8 +2044,15 @@ export interface operations {
     list_facilities_v1_facilities_get: {
         parameters: {
             query?: {
-                type?: ("school" | "health_facility") | null;
+                type?: ("school" | "health_facility" | "government_office" | "community_facility" | "emergency_facility" | "library" | "museum" | "social_welfare_facility" | "public_market" | "transport_facility" | "utility_facility" | "environmental_monitoring" | "public_space" | "cultural_facility" | "agricultural_facility" | "justice_facility" | "housing_service" | "other_qualifying_facility") | null;
+                subtype?: string | null;
+                inclusion_class?: ("GOVERNMENT_FACILITY" | "PRIVATE_PUBLIC_SERVICE_PROVIDER" | "PUBLIC_ACCESS_VENUE" | "DISCOVERY_CANDIDATE") | null;
                 ownership?: ("government" | "private" | "unknown") | null;
+                ownership_type?: ("NATIONAL_GOVERNMENT" | "LOCAL_GOVERNMENT" | "GOCC" | "PUBLIC_EDUCATIONAL_INSTITUTION" | "OTHER_PUBLIC_BODY" | "GOVERNMENT_UNSPECIFIED" | "PRIVATE_CORPORATE" | "PRIVATE_INDIVIDUAL_OR_PARTNERSHIP" | "NGO_NON_PROFIT" | "COOPERATIVE" | "RELIGIOUS_FAITH_BASED" | "PUBLIC_PRIVATE_JOINT" | "PRIVATE_UNSPECIFIED" | "UNKNOWN") | null;
+                operator_type?: ("NATIONAL_GOVERNMENT" | "LOCAL_GOVERNMENT" | "GOCC" | "PUBLIC_EDUCATIONAL_INSTITUTION" | "OTHER_PUBLIC_BODY" | "GOVERNMENT_UNSPECIFIED" | "PRIVATE_CORPORATE" | "PRIVATE_INDIVIDUAL_OR_PARTNERSHIP" | "NGO_NON_PROFIT" | "COOPERATIVE" | "RELIGIOUS_FAITH_BASED" | "PUBLIC_PRIVATE_JOINT" | "PRIVATE_UNSPECIFIED" | "UNKNOWN") | null;
+                public_access_class?: ("PUBLIC_FREE" | "PUBLIC_PAID_OR_CONDITIONAL" | "SERVICE_USERS_ONLY" | "APPOINTMENT_ONLY" | "MEMBERS_STUDENTS_ONLY" | "STAFF_ONLY" | "RESTRICTED" | "UNKNOWN") | null;
+                facility_kind?: ("facility" | "site" | "building" | "facility_unit" | "infrastructure_asset" | "project") | null;
+                function?: string | null;
                 q?: string | null;
                 psgc?: string | null;
                 region_code?: string | null;
@@ -1845,8 +2101,15 @@ export interface operations {
             query: {
                 /** @description min_lon,min_lat,max_lon,max_lat */
                 bbox: string;
-                type?: ("school" | "health_facility") | null;
+                type?: ("school" | "health_facility" | "government_office" | "community_facility" | "emergency_facility" | "library" | "museum" | "social_welfare_facility" | "public_market" | "transport_facility" | "utility_facility" | "environmental_monitoring" | "public_space" | "cultural_facility" | "agricultural_facility" | "justice_facility" | "housing_service" | "other_qualifying_facility") | null;
+                subtype?: string | null;
+                inclusion_class?: ("GOVERNMENT_FACILITY" | "PRIVATE_PUBLIC_SERVICE_PROVIDER" | "PUBLIC_ACCESS_VENUE" | "DISCOVERY_CANDIDATE") | null;
                 ownership?: ("government" | "private" | "unknown") | null;
+                ownership_type?: ("NATIONAL_GOVERNMENT" | "LOCAL_GOVERNMENT" | "GOCC" | "PUBLIC_EDUCATIONAL_INSTITUTION" | "OTHER_PUBLIC_BODY" | "GOVERNMENT_UNSPECIFIED" | "PRIVATE_CORPORATE" | "PRIVATE_INDIVIDUAL_OR_PARTNERSHIP" | "NGO_NON_PROFIT" | "COOPERATIVE" | "RELIGIOUS_FAITH_BASED" | "PUBLIC_PRIVATE_JOINT" | "PRIVATE_UNSPECIFIED" | "UNKNOWN") | null;
+                operator_type?: ("NATIONAL_GOVERNMENT" | "LOCAL_GOVERNMENT" | "GOCC" | "PUBLIC_EDUCATIONAL_INSTITUTION" | "OTHER_PUBLIC_BODY" | "GOVERNMENT_UNSPECIFIED" | "PRIVATE_CORPORATE" | "PRIVATE_INDIVIDUAL_OR_PARTNERSHIP" | "NGO_NON_PROFIT" | "COOPERATIVE" | "RELIGIOUS_FAITH_BASED" | "PUBLIC_PRIVATE_JOINT" | "PRIVATE_UNSPECIFIED" | "UNKNOWN") | null;
+                public_access_class?: ("PUBLIC_FREE" | "PUBLIC_PAID_OR_CONDITIONAL" | "SERVICE_USERS_ONLY" | "APPOINTMENT_ONLY" | "MEMBERS_STUDENTS_ONLY" | "STAFF_ONLY" | "RESTRICTED" | "UNKNOWN") | null;
+                facility_kind?: ("facility" | "site" | "building" | "facility_unit" | "infrastructure_asset" | "project") | null;
+                function?: string | null;
                 q?: string | null;
                 psgc?: string | null;
                 region_code?: string | null;
@@ -1892,8 +2155,15 @@ export interface operations {
                 lat: number;
                 lon: number;
                 radius_m?: number;
-                type?: ("school" | "health_facility") | null;
+                type?: ("school" | "health_facility" | "government_office" | "community_facility" | "emergency_facility" | "library" | "museum" | "social_welfare_facility" | "public_market" | "transport_facility" | "utility_facility" | "environmental_monitoring" | "public_space" | "cultural_facility" | "agricultural_facility" | "justice_facility" | "housing_service" | "other_qualifying_facility") | null;
+                subtype?: string | null;
+                inclusion_class?: ("GOVERNMENT_FACILITY" | "PRIVATE_PUBLIC_SERVICE_PROVIDER" | "PUBLIC_ACCESS_VENUE" | "DISCOVERY_CANDIDATE") | null;
                 ownership?: ("government" | "private" | "unknown") | null;
+                ownership_type?: ("NATIONAL_GOVERNMENT" | "LOCAL_GOVERNMENT" | "GOCC" | "PUBLIC_EDUCATIONAL_INSTITUTION" | "OTHER_PUBLIC_BODY" | "GOVERNMENT_UNSPECIFIED" | "PRIVATE_CORPORATE" | "PRIVATE_INDIVIDUAL_OR_PARTNERSHIP" | "NGO_NON_PROFIT" | "COOPERATIVE" | "RELIGIOUS_FAITH_BASED" | "PUBLIC_PRIVATE_JOINT" | "PRIVATE_UNSPECIFIED" | "UNKNOWN") | null;
+                operator_type?: ("NATIONAL_GOVERNMENT" | "LOCAL_GOVERNMENT" | "GOCC" | "PUBLIC_EDUCATIONAL_INSTITUTION" | "OTHER_PUBLIC_BODY" | "GOVERNMENT_UNSPECIFIED" | "PRIVATE_CORPORATE" | "PRIVATE_INDIVIDUAL_OR_PARTNERSHIP" | "NGO_NON_PROFIT" | "COOPERATIVE" | "RELIGIOUS_FAITH_BASED" | "PUBLIC_PRIVATE_JOINT" | "PRIVATE_UNSPECIFIED" | "UNKNOWN") | null;
+                public_access_class?: ("PUBLIC_FREE" | "PUBLIC_PAID_OR_CONDITIONAL" | "SERVICE_USERS_ONLY" | "APPOINTMENT_ONLY" | "MEMBERS_STUDENTS_ONLY" | "STAFF_ONLY" | "RESTRICTED" | "UNKNOWN") | null;
+                facility_kind?: ("facility" | "site" | "building" | "facility_unit" | "infrastructure_asset" | "project") | null;
+                function?: string | null;
                 q?: string | null;
                 psgc?: string | null;
                 region_code?: string | null;
@@ -2843,6 +3113,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StatisticsOut"];
+                };
+            };
+        };
+    };
+    coverage_v1_coverage_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoverageOut"];
                 };
             };
         };

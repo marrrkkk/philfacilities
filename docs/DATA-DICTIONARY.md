@@ -2,7 +2,7 @@
 
 **Version:** 1.1 — 15 November 2026  
 **API contract:** OpenAPI 3 at `/openapi.json`; interactive docs at `/docs`  
-**Publication status:** real, rights-cleared records are published for PhilHealth accreditations,
+**Publication status:** real records with a recorded publication decision are published for PhilHealth accreditations,
 HOT/OSM health and education features, the BetterGov PSGC Q2 2024 mirror, and PSA 2024 Census
 population snapshots obtained through BetterGov. Official PSA PSGC, DepEd Machine-Ready Files, DOH
 NHFR/HFSRB, CHED, and TESDA data remain blocked or internal-only. The working database contains
@@ -128,14 +128,17 @@ Release fields add:
 | `restricted_non_redistributable` | Redistribution is prohibited or unresolved |
 | `approved_public_redistribution` | Terms permit the recorded public redistribution scope |
 | `approved_with_attribution` | Publication is allowed with the recorded attribution and conditions |
+| `publicly_available_verified` | Exact release verified and publicly available; no explicit prohibition found; reviewed institutional fields only, with provenance, attribution, and takedown-on-notice |
 | `denied` | A rights holder refused the recorded use |
 | `expired` | A previously recorded permission has expired |
 
 Legacy spellings (`allowed`, `allowed_with_conditions`, `permission_required`, `restricted`, and
 `not_applicable`) are accepted by the shared vocabulary for older fixtures, but current datasets use
-the states above. A download endpoint returns only public facilities linked to a source release
-whose rights and publication states permit redistribution. The existence of an API endpoint is not
-a grant of data rights.
+the states above. `publicly_available_verified` is a public-compatible state under
+[`14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`](14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md); it
+does not claim public domain and does not bypass the release publication gate. A download endpoint
+returns only public facilities linked to a source release whose rights and publication states permit
+redistribution. The existence of an API endpoint is not a grant of data rights.
 
 ### Current published and excluded sources
 
@@ -146,8 +149,14 @@ a grant of data rights.
 | HOT/OSM education facilities | `approved_with_attribution` / `published` | 52,824 linked facilities. Crowd-sourced; not a DepEd masterlist |
 | BetterGov PSGC Q2 2024 mirror | `approved_with_attribution` / `published` | 43,760 units; supplementary snapshot, not the latest official PSA release |
 | PSA 2024 Census population via BetterGov | `approved_with_attribution` / `published` | 134,748 observations across 18 regional releases |
-| DepEd EBEIS NCR | `restricted_non_redistributable` / `internal_only` | 5,055 records retained privately; contains school-head names and has no explicit reuse licence |
-| Official PSA PSGC, DepEd Machine-Ready Files, DOH NHFR/HFSRB, CHED, TESDA | `review_required` / `blocked` | No publication until access and reuse evidence exists |
+| DepEd EBEIS NCR | `approved_with_attribution` / source release `published`; canonical rows `internal` | 5,055 records. Current release published for institution-level fields with attribution; school-head names withheld. Canonical rows await field-level mapping/privacy review. |
+| NLP public libraries | `approved_with_attribution` / `published` | 1,752 institution-level rows; personal librarian contacts withheld |
+| NMP museums | `approved_with_attribution` / `published` | NMP-run regional, area, and site museums; directory subset |
+| BIR RDOs | `approved_with_attribution` / `published` | RAO 006-2025; 128 RDO rows and 19 region headings; local OCR |
+| PHLPost locator | `approved_with_attribution` / `published` | 1,272 factual locator facilities; copyright notice recorded; earlier release retained internally |
+| DSWD CRCF | `approved_with_attribution` / `published` | 76 institutional facilities; no coordinates or operational status inferred |
+| NMIS NARIS | `approved_with_attribution` / `published` | 357 accredited establishments; factual fields only; many operators private |
+| Official PSA PSGC, DepEd Machine-Ready Files, DOH NHFR/HFSRB, CHED, TESDA | `review_required` / `blocked` | No publication until a verified release and a recorded publication decision exist |
 
 ## 5. Identity matching and the review queue
 
@@ -228,8 +237,9 @@ as `false`. Enrollment observations remain separate rows so historical years are
 The currently published school facilities come from the HOT/OSM education extract. They are
 crowd-sourced map features, not DepEd records: `deped_school_id`, `sector`, `school_management`, and
 the offering flags are normally null, and enrollment/resources endpoints return an empty list unless
-a public observation exists. The DepEd EBEIS NCR records are `internal_only` and never appear in
-these responses. Do not interpret an OSM school as an official DepEd school.
+a public observation exists. The canonical DepEd EBEIS NCR rows remain `internal` and never appear in
+these responses; their current source release is published only for institution-level fields. Do not
+interpret an OSM school as an official DepEd school.
 
 ## 8. Health domain
 
@@ -301,8 +311,8 @@ History is append-oriented. A correction creates a new event; it does not rewrit
 ## 12. Caveats
 
 - Coverage counts describe processed source records, not the real-world facility universe. Of
-  88,824 canonical facilities, 83,769 are public, 5,055 DepEd EBEIS records are internal-only, and
-  70,223 public facilities have coordinates. None of these counts establishes nationwide
+  92,422 canonical facilities, 61,806 are public, 30,616 are non-public (including the 5,055
+  DepEd EBEIS rows), and 44,751 public facilities have coordinates. None of these counts establishes nationwide
   completeness.
 - OSM/HOT facilities are crowd-sourced map features, not official DepEd or DOH registries. Their
   coordinates are bounding-box centres (`map_geocoded`) and their operational status is unknown.

@@ -40,6 +40,7 @@ REQUIRED_PATHS = {
     "/v1/quality/match-candidates/{candidate_id}",
     "/v1/changes",
     "/v1/statistics",
+    "/v1/coverage",
     "/v1/downloads/facilities.csv",
     "/v1/downloads/facilities.parquet",
     "/v1/downloads/schools.csv",

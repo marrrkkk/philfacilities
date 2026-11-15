@@ -6,8 +6,79 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-FacilityType = Literal["school", "health_facility"]
+FacilityType = Literal[
+    "school",
+    "health_facility",
+    "government_office",
+    "community_facility",
+    "emergency_facility",
+    "library",
+    "museum",
+    "social_welfare_facility",
+    "public_market",
+    "transport_facility",
+    "utility_facility",
+    "environmental_monitoring",
+    "public_space",
+    "cultural_facility",
+    "agricultural_facility",
+    "justice_facility",
+    "housing_service",
+    "other_qualifying_facility",
+]
+InclusionClass = Literal[
+    "GOVERNMENT_FACILITY",
+    "PRIVATE_PUBLIC_SERVICE_PROVIDER",
+    "PUBLIC_ACCESS_VENUE",
+    "DISCOVERY_CANDIDATE",
+]
 Ownership = Literal["government", "private", "unknown"]
+OwnershipType = Literal[
+    "NATIONAL_GOVERNMENT",
+    "LOCAL_GOVERNMENT",
+    "GOCC",
+    "PUBLIC_EDUCATIONAL_INSTITUTION",
+    "OTHER_PUBLIC_BODY",
+    "GOVERNMENT_UNSPECIFIED",
+    "PRIVATE_CORPORATE",
+    "PRIVATE_INDIVIDUAL_OR_PARTNERSHIP",
+    "NGO_NON_PROFIT",
+    "COOPERATIVE",
+    "RELIGIOUS_FAITH_BASED",
+    "PUBLIC_PRIVATE_JOINT",
+    "PRIVATE_UNSPECIFIED",
+    "UNKNOWN",
+]
+OperatorType = OwnershipType
+AccessClass = Literal[
+    "PUBLIC_FREE",
+    "PUBLIC_PAID_OR_CONDITIONAL",
+    "SERVICE_USERS_ONLY",
+    "APPOINTMENT_ONLY",
+    "MEMBERS_STUDENTS_ONLY",
+    "STAFF_ONLY",
+    "RESTRICTED",
+    "UNKNOWN",
+]
+FacilityKind = Literal[
+    "facility",
+    "site",
+    "building",
+    "facility_unit",
+    "infrastructure_asset",
+    "project",
+]
+CoverageScope = Literal[
+    "NATIONAL_OFFICIAL_INVENTORY",
+    "NATIONAL_PARTIAL",
+    "REGIONAL",
+    "PARTICIPATING_LGUS",
+    "SELECTED_LGUS",
+    "SINGLE_LGU",
+    "DIRECTORY_SUBSET",
+    "DISCOVERY_LAYER",
+    "UNKNOWN_COVERAGE",
+]
 RecordStatus = Literal[
     "active_in_registry", "inactive_in_registry", "unknown", "under_review", "merged"
 ]
@@ -170,16 +241,59 @@ class AccreditationListResponse(BaseModel):
     offset: int
 
 
+class FacilityFunctionOut(BaseModel):
+    function_code: str
+    source_value: str | None = None
+    source_record_id: uuid.UUID | None = None
+    valid_from: date | None = None
+    valid_to: date | None = None
+    capacity_value: float | None = None
+    capacity_unit: str | None = None
+    designation_status: str | None = None
+
+
+class FacilityServiceOut(BaseModel):
+    service_code: str
+    service_name: str | None = None
+    source_field: str | None = None
+    source_record_id: uuid.UUID | None = None
+    valid_from: date | None = None
+    valid_to: date | None = None
+
+
+class FacilityRoleOut(BaseModel):
+    role_type: str
+    entity_name: str
+    entity_type: str | None = None
+    source_record_id: uuid.UUID | None = None
+    valid_from: date | None = None
+    valid_to: date | None = None
+    evidence: dict[str, Any] | None = None
+
+
+class FacilityRelationshipOut(BaseModel):
+    relationship_type: str
+    related_facility_id: uuid.UUID
+    related_facility_name: str | None = None
+    related_facility_slug: str | None = None
+
+
 class FacilitySummary(BaseModel):
     id: uuid.UUID
     slug: str | None = None
     display_name: str
     facility_type: FacilityType
     facility_subtype: str | None = None
+    facility_kind: FacilityKind = "facility"
+    inclusion_class: InclusionClass
     ownership: Ownership
+    ownership_type: OwnershipType = "UNKNOWN"
+    operator_type: OperatorType = "UNKNOWN"
+    public_access_class: AccessClass = "UNKNOWN"
     record_status: RecordStatus
     publication_status: str
     is_synthetic: bool = False
+    functions: list[str] = Field(default_factory=list)
     location: LocationOut
     geography: GeographyOut
     source_count: int = 0
@@ -188,9 +302,14 @@ class FacilitySummary(BaseModel):
 
 class FacilityDetail(FacilitySummary):
     official_name: str | None = None
+    access_conditions: str | None = None
     school: SchoolProfileOut | None = None
     health: HealthProfileOut | None = None
     accreditations: list[AccreditationOut] = Field(default_factory=list)
+    function_details: list[FacilityFunctionOut] = Field(default_factory=list)
+    services: list[FacilityServiceOut] = Field(default_factory=list)
+    roles: list[FacilityRoleOut] = Field(default_factory=list)
+    relationships: list[FacilityRelationshipOut] = Field(default_factory=list)
     sources: list[SourceEvidence] = Field(default_factory=list)
     quality: FacilityQuality
     created_at: datetime
@@ -305,6 +424,8 @@ class DatasetOut(BaseModel):
     attribution_text: str | None = None
     personal_data_status: str | None = None
     publication_status: str = "blocked"
+    coverage_scope: CoverageScope | None = None
+    coverage_note: str | None = None
     update_pattern: str | None = None
     schema_version: str | None = None
     is_public_source: bool
@@ -460,7 +581,46 @@ class StatisticsOut(BaseModel):
     synthetic: int
     by_precision: dict[str, int]
     by_region: list[dict[str, Any]]
+    by_inclusion_class: dict[str, int] = Field(default_factory=dict)
+    by_ownership_type: dict[str, int] = Field(default_factory=dict)
+    by_category: dict[str, int] = Field(default_factory=dict)
+    by_access_class: dict[str, int] = Field(default_factory=dict)
     source_releases: int
+    caveats: list[str] = Field(default_factory=list)
+
+
+class CoverageRow(BaseModel):
+    key: str
+    label: str | None = None
+    facility_count: int
+    published_count: int
+    with_coordinates: int = 0
+
+
+class SourceCoverageRow(BaseModel):
+    dataset_slug: str
+    dataset_name: str
+    agency_code: str
+    coverage_scope: str = "UNKNOWN_COVERAGE"
+    coverage_note: str | None = None
+    latest_release_label: str | None = None
+    source_published_at: datetime | None = None
+    reference_period_end: date | None = None
+    retrieved_at: datetime | None = None
+    row_count_parsed: int | None = None
+    publication_status: str = "blocked"
+
+
+class CoverageOut(BaseModel):
+    as_of: datetime
+    registry_records: int
+    published_records: int
+    by_inclusion_class: list[CoverageRow]
+    by_category: list[CoverageRow]
+    by_ownership_type: list[CoverageRow]
+    by_access_class: list[CoverageRow]
+    by_region: list[CoverageRow]
+    source_coverage: list[SourceCoverageRow]
     caveats: list[str] = Field(default_factory=list)
 
 

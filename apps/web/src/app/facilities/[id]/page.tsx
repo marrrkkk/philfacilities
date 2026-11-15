@@ -19,9 +19,11 @@ import {
   type SchoolDetailResponse,
 } from "@/lib/api";
 import {
+  ACCESS_LABELS,
   formatDate,
   formatDateTime,
   formatNumber,
+  INCLUSION_CLASS_LABELS,
   isPreciseLocation,
   PRECISION_DESCRIPTIONS,
   PRECISION_LABELS,
@@ -135,10 +137,16 @@ export default async function FacilityPage({ params }: { params: Params }) {
       <header className="border-b border-[#d1d8e6] pb-8">
         <div className="flex flex-wrap gap-1.5">
           <Badge tone={facility.facility_type === "school" ? "default" : "outline"}>
-            {facility.facility_type === "school" ? "School" : "Health facility"}
+            {titleCase(facility.facility_type)}
           </Badge>
           {facility.facility_subtype ? <Badge tone="muted">{facility.facility_subtype}</Badge> : null}
-          <Badge tone="muted">{titleCase(facility.ownership)}</Badge>
+          <Badge tone={facility.inclusion_class === "GOVERNMENT_FACILITY" ? "default" : "outline"}>
+            {INCLUSION_CLASS_LABELS[facility.inclusion_class] ?? titleCase(facility.inclusion_class)}
+          </Badge>
+          <Badge tone="muted">{titleCase(facility.ownership_type)}</Badge>
+          {ACCESS_LABELS[facility.public_access_class] ? (
+            <Badge tone="outline">{ACCESS_LABELS[facility.public_access_class]}</Badge>
+          ) : null}
           {facility.is_synthetic ? <Badge tone="sun">Synthetic demo record</Badge> : null}
         </div>
         <h1 className="mt-3 max-w-4xl font-display text-4xl font-extrabold leading-[1.02] tracking-tight sm:text-5xl">
@@ -170,6 +178,94 @@ export default async function FacilityPage({ params }: { params: Params }) {
 
       <div className="mt-8 grid gap-10 lg:grid-cols-[1fr_20rem]">
         <div className="min-w-0 space-y-10">
+          <Section
+            title="Registry classification"
+            description="Inclusion class, ownership and access are separate facts. A licence, accreditation or public funding does not make a private provider government-owned."
+          >
+            <dl>
+              <DataRow label="Category">{titleCase(facility.facility_type)}</DataRow>
+              <DataRow label="Subtype">
+                {facility.facility_subtype ? titleCase(facility.facility_subtype) : "Not supplied"}
+              </DataRow>
+              <DataRow label="Facility kind">{titleCase(facility.facility_kind)}</DataRow>
+              <DataRow label="Inclusion class">
+                {INCLUSION_CLASS_LABELS[facility.inclusion_class] ?? titleCase(facility.inclusion_class)}
+              </DataRow>
+              <DataRow label="Ownership">
+                {titleCase(facility.ownership)}
+                <span className="ml-2 text-[#5a5a58]">({titleCase(facility.ownership_type)})</span>
+              </DataRow>
+              <DataRow label="Operator type">{titleCase(facility.operator_type)}</DataRow>
+              <DataRow label="Public access">
+                {ACCESS_LABELS[facility.public_access_class] ?? titleCase(facility.public_access_class)}
+                {facility.access_conditions ? (
+                  <p className="mt-1 text-[#5a5a58]">{facility.access_conditions}</p>
+                ) : null}
+              </DataRow>
+              <DataRow label="Functions">
+                {(facility.functions ?? []).length > 0
+                  ? (facility.functions ?? []).map((value) => titleCase(value)).join(", ")
+                  : "No function recorded"}
+              </DataRow>
+              <DataRow label="Registry status">
+                {titleCase(facility.record_status)} · {titleCase(facility.publication_status)}
+              </DataRow>
+            </dl>
+          </Section>
+
+          {(facility.roles ?? []).length > 0 || (facility.services ?? []).length > 0 ? (
+            <Section
+              title="Roles and services"
+              description="Owner, operator, host, funder, regulator and accreditor are recorded separately from the facility itself."
+            >
+              {(facility.roles ?? []).length > 0 ? (
+                <div>
+                  <h3 className="font-display text-xl font-bold">Roles</h3>
+                  <dl className="mt-3">
+                    {(facility.roles ?? []).map((role, index) => (
+                      <DataRow
+                        key={`${role.role_type}-${role.entity_name}-${index}`}
+                        label={titleCase(role.role_type)}
+                      >
+                        {role.entity_name}
+                        {role.entity_type ? (
+                          <span className="ml-2 text-[#5a5a58]">
+                            ({titleCase(role.entity_type)})
+                          </span>
+                        ) : null}
+                        {role.evidence?.basis ? (
+                          <p className="mt-1 text-xs text-[#5a5a58]">
+                            Evidence: {String(role.evidence.basis)}
+                          </p>
+                        ) : null}
+                      </DataRow>
+                    ))}
+                  </dl>
+                </div>
+              ) : null}
+              {(facility.services ?? []).length > 0 ? (
+                <div className="mt-6">
+                  <h3 className="font-display text-xl font-bold">Services</h3>
+                  <dl className="mt-3">
+                    {(facility.services ?? []).map((service, index) => (
+                      <DataRow
+                        key={`${service.service_code}-${service.source_field ?? "unknown"}-${index}`}
+                        label={service.service_name ?? titleCase(service.service_code)}
+                      >
+                        {service.service_code}
+                        {service.source_field ? (
+                          <span className="ml-2 text-xs text-[#5a5a58]">
+                            Source field: {service.source_field}
+                          </span>
+                        ) : null}
+                      </DataRow>
+                    ))}
+                  </dl>
+                </div>
+              ) : null}
+            </Section>
+          ) : null}
+
           <Section
             title="Location and geography"
             description="Coordinates are shown only with their source precision. A barangay centroid is an area reference, not a building pin."

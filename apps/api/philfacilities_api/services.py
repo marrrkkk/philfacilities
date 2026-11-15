@@ -15,7 +15,11 @@ from .models import (
     Agency,
     Dataset,
     Facility,
+    FacilityFunction,
     FacilityLocation,
+    FacilityRelationship,
+    FacilityRole,
+    FacilityService,
     FacilitySourceLink,
     GeographicRelease,
     Release,
@@ -23,7 +27,11 @@ from .models import (
 )
 from .rights import PUBLIC_RIGHTS
 from .schemas import (
+    FacilityFunctionOut,
     FacilityQuality,
+    FacilityRelationshipOut,
+    FacilityRoleOut,
+    FacilityServiceOut,
     FacilitySummary,
     GeographyOut,
     LocationOut,
@@ -155,6 +163,57 @@ def load_source_evidence(
                     is_synthetic=dataset.is_synthetic,
                 )
             )
+    return grouped
+
+
+def load_functions(
+    session: Session, facility_ids: list[uuid.UUID]
+) -> dict[uuid.UUID, list[FacilityFunction]]:
+    grouped: dict[uuid.UUID, list[FacilityFunction]] = defaultdict(list)
+    if not facility_ids:
+        return grouped
+    for chunk in _chunked(facility_ids):
+        rows = session.scalars(
+            select(FacilityFunction)
+            .where(FacilityFunction.facility_id.in_(chunk))
+            .order_by(FacilityFunction.function_code)
+        ).all()
+        for row in rows:
+            grouped[row.facility_id].append(row)
+    return grouped
+
+
+def load_roles(
+    session: Session, facility_ids: list[uuid.UUID]
+) -> dict[uuid.UUID, list[FacilityRole]]:
+    grouped: dict[uuid.UUID, list[FacilityRole]] = defaultdict(list)
+    if not facility_ids:
+        return grouped
+    for chunk in _chunked(facility_ids):
+        rows = session.scalars(
+            select(FacilityRole)
+            .where(FacilityRole.facility_id.in_(chunk))
+            .order_by(FacilityRole.role_type, FacilityRole.entity_name)
+        ).all()
+        for row in rows:
+            grouped[row.facility_id].append(row)
+    return grouped
+
+
+def load_services(
+    session: Session, facility_ids: list[uuid.UUID]
+) -> dict[uuid.UUID, list[FacilityService]]:
+    grouped: dict[uuid.UUID, list[FacilityService]] = defaultdict(list)
+    if not facility_ids:
+        return grouped
+    for chunk in _chunked(facility_ids):
+        rows = session.scalars(
+            select(FacilityService)
+            .where(FacilityService.facility_id.in_(chunk))
+            .order_by(FacilityService.service_code)
+        ).all()
+        for row in rows:
+            grouped[row.facility_id].append(row)
     return grouped
 
 
@@ -306,6 +365,7 @@ def build_summaries(
     ids = [facility.id for facility in facilities]
     locations = load_current_locations(session, ids)
     evidence = load_source_evidence(session, ids)
+    functions = load_functions(session, ids)
     geographies, _ = load_geography(session, locations, geography_release)
     summaries: list[FacilitySummary] = []
     for facility in facilities:
@@ -319,7 +379,13 @@ def build_summaries(
                 display_name=facility.display_name,
                 facility_type=facility.facility_type,  # type: ignore[arg-type]
                 facility_subtype=facility.facility_subtype,
+                facility_kind=facility.facility_kind,  # type: ignore[arg-type]
+                inclusion_class=facility.inclusion_class,  # type: ignore[arg-type]
                 ownership=facility.ownership,  # type: ignore[arg-type]
+                ownership_type=facility.ownership_type,  # type: ignore[arg-type]
+                operator_type=facility.operator_type,  # type: ignore[arg-type]
+                public_access_class=facility.public_access_class,  # type: ignore[arg-type]
+                functions=sorted({row.function_code for row in functions.get(facility.id, [])}),
                 record_status=facility.record_status,  # type: ignore[arg-type]
                 publication_status=facility.publication_status,
                 is_synthetic=facility.is_synthetic,
@@ -438,13 +504,79 @@ def build_facility_detail(
                 )
             )
 
+    function_rows = load_functions(session, [facility.id]).get(facility.id, [])
+    service_rows = load_services(session, [facility.id]).get(facility.id, [])
+    role_rows = load_roles(session, [facility.id]).get(facility.id, [])
+    relationship_rows = session.scalars(
+        select(FacilityRelationship).where(
+            or_(
+                FacilityRelationship.subject_facility_id == facility.id,
+                FacilityRelationship.object_facility_id == facility.id,
+            )
+        )
+    ).all()
+    relationships: list[FacilityRelationshipOut] = []
+    for relationship in relationship_rows:
+        related_id = (
+            relationship.object_facility_id
+            if relationship.subject_facility_id == facility.id
+            else relationship.subject_facility_id
+        )
+        related = session.get(Facility, related_id)
+        relationships.append(
+            FacilityRelationshipOut(
+                relationship_type=relationship.relationship_type,
+                related_facility_id=related_id,
+                related_facility_name=related.display_name if related else None,
+                related_facility_slug=related.slug if related else None,
+            )
+        )
+
     location = load_current_locations(session, [facility.id]).get(facility.id)
     return FacilityDetail(
         **summary.model_dump(),
         official_name=facility.official_name,
+        access_conditions=facility.access_conditions,
         school=school,
         health=health,
         accreditations=accreditations,
+        function_details=[
+            FacilityFunctionOut(
+                function_code=row.function_code,
+                source_value=row.source_value,
+                source_record_id=row.source_record_id,
+                valid_from=row.valid_from,
+                valid_to=row.valid_to,
+                capacity_value=decimal_to_float(row.capacity_value),
+                capacity_unit=row.capacity_unit,
+                designation_status=row.designation_status,
+            )
+            for row in function_rows
+        ],
+        services=[
+            FacilityServiceOut(
+                service_code=row.service_code,
+                service_name=row.service_name,
+                source_field=row.source_field,
+                source_record_id=row.source_record_id,
+                valid_from=row.valid_from,
+                valid_to=row.valid_to,
+            )
+            for row in service_rows
+        ],
+        roles=[
+            FacilityRoleOut(
+                role_type=row.role_type,
+                entity_name=row.entity_name,
+                entity_type=row.entity_type,
+                source_record_id=row.source_record_id,
+                valid_from=row.valid_from,
+                valid_to=row.valid_to,
+                evidence=row.evidence,
+            )
+            for row in role_rows
+        ],
+        relationships=relationships,
         sources=sources,
         quality=quality_for(facility, location, len(sources)),
         created_at=facility.created_at,

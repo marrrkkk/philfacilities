@@ -1,12 +1,19 @@
 # DATA-LICENSES.md — Source Rights Register
 
 This file records the right to store, transform, display, and redistribute every external dataset
-used by PhilFacilities. **A government dataset is not public domain merely because it can be viewed
-or downloaded.** The technical publication gate in `apps/api/philfacilities_api/rights.py` and
+used by PhilFacilities. **A government dataset is not automatically public domain merely because it
+can be viewed or downloaded.** Equally, the absence of an explicit licence or written permission is
+not by itself a prohibition. Under [`docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`](docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md),
+a dataset may be published when its exact release is verified, publicly available through an open
+route, and not subject to an explicit prohibition, provided that only reviewed non-personal fields
+are exposed and provenance, attribution, and a takedown route are recorded. Explicit restrictions,
+FOI/agreement conditions, and personal or sensitive data still control.
+
+The technical publication gate in `apps/api/philfacilities_api/rights.py` and
 `apps/ingest/philfacilities_ingest/sources/registry.py` enforces the decisions recorded here.
 
 **Register updated:** 15 November 2026.  
-**Scope:** this is a terms-based engineering register, not a completed legal review. No agreement
+**Scope:** this is a rights and engineering register, not a completed legal review. No agreement
 has been accepted on an operator's behalf, and no access control, CAPTCHA, or Cloudflare challenge
 has been bypassed.
 
@@ -19,22 +26,29 @@ has been bypassed.
 | PSGC Q2 2024 snapshot (BetterGov Classification API) | BetterGov.PH, derived from PSA PSGC | `approved_with_attribution` | `published` | BetterGov publishes the classification API under CC BY-SA 4.0. The snapshot is supplementary, versioned as `PSGC-Q2-2024-BETTERGOV`, and is **not** the latest official PSA release. 43,760 units were loaded. Attribution and share-alike are retained. |
 | OpenStreetMap health facilities (HOT Philippines GeoParquet extract) | OpenStreetMap contributors, via HOT and BetterGov.PH | `approved_with_attribution` | `published` | ODbL 1.0. 17,421 source records; 17,410 linked facilities. Coordinates are bbox-centre map geocodes (`map_geocoded`), not official or GPS locations. A mapped feature does not establish operational status. Attribution is required; derivative databases remain share-alike. |
 | OpenStreetMap education facilities (HOT Philippines GeoParquet extract) | OpenStreetMap contributors, via HOT and BetterGov.PH | `approved_with_attribution` | `published` | ODbL 1.0. 52,839 source records; 52,824 linked facilities. Same coordinate, status, attribution, and share-alike caveats. This is not a DepEd masterlist. |
-| DepEd EBEIS school masterlist (NCR result set) | Department of Education | `restricted_non_redistributable` | `internal_only` | The public HTML result set has no explicit reuse licence and contains school-head personal names. 5,055 records are retained privately for identity/provenance work only. Never returned by the public API, source evidence, statistics, or bulk downloads. |
+| DepEd EBEIS school masterlist (NCR result set) | Department of Education | `approved_with_attribution` | source release `published`; canonical facilities `internal` | The public EBEIS result set is a government work. RA 8293 §176 supports publication of institution-level fields for non-commercial public-interest use, with attribution and a recorded takedown route; this is not a legal opinion. The re-ingested 15 November 2026 release is `approved_with_attribution`/`published`; the earlier `restricted_non_redistributable` release is retained. School-head names and other personal fields stay in the private source store and are never published. 5,055 records are linked, but canonical facility rows remain `internal`/`DISCOVERY_CANDIDATE` pending field-level mapping and privacy review. |
+| National Library of the Philippines public-library directory | National Library of the Philippines | `approved_with_attribution` | `published` | December 2025 official PDF, 1,752 rows. Government work published under RA 8293 §176 and the documented public-interest basis, with attribution. Institutional library fields are published; named librarian and personal contact fields remain in the private raw release and are not exposed. This is a documented publication decision, not a legal opinion. |
+| National Museum regional, area and site museums | National Museum of the Philippines | `approved_with_attribution` | `published` | Official directory and linked site pages. Government work published under RA 8293 §176 and the documented public-interest basis, with attribution. This is a directory subset of NMP-run sites, not a census of all Philippine museums. |
+| PHLPost post-office locator | Philippine Postal Corporation | `approved_with_attribution` | `published` | Public locator table with province, post-office name, address, and services. The page carries a copyright/all-rights-reserved notice; the recorded product decision publishes only factual locator fields with attribution and takedown-on-notice, and does not copy expressive content. 1,272 facilities are published. The earlier `review_required` release is retained internally. This is a documented product decision, not legal advice. |
+| BIR Revenue Regions and Revenue District Offices | Bureau of Internal Revenue | `approved_with_attribution` | `published` | RAO No. 006-2025, 9 December 2025. Government work published under RA 8293 §176 and the documented public-interest basis, with attribution. The image-only PDF was processed with local OCR; raw OCR output and confidence are retained, and OCR text is not treated as a replacement for the official document. 128 RDO rows and 19 revenue-region headings. |
+| DSWD Centers and Residential Care Facilities (CRCF) directory | Department of Social Welfare and Development | `approved_with_attribution` | `published` | Official public directory. Institutional facility name, responsible field office, and postal address are published under RA 8293 §176 and the documented public-interest basis, with attribution. No coordinates, admission rules, or operational status are inferred. 76 facilities. |
+| NMIS NARIS accredited meat establishments | National Meat Inspection Service | `approved_with_attribution` | `published` | Public accreditation directory carrying an all-rights-reserved notice. Only factual establishment name, LTO number, establishment type, and postal address are published with attribution and takedown-on-notice; expressive page content is not copied. The page currently returns a WAF challenge/TLS failure, so the verified 15 November 2026 artifact is the release of record. 357 establishments; many operators are private and a licence is not proof of current operation. |
+| PPA List of Ports Covered in PPA Statistics | Philippine Ports Authority | `approved_with_attribution` | `published` | 22-page public PDF published by a government-owned and controlled corporation. RA 8293 §176 provides that no copyright subsists in a government work, subject to prior approval for commercial use; PhilFacilities publishes the factual port name, PPA region/PMO hierarchy, base-port/TMO/other-government/private group, RORO/NON-RORO marks and remarks for non-commercial public-interest use with attribution. No coordinates, berth capacity, owner names or operational status are inferred. 574 rows: 303 government (54 base ports, 94 TMO/OTP, 155 other government) and 271 private public-service providers. Directory subset, not a census of every port or landing place. |
 | DepEd Machine-Ready Files | Department of Education | `review_required` | `blocked` | Human download/terms flow not completed. HTTP 403 on the checked page. No file acquired. |
 | DOH National Health Facility Registry | Department of Health | `review_required` | `blocked` | Public endpoint returned HTTP 403 behind Cloudflare. Existing FOI disclosures may require a signed Data Release and Use Agreement; no agreement was reviewed or accepted. No export acquired. |
 | DOH HFSRB licensed facilities | Department of Health | `review_required` | `blocked` | HTTP 403. No file acquired; licensing semantics and reuse terms are not established. |
 | Official PSA PSGC workbook/API data | Philippine Statistics Authority | `review_required` | `blocked` | Workbook and page returned HTTP 403 behind Cloudflare on 15 November 2026. The classification index returned HTTP 200, but collection endpoints return HTTP 400 `Token is required.` No token was obtained and no access control was bypassed. |
-| CHED HEIDA / HEI directory | Commission on Higher Education | `review_required` | `blocked` | Public directory returned HTTP 200; no verified bulk export, documented public API, or reuse terms. |
-| TESDA TVI / Assessment Centers | TESDA | `review_required` | `blocked` | Directory page returned HTTP 200, but the monitoring classifier records an access challenge; no verified provider-level bulk export or reuse terms. |
+| CHED HEIDA / HEI directory | Commission on Higher Education | `review_required` | `blocked` | Public directory returned HTTP 200; no verified bulk export or documented public API. A verified public release with no explicit prohibition can be published under `publicly_available_verified`. |
+| TESDA TVI / Assessment Centers | TESDA | `review_required` | `blocked` | Directory page returned HTTP 200, but the monitoring classifier records an access challenge; no verified provider-level bulk release. |
 | BetterGov Statistics API / PSA 2024 Census population | BetterGov.PH, reproducing saved PSA OpenSTAT tables | `approved_with_attribution` | `published` | 134,748 observations in 18 regional releases. BetterGov publishes its original material under CC BY-SA 4.0 and identifies each saved PSA table URL and release. The portal states that its preview does not itself establish redistribution rights, so this engineering decision relies on the CC BY-SA 4.0 compilation licence and retains PSA attribution and source-table links; PSA remains authoritative. Values are counts of persons or households as labelled, never facility capacity. Missing values stay null. |
 | PSA OpenSTAT / 2024 Census (direct) | Philippine Statistics Authority | `review_required` | `blocked` | Only saved snapshots obtained through BetterGov have been inspected. Direct PSA OpenSTAT bulk acquisition and any dataset-specific terms review remain outstanding. |
 | BetterGov Statistics API (other indicators) | BetterGov.PH / underlying PSA tables | `review_required` | `blocked` | The 2024 Census population tables are the only statistics ingested. Other indicators require their own source-table and rights review. |
-| GeoRiskPH / HazardHunterPH | Office of Civil Defense and partner agencies | `unknown` | `blocked` | Discovery only. `georisk.gov.ph` failed local TLS verification; HazardHunterPH returned HTTP 200. No hazard layer or reuse permission was acquired. |
-| PHIVOLCS | DOST-PHIVOLCS | `unknown` | `blocked` | Discovery only. Main site returned HTTP 200; the maps portal failed TLS negotiation. No layer or reuse permission acquired. |
-| PAGASA | DOST-PAGASA | `unknown` | `blocked` | Discovery only. Main site and Climgrid/climapv2 returned HTTP 200. No climate layer or reuse permission acquired. |
-| DENR — Mines and Geosciences Bureau | DENR-MGB | `unknown` | `blocked` | Discovery only. Homepage returned HTTP 403. No geohazard layer or reuse permission acquired. |
+| GeoRiskPH / HazardHunterPH | Office of Civil Defense and partner agencies | `unknown` | `blocked` | Discovery only. `georisk.gov.ph` failed local TLS verification; HazardHunterPH returned HTTP 200. No hazard layer was acquired. |
+| PHIVOLCS | DOST-PHIVOLCS | `unknown` | `blocked` | Discovery only. Main site returned HTTP 200; the maps portal failed TLS negotiation. No layer acquired. |
+| PAGASA | DOST-PAGASA | `unknown` | `blocked` | Discovery only. Main site and Climgrid/climapv2 returned HTTP 200. No climate layer acquired. |
+| DENR — Mines and Geosciences Bureau | DENR-MGB | `unknown` | `blocked` | Discovery only. Homepage returned HTTP 403. No geohazard layer acquired. |
 | Open Data Philippines | DICT / government publishers | `unknown` | `blocked` | Portal returned HTTP 200; the queried public dataset search API returned HTTP 404 unauthenticated. No dataset was registered or published from this catalogue. |
-| Other agency facility directories (DILG, BFP, PNP, BJMP, BuCor, DSWD, DPWH, DENR, NAMRIA, NHA, NLP, NCCA, LWUA, MWSS, DOTr/LTFRB, DICT) | Various government agencies | `unknown` | `blocked` | Discovery targets only. Homepage reachability was probed on 15 November 2026; no verified facility dataset, machine-readable export, schema, or reuse decision exists. |
+| Other agency facility directories (DILG, BFP, PNP, BJMP, BuCor, DPWH, DENR, NAMRIA, NHA, NCCA, LWUA, MWSS, DOTr/LTFRB, DICT) | Various government agencies | `unknown` | `blocked` | Discovery targets only. Homepage reachability was probed on 15 November 2026; no verified facility dataset, machine-readable export, schema, or publication decision exists. The DSWD CRCF directory is recorded separately and is published. |
 
 ## 2. Implemented rights and publication states
 
@@ -44,6 +58,7 @@ Rights states:
 - `review_required`
 - `approved_public_redistribution`
 - `approved_with_attribution`
+- `publicly_available_verified`
 - `restricted_non_redistributable`
 - `denied`
 - `expired`
@@ -56,7 +71,10 @@ Publication states:
 - `approved`
 - `published`
 
-The canonical constants live in `apps/api/philfacilities_api/rights.py`. The public API filters
+The canonical constants live in `apps/api/philfacilities_api/rights.py`. `publicly_available_verified`
+is public-compatible: the exact release is verified, publicly available, and not subject to an
+explicit prohibition, and only reviewed institutional fields are published. It does **not** bypass
+the publication gate, which still requires an approved or published release. The public API filters
 facilities by canonical publication status and filters source evidence to datasets/releases whose
 rights state permits public display. Bulk CSV/Parquet endpoints, statistics, accreditation lists, and
 facility detail source evidence apply the same gate.
@@ -72,7 +90,14 @@ facility detail source evidence apply the same gate.
 | PhilHealth Birthing Homes | No release | `MCP_073126.pdf` | 0 | HTTP 404 at the published URL; recorded as `not_found`, no rows fabricated. |
 | OSM health | `HOT-OSM-PHL-HEALTH-2026-11-15` | `health_facilities.parquet` | 17,421 source records | Immutable GeoParquet with checksum; only named features become facilities. |
 | OSM education | `HOT-OSM-PHL-EDUCATION-2026-11-15` | `education_facilities.parquet` | 52,839 source records | Immutable GeoParquet with checksum; only named features become facilities. |
-| DepEd EBEIS NCR | `DEPED-EBEIS-NCR-2026-11-15` | Aggregated HTML result set | 5,055 records | Internal-only; contains school-head names; 169 result pages. |
+| DepEd EBEIS NCR | `DEPED-EBEIS-NCR-2026-11-15` | Aggregated HTML result set | 5,055 records | Current release is `approved_with_attribution`/`published`; the earlier `restricted_non_redistributable` release is retained. School-head names withheld; canonical facilities remain `internal` pending field-level mapping/privacy review. |
+| NLP public libraries | `NLP-PUBLIC-LIBRARIES-2025-12` | Official PDF | 1,752 rows | Institutional fields published; personal librarian contact fields excluded. |
+| NMP museums | `NMP-MUSEUMS-2026-11-15` | Official directory | Directory subset | NMP-run regional, area, and site museums; not all Philippine museums. |
+| PHLPost locator | `PHLPOST-LOCATOR-2026-11-15` | Public HTML table | 1,272 facilities | Factual locator fields published; earlier `review_required` release retained internally. |
+| BIR RDOs | `BIR-RAO-006-2025` | Official image-only PDF + local OCR | 128 RDO rows; 19 region headings | OCR output retained with confidence; not a substitute for the official document. |
+| DSWD CRCF directory | `DSWD-CRCF-2026-11-15` | Official HTML directory | 76 facilities | Institutional name, field office, and postal address; no coordinates or operational status. |
+| NMIS NARIS establishments | `NMIS-NARIS-2026-11-15` | Public accreditation directory | 357 establishments | Factual establishment fields only; many operators are private; page currently behind a WAF/TLS failure. |
+| PPA ports | `PPA-PORT-LIST-2026-11-15` | Official PDF, 22 pages | 574 port rows | 303 government and 271 private public-service providers; hierarchy and RORO marks preserved; no coordinates or operational status inferred. |
 
 Complete checksums, file sizes, row counts, and report paths are in the release rows in the
 `source` schema and in `var/reports/`; the current measured snapshot is in
@@ -85,32 +110,56 @@ S3-compatible store) and are never overwritten by a later release.
 - [x] BetterGov PSGC: licence captured (CC BY-SA 4.0), attribution recorded, snapshot limitation documented.
 - [x] OSM/HOT health and education: ODbL captured, attribution recorded, coordinate-precision limitation documented.
 - [x] PSA 2024 Census population: saved OpenSTAT snapshots obtained through BetterGov; CC BY-SA 4.0 compilation licence, PSA table URLs and release identifiers retained; missing values kept null.
-- [x] DepEd EBEIS: no explicit reuse licence found; personal names present; state set to `restricted_non_redistributable` and publication to `internal_only`.
+- [x] DepEd EBEIS: public government result set; current release published for institution-level fields with attribution and a recorded takedown route; school-head names withheld. Canonical rows remain `internal` pending field-level mapping/privacy review.
+- [x] NLP public libraries: public government PDF; institution-level fields published with attribution; personal librarian contacts withheld.
+- [x] NMP museums: public government directory; institutional museum fields published with attribution.
+- [x] PHLPost locator: 1,272 factual locator facilities published with attribution and takedown-on-notice; copyright notice recorded; earlier release retained internally.
+- [x] BIR RDOs: official RAO parsed with local OCR; institutional office fields published with attribution.
+- [x] DSWD CRCF: official directory; institutional facility fields published with attribution.
+- [x] NMIS NARIS: factual establishment fields published with attribution and takedown-on-notice; all-rights-reserved notice recorded.
+- [x] PPA ports: official government-work PDF; factual port name, hierarchy and RORO marks published with attribution; private ports classified as providers, not government facilities.
 - [ ] Official PSA PSGC workbook/API data: acquire through an authorized route and record terms.
 - [ ] DepEd Machine-Ready Files: complete the human download/terms flow; inspect actual schemas and coordinates.
 - [ ] DOH NHFR/HFSRB: review the applicable Data Release and Use Agreement before any publication.
-- [ ] CHED/TESDA: verify a permitted bulk export and reuse terms.
+- [ ] CHED/TESDA: verify a bulk export or public dataset; if it is publicly available with no explicit prohibition, apply the policy in `docs/14`.
 - [ ] BetterGov Statistics/OpenSTAT/Census: inventory additional indicators and verify source-table rights.
-- [ ] Hazard and additional agency sources: verify actual data and permission before integration.
-- [ ] Formal legal review: not completed for any source. This register records engineering decisions
-      based on published terms; it does not replace legal advice.
+- [ ] Hazard and additional agency sources: verify actual data and any explicit prohibition before integration.
+- [ ] Formal legal review: not completed for any source. This register records engineering and product decisions; it does not replace legal advice.
 
 ## 5. Publication rule
 
-A source remains `unknown` or `review_required` until a documented decision exists. Do not expose
-source rows, contact information, coordinates, or derived bulk exports publicly by default. Where
-only limited use is allowed, configure the publication scope at dataset/field level. A failed or
-blocked check must never delete or unpublish an earlier permitted release.
+A source remains `unknown` or `review_required` until a documented decision exists. A verified,
+publicly available source with no explicit prohibition may be set to `publicly_available_verified`;
+an explicit licence or terms statement may support `approved_public_redistribution` or
+`approved_with_attribution`. Do not expose source rows, contact information, coordinates, or derived
+bulk exports publicly by default. Where only limited use is allowed, configure the publication scope
+at dataset/field level. A failed or blocked check must never delete or unpublish an earlier permitted
+release.
+
+Explicit restrictions always control. A source that is access-controlled, FOI/agreement-bound,
+expressly non-redistributable, or personal/security-sensitive remains excluded or restricted even if
+some records can be viewed publicly.
 
 The current public boundary is verified by integration tests and by the measured reports:
 
-- internal DepEd EBEIS records are absent from `/v1/facilities`, `/v1/schools`, downloads, and statistics;
+- the current DepEd EBEIS source release is published for institution-level fields, while canonical
+  DepEd facilities remain `internal` and school-head names are never public;
+- PHLPost publishes 1,272 factual locator facilities; an earlier review-required release is retained
+  internally;
 - blocked official sources have no releases and no public facilities;
 - blocked or internal source evidence is omitted from public facility detail pages;
-- the PhilHealth Antenatal release is retained but blocked; its withdrawn parse is not published, and the 3,184 source-less change events from that parse were exported and removed;
-- OSM records remain labelled crowd-sourced with `map_geocoded` coordinates and unknown operational status.
+- the PhilHealth Antenatal release is retained but blocked; its withdrawn parse is not published, and
+  the 3,184 source-less change events from that parse were exported and removed;
+- OSM records remain labelled crowd-sourced with `map_geocoded` coordinates and unknown operational
+  status.
+
+Reports generated from the database describe the last measured database state. A source registry or
+release decision and the canonical facility publication flag can move at different times; a
+re-ingestion or field-level review is required before every surface reflects the same state. This
+distinction is retained rather than rewriting a measured snapshot as if it were a fresh run.
 
 ## 6. Code license is separate
 
-The Apache-2.0 license for application code does not license source files or facts. See
-`docs/09-OPEN-SOURCE-GOVERNANCE.md` and `docs/decisions/0004-data-licensing-and-publication-gates.md`.
+The Apache-2.0 license for application code does not license source files or facts. See `NOTICE`,
+`docs/09-OPEN-SOURCE-GOVERNANCE.md`, and
+`docs/decisions/0004-data-licensing-and-publication-gates.md`.

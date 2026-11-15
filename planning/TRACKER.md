@@ -1,6 +1,6 @@
 # PhilFacilities — Master Implementation Tracker
 
-**Status:** Real-data pipeline operational with partial, source-limited coverage. Rights-cleared sources are published; official PSA, DepEd, DOH, CHED, and TESDA acquisition remains blocked or unverified. No nationwide-completeness claim is made.  
+**Status:** Real-data pipeline operational with partial, source-limited coverage. Sources with a recorded publication decision are published; official PSA, DepEd Machine-Ready, DOH, CHED, and TESDA acquisition remains blocked or unverified. No nationwide-completeness claim is made.  
 **Last updated:** 15 November 2026.
 
 This is the single source of truth for execution status. Update this file when work begins, is blocked, or meets acceptance criteria. A checked box means the evidence exists — not merely that code was drafted.
@@ -19,7 +19,7 @@ This is the single source of truth for execution status. Update this file when w
 | Milestone | Status | Exit condition |
 |---|---|---|
 | M0 — Repository and design audit | REVIEW | Monorepo baseline, CI, reference design measurements |
-| M1 — Source acquisition and rights | IN PROGRESS | Rights-cleared sources published; official PSA/DepEd/DOH/CHED/TESDA access remains blocked |
+| M1 — Source acquisition and rights | IN PROGRESS | Publication decisions recorded; official PSA/DepEd Machine-Ready/DOH/CHED/TESDA access remains blocked |
 | M2 — Canonical model and geography | DONE | Migrations, PSGC history, source/provenance model |
 | M3 — ETL and quality | DONE | Repeatable real-source pipelines, quality issues, and reports |
 | M4 — Public API v1 | DONE | 39-path contract-tested read API and generated client |
@@ -33,23 +33,23 @@ This is the single source of truth for execution status. Update this file when w
 
 | Measure | Actual state | Evidence |
 |---|---|---|
-| Canonical facilities | **88,824** | `philfacilities-ingest status`; database query |
-| Public facilities | **83,769** | Publication-gate query; three source-less public-status rows were removed on 15 Nov 2026 |
-| Internal-only facilities | **5,055** DepEd EBEIS NCR records | `source.datasets.publication_status = internal_only` |
+| Canonical facilities | **92,422** | `philfacilities-ingest status`; database query |
+| Public facilities | **61,806** | Publication-gate query |
+| Non-public facilities | **30,616** | Internal, blocked, review-pending, or otherwise not publication-approved |
 | Synthetic facilities in working DB | **0** | Database query |
-| Registered datasets | **38** | `source.datasets` |
-| Retained source releases | **47** | `source.releases` |
+| Registered datasets | **44** | `source.datasets` |
+| Retained source releases | **55** | `source.releases` |
 | Source checks | **90** | `source.source_checks` |
 | Published geographic units | **43,760** BetterGov PSGC Q2 2024 | `geo.administrative_units` |
 | Published population observations | **134,748** across 18 regional releases | `stats.population_observations` |
 | Published PhilHealth accreditations | **24,986** across 25 provider categories | `health.accreditations` |
-| Public facilities with coordinates | **70,223**, all `map_geocoded` | `core.facility_locations` |
-| Public facilities without coordinates | **13,546** | Quality query; no coordinates invented |
+| Public facilities with coordinates | **44,751**, all `map_geocoded` | `core.facility_locations` |
+| Public facilities without coordinates | **17,055** | Quality query; no coordinates invented |
 | Located public facilities without PSGC | **14,216** | Quality query; no geography guessed |
 | Open quality issues | `location_missing` 30,041; `duplicate_osm_id` 3,572; `missing_facility_name` 25; `coordinate_outside_philippines_bbox` 1 | `quality.issues` |
 | OpenAPI paths | **39** | `packages/api-client/openapi.json` |
 | Python tests | **80 passing** | `uv run pytest` |
-| Current-location invariant | **70,223 current rows / 70,223 facilities** | Unique partial index `uq_core_facility_locations_current`; migration `0005_unique_current_location` |
+| Current-location invariant | **70,311 current rows / 70,311 facilities** | Unique partial index `uq_core_facility_locations_current`; migration `0005_unique_current_location` |
 
 These counts describe processed source records. They are not the complete national facility universe.
 
@@ -83,13 +83,13 @@ These counts describe processed source records. They are not the complete nation
 | M1-09 | Inspect DOH export and shapefile schema | BLOCKED | M1-08 | Not inspected; synthetic CSV fixture covers parser behavior |
 | M1-10 | Inventory PhilHealth accredited-provider files | DONE | Public index | 27 provider-category PDF links inventoried from the public index; date basis recorded per file. Evidence: `docs/operations/evidence/2026-11-15-source-access/philhealth-inventory.txt` |
 | M1-11 | Parse/inspect PhilHealth hospital PDF sample | DONE | M1-10 | Real 30 Sep 2026 hospital/infirmary PDF parsed with page/row references; official-layout regression fixture added |
-| M1-12 | Complete source rights register | DONE | All registered sources | `DATA-LICENSES.md` and `docs/reports/05-source-rights-report.md` record rights, publication, personal-data, and evidence status for all 38 datasets. No formal legal review is claimed |
-| M1-13 | Decide which sources/fields can be publicly redistributed | IN PROGRESS | M1-12 | Published: PhilHealth PDFs, HOT/OSM extracts, BetterGov PSGC mirror, PSA 2024 Census population via BetterGov. Blocked or internal: official PSA/DepEd/DOH/CHED/TESDA. External legal review remains open |
+| M1-12 | Complete source rights register | DONE | All registered sources | `DATA-LICENSES.md` and `docs/reports/05-source-rights-report.md` record rights, publication, personal-data, and evidence status for all 44 datasets. No formal legal review is claimed |
+| M1-13 | Decide which sources/fields can be published | IN PROGRESS | M1-12 | Published: PhilHealth, HOT/OSM, BetterGov PSGC, PSA population, NLP, NMP, BIR, PHLPost, DSWD CRCF, and NMIS NARIS. DepEd EBEIS has a published source release for institution-level fields; canonical rows remain internal. Blocked: official PSA/DepEd Machine-Ready/DOH/CHED/TESDA. External legal review remains open |
 | M1-14 | Acquire BetterGov PSGC Q2 2024 mirror | DONE | BetterGov public API | 43,760 units from 18 regional collections; codes preserved as strings; labelled as a supplementary snapshot, not official PSA |
 | M1-15 | Acquire PSA 2024 Census population via BetterGov | DONE | BetterGov public API | 134,748 observations from 18 saved regional tables; source URLs and release metadata retained |
 | M1-16 | Acquire HOT/OSM health and education extracts | DONE | Public GeoParquet | 17,421 health and 52,839 education source records; ODbL attribution retained |
-| M1-17 | Acquire DepEd EBEIS NCR result set | DONE | Public form | 5,055 school rows retained `internal_only`; contains school-head names and has no explicit reuse licence |
-| M1-18 | Investigate CHED, TESDA, hazard, and additional agencies | DONE | Discovery only | Actual probe results recorded; no facility export or reuse permission claimed. See `docs/03-SOURCE-REGISTER.md` |
+| M1-17 | Acquire DepEd EBEIS NCR result set | DONE | Public form | 5,055 school rows retained. Current source release is `approved_with_attribution`/`published` for institution-level fields; canonical rows remain `internal` pending field-level mapping/privacy review. School-head names are never public |
+| M1-18 | Investigate CHED, TESDA, hazard, and additional agencies | DONE | Discovery only | Actual probe results recorded; no facility release or publication decision claimed. See `docs/03-SOURCE-REGISTER.md` |
 
 ## M2 — Data model and geography
 
@@ -177,7 +177,7 @@ These counts describe processed source records. They are not the complete nation
 
 | ID | Task | Status | Dependencies | Acceptance evidence |
 |---|---|---|---|---|
-| M7-01 | Complete data publication review | IN PROGRESS | M1-13, M3 | Rights-cleared PhilHealth, OSM, BetterGov PSGC, and PSA population datasets are published. Official PSA/DepEd/DOH/CHED/TESDA publication remains blocked. No formal legal review |
+| M7-01 | Complete data publication review | IN PROGRESS | M1-13, M3 | PhilHealth, OSM, BetterGov PSGC, PSA population, NLP, NMP, BIR, PHLPost, DSWD CRCF, and NMIS NARIS are published. DepEd EBEIS source release is published but canonical rows remain internal. Official PSA/DepEd Machine-Ready/DOH/CHED/TESDA publication remains blocked. No formal legal review |
 | M7-02 | Publish API docs and data dictionary | DONE | M4 | `/api`, OpenAPI docs, `docs/DATA-DICTIONARY.md`, public `/data/dictionary`; missing-value semantics, precision, provenance, redistribution, identity review, caveats |
 | M7-03 | Publish bulk exports where permitted | DONE | M7-01 | CSV/Parquet exports are publication-gated; verified against the real database: CSV 83,769 rows (31 MB), Parquet 83,769 rows (6.3 MB). Evidence: `docs/operations/evidence/2026-11-15-real-exports/exports.txt` |
 | M7-04 | Add data quality/status pages | DONE | M3-11 | `/status`, quality summary, issue counts, run summaries, caveats |
@@ -202,19 +202,19 @@ These counts describe processed source records. They are not the complete nation
 | M8-06 | School Access Index | DEFERRED | School/learner data + defensible access/capacity methodology | Methodology not reviewed |
 | M8-07 | Hazard exposure module | DEFERRED | Valid facility coordinates + hazard source terms | No hazard layer acquired; GeoRiskPH TLS and PHIVOLCS map TLS failures; DENR-MGB 403 |
 | M8-08 | Infrastructure project crosswalk | DEFERRED | BetterGov/agency project source terms | Auditable relationship data not built |
-| M8-09 | Additional agency facility discovery | DEFERRED | Source access | DILG/BFP/PNP/BJMP/DSWD/DPWH/NAMRIA/NHA/NLP/LWUA/DOTr/DICT probes recorded; no verified facility export or reuse permission |
+| M8-09 | Additional agency facility discovery | DEFERRED | Source access | DILG/BFP/PNP/BJMP/DPWH/NAMRIA/NHA/LWUA/DOTr/DICT probes recorded; no verified facility release or publication decision |
 
 ## M9 — Real-data integration and automation
 
 | ID | Task | Status | Dependencies | Acceptance evidence |
 |---|---|---|---|---|
 | M9-01 | Re-probe every registered source with recorded evidence | DONE | None | 38 datasets probed on 15 Nov 2026; exact statuses in `docs/operations/evidence/2026-11-15-source-access/source-probes-2026-11-15.txt` and `docs/reports/01-source-directory.md` |
-| M9-02 | Apply publication gates to real sources | DONE | M1-13 | Only `approved_with_attribution` datasets with approved/published releases are public; internal/blocked records excluded from all public surfaces |
+| M9-02 | Apply publication gates to real sources | DONE | M1-13 | Only datasets in the public set (`approved_with_attribution`, `approved_public_redistribution`, `publicly_available_verified`) with approved/published releases are public; internal/blocked records are excluded from all public surfaces |
 | M9-03 | Load BetterGov PSGC Q2 2024 mirror | DONE | M1-14 | 43,760 units; raw JSON preserved; geography release `PSGC-Q2-2024-BETTERGOV` |
 | M9-04 | Load PSA 2024 Census population snapshots | DONE | M1-15 | 134,748 observations; 18 releases; `/v1/population` exposes source URL, indicator, unit, and attribution |
 | M9-05 | Load PhilHealth provider categories | DONE | M1-10 | 25 published categories, 24,986 accreditations, 13,546 linked facilities; one Antenatal release retained but blocked after its annex-double-counting parse was withdrawn; one linked PDF returns 404 |
 | M9-06 | Load OSM health and education facilities | DONE | M1-16 | 17,410 health and 52,824 education linked facilities; all coordinates `map_geocoded`; crowd-sourced label retained |
-| M9-07 | Load DepEd EBEIS NCR internal-only | DONE | M1-17 | 5,055 internal records; excluded from public API, exports, statistics, and source evidence |
+| M9-07 | Load DepEd EBEIS NCR | DONE | M1-17 | 5,055 retained records. The current source release is published for institution-level fields; canonical rows remain `internal`/`DISCOVERY_CANDIDATE` pending field-level mapping and privacy review |
 | M9-08 | Remove synthetic production records | DONE | M9-03 to M9-07 | Working database synthetic count is 0; `/v1/statistics` reports `synthetic: 0` |
 | M9-09 | Expose real data through the API and web app | DONE | M9-03 to M9-08 | 39 paths; real statistics, directory, profile, map, and downloads verified against the configured database |
 | M9-10 | Add due-source checks and append-only monitoring | DONE | M3-15 | `check-due-sources` uses `next_check_at`; monitoring endpoints expose latest checks and statuses |
@@ -231,6 +231,7 @@ These counts describe processed source records. They are not the complete nation
 | M9-21 | Complete the final data.md acceptance audit | DONE | M9-01 to M9-20 | Verified 38 datasets, 47 releases, 90 source checks, 88,824 facilities (83,769 public / 5,055 internal / 0 synthetic), 235,049 source records, 24,986 accreditations, 100,275 source links, 70,223 current locations, 100,304 history events, 134,748 population observations, 39 OpenAPI paths, and 80 passing tests; live smoke and web pages pass. Evidence: `docs/operations/evidence/2026-11-15-final/validation.txt` |
 | M9-22 | Add reference-period filtering to public facility searches | DONE | M4-02, M4-04, M4-08, M5-03 | Inclusive overlap filters on `/v1/facilities`, `/within`, `/nearby`, `/schools`, and `/health-facilities`, wired through directory, pagination, map links, and map viewport queries; invalid ranges return `invalid_reference_period`. Live evidence: same-day 2026-09-30 returns 9,883; from 2026-10-01 returns 0; reversed range returns 400. Evidence: `docs/operations/evidence/2026-11-15-final/validation.txt` |
 | M9-23 | Replace correlated facility search with indexed branches | DONE | M4-02, M9-17 | Search is an uncorrelated `UNION` over name, official name, source key, address, and PSGC-level locality branches. Migration `0006_search_trigram_indexes` adds trigram indexes; model indexes cover the text and locality columns. Measured medians: Mulanay 252 ms (40), Manila 638 ms (832), Bacolod 1,869 ms (140), no-match 88 ms. Evidence: `docs/operations/evidence/2026-11-15-final/validation.txt` |
+| M9-24 | Adopt the data inclusion and publication policy | DONE | M1-12, M9-02 | Added `docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`, ADR 0008, the `publicly_available_verified` rights state, API gate tests, and a code/data `NOTICE`. Verified public availability with no explicit prohibition can support publication; explicit restrictions and personal data still control. Evidence: `tests/test_rights.py` |
 
 ## Active work log
 
@@ -263,7 +264,7 @@ Append entries here. Every entry should include date, tracker IDs, branch/PR/com
 | 2026-11-15 | M1-14, M9-03 | Loaded BetterGov PSGC Q2 2024 mirror: 43,760 units | Published as supplementary geography |
 | 2026-11-15 | M1-15, M3-13, M9-04 | Loaded 18 PSA 2024 Census population snapshots: 134,748 observations | Published with attribution; not live PSA data |
 | 2026-11-15 | M1-16, M3-14, M9-05, M9-06 | Loaded 25 PhilHealth PDFs (24,757 accreditations) and HOT/OSM health/education extracts (70,234 linked facilities) | Published with attribution and coordinate caveats |
-| 2026-11-15 | M1-17, M9-07 | Loaded DepEd EBEIS NCR: 5,055 school rows | `internal_only`; excluded from public surfaces |
+| 2026-11-15 | M1-17, M9-07 | Loaded DepEd EBEIS NCR: 5,055 school rows | `internal_only` at load time; a later re-ingested release is published for institution-level fields, while canonical rows remain `internal` |
 | 2026-11-15 | M9-08 | Purged synthetic production records | 88,824 canonical facilities, 0 synthetic |
 | 2026-11-15 | M9-08, M9-14 | Removed 4,802 unprovenanced Antenatal health profiles and 3 source-less public facilities (`P`, `G`, `SEC`) left by an earlier parser pass; regenerated reports 01–05 | Public-status and API-visible counts now agree at 83,769 |
 | 2026-11-15 | M9-01, M9-10 | Re-probed all sources; 86 checks recorded; added monitoring endpoints and due-source scheduler commands | Blockers documented; no bypass attempted |
@@ -286,6 +287,8 @@ Append entries here. Every entry should include date, tracker IDs, branch/PR/com
 | 2026-11-15 | M9-21, M9-22, M9-23 | Re-ran the final acceptance verification after the reference-period and search changes: 80 pytest tests, 47 Playwright passes with 5 intentional skips, 32 responsive checks, 89 Markdown links, 39 OpenAPI paths, and real-data smoke | Evidence refreshed at `docs/operations/evidence/2026-11-15-final/validation.txt`; the earlier synthetic-MVP report is archived alongside it |
 | 2026-11-15 | M0-06, M9-21 | Split Playwright fixtures into environment overrides: local runs default to stable real records, while CI sets the deterministic `load-demo` records because it cannot download restricted sources; raised the unfiltered-directory assertion timeout for the real 83,769-row database | Local real-data production run: 47 passed, 5 skipped; CI-equivalent synthetic production run: 47 passed, 5 skipped; 80 pytest, ruff, lint/typecheck, 32 responsive checks, and smoke pass |
 | 2026-11-15 | M0-06, M9-21 | Fixed the two timing-sensitive assertions exposed by the first hosted Playwright run: auto-retrying focus-ring CSS checks and a wait for the streamed directory region before keyboard typing | Hosted CI run `43705808887` green: Python, web, and Playwright jobs; Playwright 47 passed, 5 skipped |
+| 2026-11-15 | M1-12, M1-13, M9-24 | Added the data inclusion and publication policy, ADR 0008, `PUBLICLY_AVAILABLE_VERIFIED`, API gate tests, and a code/data `NOTICE`; aligned `DATA-LICENSES.md`, source register, governance docs, reports, and both trackers; recorded DepEd EBEIS, PHLPost, DSWD CRCF, and NMIS NARIS publication states | Policy and docs are consistent with the working database; explicit restrictions and personal data remain excluded |
+| 2026-11-15 | M9-24, AF1-21, AF2-15 | Added and ran the PPA port-list adapter against the official 22-page PDF; registered `PPA-PORT-LIST-2026-11-15` and aligned `DATA-LICENSES.md`, both source registers, and both trackers | 574 port records published: 303 government and 271 private public-service providers; hierarchy and RORO marks preserved; no coordinates or operational status inferred |
 
 ## Decision log
 
@@ -294,9 +297,10 @@ Append entries here. Every entry should include date, tracker IDs, branch/PR/com
 | 2026-11-14 | Monorepo with independently deployable web/API/ingest apps | Shared contracts/docs; easier open-source contribution | Separate maintainers/releases justify extraction |
 | 2026-11-14 | FastAPI + PostgreSQL/PostGIS + Next.js/shadcn/Tailwind + MapLibre | Python for ETL, spatial DB, typed API, accessible UI, open map renderer | Measured requirements contradict choice |
 | 2026-11-14 | Reference BetterGov Fellowship visual system, not its layout | User requirement; product needs directory/map UX | Reference site changes; re-audit before major redesign |
-| 2026-11-15 | Publish only rights-cleared sources; block the rest in code | Viewability is not permission to redistribute | A source's terms/access evidence changes and is reviewed |
-| 2026-11-15 | Publish PhilHealth PDFs, HOT/OSM extracts, BetterGov PSGC, and PSA population via BetterGov | Each has recorded attribution or open-licence evidence and an enforced gate | Source terms change or a formal legal review disagrees |
-| 2026-11-15 | Keep DepEd EBEIS internal-only | Contains school-head personal names and has no explicit reuse licence | DepEd terms and a privacy review permit publication |
+| 2026-11-15 | Publish only sources with a recorded publication decision; block the rest in code | Viewability is not permission, and the absence of a licence is not automatically a prohibition | A source's terms/access evidence changes and is reviewed |
+| 2026-11-15 | Publish PhilHealth PDFs, HOT/OSM extracts, BetterGov PSGC, PSA population, NLP, NMP, BIR, PHLPost, DSWD CRCF, NMIS NARIS, and PPA ports | Each has recorded attribution/licence or a verified-public-availability decision and an enforced gate | Source terms change or a formal legal review disagrees |
+| 2026-11-15 | Keep canonical DepEd EBEIS rows internal while the source release is published for institution-level fields | School-head names require field-level mapping and privacy review; the source-level publication decision is not a blanket field release | Field-level mapping and privacy review complete |
+| 2026-11-15 | Allow `publicly_available_verified` as a public-compatible rights state | A verified, publicly available release with no explicit prohibition can support factual institutional publication with attribution and takedown-on-notice; explicit restrictions, agreements, and personal/sensitive data still control | A rights holder objects or provides an explicit restriction |
 | 2026-11-15 | Treat OSM records as crowd-sourced map features, not an official registry | OSM is not DOH/DepEd and coordinates are bbox centres | Official facility registries become accessible |
 | 2026-11-15 | Do not infer PSGC or coordinates for unmatched records | Fabricated geography would misrepresent precision and coverage | An official crosswalk or source coordinate is acquired |
 | 2026-11-14 | Exact source-ID matching only; ambiguous matches are queued, never auto-merged | No silent merges; deterministic evidence creates review candidates | New matching evidence or algorithm version requires re-review |

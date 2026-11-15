@@ -4,7 +4,7 @@
 **Scope:** API, web frontend, public exports, dependency manifests, local deployment configuration.  
 **Status:** Internal review completed; production security controls and an external penetration test are **not** complete. Tracker item `M7-06` remains `REVIEW`.
 
-This is a source and configuration review, not a certification, penetration test, or production readiness sign-off. The working database contains real records: **83,769 public facilities** from rights-cleared sources and **5,055 internal-only DepEd EBEIS records**. The public boundary is enforced in code, but no formal legal, privacy, or external security review has been completed.
+This is a source and configuration review, not a certification, penetration test, or production readiness sign-off. The working database contains real records: **61,806 public facilities** from sources with a recorded publication decision and **30,616 non-public records**, including 5,055 DepEd EBEIS rows pending field-level review. The public boundary is enforced in code, but no formal legal, privacy, or external security review has been completed.
 
 ## 1. Assets and trust boundaries
 
@@ -62,7 +62,7 @@ The CI workflow now runs both audits. A hosted green run has not been observed.
 ## 5. Controls confirmed
 
 - Public API is read-only; no write verbs in the OpenAPI contract.
-- Publication queries require `publication_status = public` and a rights-cleared source release whose rights and publication states permit redistribution. Internal-only, blocked, quarantined, and review-pending evidence is excluded from detail, source evidence, statistics, and downloads.
+- Publication queries require `publication_status = public` and a source release with a recorded publication decision whose rights and publication states permit redistribution. Internal-only, blocked, quarantined, and review-pending evidence is excluded from detail, source evidence, statistics, and downloads.
 - CORS is an explicit configured allowlist, not `*`.
 - Error responses use a stable envelope and generic 500 message; stack traces are not returned.
 - Access logging records method, path, status, duration, and request ID, but not query strings or credentials.
@@ -79,7 +79,7 @@ Before any public production launch:
 2. Verify the nonce CSP against the deployed API and tile origins. Nonces require dynamic rendering, so the current web configuration deliberately disables static generation; confirm that trade-off against the hosting/CDN plan and keep `src/proxy.ts` paired with the root-layout `connection()` call.
 3. Move database, object-store, and ingestion secrets into a managed secret store with rotation ownership.
 4. Run an external penetration test and a dependency/SBOM review against the release candidate.
-5. Complete the source-rights and personal-data review. Real rights-cleared data is now published under terms-based engineering decisions; DepEd EBEIS school-head names remain internal-only. No formal legal or privacy review has been completed.
+5. Complete the source-rights and personal-data review. Real data is published under recorded terms or the verified-public-availability policy in `docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`; DepEd EBEIS school-head names remain private, and canonical DepEd rows remain internal pending field-level mapping and privacy review. No formal legal or privacy review has been completed.
 6. Implement production monitoring and the incident runbook (`M7-07`).
 7. Re-run audits and record results in the release checklist.
 

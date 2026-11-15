@@ -97,7 +97,8 @@ A dataset page must communicate:
 - Data dictionary and schema version.
 - File/API access method.
 - Known missing fields and limitations.
-- License/terms status and redistribution decision.
+- License/terms status and redistribution decision, including `publicly_available_verified` when the basis is verified public availability with no explicit prohibition.
+- The publication policy link and the fields withheld for privacy or safety.
 - Number of parsed rows and quality metrics, if measured.
 - Download/API options only if publication is allowed.
 

@@ -227,9 +227,12 @@ export default async function DataPage() {
             </p>
             <p>
               PhilHealth PDFs are published with attribution under PhilHealth&apos;s public reuse
-              statement. DepEd EBEIS remains internal-only because its result set contains school-head
-              names and no explicit reuse licence was found. OSM/HOT extracts are published under ODbL
-              with visible attribution and bbox-centre precision labels.
+              statement. DepEd EBEIS is a verified public government result set; the source registry
+              approves institution-level publication with attribution, while school-head names remain
+              private. A verified, publicly available dataset with no explicit prohibition may also be
+              published under <code>publicly_available_verified</code> when only reviewed institutional
+              fields are exposed. OSM/HOT extracts are published under ODbL with visible attribution
+              and bbox-centre precision labels.
             </p>
             <p>
               Source publication date, reference period, retrieval time, and processing time are
@@ -252,6 +255,10 @@ export default async function DataPage() {
                 ["review_required", "Access or reuse terms are unresolved; publication stays blocked."],
                 ["approved_public_redistribution", "Terms permit public redistribution."],
                 ["approved_with_attribution", "Publication is permitted with the recorded attribution."],
+                [
+                  "publicly_available_verified",
+                  "Verified and publicly available with no explicit prohibition; reviewed institutional fields only.",
+                ],
                 ["restricted_non_redistributable", "Records may be retained internally but not republished."],
                 ["denied", "The source has denied the intended reuse."],
                 ["expired", "A previously recorded permission is no longer current."],

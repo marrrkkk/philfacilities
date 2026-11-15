@@ -13,9 +13,12 @@ not create a competing task list.
 
 - **Do not invent source facts.** Never add an endpoint, file, field, identifier, update cadence,
   or license unless the official source or terms have been inspected and recorded.
-- **Do not publish official data without a rights decision.** Synthetic demonstration fixtures are
-  safe to use and must stay visibly labelled. Real DepEd, DOH, PhilHealth, and PSA rows remain
-  blocked until `DATA-LICENSES.md` records an approved publication scope.
+- **Publish only after a documented rights decision.** Follow
+  [`docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`](docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md).
+  A verified, publicly available dataset with no explicit prohibition may be published with reviewed
+  institutional fields and recorded provenance; explicit restrictions, FOI/agreement conditions, and
+  personal or sensitive data still control. Synthetic demonstration fixtures are safe to use and must
+  stay visibly labelled.
 - **Preserve source truth.** Keep raw releases, original values, leading zeros, missing values,
   coordinate precision, and source identifiers. Missing is not zero, false, or inactive.
 - **No silent merges.** Ambiguous facility matches go to `quality.match_candidates` for human
@@ -115,7 +118,7 @@ Every source-adapter contribution must include:
 - parser implementation and schema mapping;
 - validation rules, required columns, and fail-closed schema-drift behavior;
 - expected source fields, missingness semantics, and coordinate precision;
-- license/terms status in [`DATA-LICENSES.md`](DATA-LICENSES.md);
+- license/terms status and the publication basis in [`DATA-LICENSES.md`](DATA-LICENSES.md);
 - tests for parsing, duplicates, and repeated runs;
 - an example ingestion report.
 
@@ -150,9 +153,11 @@ result must always have a text/list alternative.
 ## Licensing
 
 Application code is Apache-2.0. That license does not grant rights to agency source data;
-redistribution rights are recorded per dataset in [`DATA-LICENSES.md`](DATA-LICENSES.md). By
-contributing code, you agree that your contribution may be distributed under the repository's code
-license. Do not contribute material you cannot license.
+redistribution rights and the publication basis are recorded per dataset in
+[`DATA-LICENSES.md`](DATA-LICENSES.md). A verified, publicly available dataset with no explicit
+prohibition may be published under [`docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`](docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md).
+By contributing code, you agree that your contribution may be distributed under the repository's
+code license. Do not contribute material you cannot license.
 
 ## Reporting security issues
 

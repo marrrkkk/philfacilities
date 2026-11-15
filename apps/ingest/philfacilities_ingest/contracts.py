@@ -28,6 +28,8 @@ class ReleaseSpec:
     access_method: str = "fixture"
     update_pattern: str | None = None
     license_identifier: str | None = None
+    coverage_scope: str | None = None
+    coverage_note: str | None = None
     is_synthetic: bool = False
     enqueue_cross_source_matches: bool = True
     notes: str | None = None
@@ -151,6 +153,38 @@ class AccreditationData:
 
 
 @dataclass
+class FunctionData:
+    function_code: str
+    source_value: str | None = None
+    valid_from: date | None = None
+    valid_to: date | None = None
+    capacity_value: float | None = None
+    capacity_unit: str | None = None
+    designation_status: str | None = None
+    evidence: dict[str, Any] | None = None
+
+
+@dataclass
+class ServiceData:
+    service_code: str
+    service_name: str | None = None
+    source_field: str | None = None
+    valid_from: date | None = None
+    valid_to: date | None = None
+    details: dict[str, Any] | None = None
+
+
+@dataclass
+class RoleData:
+    role_type: str
+    entity_name: str
+    entity_type: str | None = None
+    valid_from: date | None = None
+    valid_to: date | None = None
+    evidence: dict[str, Any] | None = None
+
+
+@dataclass
 class FacilityCandidate:
     source_record_key: str
     row_reference: str
@@ -161,6 +195,15 @@ class FacilityCandidate:
     record_status: str
     location: LocationData
     source_entity_id: str | None = None
+    facility_kind: str = "facility"
+    inclusion_class: str | None = None
+    ownership_type: str = "UNKNOWN"
+    operator_type: str = "UNKNOWN"
+    public_access_class: str = "UNKNOWN"
+    access_conditions: str | None = None
+    functions: list[FunctionData] = field(default_factory=list)
+    services: list[ServiceData] = field(default_factory=list)
+    roles: list[RoleData] = field(default_factory=list)
     school: SchoolData | None = None
     health: HealthData | None = None
     licenses: list[LicenseData] = field(default_factory=list)

@@ -46,6 +46,22 @@ def created_at() -> Mapped[datetime]:
     return mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 
+def _default_inclusion_class(context) -> str:
+    """Keep direct ORM construction safe for legacy/tests.
+
+    Ingested records pass an explicit class. A caller that only sets ownership
+    still gets the conservative mapping; unknown ownership never becomes a
+    public government facility by accident.
+    """
+
+    ownership = (context.get_current_parameters().get("ownership") or "").strip().lower()
+    if ownership == "government":
+        return "GOVERNMENT_FACILITY"
+    if ownership == "private":
+        return "PRIVATE_PUBLIC_SERVICE_PROVIDER"
+    return "DISCOVERY_CANDIDATE"
+
+
 class Agency(Base):
     __tablename__ = "agencies"
     __table_args__ = {"schema": "source"}  # noqa: RUF012
@@ -83,6 +99,8 @@ class Dataset(Base):
     attribution_text: Mapped[str | None] = mapped_column(Text)
     personal_data_status: Mapped[str | None] = mapped_column(String(60))
     publication_status: Mapped[str] = mapped_column(String(40), nullable=False, default="blocked")
+    coverage_scope: Mapped[str | None] = mapped_column(String(40))
+    coverage_note: Mapped[str | None] = mapped_column(Text)
     update_pattern: Mapped[str | None] = mapped_column(String(80))
     schema_version: Mapped[str | None] = mapped_column(String(40))
     is_public_source: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
@@ -168,6 +186,18 @@ class Facility(Base):
         ),
         Index("ix_core_facilities_type", "facility_type"),
         Index("ix_core_facilities_publication", "publication_status"),
+        Index("ix_core_facilities_inclusion", "inclusion_class"),
+        Index("ix_core_facilities_ownership_type", "ownership_type"),
+        CheckConstraint(
+            "facility_kind IN ('facility', 'site', 'building', 'facility_unit', "
+            "'infrastructure_asset', 'project')",
+            name="facility_kind_allowed",
+        ),
+        CheckConstraint(
+            "inclusion_class IN ('GOVERNMENT_FACILITY', 'PRIVATE_PUBLIC_SERVICE_PROVIDER', "
+            "'PUBLIC_ACCESS_VENUE', 'DISCOVERY_CANDIDATE')",
+            name="inclusion_class_allowed",
+        ),
         {"schema": "core"},
     )
 
@@ -177,7 +207,15 @@ class Facility(Base):
     official_name: Mapped[str | None] = mapped_column(String(300))
     facility_type: Mapped[str] = mapped_column(String(40), nullable=False)
     facility_subtype: Mapped[str | None] = mapped_column(String(80))
+    facility_kind: Mapped[str] = mapped_column(String(30), nullable=False, default="facility")
+    inclusion_class: Mapped[str] = mapped_column(
+        String(40), nullable=False, default=_default_inclusion_class
+    )
     ownership: Mapped[str] = mapped_column(String(40), nullable=False, default="unknown")
+    ownership_type: Mapped[str] = mapped_column(String(50), nullable=False, default="UNKNOWN")
+    operator_type: Mapped[str] = mapped_column(String(50), nullable=False, default="UNKNOWN")
+    public_access_class: Mapped[str] = mapped_column(String(40), nullable=False, default="UNKNOWN")
+    access_conditions: Mapped[str | None] = mapped_column(Text)
     record_status: Mapped[str] = mapped_column(String(40), nullable=False, default="unknown")
     publication_status: Mapped[str] = mapped_column(String(40), nullable=False, default="internal")
     is_synthetic: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
@@ -185,6 +223,151 @@ class Facility(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+
+class FacilityFunction(Base):
+    """A source-backed purpose or designation of a physical facility.
+
+    A barangay multipurpose hall that is also an evacuation centre keeps one
+    canonical facility and two dated function rows. The raw source vocabulary is
+    retained in ``evidence``; ``function_code`` is the normalized taxonomy value.
+    """
+
+    __tablename__ = "facility_functions"
+    __table_args__ = (
+        UniqueConstraint(
+            "facility_id", "function_code", "source_record_id", name="uq_facility_function_source"
+        ),
+        Index("ix_core_facility_functions_code", "function_code"),
+        {"schema": "core"},
+    )
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    facility_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("core.facilities.id", ondelete="CASCADE"), nullable=False
+    )
+    function_code: Mapped[str] = mapped_column(String(60), nullable=False)
+    source_record_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("source.records.id", ondelete="SET NULL")
+    )
+    source_value: Mapped[str | None] = mapped_column(String(200))
+    valid_from: Mapped[date | None] = mapped_column(Date)
+    valid_to: Mapped[date | None] = mapped_column(Date)
+    capacity_value: Mapped[Decimal | None] = mapped_column(Numeric(14, 2))
+    capacity_unit: Mapped[str | None] = mapped_column(String(40))
+    designation_status: Mapped[str | None] = mapped_column(String(40))
+    evidence: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    created_at: Mapped[datetime] = created_at()
+
+
+class FacilityService(Base):
+    """A service delivered at a facility, only where an authoritative record says so."""
+
+    __tablename__ = "facility_services"
+    __table_args__ = (
+        UniqueConstraint(
+            "facility_id", "service_code", "source_record_id", name="uq_facility_service_source"
+        ),
+        Index("ix_core_facility_services_code", "service_code"),
+        {"schema": "core"},
+    )
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    facility_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("core.facilities.id", ondelete="CASCADE"), nullable=False
+    )
+    service_code: Mapped[str] = mapped_column(String(80), nullable=False)
+    service_name: Mapped[str | None] = mapped_column(String(200))
+    source_record_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("source.records.id", ondelete="SET NULL")
+    )
+    source_field: Mapped[str | None] = mapped_column(String(160))
+    valid_from: Mapped[date | None] = mapped_column(Date)
+    valid_to: Mapped[date | None] = mapped_column(Date)
+    details: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    created_at: Mapped[datetime] = created_at()
+
+
+class FacilityRole(Base):
+    """One role relationship (owner, operator, host, regulator, ...) with evidence.
+
+    Roles are deliberately not collapsed into a single ``agency`` field: a private
+    hospital can be privately owned and operated, licensed by DOH and accredited by
+    PhilHealth, and none of those facts makes it government-owned.
+    """
+
+    __tablename__ = "facility_roles"
+    __table_args__ = (
+        UniqueConstraint(
+            "facility_id",
+            "role_type",
+            "entity_name",
+            "source_record_id",
+            name="uq_facility_role_source",
+        ),
+        Index("ix_core_facility_roles_type", "role_type"),
+        CheckConstraint(
+            "role_type IN ('OWNER', 'OPERATOR', 'MANAGER', 'HOST', 'LANDLORD', 'FUNDER', "
+            "'REGULATOR', 'LICENSOR', 'ACCREDITOR', 'RECOGNITION_AUTHORITY', 'AFFILIATOR')",
+            name="facility_role_type_allowed",
+        ),
+        {"schema": "core"},
+    )
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    facility_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("core.facilities.id", ondelete="CASCADE"), nullable=False
+    )
+    role_type: Mapped[str] = mapped_column(String(40), nullable=False)
+    entity_name: Mapped[str] = mapped_column(String(300), nullable=False)
+    entity_type: Mapped[str | None] = mapped_column(String(50))
+    source_record_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("source.records.id", ondelete="SET NULL")
+    )
+    valid_from: Mapped[date | None] = mapped_column(Date)
+    valid_to: Mapped[date | None] = mapped_column(Date)
+    evidence: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    created_at: Mapped[datetime] = created_at()
+
+
+class FacilityRelationship(Base):
+    """A typed link between two canonical facilities or a facility and its site.
+
+    ``LOCATED_WITHIN`` and ``SHARED_SITE`` let a service unit and its host property
+    coexist without duplicating either record or inferring that the host qualifies.
+    """
+
+    __tablename__ = "facility_relationships"
+    __table_args__ = (
+        UniqueConstraint(
+            "subject_facility_id",
+            "object_facility_id",
+            "relationship_type",
+            name="uq_facility_relationship",
+        ),
+        CheckConstraint(
+            "relationship_type IN ('LOCATED_WITHIN', 'SHARED_SITE', 'HOSTED_AT', 'PARENT_OF', "
+            "'SUCCESSOR_OF', 'REPLACED_BY')",
+            name="facility_relationship_type_allowed",
+        ),
+        {"schema": "core"},
+    )
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    subject_facility_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("core.facilities.id", ondelete="CASCADE"), nullable=False
+    )
+    object_facility_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("core.facilities.id", ondelete="CASCADE"), nullable=False
+    )
+    relationship_type: Mapped[str] = mapped_column(String(40), nullable=False)
+    source_record_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("source.records.id", ondelete="SET NULL")
+    )
+    valid_from: Mapped[date | None] = mapped_column(Date)
+    valid_to: Mapped[date | None] = mapped_column(Date)
+    evidence: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    created_at: Mapped[datetime] = created_at()
 
 
 class FacilitySourceLink(Base):

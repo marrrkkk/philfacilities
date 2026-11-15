@@ -25,12 +25,18 @@ from ..models import (
 )
 from ..pagination import clamp_limit, decode_cursor, encode_cursor
 from ..schemas import (
+    AccessClass,
     AccreditationOut,
     ChangeListResponse,
     FacilityDetail,
+    FacilityKind,
     FacilityListResponse,
     FacilityMapResponse,
+    FacilityType,
+    InclusionClass,
     NearbyResponse,
+    OperatorType,
+    OwnershipType,
     SourceEvidence,
 )
 from ..services import build_facility_detail, build_summaries, load_source_evidence
@@ -39,7 +45,7 @@ from .query import facility_conditions
 router = APIRouter(prefix="/facilities", tags=["facilities"])
 settings = get_settings()
 
-FacilityTypeFilter = Literal["school", "health_facility"]
+FacilityTypeFilter = FacilityType
 OwnershipFilter = Literal["government", "private", "unknown"]
 PrecisionFilter = Literal[
     "gps_verified", "field_verified", "source_gps", "map_geocoded", "barangay_centroid", "unknown"
@@ -61,7 +67,14 @@ def _get_public_facility(db: Session, identifier: str) -> Facility:
 def list_facilities(
     db: Annotated[Session, Depends(get_db)],
     type: FacilityTypeFilter | None = None,
+    subtype: str | None = Query(None, max_length=80),
+    inclusion_class: InclusionClass | None = None,
     ownership: OwnershipFilter | None = None,
+    ownership_type: OwnershipType | None = None,
+    operator_type: OperatorType | None = None,
+    public_access_class: AccessClass | None = None,
+    facility_kind: FacilityKind | None = None,
+    function: str | None = Query(None, max_length=60),
     q: str | None = Query(None, max_length=200),
     psgc: str | None = Query(None, max_length=12),
     region_code: str | None = Query(None, max_length=12),
@@ -83,7 +96,14 @@ def list_facilities(
 ):
     conditions = facility_conditions(
         facility_type=type,
+        facility_subtype=subtype,
+        inclusion_class=inclusion_class,
         ownership=ownership,
+        ownership_type=ownership_type,
+        operator_type=operator_type,
+        public_access_class=public_access_class,
+        facility_kind=facility_kind,
+        function=function,
         q=q,
         psgc=psgc,
         region_code=region_code,
@@ -136,7 +156,14 @@ def facilities_within(
     db: Annotated[Session, Depends(get_db)],
     bbox: str = Query(..., description="min_lon,min_lat,max_lon,max_lat"),
     type: FacilityTypeFilter | None = None,
+    subtype: str | None = Query(None, max_length=80),
+    inclusion_class: InclusionClass | None = None,
     ownership: OwnershipFilter | None = None,
+    ownership_type: OwnershipType | None = None,
+    operator_type: OperatorType | None = None,
+    public_access_class: AccessClass | None = None,
+    facility_kind: FacilityKind | None = None,
+    function: str | None = Query(None, max_length=60),
     q: str | None = Query(None, max_length=200),
     psgc: str | None = Query(None, max_length=12),
     region_code: str | None = Query(None, max_length=12),
@@ -169,7 +196,14 @@ def facilities_within(
     selected_limit = min(limit, settings.max_map_features)
     conditions = facility_conditions(
         facility_type=type,
+        facility_subtype=subtype,
+        inclusion_class=inclusion_class,
         ownership=ownership,
+        ownership_type=ownership_type,
+        operator_type=operator_type,
+        public_access_class=public_access_class,
+        facility_kind=facility_kind,
+        function=function,
         q=q,
         psgc=psgc,
         region_code=region_code,
@@ -214,7 +248,14 @@ def facilities_nearby(
     lon: float = Query(..., ge=-180, le=180),
     radius_m: int = Query(5000, ge=1),
     type: FacilityTypeFilter | None = None,
+    subtype: str | None = Query(None, max_length=80),
+    inclusion_class: InclusionClass | None = None,
     ownership: OwnershipFilter | None = None,
+    ownership_type: OwnershipType | None = None,
+    operator_type: OperatorType | None = None,
+    public_access_class: AccessClass | None = None,
+    facility_kind: FacilityKind | None = None,
+    function: str | None = Query(None, max_length=60),
     q: str | None = Query(None, max_length=200),
     psgc: str | None = Query(None, max_length=12),
     region_code: str | None = Query(None, max_length=12),
@@ -238,7 +279,14 @@ def facilities_nearby(
     selected_limit = min(limit, settings.max_map_features)
     conditions = facility_conditions(
         facility_type=type,
+        facility_subtype=subtype,
+        inclusion_class=inclusion_class,
         ownership=ownership,
+        ownership_type=ownership_type,
+        operator_type=operator_type,
+        public_access_class=public_access_class,
+        facility_kind=facility_kind,
+        function=function,
         q=q,
         psgc=psgc,
         region_code=region_code,

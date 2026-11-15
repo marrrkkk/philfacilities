@@ -58,6 +58,10 @@ const redistributionValues = [
   ["review_required", "Access or reuse terms are unresolved; publication stays blocked."],
   ["approved_public_redistribution", "Terms permit public redistribution."],
   ["approved_with_attribution", "Publication is permitted with the recorded attribution text."],
+  [
+    "publicly_available_verified",
+    "Verified and publicly available with no explicit prohibition; only reviewed institutional fields are published.",
+  ],
   ["restricted_non_redistributable", "Records may be retained internally but not republished."],
   ["denied", "The source has denied the intended reuse."],
   ["expired", "A previously recorded permission is no longer current."],

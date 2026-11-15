@@ -37,11 +37,77 @@ const PRECISIONS = [
   ["unknown", "Unknown"],
 ];
 
+const INCLUSION_CLASSES = [
+  ["", "Any inclusion class"],
+  ["GOVERNMENT_FACILITY", "Government facility"],
+  ["PRIVATE_PUBLIC_SERVICE_PROVIDER", "Private public-service provider"],
+  ["PUBLIC_ACCESS_VENUE", "Public-access venue"],
+];
+
+const OWNERSHIP_TYPES = [
+  ["", "Any ownership type"],
+  ["NATIONAL_GOVERNMENT", "National government"],
+  ["LOCAL_GOVERNMENT", "Local government"],
+  ["GOCC", "Government-owned or controlled corporation"],
+  ["PUBLIC_EDUCATIONAL_INSTITUTION", "Public educational institution"],
+  ["OTHER_PUBLIC_BODY", "Other public body"],
+  ["GOVERNMENT_UNSPECIFIED", "Government, unspecified"],
+  ["PRIVATE_CORPORATE", "Private corporate"],
+  ["NGO_NON_PROFIT", "NGO or non-profit"],
+  ["COOPERATIVE", "Cooperative"],
+  ["RELIGIOUS_FAITH_BASED", "Religious or faith-based"],
+  ["PRIVATE_UNSPECIFIED", "Private, unspecified"],
+  ["UNKNOWN", "Unknown"],
+];
+
+const FACILITY_KINDS = [
+  ["", "Any facility kind"],
+  ["facility", "Facility"],
+  ["site", "Site or compound"],
+  ["building", "Building"],
+  ["facility_unit", "Facility unit or service point"],
+  ["infrastructure_asset", "Infrastructure asset"],
+  ["project", "Project"],
+];
+
+const ACCESS_CLASSES = [
+  ["", "Any access state"],
+  ["PUBLIC_FREE", "Public, free"],
+  ["PUBLIC_PAID_OR_CONDITIONAL", "Public, paid or conditional"],
+  ["SERVICE_USERS_ONLY", "Service users only"],
+  ["APPOINTMENT_ONLY", "Appointment only"],
+  ["MEMBERS_STUDENTS_ONLY", "Members or students only"],
+  ["STAFF_ONLY", "Staff only"],
+  ["RESTRICTED", "Restricted"],
+  ["UNKNOWN", "Unknown"],
+];
+
+const CATEGORY_LABELS: Record<string, string> = {
+  school: "School",
+  health_facility: "Health facility",
+  library: "Library",
+  museum: "Museum",
+  government_office: "Government office",
+  community_facility: "Community facility",
+  emergency_facility: "Emergency facility",
+  public_market: "Public market",
+  transport_facility: "Transport facility",
+  cultural_facility: "Cultural facility",
+  public_space: "Public space",
+  social_welfare_facility: "Social welfare facility",
+  utility_facility: "Utility facility",
+  other_qualifying_facility: "Other qualifying facility",
+};
+
 export default async function DirectoryPage({ searchParams }: { searchParams: SearchParams }) {
   const raw = await searchParams;
   const q = first(raw.q).trim();
   const type = first(raw.type);
+  const inclusion = first(raw.inclusion_class);
   const ownership = first(raw.ownership);
+  const ownershipType = first(raw.ownership_type);
+  const facilityKind = first(raw.facility_kind);
+  const publicAccess = first(raw.public_access_class);
   const region = first(raw.region_code);
   const province = first(raw.province_code);
   const municipality = first(raw.municipality_code);
@@ -57,7 +123,11 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Se
   const query = {
     q: q || undefined,
     type: type || undefined,
+    inclusion_class: inclusion || undefined,
     ownership: ownership || undefined,
+    ownership_type: ownershipType || undefined,
+    facility_kind: facilityKind || undefined,
+    public_access_class: publicAccess || undefined,
     region_code: region || undefined,
     province_code: province || undefined,
     municipality_code: municipality || undefined,
@@ -118,8 +188,18 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Se
 
   const activeFilters = [
     q ? { label: `Search: ${q}` } : null,
-    type ? { label: type === "school" ? "Schools" : "Health facilities" } : null,
+    type ? { label: CATEGORY_LABELS[type] ?? titleCase(type) } : null,
+    inclusion
+      ? {
+          label: `Inclusion: ${
+            INCLUSION_CLASSES.find(([value]) => value === inclusion)?.[1] ?? titleCase(inclusion)
+          }`,
+        }
+      : null,
     ownership ? { label: `Ownership: ${titleCase(ownership)}` } : null,
+    ownershipType ? { label: `Ownership type: ${titleCase(ownershipType)}` } : null,
+    facilityKind ? { label: `Facility kind: ${titleCase(facilityKind)}` } : null,
+    publicAccess ? { label: `Access: ${titleCase(publicAccess)}` } : null,
     region ? { label: `Region: ${unitName(region)}` } : null,
     province ? { label: `Province: ${unitName(province)}` } : null,
     municipality ? { label: `City / municipality: ${unitName(municipality)}` } : null,
@@ -144,7 +224,11 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Se
   const paginationParams = {
     q: q || undefined,
     type: type || undefined,
+    inclusion_class: inclusion || undefined,
     ownership: ownership || undefined,
+    ownership_type: ownershipType || undefined,
+    facility_kind: facilityKind || undefined,
+    public_access_class: publicAccess || undefined,
     region_code: region || undefined,
     province_code: province || undefined,
     municipality_code: municipality || undefined,
@@ -185,11 +269,24 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Se
                 />
               </div>
               <div>
-                <Label htmlFor="filter-type">Facility type</Label>
+                <Label htmlFor="filter-type">Facility category</Label>
                 <Select id="filter-type" name="type" defaultValue={type}>
-                  <option value="">All types</option>
-                  <option value="school">Schools</option>
-                  <option value="health_facility">Health facilities</option>
+                  <option value="">All categories</option>
+                  {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="filter-inclusion">Inclusion class</Label>
+                <Select id="filter-inclusion" name="inclusion_class" defaultValue={inclusion}>
+                  {INCLUSION_CLASSES.map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
                 </Select>
               </div>
               <div>
@@ -199,6 +296,36 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Se
                   <option value="government">Government</option>
                   <option value="private">Private</option>
                   <option value="unknown">Unknown</option>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="filter-ownership-type">Ownership type</Label>
+                <Select id="filter-ownership-type" name="ownership_type" defaultValue={ownershipType}>
+                  {OWNERSHIP_TYPES.map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="filter-kind">Facility kind</Label>
+                <Select id="filter-kind" name="facility_kind" defaultValue={facilityKind}>
+                  {FACILITY_KINDS.map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="filter-access">Public access</Label>
+                <Select id="filter-access" name="public_access_class" defaultValue={publicAccess}>
+                  {ACCESS_CLASSES.map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
                 </Select>
               </div>
               <div>
@@ -350,7 +477,11 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Se
               defaultType={type}
               compact
               preserve={{
+                inclusion_class: inclusion,
                 ownership,
+                ownership_type: ownershipType,
+                facility_kind: facilityKind,
+                public_access_class: publicAccess,
                 region_code: region,
                 province_code: province,
                 municipality_code: municipality,
