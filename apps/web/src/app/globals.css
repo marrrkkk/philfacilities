@@ -1,0 +1,207 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-header: var(--header-background);
+  --color-ink: var(--ink);
+  --color-sun: var(--sun);
+  --color-blue: var(--blue);
+  --color-blue-dark: var(--blue-dark);
+  --font-sans: var(--font-archivo), Arial, sans-serif;
+  --font-display: var(--font-inter-tight), Arial, sans-serif;
+  --font-ui: var(--font-inter), Arial, sans-serif;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  /* The reference switches to its mobile menu at 1024px and below. */
+  --breakpoint-nav: 64.0625rem;
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #0a0a0a;
+  --card: #ffffff;
+  --card-foreground: #0a0a0a;
+  --primary: #0038a8;
+  --primary-foreground: #ffffff;
+  --primary-hover: #002b82;
+  --secondary: #f4f7fc;
+  --secondary-foreground: #0a0a0a;
+  --muted: #f4f7fc;
+  --muted-foreground: #5a5a58;
+  --accent: #fcd116;
+  --accent-foreground: #0a0a0a;
+  --destructive: #b42318;
+  --border: #d1d8e6;
+  --input: #d1d8e6;
+  --ring: #ffcf4a;
+  --header-background: #00226e;
+  --ink: #0a0a0a;
+  --sun: #fcd116;
+  --blue: #0038a8;
+  --blue-dark: #002b82;
+  --selection: #e8f1ff;
+  --header-height: 68px;
+  --section-py: 60px;
+}
+
+@media (max-width: 29.99rem) {
+  :root {
+    --header-height: 60px;
+    --section-py: 50.64px;
+  }
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-archivo), Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-inter-tight), Arial, sans-serif;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background: var(--selection);
+    color: var(--ink);
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--ring);
+    outline-offset: 3px;
+  }
+
+  a {
+    text-underline-offset: 0.2em;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      scroll-behavior: auto !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  .container-page {
+    width: 100%;
+    margin-inline: auto;
+    padding-inline: clamp(1.25rem, 6vw, 7.5rem);
+    max-width: 96rem;
+  }
+
+  .eyebrow {
+    font-family: var(--font-inter), Arial, sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    line-height: 1.2;
+  }
+
+  .rule-label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .rule-label::before {
+    content: "";
+    display: inline-block;
+    width: 2rem;
+    height: 2px;
+    background: currentColor;
+    opacity: 0.7;
+  }
+
+  .link-underline {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+  }
+
+  .table-scroll {
+    overflow-x: auto;
+  }
+
+  .table-scroll:focus-visible {
+    outline: 2px solid #0038a8;
+    outline-offset: 2px;
+  }
+
+  .map-canvas {
+    height: 100%;
+    min-height: 28rem;
+  }
+
+  .maplibregl-ctrl-attrib {
+    font-family: var(--font-ui), Arial, sans-serif;
+    font-size: 11px;
+  }
+
+  .maplibregl-ctrl-attrib a {
+    color: #00226e !important;
+    text-decoration: underline !important;
+  }
+}
+
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 100;
+  transform: translateY(-160%);
+  background: var(--sun);
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  padding: 0.5rem 0.875rem;
+  font-family: var(--font-ui), Arial, sans-serif;
+  font-weight: 700;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}

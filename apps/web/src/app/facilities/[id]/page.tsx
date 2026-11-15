@@ -1,0 +1,632 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { AlertTriangle, ExternalLink, MapPin } from "lucide-react";
+
+import { Breadcrumbs } from "@/components/breadcrumbs";
+import { LocationMap } from "@/components/map/location-map";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  ApiError,
+  getFacility,
+  getFacilityChanges,
+  getHealthDetail,
+  getSchoolDetail,
+  type FacilityDetail,
+  type HealthDetailResponse,
+  type SchoolDetailResponse,
+} from "@/lib/api";
+import {
+  formatDate,
+  formatDateTime,
+  formatNumber,
+  isPreciseLocation,
+  PRECISION_DESCRIPTIONS,
+  PRECISION_LABELS,
+  titleCase,
+} from "@/lib/format";
+import { cn } from "@/lib/utils";
+
+type Params = Promise<{ id: string }>;
+
+export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
+  const { id } = await params;
+  try {
+    const facility = await getFacility(id);
+    return {
+      title: facility.display_name,
+      description: `Source-linked profile for ${facility.display_name}, a ${facility.facility_type.replaceAll("_", " ")} in the PhilFacilities registry.`,
+    };
+  } catch {
+    return { title: "Facility not found" };
+  }
+}
+
+function DataRow({
+  label,
+  children,
+  stacked = false,
+}: {
+  label: string;
+  children: React.ReactNode;
+  stacked?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "grid gap-1 border-b border-[#d1d8e6] py-3 last:border-b-0",
+        !stacked && "sm:grid-cols-[12rem_1fr] sm:gap-4",
+      )}
+    >
+      <dt className="font-ui text-xs font-bold uppercase tracking-wide text-[#5a5a58]">{label}</dt>
+      <dd className="min-w-0 break-words font-sans text-sm">{children}</dd>
+    </div>
+  );
+}
+
+function Section({
+  id,
+  title,
+  description,
+  children,
+}: {
+  id?: string;
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section id={id} className="scroll-mt-24 border-t border-[#d1d8e6] pt-8">
+      <h2 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl">{title}</h2>
+      {description ? (
+        <p className="mt-2 max-w-3xl font-sans text-sm leading-relaxed text-[#5a5a58]">
+          {description}
+        </p>
+      ) : null}
+      <div className="mt-5">{children}</div>
+    </section>
+  );
+}
+
+export default async function FacilityPage({ params }: { params: Params }) {
+  const { id } = await params;
+
+  let facility: FacilityDetail;
+  try {
+    facility = await getFacility(id);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) notFound();
+    throw error;
+  }
+
+  const [typed, changes] = await Promise.all([
+    facility.facility_type === "school"
+      ? getSchoolDetail(id).catch(() => null)
+      : getHealthDetail(id).catch(() => null),
+    getFacilityChanges(id).catch(() => null),
+  ]);
+
+  const school = typed && "enrollment" in typed ? (typed as SchoolDetailResponse) : null;
+  const health = typed && "licenses" in typed ? (typed as HealthDetailResponse) : null;
+  const geography = facility.geography;
+  const place = [geography.barangay_name, geography.municipality_name, geography.province_name, geography.region_name]
+    .filter(Boolean)
+    .join(", ");
+  const showMap =
+    facility.location.latitude != null &&
+    facility.location.longitude != null &&
+    facility.location.precision !== "unknown";
+  const latitude = facility.location.latitude;
+  const longitude = facility.location.longitude;
+  const sources = facility.sources ?? [];
+  const warnings = facility.quality.warnings ?? [];
+
+  return (
+    <div className="container-page py-10">
+      <Breadcrumbs
+        items={[
+          { href: "/directory", label: "Directory" },
+          { label: facility.display_name },
+        ]}
+      />
+
+      <header className="border-b border-[#d1d8e6] pb-8">
+        <div className="flex flex-wrap gap-1.5">
+          <Badge tone={facility.facility_type === "school" ? "default" : "outline"}>
+            {facility.facility_type === "school" ? "School" : "Health facility"}
+          </Badge>
+          {facility.facility_subtype ? <Badge tone="muted">{facility.facility_subtype}</Badge> : null}
+          <Badge tone="muted">{titleCase(facility.ownership)}</Badge>
+          {facility.is_synthetic ? <Badge tone="sun">Synthetic demo record</Badge> : null}
+        </div>
+        <h1 className="mt-3 max-w-4xl font-display text-4xl font-extrabold leading-[1.02] tracking-tight sm:text-5xl">
+          {facility.display_name}
+        </h1>
+        <p className="mt-3 flex items-start gap-2 font-sans text-base text-[#5a5a58]">
+          <MapPin aria-hidden="true" className="mt-1 size-4 shrink-0 text-[#0038a8]" />
+          <span>
+            {facility.location.address_text ?? "Address not supplied"} ·{" "}
+            {place || "Administrative geography not linked"}
+          </span>
+        </p>
+        <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1 font-ui text-xs text-[#5a5a58]">
+          <span>Canonical ID: <code>{facility.id}</code></span>
+          <span>Record created {formatDateTime(facility.created_at)}</span>
+          <span>Canonical record updated {formatDateTime(facility.updated_at)}</span>
+        </div>
+      </header>
+
+      {facility.is_synthetic ? (
+        <Alert tone="warning" className="mt-6">
+          <AlertTitle>Synthetic demonstration record</AlertTitle>
+          <AlertDescription>
+            This facility, its identifiers, coordinates, dates, and observations were generated for
+            product testing. It is not an official government record and must not be cited as one.
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
+      <div className="mt-8 grid gap-10 lg:grid-cols-[1fr_20rem]">
+        <div className="min-w-0 space-y-10">
+          <Section
+            title="Location and geography"
+            description="Coordinates are shown only with their source precision. A barangay centroid is an area reference, not a building pin."
+          >
+            <dl>
+              <DataRow label="Address (source text)">
+                {facility.location.address_text ?? "Not supplied"}
+              </DataRow>
+              <DataRow label="Barangay">
+                {geography.barangay_name ?? "Unknown"}
+                {geography.barangay_code ? (
+                  <span className="ml-2 font-mono text-xs text-[#5a5a58]">
+                    PSGC {geography.barangay_code}
+                  </span>
+                ) : null}
+              </DataRow>
+              <DataRow label="Municipality / city">
+                {geography.municipality_name ?? "Unknown"}
+              </DataRow>
+              <DataRow label="Province">{geography.province_name ?? "Unknown / not applicable"}</DataRow>
+              <DataRow label="Region">{geography.region_name ?? "Unknown"}</DataRow>
+              <DataRow label="PSGC release">{geography.psgc_release ?? "No linked release"}</DataRow>
+              <DataRow label="Location precision">
+                <span className="font-ui text-sm font-bold">
+                  {PRECISION_LABELS[facility.location.precision] ?? facility.location.precision}
+                </span>
+                <p className="mt-1 text-[#5a5a58]">
+                  {PRECISION_DESCRIPTIONS[facility.location.precision] ??
+                    PRECISION_DESCRIPTIONS.unknown}
+                </p>
+                {facility.location.method ? (
+                  <p className="mt-1 text-xs text-[#5a5a58]">Method: {facility.location.method}</p>
+                ) : null}
+              </DataRow>
+              <DataRow label="Raw coordinates">
+                {facility.location.latitude !== null && facility.location.longitude !== null
+                  ? `${facility.location.latitude}, ${facility.location.longitude}`
+                  : "Unknown"}
+              </DataRow>
+            </dl>
+
+            <div className="mt-5">
+              {showMap && latitude != null && longitude != null ? (
+                <LocationMap
+                  latitude={latitude}
+                  longitude={longitude}
+                  precision={facility.location.precision}
+                  name={facility.display_name}
+                />
+              ) : (
+                <Alert tone="info">
+                  <AlertTitle>No map is shown for this record</AlertTitle>
+                  <AlertDescription>
+                    {facility.location.latitude === null
+                      ? "This record has no source coordinates. Missing coordinates remain unknown; no location was inferred."
+                      : "Coordinates exist but their precision is unknown, so they are not promoted to a building pin."}
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
+          </Section>
+
+          {school ? (
+            <>
+              <Section
+                title="School profile"
+                description="School characteristics are source observations tied to a school year. They are not a live operational status."
+              >
+                <dl>
+                  <DataRow label="DepEd school ID">{school.facility.school?.deped_school_id ?? "Unknown"}</DataRow>
+                  <DataRow label="Sector / ownership">
+                    {school.facility.school?.sector ?? titleCase(facility.ownership)}
+                  </DataRow>
+                  <DataRow label="School management">
+                    {school.facility.school?.school_management ?? "Unknown"}
+                  </DataRow>
+                  <DataRow label="Annex status">
+                    {school.facility.school?.annex_status ?? "Unknown"}
+                  </DataRow>
+                  <DataRow label="Reference school year">
+                    {school.facility.school?.reference_school_year ?? "Unknown"}
+                  </DataRow>
+                  <DataRow label="Offers">
+                    {[
+                      school.facility.school?.offers_es ? "Elementary" : null,
+                      school.facility.school?.offers_jhs ? "Junior high school" : null,
+                      school.facility.school?.offers_shs ? "Senior high school" : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ") || "Unknown"}
+                  </DataRow>
+                </dl>
+              </Section>
+
+              <Section
+                title="Enrollment observations"
+                description="Each row keeps its school year, grade level, sex dimension, observation time, and source record. Missing counts are not filled with zero."
+              >
+                {school.enrollment.length > 0 ? (
+                  <div className="table-scroll border border-[#d1d8e6]" role="region" aria-label="Enrollment observations" tabIndex={0}>
+                    <table className="w-full min-w-[36rem] border-collapse text-left font-sans text-sm">
+                      <thead className="bg-[#f4f7fc] font-ui text-xs uppercase tracking-wide text-[#5a5a58]">
+                        <tr>
+                          <th className="border-b border-[#d1d8e6] p-3">School year</th>
+                          <th className="border-b border-[#d1d8e6] p-3">Grade level</th>
+                          <th className="border-b border-[#d1d8e6] p-3">Sex</th>
+                          <th className="border-b border-[#d1d8e6] p-3">Learners</th>
+                          <th className="border-b border-[#d1d8e6] p-3">Observed</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {school.enrollment.map((row) => (
+                          <tr key={`${row.school_year}-${row.grade_level}-${row.sex}-${row.source_record_id}`}>
+                            <td className="border-b border-[#d1d8e6] p-3">{row.school_year}</td>
+                            <td className="border-b border-[#d1d8e6] p-3">{row.grade_level}</td>
+                            <td className="border-b border-[#d1d8e6] p-3">{titleCase(row.sex)}</td>
+                            <td className="border-b border-[#d1d8e6] p-3">{formatNumber(row.learner_count)}</td>
+                            <td className="border-b border-[#d1d8e6] p-3 text-xs text-[#5a5a58]">
+                              {formatDateTime(row.observed_at)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="font-sans text-sm text-[#5a5a58]">
+                    No enrollment observations are published for this facility.
+                  </p>
+                )}
+              </Section>
+
+              <Section
+                title="Facility observations"
+                description="Dated source observations such as classrooms, toilets, and water supply. A zero means the source reported zero; missing values stay unset."
+              >
+                {school.resources.length > 0 ? (
+                  <div className="table-scroll border border-[#d1d8e6]" role="region" aria-label="Facility observations" tabIndex={0}>
+                    <table className="w-full min-w-[32rem] border-collapse text-left font-sans text-sm">
+                      <thead className="bg-[#f4f7fc] font-ui text-xs uppercase tracking-wide text-[#5a5a58]">
+                        <tr>
+                          <th className="border-b border-[#d1d8e6] p-3">School year</th>
+                          <th className="border-b border-[#d1d8e6] p-3">Category</th>
+                          <th className="border-b border-[#d1d8e6] p-3">Resource</th>
+                          <th className="border-b border-[#d1d8e6] p-3">Value</th>
+                          <th className="border-b border-[#d1d8e6] p-3">Unit</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {school.resources.map((row) => (
+                          <tr key={`${row.school_year}-${row.resource_code}-${row.source_record_id}`}>
+                            <td className="border-b border-[#d1d8e6] p-3">{row.school_year}</td>
+                            <td className="border-b border-[#d1d8e6] p-3">{titleCase(row.resource_category)}</td>
+                            <td className="border-b border-[#d1d8e6] p-3">{titleCase(row.resource_code)}</td>
+                            <td className="border-b border-[#d1d8e6] p-3">
+                              {row.value_numeric !== null
+                                ? formatNumber(row.value_numeric)
+                                : row.value_text ?? "Unknown"}
+                            </td>
+                            <td className="border-b border-[#d1d8e6] p-3">{row.unit ?? "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="font-sans text-sm text-[#5a5a58]">
+                    No facility observations are published for this facility.
+                  </p>
+                )}
+              </Section>
+            </>
+          ) : null}
+
+          {health ? (
+            <>
+              <Section
+                title="Health facility profile"
+                description="Registry category and capacity are source values. Do not infer real-time service availability from registry presence."
+              >
+                <dl>
+                  <DataRow label="DOH NHFR ID">{health.facility.health?.doh_facility_id ?? "Not supplied"}</DataRow>
+                  <DataRow label="Facility category">
+                    {health.facility.health?.facility_category ?? "Unknown"}
+                  </DataRow>
+                  <DataRow label="Service capability">
+                    {health.facility.health?.service_capability_level ?? "Unknown"}
+                  </DataRow>
+                  <DataRow label="Bed capacity">
+                    {health.facility.health?.bed_capacity !== null &&
+                    health.facility.health?.bed_capacity !== undefined
+                      ? formatNumber(health.facility.health.bed_capacity)
+                      : "Unknown"}
+                  </DataRow>
+                </dl>
+              </Section>
+
+              <Section
+                title="Licenses"
+                description="Licensing data is separate from PhilHealth accreditation and from real-time operating status."
+              >
+                {health.licenses.length > 0 ? (
+                  <div className="table-scroll border border-[#d1d8e6]" role="region" aria-label="Licenses" tabIndex={0}>
+                    <table className="w-full min-w-[38rem] border-collapse text-left font-sans text-sm">
+                      <thead className="bg-[#f4f7fc] font-ui text-xs uppercase tracking-wide text-[#5a5a58]">
+                        <tr>
+                          <th className="border-b border-[#d1d8e6] p-3">Authority</th>
+                          <th className="border-b border-[#d1d8e6] p-3">License number</th>
+                          <th className="border-b border-[#d1d8e6] p-3">Source status</th>
+                          <th className="border-b border-[#d1d8e6] p-3">Valid until</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {health.licenses.map((license) => (
+                          <tr key={license.id}>
+                            <td className="border-b border-[#d1d8e6] p-3">{license.issuing_authority}</td>
+                            <td className="border-b border-[#d1d8e6] p-3">{license.license_number ?? "Unknown"}</td>
+                            <td className="border-b border-[#d1d8e6] p-3">{license.source_status ?? "Unknown"}</td>
+                            <td className="border-b border-[#d1d8e6] p-3">{formatDate(license.valid_until)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="font-sans text-sm text-[#5a5a58]">
+                    No license records are published for this facility.
+                  </p>
+                )}
+              </Section>
+
+              <Section
+                title="PhilHealth accreditation"
+                description="Accreditation is a dated, authority-specific record. It is not the same claim as a DOH license or current operating availability."
+              >
+                {health.accreditations.length > 0 ? (
+                  <div className="table-scroll border border-[#d1d8e6]" role="region" aria-label="PhilHealth accreditation" tabIndex={0}>
+                    <table className="w-full min-w-[44rem] border-collapse text-left font-sans text-sm">
+                      <thead className="bg-[#f4f7fc] font-ui text-xs uppercase tracking-wide text-[#5a5a58]">
+                        <tr>
+                          <th className="border-b border-[#d1d8e6] p-3">Authority</th>
+                          <th className="border-b border-[#d1d8e6] p-3">Category</th>
+                          <th className="border-b border-[#d1d8e6] p-3">Beds</th>
+                          <th className="border-b border-[#d1d8e6] p-3">Source as of</th>
+                          <th className="border-b border-[#d1d8e6] p-3">Valid until</th>
+                          <th className="border-b border-[#d1d8e6] p-3">PDF reference</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {health.accreditations.map((row) => (
+                          <tr key={row.id}>
+                            <td className="border-b border-[#d1d8e6] p-3">{row.authority}</td>
+                            <td className="border-b border-[#d1d8e6] p-3">
+                              {row.accreditation_category ?? row.provider_category}
+                            </td>
+                            <td className="border-b border-[#d1d8e6] p-3">
+                              {row.bed_count !== null ? formatNumber(row.bed_count) : "Unknown"}
+                            </td>
+                            <td className="border-b border-[#d1d8e6] p-3">{formatDate(row.source_as_of)}</td>
+                            <td className="border-b border-[#d1d8e6] p-3">{formatDate(row.valid_until)}</td>
+                            <td className="border-b border-[#d1d8e6] p-3 font-mono text-xs">{row.page_reference ?? "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="font-sans text-sm text-[#5a5a58]">
+                    No PhilHealth accreditation record is linked to this facility.
+                  </p>
+                )}
+              </Section>
+            </>
+          ) : null}
+
+          <Section
+            id="sources"
+            title="Where this information comes from"
+            description="Source publication time, reference period, retrieval time, and processing time are distinct. The canonical record's updated time is not an agency update."
+          >
+            <div className="table-scroll border border-[#d1d8e6]" role="region" aria-label="Source evidence" tabIndex={0}>
+              <table className="w-full min-w-[56rem] border-collapse text-left font-sans text-sm">
+                <thead className="bg-[#f4f7fc] font-ui text-xs uppercase tracking-wide text-[#5a5a58]">
+                  <tr>
+                    <th className="border-b border-[#d1d8e6] p-3">Agency / dataset</th>
+                    <th className="border-b border-[#d1d8e6] p-3">Source record</th>
+                    <th className="border-b border-[#d1d8e6] p-3">Release</th>
+                    <th className="border-b border-[#d1d8e6] p-3">Reference period</th>
+                    <th className="border-b border-[#d1d8e6] p-3">Published</th>
+                    <th className="border-b border-[#d1d8e6] p-3">Retrieved</th>
+                    <th className="border-b border-[#d1d8e6] p-3">Rights</th>
+                    <th className="border-b border-[#d1d8e6] p-3">Match</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sources.map((source) => (
+                    <tr key={source.id}>
+                      <td className="border-b border-[#d1d8e6] p-3">
+                        <span className="font-ui text-sm font-bold">{source.agency}</span>
+                        <span className="mt-1 block text-xs text-[#5a5a58]">
+                          <Link href={`/data/${source.dataset_slug}`} className="underline">
+                            {source.dataset}
+                          </Link>
+                          {source.is_synthetic ? " · Synthetic fixture" : ""}
+                        </span>
+                      </td>
+                      <td className="border-b border-[#d1d8e6] p-3">
+                        <code className="text-xs">{source.source_record_id}</code>
+                        <span className="mt-1 block text-xs text-[#5a5a58]">{source.row_reference}</span>
+                      </td>
+                      <td className="border-b border-[#d1d8e6] p-3 text-xs">{source.release_label}</td>
+                      <td className="border-b border-[#d1d8e6] p-3 text-xs">
+                        {formatDate(source.reference_period_start)} – {formatDate(source.reference_period_end)}
+                      </td>
+                      <td className="border-b border-[#d1d8e6] p-3 text-xs">{formatDateTime(source.source_published_at)}</td>
+                      <td className="border-b border-[#d1d8e6] p-3 text-xs">{formatDateTime(source.retrieved_at)}</td>
+                      <td className="border-b border-[#d1d8e6] p-3 text-xs">
+                        {titleCase(source.rights_status)}
+                        <span className="mt-1 block text-[#5a5a58]">
+                          Publication: {titleCase(source.publication_status)}
+                        </span>
+                        {source.attribution_text ? (
+                          <span className="mt-1 block text-[#5a5a58]">{source.attribution_text}</span>
+                        ) : null}
+                      </td>
+                      <td className="border-b border-[#d1d8e6] p-3 text-xs">
+                        {titleCase(source.match_status)}
+                        <span className="mt-1 block text-[#5a5a58]">
+                          {source.match_method} · {Math.round(source.match_confidence * 100)}%
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Section>
+
+          <Section
+            id="quality"
+            title="Data quality and unresolved caveats"
+            description="Warnings are generated from measured record properties, not editorial confidence."
+          >
+            {warnings.length > 0 ? (
+              <ul className="space-y-2">
+                {warnings.map((warning) => (
+                  <li key={`${warning.code}-${warning.message}`}>
+                    <Alert tone={warning.severity === "info" ? "info" : "warning"}>
+                      <AlertTitle className="flex items-center gap-2">
+                        <AlertTriangle aria-hidden="true" className="size-4" />
+                        {titleCase(warning.code)}
+                      </AlertTitle>
+                      <AlertDescription>{warning.message}</AlertDescription>
+                    </Alert>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="font-sans text-sm text-[#5a5a58]">
+                No record-level quality warnings are open for this facility. This does not prove the
+                source is complete.
+              </p>
+            )}
+            <dl className="mt-4">
+              <DataRow label="Identity status">{titleCase(facility.quality.identity_status)}</DataRow>
+              <DataRow label="Location precision">
+                {PRECISION_LABELS[facility.quality.location_precision] ?? facility.quality.location_precision}
+              </DataRow>
+              <DataRow label="Linked source records">{facility.quality.source_count}</DataRow>
+            </dl>
+          </Section>
+
+          <Section
+            id="history"
+            title="Canonical record history"
+            description="Only measured changes to the PhilFacilities record are shown. Source agency updates are represented by new releases, not this timeline."
+          >
+            {changes && changes.items.length > 0 ? (
+              <ol className="border-l-2 border-[#d1d8e6] pl-5">
+                {changes.items.map((event) => (
+                  <li key={event.id} className="relative pb-6 last:pb-0">
+                    <span
+                      aria-hidden="true"
+                      className="absolute -left-[1.7rem] top-1.5 size-3 border-2 border-white bg-[#0038a8]"
+                    />
+                    <p className="font-ui text-sm font-bold">{titleCase(event.change_type)}</p>
+                    <p className="mt-1 font-sans text-xs text-[#5a5a58]">
+                      {formatDateTime(event.changed_at)} · {event.changed_by}
+                    </p>
+                    {event.attribute_name ? (
+                      <p className="mt-1 font-sans text-sm">
+                        {event.attribute_name}: {JSON.stringify(event.old_value)} →{" "}
+                        {JSON.stringify(event.new_value)}
+                      </p>
+                    ) : (
+                      <pre className="mt-2 overflow-x-auto border border-[#d1d8e6] bg-[#f4f7fc] p-2 font-mono text-xs" tabIndex={0} aria-label="Change event value">
+                        {JSON.stringify(event.new_value, null, 2)}
+                      </pre>
+                    )}
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="font-sans text-sm text-[#5a5a58]">
+                No history events are available for this record.
+              </p>
+            )}
+          </Section>
+        </div>
+
+        <aside className="min-w-0 space-y-5 lg:sticky lg:top-[calc(var(--header-height)+1.5rem)] lg:self-start">
+          <Card>
+            <CardHeader>
+              <CardTitle>At a glance</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <dl>
+                <DataRow label="Source-reported status" stacked>
+                  {titleCase(facility.record_status)}
+                  <p className="mt-1 text-xs text-[#5a5a58]">
+                    Registry presence does not establish operational availability.
+                  </p>
+                </DataRow>
+                <DataRow label="Ownership" stacked>{titleCase(facility.ownership)}</DataRow>
+                <DataRow label="Location precision" stacked>
+                  {PRECISION_LABELS[facility.location.precision] ?? facility.location.precision}
+                </DataRow>
+                <DataRow label="Linked sources" stacked>{facility.source_count}</DataRow>
+                <DataRow label="PSGC release" stacked>{geography.psgc_release ?? "Not linked"}</DataRow>
+              </dl>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Use this record carefully</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 font-sans text-sm text-[#5a5a58]">
+              {isPreciseLocation(facility.location.precision) ? (
+                <p>The point is source-supplied. It is not an independently surveyed building footprint.</p>
+              ) : (
+                <p>This record does not support a building-level location claim.</p>
+              )}
+              <p>
+                Enrollment, capacity, and licensing values are dated source observations, not live
+                status.
+              </p>
+              <Link
+                href="/about#corrections"
+                className="inline-flex items-center gap-1 font-ui text-sm font-bold text-[#0038a8]"
+              >
+                Report a correction <ExternalLink aria-hidden="true" className="size-3.5" />
+              </Link>
+            </CardContent>
+          </Card>
+        </aside>
+      </div>
+    </div>
+  );
+}
