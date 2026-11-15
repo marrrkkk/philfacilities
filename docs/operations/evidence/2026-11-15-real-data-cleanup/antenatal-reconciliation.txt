@@ -1,0 +1,167 @@
+PhilHealth Antenatal release reconciliation
+Date: 2026-11-15
+Database: local Compose PostgreSQL/PostGIS on 127.0.0.1:54329
+
+Problem
+-------
+The retained release PHILHEALTH-EMCB-ANTE_093026-2026-09-30 said
+row_count_parsed = NULL, ingestion_status = failed, publication_status = blocked,
+while its latest ingestion run said status = published with 6,562 parsed and
+accepted rows, 6,168 accreditations, and 394 skipped duplicate source rows.
+The dataset still said publication_status = published even though no Antenatal
+source records, accreditations, or facility links remained.
+
+Cause
+-----
+The PDF is a two-up landscape print. Pages 1-120 contain the provider columns;
+pages 121-240 contain only the aligned EXPIRE DATE and SEC annex. The first
+successful parse counted the annex pages as additional provider rows, producing
+6,562 parsed rows. A later post-ingestion review removed all derived records and
+blocked the release. The raw PDF was retained unchanged.
+
+Corrected re-parse
+------------------
+The parser was corrected to read only provider pages and merge the aligned
+expiry/sector annex (parser version bumped to philhealth-pdf-1.2.0). Re-parsing
+the retained raw file yields 3,221 provider rows and zero rows from pages 121+.
+No Antenatal data is published until a validated re-ingestion.
+
+Metadata reconciliation
+-----------------------
+source.releases (id 9507352f-088e-4b05-b114-6714d85c028e):
+  row_count_parsed      6562
+  row_count_reported    6562
+  ingestion_status      withdrawn
+  publication_status    blocked
+  notes                 records the 6,562-row historical parse, the annex
+                        double-count, the removal of derived records, and the
+                        corrected 3,221-row re-parse
+
+source.ingestion_runs (id 20c9adc9-38a1-4ab8-8bfd-3a5c6e40bbc7):
+  status                withdrawn
+  error_summary         withdrawn_after_review: the 6,562-row parse counted the
+                        PDF expiry/sector annex (pages 121-240) as provider rows.
+                        All derived source records, accreditations, and links
+                        were removed; corrected parser philhealth-pdf-1.2.0
+                        re-reads 3,221 provider rows. No records from this
+                        release are published.
+
+source.datasets (id b1bd7a41-da28-4c2c-ba68-322a35bb8d8a):
+  publication_status    blocked
+
+Current derived-record counts for the release
+---------------------------------------------
+source.records                            0
+health.accreditations                     0
+source.facility_source_links              0
+
+Verification after the residual repair
+---------------------------------------
+uv run pytest -q                         71 passed
+uv run ruff check .                      All checks passed
+uv run ruff format --check .             108 files already formatted
+pnpm lint                                passed
+pnpm typecheck                           passed
+pnpm build                               passed
+./scripts/smoke_check.sh                 SMOKE CHECK PASSED
+                                         statistics=ok published_facilities=83769
+
+Web pages verified HTTP 200: /, /directory, /data, /status, /sources, /map,
+/facilities/angel-f-olarte-sr-elementary-school-osm, and
+/facilities/eros-medical-clinic-philhealth.
+
+Database verification after repair:
+  core.facilities                                     88,824
+  public facilities                                   83,769
+  internal-only facilities                             5,055
+  synthetic facilities                                     0
+  facilities with facility_subtype = 'EMCB-ANTE'           0
+  history.facility_change_events                     100,304
+  history events with source_record_id IS NULL             0
+  current locations                                   70,223
+  facilities with a current location                  70,223
+  public facilities without a source link                   0
+  source.datasets                                          38
+  source.releases                                          47
+
+API verification:
+  GET /v1/facilities/eros-medical-clinic-philhealth returned
+  facility_subtype = "Postpartum", publication_status = "public",
+  is_synthetic = false. Its latest history event is the valid Postpartum
+  update from 2026-11-15 04:36:29+00 with a source record; the withdrawn
+  EMCB-ANTE event is gone.
+
+Reports regenerated from the reconciled database:
+  docs/reports/01-source-directory.md
+  docs/reports/02-acquisition-report.md
+  docs/reports/03-schema-report.md
+  docs/reports/04-data-quality-report.md
+  docs/reports/05-source-rights-report.md
+  docs/reports/07-real-api-examples.md
+
+Residual artifacts found after the metadata reconciliation
+----------------------------------------------------------
+The release/run metadata had been reconciled, but two derived artifacts from the
+withdrawn 6,562-row parse were still present:
+
+  core.facilities.facility_subtype = 'EMCB-ANTE'     3,178 public facilities
+  history.facility_change_events with no source record 3,184 events
+
+The history events were all written at 2026-11-15 04:44:10.507329+00 by
+changed_by = ingest:philhealth-pdf-1.1.0:
+
+  attribute_name = facility_subtype   3,178
+    old Postpartum                     3,103
+    old Transvaginal Ultrasound           73
+    old Clinical Laboratory                1
+    old INF/DISP                           1
+  attribute_name = display_name           6 (three facilities, two events each)
+
+The six display-name events were paired toggles on three facilities
+(MOM & DAUGHTER LYING-IN CLINIC, RIZAL RURAL HEALTH UNIT, S.L. BELLO MATERNITY
+AND LYING-IN CLINIC). Each pair changed a name and changed it back at the same
+timestamp, so the current names already matched the recorded prior values. No
+display-name update was needed.
+
+No facility, accreditation, profile, source link, or quality issue from the
+withdrawn release remained. All 3,178 affected facilities still had source links
+to other, valid PhilHealth releases (9,471 links; 9,471 accreditations). The
+legitimate prior subtype events from the Postpartum run at 2026-11-15
+04:35:13-04:37:26 remain in history and carry their source records.
+
+Repair performed 2026-11-15 07:33 UTC
+-------------------------------------
+The withdrawn history rows were exported before deletion:
+
+  docs/operations/evidence/2026-11-15-real-data-cleanup/withdrawn-ante-history-events.csv
+  3,184 data rows + header (id, facility_id, change_type, attribute_name,
+  old_value, new_value, changed_at, changed_by)
+
+One validated transaction then:
+
+  - restored facility_subtype from each subtype event's recorded old_value:
+      3,178 facilities updated (Postpartum 3,103; Transvaginal Ultrasound 73;
+      Clinical Laboratory 1; INF/DISP 1)
+  - verified the three display-name pairs netted to the current names
+  - deleted the 3,184 source-less withdrawn-parse history events
+  - asserted zero EMCB-ANTE facilities, zero source-less events from
+    ingest:philhealth-pdf-1.1.0, and zero source-less history events overall
+
+Counts after repair
+-------------------
+core.facilities                                   88,824
+  publication_status = public                     83,769
+  publication_status = internal                    5,055
+  is_synthetic = true                                  0
+  facility_subtype = EMCB-ANTE                         0
+history.facility_change_events                   100,304
+  source_record_id IS NULL                             0
+public facilities without a source link                0
+current locations                                 70,223
+facilities with a current location                70,223
+facilities with more than one current location          0
+
+The export is retained as the audit record of the withdrawn events. The
+withdrawn run's error_summary and the release notes remain the authoritative
+record that the 6,562-row parse was invalid. No Antenatal record or derived
+change is exposed by the public API.

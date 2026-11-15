@@ -1,0 +1,68 @@
+PhilFacilities current-location invariant and statistics cleanup
+Date: 2026-11-15
+Database: local Compose PostgreSQL/PostGIS on 127.0.0.1:54329
+
+Problem found during final verification
+---------------------------------------
+The public statistics endpoint joined core.facility_locations and counted rows.
+Eleven canonical facilities had two rows with is_current = true because the
+previous index was non-unique. The endpoint therefore reported
+published_facilities = 83780 while core.facilities contained 83769 public rows.
+
+Pre-fix query:
+  SELECT count(*) AS current_locations,
+         count(DISTINCT facility_id) AS current_facilities
+  FROM core.facility_locations WHERE is_current;
+  -> current_locations = 70234, current_facilities = 70223
+
+Repair
+------
+Migration 0005_unique_current_location:
+  1. Retains the newest current row per facility, using created_at DESC, id DESC
+     as a deterministic tie-break, and sets older duplicate rows to is_current=false.
+  2. Replaces the non-unique index with:
+       CREATE UNIQUE INDEX uq_core_facility_locations_current
+       ON core.facility_locations (facility_id)
+       WHERE is_current;
+
+Post-fix verification
+---------------------
+  SELECT count(*) AS current_locations,
+         count(DISTINCT facility_id) AS current_facilities
+  FROM core.facility_locations WHERE is_current;
+  -> 70223 | 70223
+
+  SELECT indexname, indexdef FROM pg_indexes
+  WHERE schemaname='core' AND tablename='facility_locations'
+    AND indexname LIKE '%current%';
+  -> uq_core_facility_locations_current
+     CREATE UNIQUE INDEX uq_core_facility_locations_current
+     ON core.facility_locations USING btree (facility_id)
+     WHERE is_current
+
+  SELECT version_num FROM alembic_version;
+  -> 0005_unique_current_location
+
+  SELECT count(*) FROM core.facilities WHERE publication_status='public';
+  -> 83769
+
+API verification (GET /v1/statistics)
+--------------------------------------
+  facilities_total      = 83769
+  published_facilities  = 83769
+  schools               = 52813
+  health_facilities     = 30956
+  with_coordinates      = 70223
+  synthetic             = 0
+  source_releases       = 47
+
+Regression coverage
+-------------------
+tests/test_data_quality.py::test_only_one_current_location_per_facility_is_enforced
+inserts a second current location and asserts that the database rejects it.
+
+Fresh-database migration check
+------------------------------
+A scratch database was created on the test PostgreSQL instance and upgraded
+from no revision through 0005. Alembic reported 0005_unique_current_location
+and the unique partial index was present. The scratch database was then dropped.

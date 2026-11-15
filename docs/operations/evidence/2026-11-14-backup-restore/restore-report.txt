@@ -1,0 +1,24 @@
+PhilFacilities restore verification
+result=pass
+verified_at=2026-11-14T15:26:59Z
+dump_file=philfacilities-20261114T152614Z.dump
+manifest_file=philfacilities-20261114T152614Z.dump.manifest.txt
+sha256=92e185d828c7793d340e2fad13097769b6927f1cd7bfff66adb87bdb82cdd3fd
+source_database=philfacilities
+restore_database=philfacilities_restore_test
+kept_for_inspection=0
+check.pg_restore=PASS
+check.postgres_version=PASS expected=17.5(Debian17.5-1.pgdg110+1) actual=17.5(Debian17.5-1.pgdg110+1)
+check.postgis_version=PASS expected=3.5USE_GEOS=1USE_PROJ=1USE_STATS=1 actual=3.5USE_GEOS=1USE_PROJ=1USE_STATS=1
+check.schemas=PASS expected=7 actual=7
+check.tables=PASS expected=22 actual=22
+check.alembic_revision=PASS expected=0002_match_candidates actual=0002_match_candidates
+check.facilities=PASS expected=22 actual=22
+check.source_records=PASS expected=58 actual=58
+check.releases=PASS expected=5 actual=5
+check.geographic_releases=PASS expected=1 actual=1
+check.administrative_units=PASS expected=30 actual=30
+check.facility_locations=PASS expected=15 actual=15
+check.locations_with_geom=PASS expected=15 actual=15
+check.locations_srid_4326=PASS expected=15 actual=15
+check.postgis_extension=PASS version=3.5 USE_GEOS=1 USE_PROJ=1 USE_STATS=1

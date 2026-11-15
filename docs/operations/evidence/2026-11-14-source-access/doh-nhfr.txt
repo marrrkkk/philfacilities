@@ -1,0 +1,21 @@
+DOH NHFR public access attempt
+==============================
+
+Attempted at: 2026-11-14 (UTC)
+URL: https://nhfr.doh.gov.ph/VActivefacilitiesList
+Method: curl -L with a desktop Chrome user agent
+Result:
+  final_url=https://nhfr.doh.gov.ph/VActivefacilitiesList
+  http_code=403
+  content_type=text/html; charset=UTF-8
+  size=5660
+  redirects=0
+Response title: "Attention Required! | Cloudflare"
+
+Interpretation:
+- The public NHFR page is behind a Cloudflare challenge in this environment.
+- No CSV, Excel, shapefile, or other official export was acquired.
+- No official DOH record was loaded or published.
+- A normal browser session or the permitted FOI/data-use route is still required to
+  obtain the export and review the signed Agreement for the Release and Use of
+  Health Data.

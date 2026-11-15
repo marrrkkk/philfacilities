@@ -1,0 +1,10 @@
+PhilFacilities API latency baseline (http://127.0.0.1:8010)
+Publication-approved real data; serial requests over loopback. Not a load test.
+
+endpoint          p50 ms  p95 ms  max ms   bytes  path
+health                11      13      13     102  /healthz
+statistics         13685   15219   15219    1905  /v1/statistics
+facilities          2806    3059    3059   17911  /v1/facilities?limit=20
+facility detail       51      53      53    2527  /v1/facilities/angel-f-olarte-sr-elementary-school-osm
+bbox query           643     836     836  382910  /v1/facilities/within?bbox=120.9,14.4,121.1,14.7&limit=500
+sources               34      36      36   58690  /v1/sources

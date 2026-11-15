@@ -1,0 +1,18 @@
+2026-11-15T01:03:16Z
+host: Linux 6.18.58.1-microsoft-standard-WSL2 x86_64
+python: Python 3.14.8
+uv: uv 0.13.0 (x86_64-unknown-linux-gnu)
+api: {"status":"ok","service":"philfacilities-api","version":"0.1.0","database":"ok","environment":"local"}
+data: published_facilities=22 facilities_total=22
+
+$ uv run python scripts/api_benchmark.py --samples 10 --warmup 2
+PhilFacilities API latency baseline (http://127.0.0.1:8010)
+Synthetic demo data; serial requests over loopback. Not a load test.
+
+endpoint          p50 ms  p95 ms  max ms   bytes  path
+health                 9      13      13     102  /healthz
+statistics            38      58      58     675  /v1/statistics
+facilities            61     229     229   18100  /v1/facilities?limit=20
+facility detail      106     213     213    4711  /v1/facilities/synthetic-demo-school-01-deped
+bbox query            86     171     171    2026  /v1/facilities/within?bbox=124.5,8.3,124.8,8.6&limit=500
+sources               33      48      48    5953  /v1/sources

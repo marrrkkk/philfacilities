@@ -1,0 +1,28 @@
+       slug       |       source_release_label        |    parser_version    | row_count_parsed | source_records | collapsed_rows 
+------------------+-----------------------------------+----------------------+------------------+----------------+----------------
+ philhealth-fdc   | PHILHEALTH-FDC_093026-2026-09-30  | philhealth-pdf-1.1.0 |             1012 |            993 |             19
+ philhealth-gamot | PHILHEALTH-GAMOT-UNDATED          | philhealth-pdf-1.1.0 |             3483 |           3279 |            204
+ philhealth-hosp  | PHILHEALTH-HOSP_093026-2026-09-30 | philhealth-pdf-1.1.0 |             1934 |           1932 |              2
+ philhealth-yakap | PHILHEALTH-YAKAP-UNDATED          | philhealth-pdf-1.1.0 |             4138 |           4134 |              4
+(4 rows)
+
+ records 
+---------
+  234820
+(1 row)
+
+ accreditations 
+----------------
+          24757
+(1 row)
+
+ facilities 
+------------
+      88824
+(1 row)
+
+ source_links 
+--------------
+       100046
+(1 row)
+

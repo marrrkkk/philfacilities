@@ -1,0 +1,51 @@
+# Source reachability probes — 2026-11-15
+
+Method: unauthenticated GET requests with curl, desktop browser User-Agent, redirects followed, 25–30 s timeout. No CAPTCHA, Cloudflare challenge, TLS error, login, agreement, or access control was bypassed. HTTP 403/404/TLS errors below are recorded as blockers, not as acquired data.
+
+## Primary facility and geographic sources
+
+psa-psgc	https://psa.gov.ph/classification/psgc	403	text/html; charset=UTF-8	https://psa.gov.ph/classification/psgc	5596
+psa-workbook	https://psa.gov.ph/system/files/scd/PSGC-3Q-2026-Publication-Datafile.xlsx	403	text/html; charset=UTF-8	https://psa.gov.ph/system/files/scd/PSGC-3Q-2026-Publication-Datafile.xlsx	5746
+psa-api-index	https://classification.psa.gov.ph/psgc	404	text/html; charset=utf-8	https://classification.psa.gov.ph/psgc	821
+psa-api-regions	https://classification.psa.gov.ph/psgc/regions	200	application/json	https://classification.psa.gov.ph/psgc/regions/	657
+psa-api-regions-all	https://classification.psa.gov.ph/psgc/regions/all	400	application/json	https://classification.psa.gov.ph/psgc/regions/all	30
+deped-machine	https://www.deped.gov.ph/machine-ready-files/	403	text/html	https://www.deped.gov.ph/machine-ready-files/	317
+deped-ebeis	https://ebeis.deped.gov.ph/beis/reports_info/masterlist	200	text/html; charset=utf-8	https://ebeis.deped.gov.ph/beis/reports_info/masterlist	7350
+doh-nhfr	https://nhfr.doh.gov.ph/VActivefacilitiesList	403	text/html; charset=UTF-8	https://nhfr.doh.gov.ph/VActivefacilitiesList	5661
+doh-hfsrb	https://hfsrb.doh.gov.ph/list-of-licensed-health-facilities/	403	text/html; charset=UTF-8	https://hfsrb.doh.gov.ph/list-of-licensed-health-facilities/	5661
+ched-heida	https://heida.ched.gov.ph/hei-directory	200	text/html; charset=UTF-8	https://heida.ched.gov.ph/hei-directory	49716
+tesda-tvi	https://www.tesda.gov.ph/TVI	200	text/html; charset=utf-8	https://www.tesda.gov.ph/TVI	26667
+philhealth	https://www.philhealth.gov.ph/partners/providers/facilities/accredited/	200	text/html; charset=UTF-8	https://www.philhealth.gov.ph/partners/providers/facilities/accredited/	8333
+bettergov-psgc	https://statistics.bettergov.ph/api/classification/psgc	200	application/json; charset=utf-8	https://statistics.bettergov.ph/api/classification/psgc	2007
+bettergov-coverage	https://statistics.bettergov.ph/api/v1/coverage	200	application/json	https://statistics.bettergov.ph/api/v1/coverage	478
+osm-health	https://production-raw-data-api.s3.amazonaws.com/ISO3/PHL/_layers/osm/health_facilities.parquet	200	application/octet-stream	https://production-raw-data-api.s3.amazonaws.com/ISO3/PHL/_layers/osm/health_facilities.parquet	2234739
+osm-education	https://production-raw-data-api.s3.amazonaws.com/ISO3/PHL/_layers/osm/education_facilities.parquet	200	application/octet-stream	https://production-raw-data-api.s3.amazonaws.com/ISO3/PHL/_layers/osm/education_facilities.parquet	34784703
+
+## Additional agency and hazard discovery targets
+
+georisk	https://georisk.gov.ph/	ERROR\tcurl: (60) SSL certificate OpenSSL verify result: unable to get local issuer certificate (20) More details here: https://curl.se/docs/sslcerts.html  curl failed to verify the legitimacy of the server and therefore could not establish a secure connection to it. To learn more about this situation and how to fix it, please visit the webpage mentioned above. 000		https://georisk.gov.ph/	0	1.668777 
+georisk-data	https://georisk.gov.ph/geoanalytics/data-and-methods	ERROR\tcurl: (60) SSL certificate OpenSSL verify result: unable to get local issuer certificate (20) More details here: https://curl.se/docs/sslcerts.html  curl failed to verify the legitimacy of the server and therefore could not establish a secure connection to it. To learn more about this situation and how to fix it, please visit the webpage mentioned above. 000		https://georisk.gov.ph/geoanalytics/data-and-methods	0	1.667182 
+hazardhunter	https://hazardhunter.georisk.gov.ph/	200	text/html; charset=UTF-8	https://hazardhunter.georisk.gov.ph/	24697	2.538419
+phivolcs	https://www.phivolcs.dost.gov.ph/	200	text/html; charset=UTF-8	https://www.phivolcs.dost.gov.ph/	201260	3.234549
+phivolcs-maps	https://maps.phivolcs.dost.gov.ph/	ERROR\tcurl: (35) TLS connect error: error:0A000126:SSL routines::unexpected eof while reading 000		https://maps.phivolcs.dost.gov.ph/	0	12.806306 
+pagasa	https://www.pagasa.dost.gov.ph/	200	text/html; charset=UTF-8	https://www.pagasa.dost.gov.ph/	1815151	4.119289
+climgrid	https://climgridph.pagasa.dost.gov.ph/climapv2/	200	text/html; charset=UTF-8	https://climgridph.pagasa.dost.gov.ph/climapv2/	47567	2.514076
+mgb	https://mgb.gov.ph/	403	text/html; charset=UTF-8	https://mgb.gov.ph/	5521	1.385522
+data-gov-ph	https://data.gov.ph/	200	text/html	https://data.gov.ph/	7364	1.653309
+data-api	https://api.data.gov.ph/api/public/dataset/search	404	text/html; charset=utf-8	https://api.data.gov.ph/api/public/dataset/search	164	1.635114
+dilg	https://www.dilg.gov.ph/	ERROR\tcurl: (35) TLS connect error: error:0A000126:SSL routines::unexpected eof while reading 000		https://www.dilg.gov.ph/	0	13.143728 
+bfp	https://bfp.gov.ph/	403	text/html; charset=UTF-8	https://bfp.gov.ph/	5521	1.406898
+pnp	https://pnp.gov.ph/	403	text/html; charset=UTF-8	https://pnp.gov.ph/	5521	1.166580
+bjmp	https://bjmp.gov.ph/	403	text/html; charset=UTF-8	https://bjmp.gov.ph/	5522	1.407411
+bucor	https://bucor.gov.ph/	200	text/html; charset=UTF-8	https://bucor.gov.ph/	140959	4.375226
+dswd	https://www.dswd.gov.ph/	200	text/html; charset=UTF-8	https://www.dswd.gov.ph/	320923	3.609354
+dpwh	https://www.dpwh.gov.ph/	403	text/html	https://www.dpwh.gov.ph/	887	1.395026
+denr	https://denr.gov.ph/	403	text/html; charset=UTF-8	https://denr.gov.ph/	5522	1.347491
+namria	https://www.namria.gov.ph/	200	text/html; charset=utf-8	https://www.namria.gov.ph/	15756156	18.682205
+nha	https://nha.gov.ph/	403	text/html; charset=UTF-8	https://nha.gov.ph/	5521	1.404664
+nlp	https://web.nlp.gov.ph/	200	text/html; charset=UTF-8	https://web.nlp.gov.ph/	208169	2.955631
+ncca	https://ncca.gov.ph/	ERROR\tcurl: (6) Could not resolve host: ncca.gov.ph 000		https://ncca.gov.ph/	0	0.665330 
+lwua	https://lwua.gov.ph/	403	text/html; charset=UTF-8	https://lwua.gov.ph/	5522	1.355400
+mwss	https://mwss.gov.ph/	403	text/html; charset=UTF-8	https://mwss.gov.ph/	5522	1.384816
+ltf	https://ltfrb.gov.ph/	403	text/html; charset=UTF-8	https://ltfrb.gov.ph/	5663	1.429176
+dict	https://dict.gov.ph/	403	text/html; charset=UTF-8	https://dict.gov.ph/	5662	1.184243

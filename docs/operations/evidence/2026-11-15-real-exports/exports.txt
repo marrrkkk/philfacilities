@@ -1,0 +1,16 @@
+PhilFacilities bulk export verification
+Captured: 2026-11-15T06:33:09Z
+API: http://127.0.0.1:8010
+
+CSV: /v1/downloads/facilities.csv
+bytes: 31227720
+lines: 84614
+sha256: e286efa823fd7af63b49a42bd5f61615f4fac2cbaf877aea8a1a928b326b14b5
+
+Parquet: /v1/downloads/facilities.parquet
+bytes: 6508451
+sha256: 72cf9fb66cbbaf8c60fa2d399baa4a512813cff0031ab16e4206bd7c3d6f55fa
+parquet_rows: 83769
+parquet_columns: 26
+
+Expected public facilities from the publication gate at capture time: 83769

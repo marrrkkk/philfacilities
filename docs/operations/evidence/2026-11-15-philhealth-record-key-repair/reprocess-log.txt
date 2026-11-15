@@ -1,0 +1,122 @@
+→ YAKAP.pdf: Yakap Clinics
+  published
+→ GAMOT.pdf: GAMOT Package Providers
+  published
+→ HOSP_093026.pdf: Hospitals and Infirmaries/Dispensaries
+  published
+→ FDC_093026.pdf: Freestanding Dialysis Clinics
+  published
+[
+  {
+    "dataset": "philhealth-yakap",
+    "filename": "YAKAP.pdf",
+    "status": "published",
+    "release_id": "8fc88506-f2be-4c5e-9e97-823f051b954d",
+    "stats": {
+      "input_rows": 0,
+      "parsed_rows": 4138,
+      "accepted_rows": 4138,
+      "rejected_rows": 0,
+      "duplicate_source_ids": 0,
+      "facilities_created": 0,
+      "facilities_updated": 2695,
+      "unresolved": 0,
+      "with_coordinates": 0,
+      "precision": {},
+      "psgc_provided": 0,
+      "psgc_matched": 0,
+      "enrollment_observations": 0,
+      "resource_observations": 0,
+      "licenses": 0,
+      "accreditations": 4,
+      "candidate_matches": 0,
+      "reprocessed": true,
+      "psgc_match_rate": null
+    },
+    "issues": 0
+  },
+  {
+    "dataset": "philhealth-gamot",
+    "filename": "GAMOT.pdf",
+    "status": "published",
+    "release_id": "8f86bdd6-4d6e-4d20-b650-b0076a5e88aa",
+    "stats": {
+      "input_rows": 0,
+      "parsed_rows": 3483,
+      "accepted_rows": 3483,
+      "rejected_rows": 0,
+      "duplicate_source_ids": 0,
+      "facilities_created": 0,
+      "facilities_updated": 928,
+      "unresolved": 0,
+      "with_coordinates": 0,
+      "precision": {},
+      "psgc_provided": 0,
+      "psgc_matched": 0,
+      "enrollment_observations": 0,
+      "resource_observations": 0,
+      "licenses": 0,
+      "accreditations": 204,
+      "candidate_matches": 0,
+      "reprocessed": true,
+      "psgc_match_rate": null
+    },
+    "issues": 0
+  },
+  {
+    "dataset": "philhealth-hosp",
+    "filename": "HOSP_093026.pdf",
+    "status": "published",
+    "release_id": "ca3e9daf-abbe-4300-b929-5a3e9a86b303",
+    "stats": {
+      "input_rows": 0,
+      "parsed_rows": 1934,
+      "accepted_rows": 1934,
+      "rejected_rows": 0,
+      "duplicate_source_ids": 0,
+      "facilities_created": 0,
+      "facilities_updated": 1266,
+      "unresolved": 0,
+      "with_coordinates": 0,
+      "precision": {},
+      "psgc_provided": 0,
+      "psgc_matched": 0,
+      "enrollment_observations": 0,
+      "resource_observations": 0,
+      "licenses": 0,
+      "accreditations": 2,
+      "candidate_matches": 0,
+      "reprocessed": true,
+      "psgc_match_rate": null
+    },
+    "issues": 0
+  },
+  {
+    "dataset": "philhealth-fdc",
+    "filename": "FDC_093026.pdf",
+    "status": "published",
+    "release_id": "5e38923d-321f-4247-94ee-70f00440f926",
+    "stats": {
+      "input_rows": 0,
+      "parsed_rows": 1012,
+      "accepted_rows": 1012,
+      "rejected_rows": 0,
+      "duplicate_source_ids": 0,
+      "facilities_created": 0,
+      "facilities_updated": 31,
+      "unresolved": 0,
+      "with_coordinates": 0,
+      "precision": {},
+      "psgc_provided": 0,
+      "psgc_matched": 0,
+      "enrollment_observations": 0,
+      "resource_observations": 0,
+      "licenses": 0,
+      "accreditations": 19,
+      "candidate_matches": 0,
+      "reprocessed": true,
+      "psgc_match_rate": null
+    },
+    "issues": 0
+  }
+]

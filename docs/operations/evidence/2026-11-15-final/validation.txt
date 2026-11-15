@@ -1,0 +1,228 @@
+PhilFacilities final local verification (real-data state)
+Generated (UTC): 2026-11-15T09:43:36Z
+Working tree: uncommitted local checkout; no remote configured at verification time
+Host: Linux 6.18.58.1-microsoft-standard-WSL2 x86_64
+Versions: Node 24.21.0, pnpm 12.18.0, uv 0.13.0, Python 3.14.8
+Data: 88,824 facilities (83,769 public / 5,055 internal / 0 synthetic)
+Services: API http://127.0.0.1:8010, production web build http://127.0.0.1:3000
+
+The earlier synthetic-MVP report is retained at
+`archive/validation-synthetic-mvp.txt`; it is historical and does not describe
+the working database below.
+
+## Working database counts
+
+Measured directly with `psql` against the local PostgreSQL/PostGIS database.
+
+| Entity | Count |
+|---|---:|
+| Datasets | 38 |
+| Releases | 47 |
+| Source checks | 90 |
+| Facilities (all) | 88,824 |
+| Facilities with `publication_status = public` | 83,769 |
+| Facilities with `publication_status = internal` | 5,055 |
+| Synthetic facilities | 0 |
+| Source records | 235,049 |
+| Accreditations | 24,986 |
+| Facility-source links | 100,275 |
+| Current locations | 70,223 |
+| Facility change events | 100,304 |
+| Population observations | 134,748 |
+| Open quality issues | 33,639 |
+| Attribute assertions | 282,755 |
+
+Published data comprises 25 PhilHealth provider categories, two crowd-sourced
+HOT/OSM extracts, the BetterGov PSGC Q2 2024 mirror, and 18 PSA 2024 Census
+population releases loaded through BetterGov. DepEd EBEIS NCR remains
+`internal_only` (5,055 records) and is excluded from public API, exports,
+statistics, and source evidence.
+
+## Static checks and Python tests
+
+$ uv run ruff check .
+All checks passed!
+
+$ uv run ruff format --check .
+114 files already formatted
+
+$ uv run pytest -q
+........................................................................ [ 90%]
+........                                                                 [100%]
+80 passed, 1 warning in 21.15s
+
+The warning is Starlette's upstream `httpx` deprecation notice from
+`fastapi.testclient`; it is not a PhilFacilities failure.
+
+$ pnpm lint
+$ pnpm --filter @philfacilities/web lint
+$ eslint .
+(no findings)
+
+$ pnpm typecheck
+$ pnpm --filter @philfacilities/web typecheck
+$ tsc --noEmit
+(no findings)
+
+## Production build
+
+$ pnpm build
+✓ Compiled successfully in 3.5s
+  Finished TypeScript in 6.0s
+✓ Generating static pages using 7 workers (6/6) in 544ms
+
+Route (app)
+┌ ƒ /
+├ ƒ /_not-found
+├ ƒ /about
+├ ƒ /api
+├ ƒ /data
+├ ƒ /data/[dataset]
+├ ƒ /data/dictionary
+├ ƒ /directory
+├ ƒ /facilities/[id]
+├ ƒ /map
+├ ƒ /sources
+└ ƒ /status
+
+ƒ Proxy (Middleware)
+
+ƒ  (Dynamic)  server-rendered on demand
+
+All 12 routes are dynamic so the proxy can attach a fresh CSP nonce.
+
+## Playwright
+
+$ cd apps/web && pnpm exec playwright test --project=desktop-chromium --project=mobile-chromium
+  5 skipped
+  47 passed (2.7m)
+
+The five skips are intentional project-specific checks:
+- mobile-only navigation, profile-table overflow, and viewport regression in the
+  desktop project;
+- desktop-only navigation focus-ring and design-token checks in the mobile project.
+
+This run includes directory search/filter and keyboard submission against real
+records (`Mulanay Central Elementary`, `Bantug na Munti Primary School`), the
+facility profile and provenance panel, map worker/selection/tile-failure
+fallback, directory-filter pass-through to the map, data dictionary, status,
+skip link, mobile menu Escape/focus return, measured design tokens, CSP nonce
+freshness and coverage, CSP-violation monitoring, responsive overflow, and axe
+serious/critical checks on the public pages.
+
+## Reference-period filters
+
+Live API checks against rights-cleared releases:
+
+- `GET /v1/facilities?reference_period_start=2026-09-30&reference_period_end=2026-09-30`
+  → `200`, `total = 9,883`
+- `GET /v1/facilities?reference_period_start=2026-10-01` → `200`, `total = 0`
+- `GET /v1/facilities?reference_period_start=2026-10-01&reference_period_end=2026-09-30`
+  → `400`, `code = invalid_reference_period`
+  with message `reference_period_start must be on or before reference_period_end.`
+
+The filter is inclusive overlap semantics and is also exposed on
+`/v1/facilities/within`, `/v1/facilities/nearby`, `/v1/schools`, and
+`/v1/health-facilities`. Unknown release period boundaries do not match.
+
+## Search latency (serial loopback, not a load test)
+
+Five requests per query after warm-up:
+
+| Query | Results | Median |
+|---|---:|---:|
+| `Mulanay` | 40 | 252 ms |
+| `Manila` | 832 | 638 ms |
+| `Bacolod` | 140 | 1,869 ms |
+| `School 01` | 0 | 89 ms |
+| `zzzz-no-match` | 0 | 88 ms |
+
+Search now uses an uncorrelated `UNION` of indexed ID branches (name, official
+name, source key, address, locality) instead of a correlated `EXISTS`.
+Migration `0006_search_trigram_indexes` adds trigram indexes for the text
+branches and model indexes cover `official_name`, `address_text`,
+`source_record_key`, and `administrative_units.name`. `Bacolod` remains the
+slowest measured term; further query-plan and index work is pre-launch
+optimization, not a completeness claim.
+
+## OpenAPI contract
+
+`GET /openapi.json` exposes 39 paths. The committed
+`packages/api-client/openapi.json` was regenerated after the reference-period
+and search changes; the TypeScript client in `packages/api-client/src/schema.ts`
+matches it, and the contract-drift test compares the committed file with
+`app.openapi()`.
+
+## Smoke check
+
+$ bash scripts/smoke_check.sh
+api=ok version=0.1.0 environment=local
+web=ok status=200
+statistics=ok published_facilities=83769
+SMOKE CHECK PASSED
+
+## Responsive overflow audit
+
+$ pnpm --filter @philfacilities/web check:responsive
+ok ... (32 checks at 390, 768, 1024, and 1440px)
+All 32 responsive overflow checks passed.
+
+The audit now uses the real profile
+`/facilities/mulanay-central-elementary-school-osm`.
+
+## Content Security Policy (live production build)
+
+$ curl -sI http://127.0.0.1:3000/ | grep -i '^content-security-policy'
+default-src 'self'; script-src 'self' 'nonce-...' 'strict-dynamic';
+style-src 'self' 'nonce-...'; style-src-attr 'unsafe-inline';
+img-src 'self' data: blob: https://tile.openstreetmap.org; font-src 'self';
+worker-src 'self' blob:; connect-src 'self' http://127.0.0.1:8010
+https://tile.openstreetmap.org; media-src 'none'; object-src 'none';
+frame-src 'none'; frame-ancestors 'none'; base-uri 'self';
+form-action 'self'; manifest-src 'self'; upgrade-insecure-requests
+
+The nonce is replaced on every response; the Playwright CSP test asserts that
+two responses carry different policies. `style-src-attr 'unsafe-inline'`
+remains intentional for MapLibre's inline style mutations; `script-src`
+contains no `unsafe-inline`.
+
+## Local Markdown links
+
+$ uv run python scripts/check_markdown_links.py
+checked 89 local links
+all local markdown links resolve
+
+## Data-integrity controls verified
+
+- Raw source files and immutable releases are preserved outside the public
+  surfaces; the working tree excludes `var/` raw files and database dumps.
+- Missing values remain null and are not rendered as zero, false, or inactive.
+- PSGC leading zeros are preserved; population and geography releases carry
+  source URL, agency, reference period, checksum, retrieval time, and parser
+  version.
+- OSM records remain labelled crowd-sourced, and their bbox-centre coordinates
+  remain `map_geocoded` rather than building-level locations.
+- No facility is auto-merged; identity candidates remain in the review queue.
+- Registry presence is not treated as proof of current operational availability.
+- Public queries require a rights-cleared dataset and an approved/published
+  release. DepEd EBEIS internal records and blocked official sources do not
+  appear in public results.
+- Failed new releases are quarantined; a previously published release keeps its
+  `published` status so a failed re-ingestion cannot hide working data.
+
+## Remaining external blockers
+
+- Official PSA PSGC workbook/API data (403/token required).
+- DepEd Machine-Ready Files (403 and a human terms/feedback flow).
+- DOH NHFR/HFSRB (403; data-use agreement not reviewed or accepted).
+- CHED/TESDA bulk machine-readable export and reuse terms unverified.
+- Open Data Philippines dataset access unverified.
+- Hazard layers: GeoRiskPH TLS failure, PHIVOLCS map TLS failure, DENR-MGB 403;
+  no reuse permission recorded.
+- Production basemap provider, hosted CI observation, hosted scheduled runs,
+  monitoring/paging/on-call, production backups/PITR, and external security and
+  legal review remain open.
+
+This report does not claim nationwide completeness, legal review, hosted
+automation, or production readiness. It records what the local working database,
+API, web build, and browser suite actually demonstrated on 15 November 2026.

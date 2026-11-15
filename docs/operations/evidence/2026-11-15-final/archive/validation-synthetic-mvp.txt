@@ -1,0 +1,163 @@
+PhilFacilities final local verification
+Generated (UTC): 2026-11-15T01:35:53Z
+Working tree: uncommitted local checkout; no remote configured
+Host: Linux 6.18.58.1-microsoft-standard-WSL2 x86_64
+Versions: Node 24.21.0, pnpm 12.18.0, uv 0.13.0, Python 3.14.8
+Data: 22 synthetic facilities; official-source publication remains blocked
+Services: API http://127.0.0.1:8010, production web build http://127.0.0.1:3000
+
+## Static checks and Python tests
+
+$ uv run ruff check .
+All checks passed!
+
+$ uv run ruff format --check .
+83 files already formatted
+
+$ uv run pytest -q
+................................................                         [100%]
+48 passed, 1 warning in 22.28s
+
+The warning is Starlette's upstream `httpx` deprecation notice from
+`fastapi.testclient`; it is not a PhilFacilities failure.
+
+$ pnpm lint
+$ pnpm --filter @philfacilities/web lint
+$ eslint .
+(no findings)
+
+$ pnpm typecheck
+$ pnpm --filter @philfacilities/web typecheck
+$ tsc --noEmit
+(no findings)
+
+## Production build
+
+$ pnpm --filter @philfacilities/web build
+✓ Compiled successfully in 6.0s
+  Finished TypeScript in 8.6s
+✓ Generating static pages using 7 workers (6/6) in 543ms
+
+Route (app)
+┌ ƒ /
+├ ƒ /_not-found
+├ ƒ /about
+├ ƒ /api
+├ ƒ /data
+├ ƒ /data/[dataset]
+├ ƒ /data/dictionary
+├ ƒ /directory
+├ ƒ /facilities/[id]
+├ ƒ /map
+├ ƒ /sources
+└ ƒ /status
+
+ƒ Proxy (Middleware)
+
+ƒ  (Dynamic)  server-rendered on demand
+
+All 12 routes are dynamic so the proxy can attach a fresh CSP nonce.
+
+## Playwright
+
+$ cd apps/web && pnpm exec playwright test --reporter=list
+  5 skipped
+  47 passed (2.1m)
+
+The five skips are intentional project-specific checks:
+- mobile-only navigation, profile-table overflow, and viewport regression in the
+  desktop project;
+- desktop-only navigation focus-ring and design-token checks in the mobile project.
+
+This run includes directory search/filter and keyboard submission, facility
+profile, map worker/selection/fallback, data dictionary, status, skip link,
+mobile menu Escape/focus return, measured design tokens, CSP nonce freshness and
+coverage, CSP-violation monitoring, responsive overflow, and axe serious/critical
+checks on the public pages.
+
+Hydration regression closure: the mobile keyboard search failure was reproduced
+as a pre-hydration race that also affected desktop. React hydration reconciled
+the uncontrolled `#filter-q` input back to its `defaultValue`, discarded typed
+text, and dropped focus. `apps/web/src/components/hydration-marker.tsx` now marks
+`<html data-hydrated="true">` after client hydration, and interactive e2e tests
+wait for that marker before typing. The previously failing test passed 5/5
+repeats on mobile and 5/5 on desktop, then passed in the full suite above.
+
+## Content Security Policy (live production build)
+
+$ curl -sI http://127.0.0.1:3000/ | grep -i '^content-security-policy'
+content-security-policy: default-src 'self';
+script-src 'self' 'nonce-NWIyYWI4YjEtYzlkZi00OWFlLThhN2ItMGEyNTEyYTg5OTA1'
+'strict-dynamic'; style-src 'self'
+'nonce-NWIyYWI4YjEtYzlkZi00OWFlLThhN2ItMGEyNTEyYTg5OTA1'; style-src-attr
+'unsafe-inline'; img-src 'self' data: blob: https://tile.openstreetmap.org;
+font-src 'self'; worker-src 'self' blob:; connect-src 'self'
+http://127.0.0.1:8010 https://tile.openstreetmap.org; media-src 'none';
+object-src 'none'; frame-src 'none'; frame-ancestors 'none'; base-uri 'self';
+form-action 'self'; manifest-src 'self'; upgrade-insecure-requests
+
+(The nonce shown is from one response and is replaced on every request; the
+Playwright CSP test asserts that two responses carry different policies.)
+
+`style-src-attr 'unsafe-inline'` remains intentional for MapLibre's inline style
+mutations; `script-src` contains no `unsafe-inline`.
+
+## Smoke check
+
+$ bash scripts/smoke_check.sh
+api=ok version=0.1.0 environment=local
+web=ok status=200
+statistics=ok published_facilities=22
+SMOKE CHECK PASSED
+
+## Responsive overflow audit
+
+$ pnpm --filter @philfacilities/web check:responsive
+ok ... (32 checks at 390, 768, 1024, and 1440px)
+All 32 responsive overflow checks passed.
+
+## Read-API latency baseline
+
+$ uv run python scripts/api_benchmark.py --samples 10 --warmup 2
+PhilFacilities API latency baseline (http://127.0.0.1:8010)
+Synthetic demo data; serial requests over loopback. Not a load test.
+
+endpoint          p50 ms  p95 ms  max ms   bytes  path
+health                 8      11      11     102  /healthz
+statistics            36      39      39     675  /v1/statistics
+facilities            50      60      60   18100  /v1/facilities?limit=20
+facility detail       54      58      58    4711  /v1/facilities/synthetic-demo-school-01-deped
+bbox query            39      42      42    2026  /v1/facilities/within?bbox=124.5,8.3,124.8,8.6&limit=500
+sources               18      19      19    5953  /v1/sources
+
+These numbers describe the 22-facility synthetic demo only. They are not a
+capacity claim and do not substitute for representative-scale load or query-plan
+testing.
+
+## Aggregate documented check
+
+$ uvx --from rust-just just check
+(ruff check, ruff format --check, pnpm lint, pnpm typecheck, pytest, pnpm build,
+and the Markdown link check all completed successfully)
+
+The production build in this aggregate run again reported 12 dynamic routes and
+the active proxy. The running web server was restarted from that build and the
+smoke check above was repeated successfully.
+
+## Local Markdown links
+
+$ uv run python scripts/check_markdown_links.py
+checked 88 local links
+all local markdown links resolve
+
+## Remaining external blockers
+
+- Official PSA/DepEd/DOH acquisition and publication: access/terms review is not
+  complete; the PSGC workbook remains behind an HTTP 403 challenge.
+- PhilHealth rights review (M1-12) remains in progress; redistribution (M1-13)
+  remains blocked. The real PDF and parsed rows are not published.
+- Hosted GitHub Actions has not been observed because the checkout has no commit
+  or remote.
+- Production basemap provider, backups/PITR, monitoring/paging, WAF/TLS/secret
+  manager, and external penetration testing require infrastructure or owner
+  decisions.

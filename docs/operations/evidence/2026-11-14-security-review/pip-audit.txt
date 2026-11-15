@@ -1,0 +1,5 @@
+No known vulnerabilities found
+Name                  Skip Reason
+--------------------- ------------------------------------------------------------------------------------
+philfacilities-api    Dependency not found on PyPI and could not be audited: philfacilities-api (0.1.0)
+philfacilities-ingest Dependency not found on PyPI and could not be audited: philfacilities-ingest (0.1.0)

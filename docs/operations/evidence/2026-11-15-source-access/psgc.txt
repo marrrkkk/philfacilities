@@ -1,0 +1,24 @@
+PSGC 3Q 2026 workbook acquisition attempt — 2026-11-15
+
+URL:
+https://psa.gov.ph/system/files/scd/PSGC-3Q-2026-Publication-Datafile.xlsx
+
+Request:
+curl -sS -I -L --max-time 30 \
+  -A "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" \
+  "https://psa.gov.ph/system/files/scd/PSGC-3Q-2026-Publication-Datafile.xlsx"
+
+Response:
+HTTP/2 403
+content-type: text/html; charset=UTF-8
+content-length: 5746
+cf-mitigated: challenge
+server: cloudflare
+cf-ray: a5a7818929a57768-LHR
+
+Outcome:
+No official PSGC workbook was acquired. Cloudflare returned an interactive
+challenge instead of the file. A normal browser session or another approved
+access route is required before official PSGC ingestion can be tested.
+
+The synthetic PSGC fixture continues to exercise the parser and release model.

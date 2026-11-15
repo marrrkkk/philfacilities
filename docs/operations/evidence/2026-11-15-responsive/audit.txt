@@ -1,0 +1,61 @@
+PhilFacilities responsive/accessibility evidence
+Generated (UTC): 2026-11-15T00:48:20Z
+
+## Responsive overflow audit
+$ pnpm --filter @philfacilities/web check:responsive
+$ node scripts/check-responsive.mjs
+ok 390px / scrollWidth=390 header=60px
+ok 390px /directory scrollWidth=390 header=60px
+ok 390px /map scrollWidth=390 header=60px
+ok 390px /facilities/synthetic-demo-school-01-deped scrollWidth=390 header=60px
+ok 390px /data scrollWidth=390 header=60px
+ok 390px /data/dictionary scrollWidth=390 header=60px
+ok 390px /api scrollWidth=390 header=60px
+ok 390px /status scrollWidth=390 header=60px
+ok 768px / scrollWidth=768 header=68px
+ok 768px /directory scrollWidth=768 header=68px
+ok 768px /map scrollWidth=768 header=68px
+ok 768px /facilities/synthetic-demo-school-01-deped scrollWidth=768 header=68px
+ok 768px /data scrollWidth=768 header=68px
+ok 768px /data/dictionary scrollWidth=768 header=68px
+ok 768px /api scrollWidth=768 header=68px
+ok 768px /status scrollWidth=768 header=68px
+ok 1024px / scrollWidth=1024 header=68px
+ok 1024px /directory scrollWidth=1024 header=68px
+ok 1024px /map scrollWidth=1024 header=68px
+ok 1024px /facilities/synthetic-demo-school-01-deped scrollWidth=1024 header=68px
+ok 1024px /data scrollWidth=1024 header=68px
+ok 1024px /data/dictionary scrollWidth=1024 header=68px
+ok 1024px /api scrollWidth=1024 header=68px
+ok 1024px /status scrollWidth=1024 header=68px
+ok 1440px / scrollWidth=1440 header=68px
+ok 1440px /directory scrollWidth=1440 header=68px
+ok 1440px /map scrollWidth=1440 header=68px
+ok 1440px /facilities/synthetic-demo-school-01-deped scrollWidth=1440 header=68px
+ok 1440px /data scrollWidth=1440 header=68px
+ok 1440px /data/dictionary scrollWidth=1440 header=68px
+ok 1440px /api scrollWidth=1440 header=68px
+ok 1440px /status scrollWidth=1440 header=68px
+All 32 responsive overflow checks passed.
+
+## Reviewed screenshots
+directory-1440x900.png 1440x4086
+directory-390x844.png 390x8324
+home-1024x768.png 1024x2899
+home-1440x900.png 1440x2534
+home-1920x1080.png 1920x2508
+home-390x844.png 390x5491
+home-768x1024.png 768x4067
+map-1440x900.png 1440x1267
+map-390x844.png 390x1841
+
+## Screenshot SHA-256
+dfa1ff2f436ebf48a83f2e9de795fb8a08f92138807bfdae7e3711f7ac3c3f27  docs/design-audit/implementation/directory-1440x900.png
+75e2eef8fe41fb18665347ccbcb249d3e4e0b9223744cae449060713225d126a  docs/design-audit/implementation/directory-390x844.png
+826990136da855af6f8fafe9e8a837fd655a4e91c3f68df84d7dad20dc8fb8bd  docs/design-audit/implementation/home-1024x768.png
+88f9cd5d1c7e50c42192a7b0e815191391debfd9aae6f24723262cafdd8da9aa  docs/design-audit/implementation/home-1440x900.png
+b343656ff7c9a173281baa066fdc608790abbe88facb26d790436105a0732905  docs/design-audit/implementation/home-1920x1080.png
+3296cab1f552966065ade771228b157ef453f8ba1a42d4100230977faa68a89b  docs/design-audit/implementation/home-390x844.png
+0adb202bc940a38ec5d216ac131ecd4e980945612623eae0e62f49ace0f6154f  docs/design-audit/implementation/home-768x1024.png
+ec631794a912e104d40455e4e1c4b8954761f1908bd178a9f4e8be185365e2a8  docs/design-audit/implementation/map-1440x900.png
+0277d421527e0cca4b361f9ebeb50d5b63a92a1004ea7d7f40151eb4caa6895a  docs/design-audit/implementation/map-390x844.png

@@ -1,0 +1,67 @@
+PhilHealth accredited-provider inventory — 2026-11-15
+
+Index URL:
+https://www.philhealth.gov.ph/partners/providers/facilities/accredited/
+
+Index request:
+curl -sS -L -A "Mozilla/5.0 ... Chrome/131.0.0.0 Safari/537.36" \
+  "https://www.philhealth.gov.ph/partners/providers/facilities/accredited/"
+
+Index response:
+HTTP/1.1 200 OK
+content-type: text/html; charset=UTF-8
+bytes: 8333
+sha256: 2f5a24deb56e0bd8c94f66a12e77cef250f32ba5637bf70a5cec58e132b91832
+index statement: Updated as of September 30, 2026.
+
+Provider-category PDF links: 27
+
+category	filename	date code / basis	absolute URL
+Yakap Clinics	YAKAP.pdf	index date 2026-09-30 (no date in filename)	https://www.philhealth.gov.ph/partners/providers/facilities/accredited/YAKAP.pdf
+Cancer Screening Test Providers	CancerScreening.pdf	index date 2026-09-30 (no date in filename)	https://www.philhealth.gov.ph/partners/providers/facilities/accredited/CancerScreening.pdf
+GAMOT Package Providers	GAMOT.pdf	index date 2026-09-30 (no date in filename)	https://www.philhealth.gov.ph/partners/providers/facilities/accredited/GAMOT.pdf
+Hospitals and Infirmaries/Dispensaries	HOSP_093026.pdf	2026-09-30	https://www.philhealth.gov.ph/partners/providers/facilities/accredited/HOSP_093026.pdf
+Freestanding Dialysis Clinics	FDC_093026.pdf	2026-09-30	https://www.philhealth.gov.ph/partners/providers/facilities/accredited/FDC_093026.pdf
+Birthing Homes Providers	MCP_073126.pdf	2026-07-31	https://www.philhealth.gov.ph/partners/providers/facilities/accredited/MCP_073126.pdf
+Maternity Care Providers	MCC_093026.pdf	2026-09-30	https://www.philhealth.gov.ph/partners/providers/facilities/accredited/MCC_093026.pdf
+Animal Bite Package Providers	ABPP_093026.pdf	2026-09-30	https://www.philhealth.gov.ph/partners/providers/facilities/accredited/ABPP_093026.pdf
+Outpatient Malaria Package Providers	OMP_093026.pdf	2026-09-30	https://www.philhealth.gov.ph/partners/providers/facilities/accredited/OMP_093026.pdf
+Family Planning Providers	FP_093026.pdf	2026-09-30	https://www.philhealth.gov.ph/partners/providers/facilities/accredited/FP_093026.pdf
+TB-DOTS Centers	DOTS_093026.pdf	2026-09-30	https://www.philhealth.gov.ph/partners/providers/facilities/accredited/DOTS_093026.pdf
+Drug Abuse Treatment and Rehab Centers	DATRC_093026.pdf	2026-09-30	https://www.philhealth.gov.ph/partners/providers/facilities/accredited/DATRC_093026.pdf
+DOH-Designated HIV Treatment Hubs	OHAT_093026.pdf	2026-09-30	https://www.philhealth.gov.ph/partners/providers/facilities/accredited/OHAT_093026.pdf
+Cancer Treatment Facilities	CTF_093026.pdf	2026-09-30	https://www.philhealth.gov.ph/partners/providers/facilities/accredited/CTF_093026.pdf
+COVID-19 Testing Laboratories	COVIDLAB_093026.pdf	2026-09-30	https://www.philhealth.gov.ph/partners/providers/facilities/accredited/COVIDLAB_093026.pdf
+Community Isolation Units	CIU_093026.pdf	2026-09-30	https://www.philhealth.gov.ph/partners/providers/facilities/accredited/CIU_093026.pdf
+COVID-19 Home Isolation Benefit Package Providers	CHIBP_093026.pdf	2026-09-30	https://www.philhealth.gov.ph/partners/providers/facilities/accredited/CHIBP_093026.pdf
+Oral Health Benefit Package Providers	DENTAL_093026.pdf	2026-09-30	https://www.philhealth.gov.ph/partners/providers/facilities/accredited/DENTAL_093026.pdf
+Optometry Benefit Package Providers	OPTO_093026.pdf	2026-09-30	https://www.philhealth.gov.ph/partners/providers/facilities/accredited/OPTO_093026.pdf
+Severe Acute Malnutrition Package Providers	SAM_093026.pdf	2026-09-30	https://www.philhealth.gov.ph/partners/providers/facilities/accredited/SAM_093026.pdf
+Ambulatory Surgical Clinics	ASC_093026.pdf	2026-09-30	https://www.philhealth.gov.ph/partners/providers/facilities/accredited/ASC_093026.pdf
+Ambulance Service Provider	AMBU_093026.pdf	2026-09-30	https://www.philhealth.gov.ph/partners/providers/facilities/accredited/AMBU_093026.pdf
+Pelvic Ultrasound	EMCB-PUTZ_093026.pdf	2026-09-30	https://www.philhealth.gov.ph/partners/providers/facilities/accredited/EMCB-PUTZ_093026.pdf
+Postpartum	EMCB-PPARTUM_093026.pdf	2026-09-30	https://www.philhealth.gov.ph/partners/providers/facilities/accredited/EMCB-PPARTUM_093026.pdf
+Antenatal	EMCB-ANTE_093026.pdf	2026-09-30	https://www.philhealth.gov.ph/partners/providers/facilities/accredited/EMCB-ANTE_093026.pdf
+Transvaginal Ultrasound	EMCB-TVU_093026.pdf	2026-09-30	https://www.philhealth.gov.ph/partners/providers/facilities/accredited/EMCB-TVU_093026.pdf
+Clinical Laboratory	EMCB-LAB_093026.pdf	2026-09-30	https://www.philhealth.gov.ph/partners/providers/facilities/accredited/EMCB-LAB_093026.pdf
+
+Hospital/infirmary sample:
+URL: https://www.philhealth.gov.ph/partners/providers/facilities/accredited/HOSP_093026.pdf
+Response: HTTP 200, application/pdf, 4294314 bytes, 75 pages
+sha256: 9ef34056f893a5aa485619e71d8481f02da149ce61a1ca1d75686a2f4c81c0b4
+last-modified header: Thu, 15 Oct 2026 07:27:37 GMT
+
+Local parser validation (aggregate only; no rows published):
+rows_parsed: 1934
+rows_accepted: 1934
+rows_rejected: 0
+validation_issues: 0
+pages_represented: 75
+page_ref_sample: page:1:row:4
+parser: philhealth-pdf-1.1.0 (aliases for the observed agency header layout)
+
+Outcome:
+The provider-category inventory and the hospital/infirmary layout are verified.
+The raw PDF remains in a temporary local sample directory and is not committed,
+served, or redistributed. No real PhilHealth rows were loaded or published. Terms
+review remains REVIEW_REQUIRED under DATA-LICENSES.md and M1-13.

@@ -1,0 +1,20 @@
+format_version=1
+created_at=2026-11-14T15:26:17Z
+source_database=philfacilities
+dump_file=philfacilities-20261114T152614Z.dump
+bytes=108974
+sha256=92e185d828c7793d340e2fad13097769b6927f1cd7bfff66adb87bdb82cdd3fd
+toc_entries=171
+postgres_version=17.5(Debian17.5-1.pgdg110+1)
+postgis_version=3.5 USE_GEOS=1 USE_PROJ=1 USE_STATS=1
+alembic_revision=0002_match_candidates
+schemas=7
+tables=22
+facilities=22
+source_records=58
+releases=5
+geographic_releases=1
+administrative_units=30
+facility_locations=15
+locations_with_geom=15
+locations_srid_4326=15

@@ -1,0 +1,319 @@
+PhilFacilities governance/completeness evidence
+Generated (UTC): 2026-11-14T18:25:05Z
+
+## justfile recipes
+Available recipes:
+    api
+    backup-db
+    build
+    check
+    db-down
+    db-migrate
+    db-test-up
+    db-up
+    default
+    demo
+    demo-status
+    e2e
+    fixtures
+    format
+    install
+    lint
+    migrate
+    openapi-export
+    restore-verify *args
+    setup
+    smoke
+    test
+    test-db
+    typecheck
+    typegen
+    web
+
+## Issue form YAML validation
+ok .github/ISSUE_TEMPLATE/bug_report.yml: Bug report
+ok .github/ISSUE_TEMPLATE/data_correction.yml: Data correction
+ok .github/ISSUE_TEMPLATE/feature_request.yml: Feature or product task
+ok .github/ISSUE_TEMPLATE/source_adapter.yml: Source adapter or source access
+all issue forms parse with required keys
+
+## Local Markdown link validation
+checked 85 local links
+all local markdown links resolve
+
+## README status row
+16:| Open-source governance and contribution route | Done | `CONTRIBUTING.md`, `SECURITY.md`, issue forms and pull-request template under `.github/`, `DATA-LICENSES.md` |
+
+## Tracker task
+38:| M0-04 | Add root `justfile` commands | DONE | M0-02, M0-03 | `justfile` parses under `just` 1.x via `uvx --from rust-just just --list`; `backup-db` and `restore-verify` recipes were executed through it; other recipes map to commands run directly. Added working `setup`, `format`, `db-migrate`, and `openapi-export` aliases in M7-09 |
+148:| M7-09 | Publish contribution guide, issue/PR templates, and security route | DONE | M0-01, M7-06 | `CONTRIBUTING.md`, `SECURITY.md`, `.github/ISSUE_TEMPLATE/*`, `.github/PULL_REQUEST_TEMPLATE.md`; no invented contact address or source claim; links and YAML validated |
+199:| 2026-11-15 | M7-09, M0-04, M7-02 | Closed the Phase 7 governance gap: added `CONTRIBUTING.md`, `SECURITY.md`, four issue forms, a pull-request template, working `just setup`/`format`/`db-migrate`/`openapi-export` recipes, and updated the operations command list; no security email or source claim was invented | Contribution and security routes documented; README explains them. Python 47 passing, Playwright 35 passing/1 skipped, ruff/pnpm checks clean after the change |
+
+## Verification run (same working tree)
+
+$ uv run ruff check .
+All checks passed!
+
+$ uv run ruff format --check .
+80 files already formatted
+
+$ uv run pytest -q
+...............................................                          [100%]
+=============================== warnings summary ===============================
+tests/test_api_contract.py::test_openapi_contains_the_public_read_contract
+  /home/mark/code/projects/philfacilities/.venv/lib/python3.14/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+47 passed, 1 warning in 16.26s
+
+$ pnpm lint
+$ pnpm --filter @philfacilities/web lint
+$ eslint .
+
+$ pnpm typecheck
+$ pnpm --filter @philfacilities/web typecheck
+$ tsc --noEmit
+
+$ pnpm build (tail)
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ○ /about
+├ ○ /api
+├ ƒ /data
+├ ƒ /data/[dataset]
+├ ○ /data/dictionary
+├ ƒ /directory
+├ ƒ /facilities/[id]
+├ ƒ /map
+├ ƒ /sources
+└ ƒ /status
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+$ scripts/smoke_check.sh
+api=ok version=0.1.0 environment=local
+web=ok status=200
+statistics=ok published_facilities=22
+SMOKE CHECK PASSED
+
+$ pnpm --filter @philfacilities/web test:e2e (tail)
+  ✓  24 [mobile-chromium] › e2e/app.spec.ts:86:3 › map › keeps the text result list when basemap tiles fail (7.7s)
+  ✓  28 [mobile-chromium] › e2e/app.spec.ts:176:3 › navigation › mobile menu exposes the same primary destinations (3.0s)
+  ✓  30 [mobile-chromium] › e2e/app.spec.ts:217:5 › accessibility › axe finds no serious or critical violations on / (6.2s)
+  ✓  33 [mobile-chromium] › e2e/app.spec.ts:217:5 › accessibility › axe finds no serious or critical violations on /data (5.4s)
+  ✓  32 [mobile-chromium] › e2e/app.spec.ts:217:5 › accessibility › axe finds no serious or critical violations on /facilities/synthetic-demo-school-01-deped (7.1s)
+  ✓  31 [mobile-chromium] › e2e/app.spec.ts:217:5 › accessibility › axe finds no serious or critical violations on /directory (8.3s)
+  ✓  34 [mobile-chromium] › e2e/app.spec.ts:217:5 › accessibility › axe finds no serious or critical violations on /data/dictionary (5.4s)
+  ✓  35 [mobile-chromium] › e2e/app.spec.ts:217:5 › accessibility › axe finds no serious or critical violations on /api (3.9s)
+  ✓  36 [mobile-chromium] › e2e/app.spec.ts:217:5 › accessibility › axe finds no serious or critical violations on /status (3.5s)
+
+  1 skipped
+  35 passed (53.5s)
+
+## Final verification after PhilHealth parser 1.1.0 (2026-11-14T18:44:46Z)
+
+The PhilHealth PDF adapter now reports `philhealth-pdf-1.1.0` after accepting the observed
+agency header layout. Documentation and evidence references were updated from `1.0.0` to
+`1.1.0`, and all checks were rerun against the same working tree.
+
+$ uv run ruff check .
+All checks passed!
+
+$ uv run ruff format --check .
+80 files already formatted
+
+$ uv run pytest -q
+48 passed, 1 warning in 14.30s
+
+$ pnpm lint
+$ pnpm --filter @philfacilities/web lint
+$ eslint .
+
+$ pnpm typecheck
+$ pnpm --filter @philfacilities/web typecheck
+$ tsc --noEmit
+
+$ pnpm build (tail)
+✓ Compiled successfully in 2.4s
+✓ Generating static pages using 7 workers (6/6) in 831ms
+Route (app): /, /_not-found, /about, /api, /data, /data/[dataset], /data/dictionary,
+/directory, /facilities/[id], /map, /sources, /status
+
+$ scripts/smoke_check.sh
+api=ok version=0.1.0 environment=local
+web=ok status=200
+statistics=ok published_facilities=22
+SMOKE CHECK PASSED
+
+$ pnpm --filter @philfacilities/web test:e2e (tail)
+  1 skipped
+  35 passed (39.9s)
+
+Local Markdown links: checked 85; all resolve.
+Issue forms: 4 parsed with required keys.
+
+Real PhilHealth hospital/infirmary PDF reparse with parser `philhealth-pdf-1.1.0`
+(aggregate only; raw PDF and rows remain unpublished):
+
+parser: philhealth-pdf-1.1.0
+rows_parsed: 1934
+rows_accepted: 1934
+rows_rejected: 0
+validation_issues: 0
+pages_represented: 75
+page_ref_sample: page:1:row:4
+
+The count is unchanged from the 1.0.0 run, confirming the alias fix and version bump did
+not alter accepted-row behaviour. Terms review remains REVIEW_REQUIRED under
+DATA-LICENSES.md and M1-13; no real PhilHealth rows are published.
+
+## Facility-profile responsive fix (2026-11-14T19:14:38Z)
+
+The facility profile's source-evidence table has a 56rem minimum table width. On a 412px
+mobile viewport that min-width propagated through the grid item and expanded the page's
+layout viewport to 923px, so the page rendered zoomed out and text was clipped. The
+"At a glance" sidebar also reused the 12rem label grid inside a 20rem card, squeezing
+values such as "Active in Registry" into a narrow column.
+
+Fixes:
+- `min-w-0` on the content grid column and sidebar so their min-content width cannot
+  expand the page; the existing `table-scroll` region now owns horizontal scrolling.
+- `min-w-0 break-words` on definition values.
+- Stacked sidebar rows via a `stacked` DataRow variant.
+
+Browser measurement after the fix (Playwright Pixel 7, 412px viewport):
+innerWidth=412, documentElement.scrollWidth=412, source-evidence region clientWidth=361,
+region scrollWidth=896 (internal scroll only).
+
+Playwright regression added: "facility profile › keeps wide tables inside their own
+scroll region on mobile" (mobile project; intentionally skipped on desktop).
+
+$ pnpm lint
+$ pnpm --filter @philfacilities/web lint
+$ eslint .
+
+$ pnpm typecheck
+$ pnpm --filter @philfacilities/web typecheck
+$ tsc --noEmit
+
+$ pnpm build
+✓ Compiled successfully; all routes generated.
+
+$ uv run ruff check .
+All checks passed!
+
+$ uv run ruff format --check .
+80 files already formatted
+
+$ uv run pytest -q
+48 passed, 1 warning in 16.14s
+
+$ pnpm --filter @philfacilities/web test:e2e
+2 skipped
+36 passed (45.0s)
+
+$ scripts/smoke_check.sh
+api=ok version=0.1.0 environment=local
+web=ok status=200
+statistics=ok published_facilities=22
+SMOKE CHECK PASSED
+
+The two skips are the mobile-only menu and mobile-layout tests on the desktop project.
+No source, API, or publication-gate behaviour changed.
+
+## `just` recipe execution (2026-11-14T19:18Z)
+
+`just` is not installed on this host, so the recipes were executed through
+`uvx --from rust-just just`. All four documented routes completed:
+
+$ uvx --from rust-just just setup
+uv sync --all-packages
+pnpm install --frozen-lockfile
+docker compose -f infra/compose.yaml up -d db
+DATABASE_URL="postgresql+psycopg://philfacilities:philfacilities@localhost:54329/philfacilities" uv run alembic -c apps/api/alembic.ini upgrade head
+Local dependencies and PostgreSQL/PostGIS are ready.
+
+$ uvx --from rust-just just format
+80 files left unchanged
+
+$ uvx --from rust-just just db-migrate
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+
+$ uvx --from rust-just just openapi-export
+$ sha256sum -c (before/after export)
+packages/api-client/openapi.json: OK
+
+The OpenAPI export was byte-identical, and no file was reformatted.
+
+## Expanded Playwright coverage (2026-11-15)
+
+$ PLAYWRIGHT_BASE_URL=http://127.0.0.1:3000 pnpm --filter @philfacilities/web test:e2e
+Running 46 tests using 4 workers
+4 skipped
+42 passed (49.7s)
+
+The added tests cover keyboard-submitted search, skip-link focus, the measured focus ring,
+desktop header/typography/button tokens, and mobile-menu Escape handling. The four skips are
+the viewport-specific checks that do not apply to the other project.
+
+## Final responsive/accessibility verification (2026-11-15)
+
+The final pass added keyboard/focus coverage, design-token and header-breakpoint
+regression checks, a page-level mobile-overflow regression, and reviewed responsive
+screenshots. It also fixed page-level overflow on `/`, `/data/dictionary`, `/api`, and
+`/status` by constraining grid items with `min-w-0`, and aligned the header switch with
+the measured breakpoint (mobile menu at 1024px and below, desktop nav at 1025px and above).
+
+$ uv run ruff check .
+All checks passed!
+
+$ uv run ruff format --check .
+80 files already formatted
+
+$ uv run pytest -q
+48 passed, 1 warning in 17.37s
+
+$ pnpm lint
+$ pnpm --filter @philfacilities/web lint
+$ eslint .
+
+$ pnpm typecheck
+$ pnpm --filter @philfacilities/web typecheck
+$ tsc --noEmit
+
+$ pnpm --filter @philfacilities/web build (tail)
+✓ Compiled successfully
+✓ Generating static pages using 7 workers (6/6)
+Route (app): /, /_not-found, /about, /api, /data, /data/[dataset], /data/dictionary,
+/directory, /facilities/[id], /map, /sources, /status
+
+$ pnpm --filter @philfacilities/web test:e2e (tail)
+  5 skipped
+  43 passed (46.6s)
+
+$ scripts/smoke_check.sh
+api=ok version=0.1.0 environment=local
+web=ok status=200
+statistics=ok published_facilities=22
+SMOKE CHECK PASSED
+
+$ pnpm --filter @philfacilities/web check:responsive
+All 32 responsive overflow checks passed (8 public pages x 390/768/1024/1440px).
+Full output, screenshot dimensions, and SHA-256 values:
+docs/operations/evidence/2026-11-15-responsive/audit.txt
+
+Reviewed screenshots:
+docs/design-audit/implementation/README.md
+390, 768, 1024, 1440, and 1920px views of the home page; 390/1440 directory and map views.
+
+Local Markdown links: checked 87; all resolve.
+New Playwright checks: skip link focus, desktop nav focus ring, keyboard search,
+mobile-menu Escape/focus return, measured design tokens/header breakpoint, and
+all-public-page mobile overflow.
