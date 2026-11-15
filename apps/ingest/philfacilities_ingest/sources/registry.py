@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from typing import Any
 
-from philfacilities_api.models import Dataset, SourceCheck
+from philfacilities_api.models import Dataset, Release, SourceCheck
 from philfacilities_api.rights import (
     PUBLICATION_APPROVED,
     PUBLICATION_BLOCKED,
@@ -177,6 +177,51 @@ DSWD_CRCF_ATTRIBUTION = (
     "Department of Social Welfare and Development — Centers and Residential Care "
     "Facilities (CRCF) directory"
 )
+SSS_BRANCH_LOCATOR_URL = "https://www.sss.gov.ph/sss-branch-locator/"
+SSS_RIGHTS_BASIS = (
+    "The SSS branch locator is a public directory published by the Social Security "
+    "System, a government-owned and controlled corporation. No explicit prohibition, "
+    "access control or terms-of-use restriction was found on the locator or its JSON "
+    "endpoints. RA 8293 section 176 provides that no copyright subsists in a work of "
+    "the Government of the Philippines, while prior approval may be required for "
+    "commercial use. PhilFacilities publishes the factual branch name, postal address "
+    "and region for non-commercial public-interest use with attribution and "
+    "takedown-on-notice. Contact-person names, e-mail addresses and telephone/fax "
+    "strings remain in the private preserved artifact and are not exposed. This is a "
+    "documented publication decision, not a legal opinion."
+)
+SSS_ATTRIBUTION = "Social Security System — SSS Branch Locator"
+PAGASA_AWS_URL = "https://bagong.pagasa.dost.gov.ph/automated-weather-station"
+PAGASA_AWS_RIGHTS_BASIS = (
+    "The PAGASA automated-weather-station page is a public information service of the "
+    "Philippine Atmospheric, Geophysical and Astronomical Services Administration, a "
+    "government agency under DOST. No explicit prohibition or access control was found "
+    "on the page. RA 8293 section 176 provides that no copyright subsists in a work of "
+    "the Government of the Philippines, while prior approval may be required for "
+    "commercial use. PhilFacilities publishes only the factual station identity (site "
+    "ID, site name and source last-updated value) with attribution for non-commercial "
+    "public-interest use. The live readings are preserved in the private release "
+    "artifact as acquisition evidence and are not presented as a real-time service or "
+    "as current weather. No coordinates are present in the source. This is a documented "
+    "publication decision, not a legal opinion."
+)
+PAGASA_AWS_ATTRIBUTION = (
+    "Philippine Atmospheric, Geophysical and Astronomical Services Administration "
+    "(PAGASA) — Automated Weather Station network"
+)
+NBI_OFFICES_URL = "https://nbi.gov.ph/regional-district-offices/"
+NBI_RIGHTS_BASIS = (
+    "The NBI Regional & District Offices page is a public directory published by the "
+    "National Bureau of Investigation, an agency under the Department of Justice. The "
+    "page footer states that all content is in the public domain unless otherwise "
+    "stated. PhilFacilities publishes only the factual office name, region, postal "
+    "location and map-embed coordinates with attribution. Regional director/agent-in-"
+    "charge names, telephone numbers and protected e-mail values are personal or "
+    "contact data and are retained only in the private source artifact. Map coordinates "
+    "are approximate and are not presented as field-verified building coordinates. This "
+    "is a documented publication decision, not a legal opinion."
+)
+NBI_ATTRIBUTION = "National Bureau of Investigation — Regional & District Offices"
 NMIS_NARIS_URL = "https://naris.nmis.gov.ph/"
 NMIS_NARIS_RIGHTS_BASIS = (
     "NARIS is the National Meat Inspection Service's public accreditation directory. "
@@ -706,6 +751,98 @@ REAL_SOURCES: dict[str, RealSource] = {
             "private raw artifact and out of the public record."
         ),
     ),
+    "sss-branches": RealSource(
+        key="sss-branches",
+        agency_code="sss",
+        agency_name="Social Security System",
+        dataset_slug="sss-branch-locator",
+        dataset_name="SSS Branch Locator",
+        source_url=SSS_BRANCH_LOCATOR_URL,
+        access_method="public_json_api",
+        update_pattern="irregular",
+        rights=RIGHTS_APPROVED_ATTRIBUTION,
+        rights_basis=SSS_RIGHTS_BASIS,
+        attribution_text=SSS_ATTRIBUTION,
+        personal_data_status="contact_person_email_and_phone_withheld_from_public_record",
+        requested_publication_status=PUBLICATION_APPROVED,
+        terms_url=SSS_BRANCH_LOCATOR_URL,
+        coverage_scope="NATIONAL_PARTIAL",
+        coverage_note=(
+            "The official SSS branch locator returned 323 branch records across the "
+            "National Capital Region, Luzon, Visayas, Mindanao and Foreign region groups "
+            "on 15 November 2026. The locator does not state that every service desk, "
+            "partner counter or extension office is listed, and supplies no coordinates, "
+            "PSGC codes, office hours or current operating status."
+        ),
+        note=(
+            "Three unauthenticated JSON endpoints back the public locator: region list, "
+            "per-region branch list and per-branch details. The list carries null address "
+            "fields, so each branch detail was fetched. Branch name, postal address and "
+            "region are published; contact-person, e-mail and telephone/fax strings stay "
+            "in the private raw artifact. Branches are classified as GOCC government "
+            "service facilities, not as private providers."
+        ),
+    ),
+    "pagasa-aws": RealSource(
+        key="pagasa-aws",
+        agency_code="pagasa",
+        agency_name="Philippine Atmospheric, Geophysical and Astronomical Services Administration",
+        dataset_slug="pagasa-automated-weather-stations",
+        dataset_name="PAGASA Automated Weather Station network",
+        source_url=PAGASA_AWS_URL,
+        access_method="public_html_table",
+        update_pattern="live",
+        rights=RIGHTS_APPROVED_ATTRIBUTION,
+        rights_basis=PAGASA_AWS_RIGHTS_BASIS,
+        attribution_text=PAGASA_AWS_ATTRIBUTION,
+        requested_publication_status=PUBLICATION_APPROVED,
+        terms_url=PAGASA_AWS_URL,
+        coverage_scope="NATIONAL_PARTIAL",
+        coverage_note=(
+            "The live PAGASA AWS page listed 113 station rows on 15 November 2026. The "
+            "page is an operational display, not a dated station inventory, and does not "
+            "state that every AWS or synoptic station is present. It supplies no "
+            "coordinates, PSGC codes, commissioning dates or access rules."
+        ),
+        note=(
+            "The AWS table mixes automated weather stations and synoptic stations and "
+            "carries live readings plus a per-station last-updated value. Only station "
+            "identity (site ID, site name, source last-updated) is published; readings "
+            "stay in the private dated artifact and are not presented as current weather. "
+            "Stations are classified as national-government environmental monitoring "
+            "facilities operated by PAGASA."
+        ),
+    ),
+    "nbi-offices": RealSource(
+        key="nbi-offices",
+        agency_code="nbi",
+        agency_name="National Bureau of Investigation",
+        dataset_slug="nbi-regional-district-offices",
+        dataset_name="NBI Regional and District Offices",
+        source_url=NBI_OFFICES_URL,
+        access_method="public_html_directory",
+        update_pattern="irregular",
+        rights=RIGHTS_APPROVED_ATTRIBUTION,
+        rights_basis=NBI_RIGHTS_BASIS,
+        attribution_text=NBI_ATTRIBUTION,
+        personal_data_status="personal_names_phone_and_email_withheld_from_public_record",
+        requested_publication_status=PUBLICATION_APPROVED,
+        terms_url=NBI_OFFICES_URL,
+        coverage_scope="NATIONAL_PARTIAL",
+        coverage_note=(
+            "The official page listed 52 regional/district office records on 15 November "
+            "2026, 43 of which carried an embedded map frame. It is a directory of "
+            "regional and district offices, not every clearance center, satellite desk or "
+            "service point, and it supplies no office hours or current operating status."
+        ),
+        note=(
+            "Office name, region, postal location and map-embed coordinates are published. "
+            "Map coordinates are extracted from the official page's Google Maps iframes "
+            "and labelled 'map_geocoded'; they are not field-verified. Regional director/"
+            "agent-in-charge names, telephone numbers and protected e-mail values remain "
+            "in the private raw artifact."
+        ),
+    ),
 }
 
 
@@ -816,6 +953,60 @@ def registry_dataset_slugs() -> dict[str, str]:
 # ---------------------------------------------------------------------------
 
 
+FILE_UPDATE_METHODS = {
+    "official_workbook",
+    "public_pdf",
+    "public_scanned_pdf_local_ocr",
+    "public_geoparquet",
+}
+PAYLOAD_UPDATE_METHODS = {
+    "public_api",
+    "public_json_api",
+    "public_html_directory",
+    "public_html_index",
+    "public_html_table",
+    "public_html_form",
+}
+VOLATILE_OBSERVATION_SOURCES = {
+    # Live readings change independently of the station-identity release.
+    "pagasa-aws",
+}
+
+
+def update_discovery_mode(source: RealSource) -> str:
+    """Describe how a source check can discover a new release.
+
+    ``file_checksum`` and ``payload_checksum`` compare the fetched bytes with the
+    latest published release. ``manual`` sources require a human download and cannot
+    be auto-detected. ``observations_only`` sources change continuously and must not
+    be presented as a new facility release.
+    """
+
+    if source.key in VOLATILE_OBSERVATION_SOURCES:
+        return "observations_only"
+    if source.access_method == "human_download" or source.access_method == "official_registry":
+        return "manual"
+    if source.access_method in FILE_UPDATE_METHODS:
+        return "file_checksum"
+    if source.access_method in PAYLOAD_UPDATE_METHODS:
+        return "payload_checksum"
+    return "manual"
+
+
+def detect_new_release(
+    mode: str,
+    fetched_sha256: str | None,
+    published_sha256: str | None,
+) -> bool | None:
+    """Return whether the fetched payload differs from the latest published release."""
+
+    if mode not in {"file_checksum", "payload_checksum"}:
+        return None
+    if not fetched_sha256 or not published_sha256:
+        return None
+    return fetched_sha256 != published_sha256
+
+
 def _check_url(
     acquirer: HttpAcquirer,
     session: Session,
@@ -837,10 +1028,24 @@ def _check_url(
     )
     status = classify_response(result)
     message = _check_message(source, status, result)
+    mode = update_discovery_mode(source)
+    latest_release = session.scalars(
+        select(Release)
+        .where(
+            Release.dataset_id == dataset.id,
+            Release.ingestion_status == "published",
+        )
+        .order_by(Release.retrieved_at.desc())
+        .limit(1)
+    ).first()
     details: dict[str, Any] = {
         "source_key": source.key,
         "rights": source.rights,
         "access_method": source.access_method,
+        "update_discovery_mode": mode,
+        "latest_published_release": (
+            latest_release.source_release_label if latest_release else None
+        ),
     }
     if source.key == "philhealth" and status in {"ok", "not_modified"} and result.content:
         try:
@@ -865,6 +1070,20 @@ def _check_url(
             f"The endpoint returned HTTP {result.status_code} but the expected "
             f"marker {expected_marker!r} was absent; schema or access state changed."
         )
+    if status == "ok":
+        changed = detect_new_release(
+            mode,
+            result.sha256,
+            latest_release.sha256 if latest_release else None,
+        )
+        details["new_release_detected"] = changed
+        details["fetched_sha256"] = result.sha256 or None
+        if changed:
+            status = "update_available"
+            message = (
+                f"Fetched content differs from {latest_release.source_release_label}; "
+                "a new source release is available for authorized acquisition."
+            )
     record_check(
         session,
         dataset=dataset,
@@ -1216,6 +1435,53 @@ def latest_checks(session: Session) -> list[dict[str, Any]]:
         seen.add(dataset.id)
         payload.append(source_check_payload(dataset, check))
     return payload
+
+
+def source_review_rows(
+    session: Session,
+    *,
+    days: int = 30,
+    now: datetime | None = None,
+) -> list[dict[str, Any]]:
+    """Return the monthly source-register review state for every registered source."""
+
+    moment = now or datetime.now(UTC)
+    rows: list[dict[str, Any]] = []
+    for key, source in sorted(REAL_SOURCES.items()):
+        dataset = session.scalars(
+            select(Dataset).where(Dataset.slug == source.dataset_slug)
+        ).first()
+        latest = None
+        if dataset is not None:
+            latest = session.scalars(
+                select(SourceCheck)
+                .where(SourceCheck.dataset_id == dataset.id)
+                .order_by(SourceCheck.checked_at.desc())
+                .limit(1)
+            ).first()
+        days_since = max((moment - latest.checked_at).days, 0) if latest is not None else None
+        rows.append(
+            {
+                "source_key": key,
+                "dataset_slug": source.dataset_slug,
+                "agency": source.agency_name,
+                "source_url": source.source_url,
+                "access_method": source.access_method,
+                "update_pattern": source.update_pattern,
+                "rights": source.rights,
+                "publication_status": source.requested_publication_status,
+                "last_checked_at": latest.checked_at.isoformat() if latest else None,
+                "last_check_status": latest.status if latest else None,
+                "next_check_at": (
+                    latest.next_check_at.isoformat()
+                    if latest is not None and latest.next_check_at
+                    else None
+                ),
+                "days_since_check": days_since,
+                "review_due": days_since is None or days_since >= days,
+            }
+        )
+    return rows
 
 
 def due_source_keys(

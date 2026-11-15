@@ -40,6 +40,7 @@ from ..schemas import (
     CoverageRow,
     CoverageSubtypeRow,
     DatasetOut,
+    LguCoverageRow,
     MatchCandidateListResponse,
     MatchCandidateOut,
     QualityIssueOut,
@@ -854,6 +855,46 @@ def coverage(request: Request, db: Annotated[Session, Depends(get_db)]):
                 is_stale=is_stale,
             )
         )
+
+    def _lgu_state(scope: str | None) -> str:
+        value = (scope or "UNKNOWN_COVERAGE").upper()
+        if value in {"NATIONAL_OFFICIAL_INVENTORY", "NATIONAL_PARTIAL"}:
+            return "NATIONAL"
+        if value == "REGIONAL":
+            return "REGIONAL"
+        if value == "PARTICIPATING_LGUS":
+            return "PARTICIPATING_LGUS"
+        if value in {"SELECTED_LGUS", "SINGLE_LGU"}:
+            return "SELECTED_LGUS"
+        return "UNKNOWN"
+
+    lgu_states = (
+        "NATIONAL",
+        "REGIONAL",
+        "PARTICIPATING_LGUS",
+        "SELECTED_LGUS",
+        "UNKNOWN",
+    )
+    lgu_buckets: dict[str, list[str]] = {state: [] for state in lgu_states}
+    for dataset, _agency, _gate in dataset_rows:
+        lgu_buckets[_lgu_state(dataset.coverage_scope)].append(dataset.slug)
+    lgu_labels = {
+        "NATIONAL": "National source (complete or partial national scope)",
+        "REGIONAL": "Regional source",
+        "PARTICIPATING_LGUS": "Participating LGUs only",
+        "SELECTED_LGUS": "Selected or single LGU only",
+        "UNKNOWN": "Coverage scope not established",
+    }
+    by_lgu_coverage = [
+        LguCoverageRow(
+            state=state,
+            label=lgu_labels[state],
+            source_count=len(slugs),
+            dataset_slugs=sorted(slugs),
+        )
+        for state, slugs in lgu_buckets.items()
+        if slugs
+    ]
     registry_total = db.scalar(select(func.count()).select_from(Facility)) or 0
     payload = CoverageOut(
         as_of=datetime.now(UTC),
@@ -876,6 +917,7 @@ def coverage(request: Request, db: Annotated[Session, Depends(get_db)]):
             )
             for prefix, count in region_counts.most_common()
         ],
+        by_lgu_coverage=by_lgu_coverage,
         source_coverage=source_rows,
         coverage_stale_after_days=settings.coverage_stale_after_days,
         stale_source_count=sum(1 for row in source_rows if row.is_stale),

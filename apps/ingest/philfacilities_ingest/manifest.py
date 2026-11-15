@@ -256,6 +256,84 @@ def build_release_manifest(
     return manifest
 
 
+def render_release_notes(manifest: dict[str, Any]) -> str:
+    """Render public release notes from a release manifest."""
+
+    totals = manifest["totals"]
+    lines = [
+        "# PhilFacilities data release notes",
+        "",
+        f"Generated: {manifest['generated_at']}",
+        f"Manifest checksum: `{manifest['checksum']}`",
+        "",
+        "## Coverage at a glance",
+        "",
+        f"- Published facilities: **{totals['published_facilities']:,}**",
+        f"- Datasets included: **{totals['datasets_included']}**",
+        f"- Datasets excluded from publication: **{totals['datasets_excluded']}**",
+        f"- Synthetic published facilities: **{totals['synthetic_published_facilities']:,}**",
+        "",
+        "| Inclusion class | Published facilities |",
+        "|---|---:|",
+    ]
+    for key, value in sorted(totals.get("by_inclusion_class", {}).items()):
+        lines.append(f"| {key} | {value:,} |")
+    lines.extend(
+        [
+            "",
+            "| Category | Published facilities |",
+            "|---|---:|",
+        ]
+    )
+    for key, value in sorted(totals.get("by_category", {}).items()):
+        lines.append(f"| {key} | {value:,} |")
+    lines.extend(
+        [
+            "",
+            "## Included source releases",
+            "",
+            (
+                "| Dataset | Publisher | Source release | Coverage | Rows parsed | "
+                "Linked facilities | Coordinates | Rights |"
+            ),
+            "|---|---|---|---|---:|---:|---:|---|",
+        ]
+    )
+    for item in manifest["datasets"]:
+        lines.append(
+            "| {dataset} | {agency} | {release} | {coverage} | {rows} | {facilities} | "
+            "{coordinates} | {rights} |".format(
+                dataset=item["dataset_slug"],
+                agency=item["agency_name"],
+                release=item["source_release"],
+                coverage=item["coverage_scope"],
+                rows=item["row_count_parsed"] if item["row_count_parsed"] is not None else "—",
+                facilities=item["linked_facilities"],
+                coordinates=item["with_coordinates"],
+                rights=item["rights_status"],
+            )
+        )
+    lines.extend(["", "## Known coverage gaps", ""])
+    if manifest["known_coverage_gaps"]:
+        for gap in manifest["known_coverage_gaps"]:
+            note = f" — {gap['coverage_note']}" if gap.get("coverage_note") else ""
+            lines.append(f"- `{gap['dataset_slug']}`: {gap['coverage_scope']}{note}")
+    else:
+        lines.append("- None recorded.")
+    lines.extend(["", "## Excluded or not yet publishable", ""])
+    if manifest["excluded_datasets"]:
+        for item in manifest["excluded_datasets"]:
+            lines.append(
+                f"- `{item['dataset_slug']}` ({item['publication_status']}): {item['reason']}"
+            )
+    else:
+        lines.append("- None recorded.")
+    lines.extend(["", "## Caveats", ""])
+    lines.extend(f"- {caveat}" for caveat in manifest["caveats"])
+    lines.append("")
+    return "\n".join(lines)
+
+
 def write_release_manifest(
     session: Session,
     output: Path,

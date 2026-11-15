@@ -45,13 +45,15 @@ from .fixtures import (
     philhealth_pdf,
     psgc_workbook,
 )
-from .manifest import write_release_manifest
+from .lgu_inventory import validate_inventory
+from .manifest import render_release_notes, write_release_manifest
 from .matching import (
     MatchingError,
     accept_match_candidate,
     generate_match_candidates,
     merge_match_candidate,
     reject_match_candidate,
+    undo_match_merge,
 )
 from .pipeline import (
     build_engine,
@@ -80,8 +82,10 @@ from .sources.doh import DOHNHFRAdapter
 from .sources.dswd_crcf import DswdCrcfDirectoryAdapter
 from .sources.dti_negosyo import DtiNegosyoCenterAdapter, fetch_negosyo_centers
 from .sources.national_museum import NationalMuseumDirectoryAdapter, fetch_national_museum_directory
+from .sources.nbi import NbiOfficeAdapter, fetch_nbi_offices
 from .sources.nlp import NlpPublicLibraryPdfAdapter
 from .sources.nmis_naris import NmisNarisDirectoryAdapter
+from .sources.pagasa_aws import PagasaAwsAdapter, fetch_pagasa_aws
 from .sources.philhealth import PhilHealthPdfAdapter
 from .sources.phlpost import PhlPostLocatorAdapter
 from .sources.ppa import PpaPortListAdapter
@@ -98,8 +102,10 @@ from .sources.registry import (
     philhealth_dataset_slug,
     psgc_release_content,
     psgc_units,
+    source_review_rows,
     source_spec,
 )
+from .sources.sss_branch import SssBranchAdapter, fetch_sss_branches
 
 app = typer.Typer(
     add_completion=False,
@@ -121,12 +127,18 @@ REAL_AGENCY_METADATA = {
     "dswd": ("Department of Social Welfare and Development", "government"),
     "nlp": ("National Library of the Philippines", "government"),
     "nmp": ("National Museum of the Philippines", "government"),
+    "nbi": ("National Bureau of Investigation", "government"),
     "nmis": ("National Meat Inspection Service", "government"),
     "osm": ("OpenStreetMap contributors (via HOT and BetterGov.PH)", "community"),
     "philhealth": ("Philippine Health Insurance Corporation", "government"),
     "phlpost": ("Philippine Postal Corporation", "government"),
     "ppa": ("Philippine Ports Authority", "government"),
     "psa": ("Philippine Statistics Authority", "government"),
+    "sss": ("Social Security System", "government"),
+    "pagasa": (
+        "Philippine Atmospheric, Geophysical and Astronomical Services Administration",
+        "government",
+    ),
     "tesda": ("Technical Education and Skills Development Authority", "government"),
 }
 
@@ -529,6 +541,50 @@ def source_candidates_command(
         raise typer.Exit(code=1)
 
 
+@app.command("validate-lgu-inventory")
+def validate_lgu_inventory_command(
+    path: Annotated[
+        Path,
+        typer.Argument(exists=True, dir_okay=False, help="LGU inventory CSV to validate."),
+    ],
+    as_json: Annotated[
+        bool, typer.Option("--json", help="Print the validation summary as JSON.")
+    ] = False,
+    output: Annotated[
+        Path | None,
+        typer.Option("--output", help="Write the full validation report as JSON."),
+    ] = None,
+) -> None:
+    """Validate an LGU facility-inventory submission without importing it.
+
+    A valid row is still a proposal. This command only checks schema, taxonomy,
+    geography and provenance shape; it never publishes records, infers ownership,
+    or accepts personal/security-sensitive columns.
+    """
+
+    result = validate_inventory(path)
+    payload = result.as_dict()
+    if output is not None:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    if as_json:
+        typer.echo(json.dumps(payload, indent=2))
+    else:
+        typer.echo(
+            f"rows={result.rows} accepted={result.accepted} rejected={result.rejected} "
+            f"issues={len(result.issues)}"
+        )
+        for issue in result.issues:
+            typer.echo(
+                f"{issue.severity.upper()} row={issue.row_number or '-'} "
+                f"{issue.code}: {issue.message}"
+            )
+        if output is not None:
+            typer.echo(f"report={output}")
+    if result.rejected or any(issue.severity == "fatal" for issue in result.issues):
+        raise typer.Exit(code=1)
+
+
 @app.command("backfill-assertions")
 def backfill_assertions_command() -> None:
     """Reconstruct exact field claims from existing source-linked child rows.
@@ -662,6 +718,17 @@ def match_candidates_merge(
     _review_candidate(merge_match_candidate, candidate_id, reviewer, note)
 
 
+@app.command("match-candidates-undo-merge")
+def match_candidates_undo_merge(
+    candidate_id: uuid.UUID,
+    reviewer: Annotated[str, typer.Option(help="Reviewer name or role identifier.")],
+    note: Annotated[str | None, typer.Option(help="Reason for undoing the merge.")] = None,
+) -> None:
+    """Undo a merge and restore the source facility and its linked evidence."""
+
+    _review_candidate(undo_match_merge, candidate_id, reviewer, note)
+
+
 @app.command("check-sources")
 def check_sources_command(
     source: Annotated[
@@ -773,6 +840,36 @@ def monitoring() -> None:
         engine.dispose()
 
 
+@app.command("source-review")
+def source_review_command(
+    days: Annotated[
+        int, typer.Option(min=1, help="Flag sources not checked within this many days.")
+    ] = 30,
+    json_output: Annotated[bool, typer.Option("--json", help="Emit the review as JSON.")] = False,
+) -> None:
+    """List the monthly review state of every registered source link and rights entry."""
+
+    engine, session = _session()
+    try:
+        rows = source_review_rows(session, days=days)
+    finally:
+        session.close()
+        engine.dispose()
+    if json_output:
+        typer.echo(json.dumps(rows, indent=2))
+        return
+    due = [row for row in rows if row["review_due"]]
+    typer.echo(f"registered={len(rows)} review_due={len(due)} window_days={days}")
+    for row in rows:
+        marker = "DUE" if row["review_due"] else "ok"
+        last = row["last_checked_at"] or "never"
+        typer.echo(
+            f"{marker:3} {row['source_key']}: {row['agency']} | "
+            f"checked={last} status={row['last_check_status'] or 'unchecked'} | "
+            f"{row['rights']}/{row['publication_status']}"
+        )
+
+
 @app.command("compare-releases")
 def compare_releases_command(
     dataset_slug: Annotated[str, typer.Argument(help="Dataset slug, e.g. philhealth-hosp.")],
@@ -854,6 +951,28 @@ def release_manifest_command(
         f"published_facilities={totals['published_facilities']}"
     )
     typer.echo(f"checksum={manifest['checksum']}")
+
+
+@app.command("release-notes")
+def release_notes_command(
+    output: Annotated[
+        Path,
+        typer.Option("--output", "-o", help="Write Markdown release notes to this path."),
+    ] = Path("var/reports/release-notes.md"),
+) -> None:
+    """Write public release notes with coverage, gaps, exclusions and caveats."""
+
+    engine, session = _session()
+    try:
+        manifest = write_release_manifest(session, output.with_suffix(".manifest.json"))
+    finally:
+        session.close()
+        engine.dispose()
+    notes = render_release_notes(manifest)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(notes, encoding="utf-8")
+    typer.echo(f"wrote {output} ({len(notes.splitlines())} lines)")
+    typer.echo(f"manifest_checksum={manifest['checksum']}")
 
 
 @app.command("discover-sources")
@@ -1595,6 +1714,177 @@ def load_dti_negosyo(
         outcome = run_ingestion(
             spec=spec,
             adapter=DtiNegosyoCenterAdapter(spec),
+            session=session,
+            settings=settings,
+            reprocess=reprocess,
+        )
+        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("load-sss-branches")
+def load_sss_branches(
+    input_path: Annotated[
+        Path | None,
+        typer.Option(
+            "--input",
+            help="Preserved SSS branch-locator JSON artifact for controlled import.",
+        ),
+    ] = None,
+    reprocess: Annotated[
+        bool,
+        typer.Option(
+            "--reprocess",
+            help="Reprocess an already-preserved release instead of skipping its checksum.",
+        ),
+    ] = False,
+) -> None:
+    """Acquire the public SSS branch locator and ingest branch service facilities.
+
+    Branch name, postal address and region are published. Contact-person,
+    e-mail and telephone/fax fields stay in the private raw artifact.
+    """
+
+    settings = get_settings()
+    engine, session = _session()
+    try:
+        if input_path is not None:
+            content = input_path.read_bytes()
+            retrieved_at = datetime.fromtimestamp(input_path.stat().st_mtime, UTC)
+            notes = "Controlled import of a preserved public SSS branch-locator JSON artifact."
+        else:
+            with HttpAcquirer(settings, timeout_seconds=180.0) as acquirer:
+                content, metadata = fetch_sss_branches(acquirer)
+            retrieved_at = datetime.now(UTC)
+            notes = f"Acquisition metadata: {json.dumps(metadata, default=str)}"
+        spec = source_spec(
+            REAL_SOURCES["sss-branches"],
+            release_label=f"SSS-BRANCHES-{retrieved_at.date().isoformat()}",
+            filename=f"sss-branch-locator-{retrieved_at.date().isoformat()}.json",
+            content=content,
+            retrieved_at=retrieved_at,
+            enqueue_cross_source_matches=False,
+            notes=notes,
+        )
+        outcome = run_ingestion(
+            spec=spec,
+            adapter=SssBranchAdapter(spec),
+            session=session,
+            settings=settings,
+            reprocess=reprocess,
+        )
+        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("load-pagasa-aws")
+def load_pagasa_aws(
+    input_path: Annotated[
+        Path | None,
+        typer.Option(
+            "--input",
+            help="Preserved PAGASA AWS JSON artifact for controlled import.",
+        ),
+    ] = None,
+    reprocess: Annotated[
+        bool,
+        typer.Option(
+            "--reprocess",
+            help="Reprocess an already-preserved release instead of skipping its checksum.",
+        ),
+    ] = False,
+) -> None:
+    """Acquire the PAGASA automated-weather-station table and ingest station identity.
+
+    Only station ID, name and source last-updated value are published. Readings
+    remain in the private dated artifact; no coordinates are present.
+    """
+
+    settings = get_settings()
+    engine, session = _session()
+    try:
+        if input_path is not None:
+            content = input_path.read_bytes()
+            retrieved_at = datetime.fromtimestamp(input_path.stat().st_mtime, UTC)
+            notes = "Controlled import of a preserved public PAGASA AWS JSON artifact."
+        else:
+            with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
+                content, metadata = fetch_pagasa_aws(acquirer)
+            retrieved_at = datetime.now(UTC)
+            notes = f"Acquisition metadata: {json.dumps(metadata, default=str)}"
+        spec = source_spec(
+            REAL_SOURCES["pagasa-aws"],
+            release_label=f"PAGASA-AWS-{retrieved_at.date().isoformat()}",
+            filename=f"pagasa-automated-weather-stations-{retrieved_at.date().isoformat()}.json",
+            content=content,
+            retrieved_at=retrieved_at,
+            enqueue_cross_source_matches=False,
+            notes=notes,
+        )
+        outcome = run_ingestion(
+            spec=spec,
+            adapter=PagasaAwsAdapter(spec),
+            session=session,
+            settings=settings,
+            reprocess=reprocess,
+        )
+        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("load-nbi-offices")
+def load_nbi_offices(
+    input_path: Annotated[
+        Path | None,
+        typer.Option(
+            "--input",
+            help="Preserved NBI regional/district office JSON artifact for controlled import.",
+        ),
+    ] = None,
+    reprocess: Annotated[
+        bool,
+        typer.Option(
+            "--reprocess",
+            help="Reprocess an already-preserved release instead of skipping its checksum.",
+        ),
+    ] = False,
+) -> None:
+    """Acquire the NBI regional/district office directory and ingest office identities.
+
+    Office name, region, postal location and map-embed coordinates are published.
+    Personal names, telephone numbers and protected e-mail values stay private.
+    """
+
+    settings = get_settings()
+    engine, session = _session()
+    try:
+        if input_path is not None:
+            content = input_path.read_bytes()
+            retrieved_at = datetime.fromtimestamp(input_path.stat().st_mtime, UTC)
+            notes = "Controlled import of a preserved public NBI office JSON artifact."
+        else:
+            with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
+                content, metadata = fetch_nbi_offices(acquirer)
+            retrieved_at = datetime.now(UTC)
+            notes = f"Acquisition metadata: {json.dumps(metadata, default=str)}"
+        spec = source_spec(
+            REAL_SOURCES["nbi-offices"],
+            release_label=f"NBI-OFFICES-{retrieved_at.date().isoformat()}",
+            filename=f"nbi-regional-district-offices-{retrieved_at.date().isoformat()}.json",
+            content=content,
+            retrieved_at=retrieved_at,
+            enqueue_cross_source_matches=False,
+            notes=notes,
+        )
+        outcome = run_ingestion(
+            spec=spec,
+            adapter=NbiOfficeAdapter(spec),
             session=session,
             settings=settings,
             reprocess=reprocess,

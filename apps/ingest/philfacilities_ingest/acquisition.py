@@ -298,7 +298,7 @@ def last_successful_check(session: Session, dataset_id: uuid.UUID) -> SourceChec
         select(SourceCheck)
         .where(
             SourceCheck.dataset_id == dataset_id,
-            SourceCheck.status.in_(("ok", "not_modified")),
+            SourceCheck.status.in_(("ok", "not_modified", "update_available")),
         )
         .order_by(SourceCheck.checked_at.desc())
         .limit(1)

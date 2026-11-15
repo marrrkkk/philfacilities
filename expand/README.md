@@ -16,18 +16,20 @@ Read the connected documents in this order:
 3. [Inclusion and ownership policy](docs/12-INCLUSION-AND-OWNERSHIP-POLICY.md) — binding criteria for qualifying government and private facilities.
 4. [Government and provider source register](docs/03-SOURCE-REGISTER.md) — official sources for government facilities and authoritative directories of qualifying private providers, plus portals, FOI disclosures, GIS layers and discovery targets.
 5. [LGU facility acquisition strategy](docs/04-LGU-ACQUISITION-STRATEGY.md)
-6. [Data model extension](docs/05-DATA-MODEL-EXTENSION.md)
-7. [Ingestion and versioned release operations](docs/06-INGESTION-AND-RELEASES.md)
-8. [Coverage and data quality](docs/07-COVERAGE-AND-QUALITY.md)
-9. [Rollout roadmap](docs/08-ROLLOUT-ROADMAP.md)
-10. [Data governance and rights](docs/09-DATA-GOVERNANCE.md)
-11. [Data inclusion and publication policy](../docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md) — canonical rule for verified, publicly available sources.
-12. [Acquisition request templates](docs/10-ACQUISITION-REQUEST-TEMPLATES.md)
-13. [Verified source discovery protocol](docs/11-VERIFIED-SOURCE-DISCOVERY.md) — mandatory research method for finding and validating more resources.
-14. [Implementation tracker](planning/TRACKER.md)
-15. [Source rights register](DATA-RIGHTS-REGISTER.md)
-16. [Agent instructions](AGENTS.md)
-17. [Changelog](CHANGELOG.md)
+6. [LGU facility inventory intake template](docs/14-LGU-INVENTORY-TEMPLATE.md) — validated CSV intake for local inventories.
+7. [Data model extension](docs/05-DATA-MODEL-EXTENSION.md)
+8. [Ingestion and versioned release operations](docs/06-INGESTION-AND-RELEASES.md)
+9. [Coverage and data quality](docs/07-COVERAGE-AND-QUALITY.md)
+10. [Rollout roadmap](docs/08-ROLLOUT-ROADMAP.md)
+11. [Data governance and rights](docs/09-DATA-GOVERNANCE.md)
+12. [Data inclusion and publication policy](../docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md) — canonical rule for verified, publicly available sources.
+13. [Acquisition request templates](docs/10-ACQUISITION-REQUEST-TEMPLATES.md)
+14. [Verified source discovery protocol](docs/11-VERIFIED-SOURCE-DISCOVERY.md) — mandatory research method for finding and validating more resources.
+15. [Public-safety and source security checklist](docs/13-PUBLIC-SAFETY-SECURITY-CHECKLIST.md)
+16. [Implementation tracker](planning/TRACKER.md)
+17. [Source rights register](DATA-RIGHTS-REGISTER.md)
+18. [Agent instructions](AGENTS.md)
+19. [Changelog](CHANGELOG.md)
 
 ## Product decision — ownership-inclusive scope
 

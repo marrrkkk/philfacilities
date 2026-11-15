@@ -483,6 +483,7 @@ def merge_match_candidate(
     source_before = _facility_snapshot(source)
     target_before = _facility_snapshot(target)
     moved_ids: dict[str, list[str]] = {}
+    location_state_before: dict[str, dict[str, Any]] = {}
 
     links = list(
         session.scalars(
@@ -517,6 +518,10 @@ def merge_match_candidate(
     )
     moved_ids["facility_locations"] = []
     for location in locations:
+        location_state_before[str(location.id)] = {
+            "is_current": location.is_current,
+            "valid_to": location.valid_to.isoformat() if location.valid_to else None,
+        }
         location.facility_id = target.id
         if target_has_current and location.is_current:
             location.is_current = False
@@ -538,6 +543,11 @@ def merge_match_candidate(
         table = model.__tablename__
         counts[table] = len(ids)
         moved_ids[table] = [str(value) for value in ids]
+    if any(counts[model.__tablename__] for model in _MERGE_MODELS):
+        # Bulk updates bypass the identity map; persist pending link/location moves
+        # first, then drop stale child instances.
+        session.flush()
+        session.expire_all()
 
     source.publication_status = "internal"
     source.record_status = "merged"
@@ -583,6 +593,185 @@ def merge_match_candidate(
         "target_facility_after": _facility_snapshot(target),
         "moved_counts": counts,
         "moved_ids": moved_ids,
+        "location_state_before": location_state_before,
+        "merged_by": reviewer.strip(),
+        "active": True,
     }
     session.flush()
     return candidate
+
+
+def undo_match_merge(
+    session: Session,
+    candidate_id: uuid.UUID,
+    *,
+    reviewer: str,
+    note: str | None = None,
+) -> MatchCandidate:
+    """Undo one applied merge and restore the source facility and its evidence.
+
+    Undo is deliberately strict: every child row recorded during the merge must still
+    exist and still belong to the surviving facility. If anything has moved since the
+    merge, the operator must resolve that state before retrying rather than guess.
+    """
+
+    if not reviewer.strip():
+        raise MatchingError("A reviewer is required.")
+    candidate = _get_candidate(session, candidate_id, lock=True)
+    if candidate.match_status != MERGED:
+        raise MatchingError(
+            f"Candidate is {candidate.match_status}; only a merged candidate can be undone."
+        )
+    resolution = candidate.resolution or {}
+    if not resolution.get("active"):
+        raise MatchingError("This merge has already been undone.")
+    moved_ids = resolution.get("moved_ids") or {}
+    if not isinstance(moved_ids, dict):
+        raise MatchingError("The merge resolution has no restorable child-row audit.")
+    if candidate.source_facility_id is None or candidate.candidate_facility_id is None:
+        raise MatchingError("The candidate's facilities no longer exist.")
+    source = session.get(Facility, candidate.source_facility_id)
+    target = session.get(Facility, candidate.candidate_facility_id)
+    if source is None or target is None:
+        raise MatchingError("The candidate's facilities no longer exist.")
+    if source.id == target.id:
+        raise MatchingError("Source and candidate facilities are the same record.")
+    if source.record_status != "merged":
+        raise MatchingError(
+            "The source facility is no longer in the merged state; refusing to restore."
+        )
+
+    _verify_moved_rows(session, target.id, moved_ids)
+
+    now = datetime.now(UTC)
+    source_before = _facility_snapshot(source)
+    target_before = _facility_snapshot(target)
+    restored: dict[str, int] = {}
+
+    for raw_id in moved_ids.get("facility_source_links", []):
+        link = session.get(FacilitySourceLink, uuid.UUID(raw_id))
+        link.facility_id = source.id
+    restored["facility_source_links"] = len(moved_ids.get("facility_source_links", []))
+
+    location_state = resolution.get("location_state_before") or {}
+    for raw_id in moved_ids.get("facility_locations", []):
+        location = session.get(FacilityLocation, uuid.UUID(raw_id))
+        location.facility_id = source.id
+        state = location_state.get(raw_id)
+        if state:
+            location.is_current = bool(state.get("is_current"))
+            valid_to = state.get("valid_to")
+            location.valid_to = date.fromisoformat(valid_to) if valid_to else None
+    restored["facility_locations"] = len(moved_ids.get("facility_locations", []))
+
+    for model in _MERGE_MODELS:
+        table = model.__tablename__
+        ids = [uuid.UUID(raw_id) for raw_id in moved_ids.get(table, [])]
+        if ids:
+            session.execute(
+                model.__table__.update()
+                .where(model.__table__.c.id.in_(ids))
+                .values(facility_id=source.id)
+            )
+        restored[table] = len(ids)
+    if any(restored[model.__tablename__] for model in _MERGE_MODELS):
+        session.flush()
+        session.expire_all()
+
+    source_snapshot = resolution.get("source_facility_snapshot") or {}
+    source.publication_status = source_snapshot.get("publication_status", "internal")
+    source.record_status = source_snapshot.get("record_status", "active")
+    source.updated_at = now
+    target.updated_at = now
+
+    session.add(
+        FacilityChangeEvent(
+            facility_id=source.id,
+            change_type="facility_merge_undone",
+            attribute_name=None,
+            old_value=source_before,
+            new_value={"restored_facility_id": str(source.id), "restored_slug": source.slug},
+            source_record_id=candidate.source_record_id,
+            changed_by=f"review:{reviewer.strip()}",
+        )
+    )
+    session.add(
+        FacilityChangeEvent(
+            facility_id=target.id,
+            change_type="facility_merge_undone",
+            attribute_name=None,
+            old_value=target_before,
+            new_value={
+                "restored_source_facility_id": str(source.id),
+                "restored_source_slug": source.slug,
+            },
+            source_record_id=candidate.source_record_id,
+            changed_by=f"review:{reviewer.strip()}",
+        )
+    )
+
+    resolution["active"] = False
+    resolution["undone_at"] = now.isoformat()
+    resolution["undone_by"] = reviewer.strip()
+    resolution["undo_note"] = note
+    resolution["restored_counts"] = restored
+    history = list(resolution.get("undo_history") or [])
+    history.append(
+        {
+            "undone_at": now.isoformat(),
+            "undone_by": reviewer.strip(),
+            "undo_note": note,
+            "previous_reviewer": candidate.reviewer,
+            "previous_reviewed_at": (
+                candidate.reviewed_at.isoformat() if candidate.reviewed_at else None
+            ),
+            "previous_review_note": candidate.review_note,
+        }
+    )
+    resolution["undo_history"] = history
+    candidate.resolution = resolution
+    candidate.match_status = ACCEPTED
+    candidate.reviewer = reviewer.strip()
+    candidate.reviewed_at = now
+    candidate.review_note = note
+    session.flush()
+    return candidate
+
+
+def _verify_moved_rows(
+    session: Session,
+    target_id: uuid.UUID,
+    moved_ids: dict[str, list[str]],
+) -> None:
+    checks: list[tuple[str, Any]] = [
+        ("facility_source_links", FacilitySourceLink),
+        ("facility_locations", FacilityLocation),
+    ]
+    checks.extend((model.__tablename__, model) for model in _MERGE_MODELS)
+    missing: list[str] = []
+    misplaced: list[str] = []
+    for table, model in checks:
+        ids = moved_ids.get(table, [])
+        if not ids:
+            continue
+        parsed = [uuid.UUID(raw_id) for raw_id in ids]
+        rows = session.execute(
+            select(model.id, model.facility_id).where(model.id.in_(parsed))
+        ).all()
+        found = {row.id: row.facility_id for row in rows}
+        for raw_id, row_id in zip(ids, parsed, strict=True):
+            if row_id not in found:
+                missing.append(f"{table}:{raw_id}")
+            elif found[row_id] != target_id:
+                misplaced.append(f"{table}:{raw_id}")
+    if missing or misplaced:
+        details = []
+        if missing:
+            details.append("missing=" + ",".join(missing[:10]))
+        if misplaced:
+            details.append("no longer on target=" + ",".join(misplaced[:10]))
+        raise MatchingError(
+            "The merged records changed after the merge; resolve them before undo ("
+            + "; ".join(details)
+            + ")."
+        )

@@ -270,3 +270,22 @@ def test_release_comparison_reports_rows_and_links_without_mutation(db_session) 
     )
     assert explicit["from"]["release_id"] == report["from"]["release_id"]
     assert explicit["to"]["release_id"] == report["to"]["release_id"]
+
+
+def test_row_count_anomaly_detects_large_changes() -> None:
+    from philfacilities_ingest.pipeline import row_count_anomaly
+
+    assert row_count_anomaly(100, 90) is None
+    assert row_count_anomaly(100, 60) is None
+    assert row_count_anomaly(100, 49) == {
+        "previous_count": 100,
+        "current_count": 49,
+        "ratio": 0.49,
+    }
+    assert row_count_anomaly(100, 201) == {
+        "previous_count": 100,
+        "current_count": 201,
+        "ratio": 2.01,
+    }
+    assert row_count_anomaly(10, 0) is None
+    assert row_count_anomaly(None, 100) is None

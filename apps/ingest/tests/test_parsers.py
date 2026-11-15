@@ -33,16 +33,24 @@ from philfacilities_ingest.sources.deped import (
     DepEdMasterlistAdapter,
     DepEdResourceAdapter,
 )
+from philfacilities_ingest.sources.deped_ebeis import (
+    DepEdEBEISAdapter,
+    parse_masterlist_html,
+    school_levels,
+)
 from philfacilities_ingest.sources.doh import DOHNHFRAdapter
 from philfacilities_ingest.sources.dswd_crcf import DswdCrcfDirectoryAdapter
 from philfacilities_ingest.sources.dti_negosyo import DtiNegosyoCenterAdapter
 from philfacilities_ingest.sources.national_museum import NationalMuseumDirectoryAdapter
+from philfacilities_ingest.sources.nbi import NbiOfficeAdapter, parse_office_html
 from philfacilities_ingest.sources.nlp import NlpPublicLibraryPdfAdapter
 from philfacilities_ingest.sources.nmis_naris import NmisNarisDirectoryAdapter
+from philfacilities_ingest.sources.pagasa_aws import PagasaAwsAdapter, parse_aws_html
 from philfacilities_ingest.sources.philhealth import PhilHealthPdfAdapter, _row_key, parse_catalog
 from philfacilities_ingest.sources.phlpost import PhlPostLocatorAdapter
 from philfacilities_ingest.sources.ppa import PpaPortListAdapter
 from philfacilities_ingest.sources.psgc import parse_psgc_workbook
+from philfacilities_ingest.sources.sss_branch import SssBranchAdapter
 
 
 def _spec(
@@ -1274,3 +1282,246 @@ def test_blocker_detection_ignores_cdn_asset_hostnames() -> None:
     )
     assert is_blocker_page(normal) is False
     assert is_blocker_page(challenge) is True
+
+
+def test_sss_branch_locator_withholds_contact_person_and_publishes_institution_fields() -> None:
+    artifact = {
+        "locator_url": "https://www.sss.gov.ph/sss-branch-locator/",
+        "records": [
+            {
+                "branchCode": "C5",
+                "branchName": "ALABANG-MUNTINLUPA",
+                "branchAddr": (
+                    "22 GF & 2F, NORFIL BUILDING NATIONAL HIGHWAY PUTATAN "
+                    "CITY OF MUNTINLUPA NCR, FOURTH DISTRICT"
+                ),
+                "branchContact": "Tel No. : +63 (02) 88072608",
+                "branchContactPerson": "JUAN DELA CRUZ",
+                "branchEmail": "alabang@sss.gov.ph",
+                "regionCode": "N",
+                "regionName": "National Capital Region",
+            },
+            {
+                "branchCode": "NA",
+                "branchName": "BICUTAN-SUN VALLEY",
+                "branchAddr": None,
+                "branchContact": None,
+                "branchContactPerson": None,
+                "branchEmail": None,
+                "regionCode": "N",
+                "regionName": "National Capital Region",
+            },
+        ],
+    }
+    spec = _spec(
+        agency="sss",
+        slug="sss-branch-locator",
+        filename="sss-branch-locator.json",
+        content=json.dumps(artifact).encode("utf-8"),
+    )
+    adapter = SssBranchAdapter(spec)
+    parsed = adapter.parse(spec)
+    assert len(parsed.rows) == 2
+    assert parsed.rows[0].normalized_payload == {
+        "branchCode": "C5",
+        "branchName": "ALABANG-MUNTINLUPA",
+        "branchAddr": (
+            "22 GF & 2F, NORFIL BUILDING NATIONAL HIGHWAY PUTATAN "
+            "CITY OF MUNTINLUPA NCR, FOURTH DISTRICT"
+        ),
+        "regionCode": "N",
+        "regionName": "National Capital Region",
+    }
+    assert "JUAN DELA CRUZ" not in json.dumps(parsed.rows[0].normalized_payload)
+    assert "alabang@sss.gov.ph" not in json.dumps(parsed.rows[0].normalized_payload)
+    result = adapter.validate(parsed)
+    assert result.rejected_rows == 0
+    assert {issue.code for issue in result.issues} == {"missing_branch_address"}
+
+    candidates = {candidate.source_record_key: candidate for candidate in adapter.normalize(parsed)}
+    alabang = candidates["SSS:C5"]
+    assert alabang.display_name == "SSS ALABANG-MUNTINLUPA Branch"
+    assert alabang.facility_type == "government_office"
+    assert alabang.facility_subtype == "PUBLIC_SERVICE_CENTER"
+    assert alabang.inclusion_class == "GOVERNMENT_FACILITY"
+    assert alabang.ownership_type == "GOCC"
+    assert alabang.operator_type == "GOCC"
+    assert alabang.public_access_class == "SERVICE_USERS_ONLY"
+    assert alabang.record_status == "unknown"
+    assert alabang.location.latitude is None
+    assert alabang.functions[0].function_code == "SOCIAL_SECURITY_SERVICE"
+    assert alabang.roles[0].role_type == "OPERATOR"
+    assert alabang.roles[0].entity_type == "GOCC"
+    assert "JUAN DELA CRUZ" not in json.dumps(
+        [candidate.__dict__ for candidate in candidates.values()], default=str
+    )
+
+
+def test_pagasa_aws_parser_publishes_station_identity_not_readings() -> None:
+    html = """
+    <table class="table">
+      <thead><tr>
+        <th>Site ID</th><th>Site Name</th><th>Temperature</th><th>Humidity</th>
+        <th>Wind Speed</th><th>Wind Direction</th><th>Precipitation</th>
+        <th>Pressure</th><th>Solar Radiation</th><th>Last Updated</th>
+      </tr></thead>
+      <tbody>
+        <tr><td>98</td><td>Science Garden, Quezon City</td><td>25 °C</td>
+        <td>82 %</td><td>3.6 km/hr</td><td>NNE</td><td>0 mm/hr</td>
+        <td>1008</td><td>1.1</td><td>November 15, 2026, 11:50 pm</td></tr>
+      </tbody>
+    </table>
+    """
+    header, records = parse_aws_html(html)
+    assert "Site ID" in header
+    assert records[0]["Site Name"] == "Science Garden, Quezon City"
+
+    artifact = {
+        "source_url": "https://bagong.pagasa.dost.gov.ph/automated-weather-station",
+        "records": [
+            {
+                "site_id": "98",
+                "site_name": "Science Garden, Quezon City",
+                "readings": {"Temperature": "25 °C", "Humidity": "82 %"},
+                "last_updated": "November 15, 2026, 11:50 pm",
+                "row_reference": "pagasa-aws-html:1",
+            }
+        ],
+    }
+    spec = _spec(
+        agency="pagasa",
+        slug="pagasa-automated-weather-stations",
+        filename="pagasa-aws.json",
+        content=json.dumps(artifact).encode("utf-8"),
+    )
+    adapter = PagasaAwsAdapter(spec)
+    parsed = adapter.parse(spec)
+    assert parsed.rows[0].normalized_payload == {
+        "site_id": "98",
+        "site_name": "Science Garden, Quezon City",
+        "last_updated": "November 15, 2026, 11:50 pm",
+    }
+    assert "Temperature" not in json.dumps(parsed.rows[0].normalized_payload)
+    assert adapter.validate(parsed).rejected_rows == 0
+    candidate = adapter.normalize(parsed)[0]
+    assert candidate.facility_type == "environmental_monitoring"
+    assert candidate.facility_subtype == "WEATHER_STATION"
+    assert candidate.inclusion_class == "GOVERNMENT_FACILITY"
+    assert candidate.ownership_type == "NATIONAL_GOVERNMENT"
+    assert candidate.operator_type == "NATIONAL_GOVERNMENT"
+    assert candidate.location.latitude is None
+    assert candidate.functions[0].function_code == "ENVIRONMENTAL_MONITORING"
+    assert candidate.roles[0].entity_type == "NATIONAL_GOVERNMENT"
+    assert "25 °C" not in json.dumps(candidate.__dict__, default=str)
+
+
+def test_nbi_office_parser_withholds_personal_fields_and_keeps_map_precision() -> None:
+    html = """
+    <ul class="reg-offices"><div class="blueBar">National Capital Region</div>
+      <li>
+        <div class="fancybox-hidden">
+          <div class="blueBar"><p>NATIONAL CAPITAL REGIONAL (NCR)</p></div>
+          <div><b>Location</b><p>NBI HQ,<br /> Pasay City, Metro Manila</p></div>
+          <div><p><iframe src="https://www.google.com/maps/embed?pb=!1m18!2d120.98282531484006!3d14.580946989815038"></iframe></p></div>
+          <div><b>Contact Details</b><p>Trunkline.: 523-8231 to 38</p></div>
+          <div><b>Email Address</b><p><a data-cfemail="abc">[email protected]</a></p></div>
+          <div><b>Regional Director</b><p>EMETERIO A. DONGALLO, JR.</p></div>
+        </div>
+      </li>
+    </ul>
+    """
+    records = parse_office_html(html)
+    assert len(records) == 1
+    assert records[0]["office_name"] == "NATIONAL CAPITAL REGIONAL (NCR)"
+    assert records[0]["region"] == "National Capital Region"
+    assert records[0]["location"] == "NBI HQ, Pasay City, Metro Manila"
+    assert records[0]["latitude"] == 14.580946989815038
+    assert records[0]["longitude"] == 120.98282531484006
+
+    artifact = {
+        "records": [
+            {
+                **records[0],
+                "office_key": "NATIONAL-CAPITAL-REGIONAL-NCR",
+            }
+        ]
+    }
+    spec = _spec(
+        agency="nbi",
+        slug="nbi-regional-district-offices",
+        filename="nbi-offices.json",
+        content=json.dumps(artifact).encode("utf-8"),
+    )
+    adapter = NbiOfficeAdapter(spec)
+    parsed = adapter.parse(spec)
+    assert "EMETERIO A. DONGALLO, JR." not in json.dumps(parsed.rows[0].normalized_payload)
+    assert "523-8231" not in json.dumps(parsed.rows[0].normalized_payload)
+    assert adapter.validate(parsed).rejected_rows == 0
+    candidate = adapter.normalize(parsed)[0]
+    assert candidate.facility_type == "government_office"
+    assert candidate.facility_subtype == "NATIONAL_AGENCY_OFFICE"
+    assert candidate.inclusion_class == "GOVERNMENT_FACILITY"
+    assert candidate.ownership_type == "NATIONAL_GOVERNMENT"
+    assert candidate.location.precision == "map_geocoded"
+    assert candidate.location.method == "google_maps_embed_on_official_page"
+    assert candidate.location.latitude == 14.580946989815038
+    assert candidate.functions[0].function_code == "PUBLIC_SERVICE_COUNTER"
+
+
+def test_ebeis_withholds_head_names_and_maps_grade_bands():
+    html = """
+    <table>
+      <tr><th>School ID</th><th>School Name</th><th>Head / Position</th>
+          <th>Address</th><th>School Type</th></tr>
+      <tr><td>123456</td><td>Sample Central School</td>
+          <td>JUAN DELA CRUZ - Principal</td>
+          <td>Poblacion, Sample City</td>
+          <td>Kinder, Grade 1-6, Grade 7-10 &amp; Grade 11-12</td></tr>
+      <tr><td>654321</td><td>Sample Elementary School</td>
+          <td>MARIA SANTOS - Head Teacher</td>
+          <td>Barangay Sample</td>
+          <td>Kinder &amp; Grade 1-6</td></tr>
+    </table>
+    """
+    header, rows = parse_masterlist_html(html)
+    assert header[-1] == "School Type"
+    assert len(rows) == 2
+
+    spec = _spec(
+        agency="deped",
+        slug="deped-ebeis-masterlist-ncr",
+        filename="ebeis.html",
+        content=html.encode("utf-8"),
+    )
+    adapter = DepEdEBEISAdapter(spec)
+    parsed = adapter.parse(spec)
+    assert "Head / Position" in parsed.rows[0].raw_payload
+    assert "Head / Position" not in parsed.rows[0].normalized_payload
+    assert "JUAN DELA CRUZ" not in json.dumps(parsed.rows[0].normalized_payload)
+    assert {warning["code"] for warning in parsed.warnings} == {
+        "withheld_school_head_names",
+        "ownership_not_in_source",
+    }
+    validation = adapter.validate(parsed)
+    assert validation.rejected_rows == 0
+    assert validation.issues == []
+
+    candidates = adapter.normalize(parsed)
+    first, second = candidates
+    assert first.facility_subtype == "OTHER_SCHOOL"
+    assert first.ownership == "unknown"
+    assert first.inclusion_class is None
+    assert first.school.offers_es is True
+    assert first.school.offers_jhs is True
+    assert first.school.offers_shs is True
+    assert second.school.offers_es is True
+    assert second.school.offers_jhs is None
+    assert second.school.offers_shs is None
+    assert "JUAN DELA CRUZ" not in repr(first)
+
+
+def test_ebeis_school_levels_does_not_guess():
+    assert school_levels("Kinder, Grade 1-6") == (True, None, None)
+    assert school_levels("Grade 7-10 & Grade 11-12") == (None, True, True)
+    assert school_levels("Ungraded special program") == (None, None, None)
+    assert school_levels(None) == (None, None, None)

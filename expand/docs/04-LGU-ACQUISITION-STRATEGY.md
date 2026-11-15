@@ -52,6 +52,15 @@ Create a repeatable process for each LGU:
 
 Ask the LGU to provide records in CSV/XLSX or a GIS format such as GeoJSON, shapefile, or geopackage. Do not insist that an LGU create new data if it already has a usable inventory.
 
+The implemented intake template is [`templates/lgu-inventory-template.csv`](../templates/lgu-inventory-template.csv), documented in [`14-LGU-INVENTORY-TEMPLATE.md`](14-LGU-INVENTORY-TEMPLATE.md). Validate a submission without importing it:
+
+```bash
+uv run philfacilities-ingest validate-lgu-inventory path/to/lgu-inventory.csv \
+  --output var/reports/lgu-inventory-validation.json
+```
+
+The template uses controlled taxonomy values rather than free-text facility types, rejects personal/security columns, preserves 10-digit PSGC codes, and requires a source/reference date for every row.
+
 Recommended fields:
 
 | Field | Description | Required? |

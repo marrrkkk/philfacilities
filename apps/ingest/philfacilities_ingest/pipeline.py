@@ -68,6 +68,7 @@ from .contracts import (
     SourceAdapter,
     ValidationIssue,
 )
+from .eligibility import exclusion_reason
 from .matching import enqueue_cross_source_candidates
 from .storage import RawStore, build_store
 
@@ -505,6 +506,28 @@ def _apply_sector_ownership(
         )
 
 
+def row_count_anomaly(
+    previous: int | None,
+    current: int | None,
+    *,
+    minimum_baseline: int = 20,
+    lower_ratio: float = 0.5,
+    upper_ratio: float = 2.0,
+) -> dict[str, float | int] | None:
+    """Return details when a release count changes implausibly against the last release."""
+
+    if previous is None or current is None or previous < minimum_baseline:
+        return None
+    ratio = current / previous
+    if lower_ratio <= ratio <= upper_ratio:
+        return None
+    return {
+        "previous_count": previous,
+        "current_count": current,
+        "ratio": round(ratio, 3),
+    }
+
+
 def _apply_candidate(
     session: Session,
     *,
@@ -530,6 +553,25 @@ def _apply_candidate(
     inclusion_class = candidate.inclusion_class or derive_inclusion_class(candidate.ownership)
     if inclusion_class not in (*PUBLIC_INCLUSION_CLASSES, DISCOVERY_CANDIDATE):
         raise ValueError(f"Unsupported inclusion class {inclusion_class!r}")
+    excluded = exclusion_reason(candidate)
+    if excluded:
+        stats["excluded_rows"] += 1
+        session.add(
+            QualityIssue(
+                source_record_id=record.id,
+                release_id=release.id,
+                issue_code="policy_excluded",
+                severity="info",
+                message=f"Row excluded from the facility registry: {excluded}.",
+                details={
+                    "facility_type": candidate.facility_type,
+                    "facility_subtype": candidate.facility_subtype,
+                    "facility_kind": candidate.facility_kind,
+                },
+                status="closed",
+            )
+        )
+        return None
     can_be_public = (
         _dataset_is_public(dataset, gate) and inclusion_class in PUBLIC_INCLUSION_CLASSES
     )
@@ -1331,6 +1373,7 @@ def run_ingestion(
         "facilities_created": 0,
         "facilities_updated": 0,
         "unresolved": 0,
+        "excluded_rows": 0,
         "with_coordinates": 0,
         "precision": {},
         "psgc_provided": 0,
@@ -1768,6 +1811,54 @@ def run_ingestion(
             if stats["psgc_provided"]
             else None
         )
+        previous_release = session.scalars(
+            select(Release)
+            .where(
+                Release.dataset_id == release.dataset_id,
+                Release.id != release.id,
+                Release.ingestion_status == "published",
+                Release.row_count_parsed.is_not(None),
+            )
+            .order_by(Release.retrieved_at.desc())
+            .limit(1)
+        ).first()
+        anomaly = row_count_anomaly(
+            previous_release.row_count_parsed if previous_release else None,
+            len(parsed.rows),
+        )
+        stats["row_count_previous"] = (
+            previous_release.row_count_parsed if previous_release else None
+        )
+        stats["row_count_ratio"] = anomaly["ratio"] if anomaly else None
+        stats["row_count_anomaly"] = bool(anomaly)
+        if anomaly:
+            message = (
+                f"Parsed row count changed from {anomaly['previous_count']} to "
+                f"{anomaly['current_count']} (ratio {anomaly['ratio']}); review the source "
+                "before treating this release as comparable."
+            )
+            session.add(
+                QualityIssue(
+                    release_id=release.id,
+                    issue_code="row_count_anomaly",
+                    severity="warning",
+                    message=message,
+                    details={
+                        **anomaly,
+                        "previous_release": previous_release.source_release_label,
+                    },
+                    status="open",
+                )
+            )
+            all_issues.append(
+                {
+                    "code": "row_count_anomaly",
+                    "severity": "warning",
+                    "message": message,
+                    "row_reference": None,
+                    "details": anomaly,
+                }
+            )
         failed = validation.accepted_rows == 0 and len(parsed.rows) > 0
         if not failed:
             # A previous attempt may have failed during parsing; this release has

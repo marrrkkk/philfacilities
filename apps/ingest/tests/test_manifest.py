@@ -7,7 +7,11 @@ import json
 from datetime import UTC, datetime
 
 from philfacilities_ingest.cli import app
-from philfacilities_ingest.manifest import _canonical_json, build_release_manifest
+from philfacilities_ingest.manifest import (
+    _canonical_json,
+    build_release_manifest,
+    render_release_notes,
+)
 from typer.testing import CliRunner
 
 
@@ -44,3 +48,20 @@ def test_release_manifest_cli_writes_a_checksummed_file(db_session, tmp_path):
         written["checksum"] == hashlib.sha256(_canonical_json(payload).encode("utf-8")).hexdigest()
     )
     assert written["totals"]["published_facilities"] == 22
+
+
+def test_release_notes_report_coverage_gaps_and_exclusions(db_session, tmp_path):
+    manifest = build_release_manifest(db_session)
+    notes = render_release_notes(manifest)
+    assert "# PhilFacilities data release notes" in notes
+    assert "## Known coverage gaps" in notes
+    assert "## Excluded or not yet publishable" in notes
+    assert "Published facilities" in notes
+
+    output = tmp_path / "release-notes.md"
+    result = CliRunner().invoke(app, ["release-notes", "--output", str(output)])
+    assert result.exit_code == 0, result.output
+    written = output.read_text()
+    assert "Manifest checksum:" in written
+    assert "Synthetic published facilities" in written
+    assert (tmp_path / "release-notes.manifest.json").exists()
