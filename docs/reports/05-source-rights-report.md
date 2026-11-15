@@ -1,6 +1,6 @@
 # 05 — Source Rights and Publication Report
 
-**Generated:** 2026-11-15T13:36:25.172780+00:00  
+**Generated:** 2026-11-15T13:47:37.257408+00:00  
 **Source of truth:** the configured PhilFacilities PostgreSQL database.  
 
 Recorded rights states and the technical publication gate per dataset and release.
@@ -21,6 +21,7 @@ Recorded rights states and the technical publication gate per dataset and releas
 | deped-machine-ready-files | review_required | blocked | The official endpoint was reachable only through a human terms/access flow or returned an access-control challenge. No redistribution decision exists; the dataset remains blocked. | NULL | NULL |
 | doh-nhfr | review_required | blocked | The official endpoint was reachable only through a human terms/access flow or returned an access-control challenge. No redistribution decision exists; the dataset remains blocked. | NULL | NULL |
 | dswd-crcf-directory | approved_with_attribution | published | The DSWD Centers and Residential Care Facilities directory is a work of the Department of Social Welfare and Development, a government agency. RA 8293 section 176 provides that no copyright subsists in a work of the Government of the Philippines, while prior approval may be required for commercial use. PhilFacilities publishes institutional facility name, responsible field office and postal address with attribution for non-commercial public-interest use. No coordinates, admission rules or operational status are inferred. This is a documented publication decision, not a legal opinion. | Department of Social Welfare and Development — Centers and Residential Care Facilities (CRCF) directory | NULL |
+| dti-negosyo-centers | approved_with_attribution | published | The DTI Negosyo Center finder and its public JSON endpoints publish the official center directory. DTI's Terms and Conditions state that information posted on the DTI Web may be quoted or reproduced in whole or in part provided that DTI is duly informed/credited, while reselling, redistributing or creating derivative works for commercial purposes requires DTI's written consent. PhilFacilities publishes the factual center name, postal address, region/province/city labels and source active flag for non-commercial public-interest use with attribution and takedown-on-notice. Phone and email values are withheld from the public record. This is a documented product decision, not a legal opinion. | Department of Trade and Industry — Negosyo Center finder | NULL |
 | nlp-public-libraries | approved_with_attribution | published | The directory is a work of the Government of the Philippines. RA 8293 section 176 provides that no copyright subsists in a government work, while prior approval may be required for commercial use. PhilFacilities publishes the institutional library fields with attribution for non-commercial public-interest use and excludes personal librarian contact fields. This is a documented publication decision, not a legal opinion. | National Library of the Philippines, Public Libraries Division — Directory of Affiliated Public Libraries in the Philippines, December 2025 | NULL |
 | nmis-naris-accredited-meat-establishments | approved_with_attribution | published | NARIS is the National Meat Inspection Service's public accreditation directory. The page carries an 'All rights reserved' notice but publishes factual establishment name, LTO number, establishment type and postal address. Under docs/14 and ADR 0008, PhilFacilities publishes only those factual fields with attribution and takedown-on-notice; it does not copy expressive page content and does not treat the notice as an automatic bar. The page currently returns a WAF challenge or TLS failure on recheck, so the verified 15 November 2026 artifact is the release of record. This is a documented product decision, not a legal opinion. | National Meat Inspection Service — NARIS Accredited Meat Establishments | NULL |
 | nmp-regional-area-site-museums | approved_with_attribution | published | The National Museum directory and site pages are works of the Government of the Philippines. RA 8293 section 176 provides that no copyright subsists in a government work, while prior approval may be required for commercial use. PhilFacilities publishes institutional museum fields with attribution for non-commercial public-interest use. This is a documented publication decision, not a legal opinion. | National Museum of the Philippines — Regional, Area and Site Museums directory | NULL |
@@ -85,6 +86,7 @@ Recorded rights states and the technical publication gate per dataset and releas
 | deped-ebeis-masterlist-ncr | DEPED-EBEIS-NCR-2026-11-15 | approved_with_attribution | published |
 | deped-ebeis-masterlist-ncr | DEPED-EBEIS-NCR-2026-11-15 | restricted_non_redistributable | internal_only |
 | dswd-crcf-directory | DSWD-CRCF-2026-11-15 | approved_with_attribution | published |
+| dti-negosyo-centers | DTI-NEGOSYO-2026-11-15 | approved_with_attribution | published |
 | nlp-public-libraries | NLP-PUBLIC-LIBRARIES-2025-12 | approved_with_attribution | published |
 | nmis-naris-accredited-meat-establishments | NMIS-NARIS-2026-11-15 | approved_with_attribution | published |
 | nmp-regional-area-site-museums | NMP-MUSEUMS-2026-11-15 | approved_with_attribution | published |
@@ -135,6 +137,7 @@ Recorded rights states and the technical publication gate per dataset and releas
 | nlp-public-libraries | 1752 | 0 |
 | philhealth-abpp | 1666 | 0 |
 | philhealth-fp | 1446 | 0 |
+| dti-negosyo-centers | 1427 | 0 |
 | phlpost-post-office-locator | 1272 | 0 |
 | philhealth-fdc | 974 | 0 |
 | philhealth-dental | 676 | 0 |

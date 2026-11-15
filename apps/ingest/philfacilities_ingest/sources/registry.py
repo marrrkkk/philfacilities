@@ -203,6 +203,21 @@ PPA_RIGHTS_BASIS = (
     "not a legal opinion."
 )
 PPA_ATTRIBUTION = "Philippine Ports Authority — List of Ports Covered in PPA Statistics"
+DTI_NEGOSYO_FINDER_URL = "https://negosyocenter.dti.gov.ph/negosyo-center-directory"
+DTI_NEGOSYO_API_URL = "https://negosyocenter.dti.gov.ph/api/negosyo-centers/regions-overview"
+DTI_NEGOSYO_TERMS_URL = "https://negosyocenter.dti.gov.ph/terms-and-conditions"
+DTI_NEGOSYO_RIGHTS_BASIS = (
+    "The DTI Negosyo Center finder and its public JSON endpoints publish the official "
+    "center directory. DTI's Terms and Conditions state that information posted on the "
+    "DTI Web may be quoted or reproduced in whole or in part provided that DTI is duly "
+    "informed/credited, while reselling, redistributing or creating derivative works for "
+    "commercial purposes requires DTI's written consent. PhilFacilities publishes the "
+    "factual center name, postal address, region/province/city labels and source active "
+    "flag for non-commercial public-interest use with attribution and takedown-on-notice. "
+    "Phone and email values are withheld from the public record. This is a documented "
+    "product decision, not a legal opinion."
+)
+DTI_NEGOSYO_ATTRIBUTION = "Department of Trade and Industry — Negosyo Center finder"
 
 
 @dataclass(frozen=True)
@@ -623,6 +638,38 @@ REAL_SOURCES: dict[str, RealSource] = {
             "ingested because its hierarchy and ownership are not stated."
         ),
     ),
+    "dti-negosyo": RealSource(
+        key="dti-negosyo",
+        agency_code="dti",
+        agency_name="Department of Trade and Industry",
+        dataset_slug="dti-negosyo-centers",
+        dataset_name="DTI Negosyo Center directory",
+        source_url=DTI_NEGOSYO_FINDER_URL,
+        access_method="public_json_api",
+        update_pattern="irregular",
+        rights=RIGHTS_APPROVED_ATTRIBUTION,
+        rights_basis=DTI_NEGOSYO_RIGHTS_BASIS,
+        attribution_text=DTI_NEGOSYO_ATTRIBUTION,
+        requested_publication_status=PUBLICATION_APPROVED,
+        terms_url=DTI_NEGOSYO_TERMS_URL,
+        coverage_scope="NATIONAL_PARTIAL",
+        coverage_note=(
+            "The DTI Negosyo Center finder returned 1,427 active center records across "
+            "all 17 regions on 15 November 2026. The finder does not state that the list "
+            "is a complete census, does not identify each center's owner/operator/host, "
+            "and supplies no coordinates, PSGC codes, hours or public-access conditions. "
+            "Presence in the directory is not proof of current operation."
+        ),
+        note=(
+            "Two unauthenticated public JSON endpoints back the finder: regions-overview "
+            "and by-region. Records contain center name, postal address, region/province/"
+            "city labels, optional institutional phone/email and an is_active flag. The "
+            "adapter stores each center as a government facility unit under the DTI "
+            "business-advisory programme with unspecified ownership/operator; it does not "
+            "classify a host city hall, SUC or other premises. Contact fields stay in the "
+            "private raw artifact and out of the public record."
+        ),
+    ),
 }
 
 
@@ -855,6 +902,14 @@ def check_sources(
                     )
                 elif key == "nlp" or key == "ppa":
                     result, status = _check_url(client, session, source, expected_marker="%PDF")
+                elif key == "dti-negosyo":
+                    result, status = _check_url(
+                        client,
+                        session,
+                        source,
+                        url=DTI_NEGOSYO_API_URL,
+                        expected_marker="region",
+                    )
                 elif key == "national-museum":
                     result, status = _check_url(client, session, source, expected_marker="uk-card")
                 elif key == "phlpost":

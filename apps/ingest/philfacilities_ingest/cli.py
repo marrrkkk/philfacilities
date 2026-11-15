@@ -70,6 +70,7 @@ from .sources.deped import DepEdEnrollmentAdapter, DepEdMasterlistAdapter, DepEd
 from .sources.deped_ebeis import DepEdEBEISAdapter
 from .sources.doh import DOHNHFRAdapter
 from .sources.dswd_crcf import DswdCrcfDirectoryAdapter
+from .sources.dti_negosyo import DtiNegosyoCenterAdapter, fetch_negosyo_centers
 from .sources.national_museum import NationalMuseumDirectoryAdapter, fetch_national_museum_directory
 from .sources.nlp import NlpPublicLibraryPdfAdapter
 from .sources.nmis_naris import NmisNarisDirectoryAdapter
@@ -1456,6 +1457,63 @@ def load_ppa(
         engine.dispose()
 
 
+@app.command("load-dti-negosyo")
+def load_dti_negosyo(
+    input_path: Annotated[
+        Path | None,
+        typer.Option(
+            "--input",
+            help="Preserved DTI Negosyo Center JSON artifact for controlled import.",
+        ),
+    ] = None,
+    reprocess: Annotated[
+        bool,
+        typer.Option(
+            "--reprocess",
+            help="Reprocess an already-preserved release instead of skipping its checksum.",
+        ),
+    ] = False,
+) -> None:
+    """Acquire the public DTI Negosyo Center directory and ingest its centers.
+
+    The finder supplies names, postal addresses and geographic labels only. No
+    coordinates, ownership, operator, hours or access conditions are inferred.
+    """
+
+    settings = get_settings()
+    engine, session = _session()
+    try:
+        if input_path is not None:
+            content = input_path.read_bytes()
+            retrieved_at = datetime.fromtimestamp(input_path.stat().st_mtime, UTC)
+            notes = "Controlled import of a preserved public DTI Negosyo Center JSON artifact."
+        else:
+            with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
+                content, metadata = fetch_negosyo_centers(acquirer)
+            retrieved_at = datetime.now(UTC)
+            notes = f"Acquisition metadata: {json.dumps(metadata, default=str)}"
+        spec = source_spec(
+            REAL_SOURCES["dti-negosyo"],
+            release_label=f"DTI-NEGOSYO-{retrieved_at.date().isoformat()}",
+            filename=f"dti-negosyo-centers-{retrieved_at.date().isoformat()}.json",
+            content=content,
+            retrieved_at=retrieved_at,
+            enqueue_cross_source_matches=False,
+            notes=notes,
+        )
+        outcome = run_ingestion(
+            spec=spec,
+            adapter=DtiNegosyoCenterAdapter(spec),
+            session=session,
+            settings=settings,
+            reprocess=reprocess,
+        )
+        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
+    finally:
+        session.close()
+        engine.dispose()
+
+
 @app.command("load-dswd-crcf")
 def load_dswd_crcf(
     reprocess: Annotated[
@@ -1625,6 +1683,7 @@ def load_real(
         bool, typer.Option(help="Skip the scanned BIR Revenue District Office list.")
     ] = False,
     skip_ppa: Annotated[bool, typer.Option(help="Skip the PPA port list.")] = False,
+    skip_dti: Annotated[bool, typer.Option(help="Skip the DTI Negosyo Center directory.")] = False,
     skip_crcf: Annotated[bool, typer.Option(help="Skip the DSWD CRCF directory.")] = False,
     purge: Annotated[bool, typer.Option(help="Purge synthetic records first.")] = True,
 ) -> None:
@@ -1833,6 +1892,26 @@ def load_real(
                 settings=settings,
             )
             typer.echo(f"PPA ports: {ppa_result.status} {ppa_result.stats}")
+
+        if not skip_dti:
+            with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
+                dti_content, dti_metadata = fetch_negosyo_centers(acquirer)
+            dti_spec = source_spec(
+                REAL_SOURCES["dti-negosyo"],
+                release_label=f"DTI-NEGOSYO-{date.today().isoformat()}",
+                filename=f"dti-negosyo-centers-{date.today().isoformat()}.json",
+                content=dti_content,
+                retrieved_at=datetime.now(UTC),
+                enqueue_cross_source_matches=False,
+                notes=f"Acquisition metadata: {json.dumps(dti_metadata, default=str)}",
+            )
+            dti_result = run_ingestion(
+                spec=dti_spec,
+                adapter=DtiNegosyoCenterAdapter(dti_spec),
+                session=session,
+                settings=settings,
+            )
+            typer.echo(f"DTI Negosyo Centers: {dti_result.status} {dti_result.stats}")
 
         if not skip_crcf:
             with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:

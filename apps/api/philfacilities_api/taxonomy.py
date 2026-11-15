@@ -303,6 +303,7 @@ CATEGORY_SUBTYPES: Final[dict[str, tuple[str, ...]]] = {
         "NATIONAL_AGENCY_OFFICE",
         "REVENUE_DISTRICT_OFFICE",
         "POST_OFFICE",
+        "NEGOSYO_CENTER",
         "PUBLIC_SERVICE_CENTER",
         "OTHER_GOVERNMENT_OFFICE",
     ),

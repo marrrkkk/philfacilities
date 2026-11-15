@@ -1,6 +1,6 @@
 # 03 — Schema Report
 
-**Generated:** 2026-11-15T13:36:25.172780+00:00  
+**Generated:** 2026-11-15T13:47:37.257408+00:00  
 **Source of truth:** the configured PhilFacilities PostgreSQL database.  
 
 Original stored keys, types, presence, and missing-value counts by dataset.
@@ -104,6 +104,26 @@ No source records are stored for this dataset, so no original schema can be repo
 | region | 76 | 0 | 0 | string | CARAGA Region |
 | _row | 76 | 0 | 0 | number | 1 |
 | variant_count | 76 | 0 | 0 | number | 2 |
+
+### `dti-negosyo-centers`
+
+- Declared schema version: `not recorded`
+- Stored source records: 1427
+- Distinct source-record keys: 1427
+- Duplicate source-record keys: 0
+- Blank source-record keys: 0
+
+| Original key | Present | Missing | Null/blank | JSON types | Sample value |
+|---|---|---|---|---|---|
+| address | 1427 | 0 | 0 | string | 0171 P.M. Durias Bldg., Quezon Ave., Extn., Pala-o, Iligan City |
+| city | 1427 | 0 | 0 | string | Aborlan |
+| email | 1427 | 0 | 225 | null, string | ABR-NCBaayLicuan_LGU@dti.gov.ph |
+| id | 1427 | 0 | 0 | number | 1434 |
+| is_active | 1427 | 0 | 0 | boolean | true |
+| name | 1427 | 0 | 0 | string | Aborlan Negosyo Center |
+| phone | 1427 | 0 | 1427 | null | NULL |
+| province | 1427 | 0 | 0 | string | Abra |
+| region | 1427 | 0 | 0 | string | CAR - Cordillera Administrative Region |
 
 ### `nlp-public-libraries`
 

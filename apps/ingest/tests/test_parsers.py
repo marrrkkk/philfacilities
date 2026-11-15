@@ -29,6 +29,7 @@ from philfacilities_ingest.sources.deped import (
 )
 from philfacilities_ingest.sources.doh import DOHNHFRAdapter
 from philfacilities_ingest.sources.dswd_crcf import DswdCrcfDirectoryAdapter
+from philfacilities_ingest.sources.dti_negosyo import DtiNegosyoCenterAdapter
 from philfacilities_ingest.sources.national_museum import NationalMuseumDirectoryAdapter
 from philfacilities_ingest.sources.nlp import NlpPublicLibraryPdfAdapter
 from philfacilities_ingest.sources.nmis_naris import NmisNarisDirectoryAdapter
@@ -939,6 +940,111 @@ def test_ppa_port_list_preserves_hierarchy_marks_and_private_status() -> None:
 
     unregistered = candidates["Example Unregistered Port"]
     assert unregistered.functions[0].evidence["unregistered"] is True
+
+
+def test_dti_negosyo_centers_preserve_geography_and_withhold_contacts() -> None:
+    artifact = {
+        "finder_url": "https://negosyocenter.dti.gov.ph/negosyo-center-directory",
+        "retrieved_at": "2026-11-15T13:40:00+00:00",
+        "records": [
+            {
+                "id": 1434,
+                "region": "NCR - National Capital Region",
+                "province": "Metro Manila",
+                "city": "Mandaluyong",
+                "name": "Negosyo Center Mandaluyong",
+                "address": "Mandaluyong City Hall Complex, Maysilo Circle, Mandaluyong City",
+                "phone": None,
+                "hours": None,
+                "email": "NCMandaluyong_LGU@dti.gov.ph",
+                "is_active": True,
+            },
+            {
+                "id": 1435,
+                "region": "NCR - National Capital Region",
+                "province": "Metro Manila",
+                "city": "Parañaque City",
+                "name": "Parañaque City Negosyo Center",
+                "address": "4F Paranaque City Hall, Paranaque City",
+                "phone": "02-0000-0000",
+                "hours": "08:00-17:00",
+                "email": "person@example.test",
+                "is_active": False,
+            },
+        ],
+    }
+    spec = _spec(
+        agency="dti",
+        slug="dti-negosyo-centers",
+        filename="dti-negosyo-centers.json",
+        content=json.dumps(artifact).encode("utf-8"),
+    )
+    adapter = DtiNegosyoCenterAdapter(spec)
+    parsed = adapter.parse(spec)
+    assert len(parsed.rows) == 2
+    assert "phone" not in parsed.rows[0].normalized_payload
+    assert "email" not in parsed.rows[0].normalized_payload
+    assert "hours" not in parsed.rows[0].normalized_payload
+    assert adapter.validate(parsed).rejected_rows == 0
+
+    candidates = {candidate.display_name: candidate for candidate in adapter.normalize(parsed)}
+    mandaluyong = candidates["Negosyo Center Mandaluyong"]
+    assert mandaluyong.facility_type == "government_office"
+    assert mandaluyong.facility_subtype == "NEGOSYO_CENTER"
+    assert mandaluyong.facility_kind == "facility_unit"
+    assert mandaluyong.inclusion_class == "GOVERNMENT_FACILITY"
+    assert mandaluyong.ownership_type == "GOVERNMENT_UNSPECIFIED"
+    assert mandaluyong.operator_type == "GOVERNMENT_UNSPECIFIED"
+    assert mandaluyong.public_access_class == "UNKNOWN"
+    assert mandaluyong.record_status == "active_in_registry"
+    assert mandaluyong.location.latitude is None
+    assert mandaluyong.location.precision == "unknown"
+    assert mandaluyong.functions[0].function_code == "BUSINESS_ADVISORY"
+    assert mandaluyong.functions[0].evidence["source_is_active"] is True
+    assert "person@example.test" not in json.dumps(
+        [candidate.__dict__ for candidate in candidates.values()], default=str
+    )
+
+    paranaque = candidates["Parañaque City Negosyo Center"]
+    assert paranaque.record_status == "inactive_in_registry"
+    assert paranaque.functions[0].designation_status == "unknown"
+
+
+def test_dti_negosyo_centers_reject_missing_names_and_duplicate_ids() -> None:
+    artifact = {
+        "records": [
+            {"id": 1, "name": "", "region": "NCR", "province": "Metro Manila", "city": "Manila"},
+            {
+                "id": 2,
+                "name": "Duplicate Center",
+                "region": "NCR",
+                "province": "Metro Manila",
+                "city": "Manila",
+            },
+            {
+                "id": 2,
+                "name": "Duplicate Center",
+                "region": "NCR",
+                "province": "Metro Manila",
+                "city": "Manila",
+            },
+        ]
+    }
+    spec = _spec(
+        agency="dti",
+        slug="dti-negosyo-centers",
+        filename="dti-negosyo-centers.json",
+        content=json.dumps(artifact).encode("utf-8"),
+    )
+    adapter = DtiNegosyoCenterAdapter(spec)
+    parsed = adapter.parse(spec)
+    result = adapter.validate(parsed)
+    assert result.rejected_rows == 2
+    assert {issue.code for issue in result.issues} == {
+        "missing_center_name",
+        "duplicate_center_id",
+        "missing_address",
+    }
 
 
 def test_blocker_detection_ignores_cdn_asset_hostnames() -> None:

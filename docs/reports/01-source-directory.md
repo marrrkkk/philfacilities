@@ -1,6 +1,6 @@
 # 01 — Complete Government Data Source Directory
 
-**Generated:** 2026-11-15T13:36:25.172780+00:00  
+**Generated:** 2026-11-15T13:47:37.257408+00:00  
 **Source of truth:** the configured PhilFacilities PostgreSQL database.  
 
 Every registered dataset and every discovery-only source that was probed.
@@ -22,6 +22,7 @@ This directory lists every dataset registered in the platform and the discovery-
 | deped | deped-machine-ready-files | https://www.deped.gov.ph/machine-ready-files/ | human_download | school year | review_required | blocked | NULL | 0 | 0 | 0 | 0 | access_blocked (403) at 2026-11-15 06:07:27.038103+00:00 |
 | doh | doh-nhfr | https://nhfr.doh.gov.ph/VActivefacilitiesList | official_registry | weekly | review_required | blocked | NULL | 0 | 0 | 0 | 0 | access_blocked (403) at 2026-11-15 06:07:27.965646+00:00 |
 | dswd | dswd-crcf-directory | https://www.dswd.gov.ph/crcf/ | public_html_directory | irregular | approved_with_attribution | published | NULL | 1 | 76 | 0 | 76 | not checked |
+| dti | dti-negosyo-centers | https://negosyocenter.dti.gov.ph/negosyo-center-directory | public_json_api | irregular | approved_with_attribution | published | NULL | 1 | 1427 | 0 | 1427 | not checked |
 | nlp | nlp-public-libraries | https://web.nlp.gov.ph/wp-content/uploads/2026/01/OFFICIAL-Integrated-Directory-of-Public-Libraries-as-of-December-2025.pdf | public_pdf | annual | approved_with_attribution | published | NULL | 1 | 1752 | 0 | 1752 | not checked |
 | nmis | nmis-naris-accredited-meat-establishments | https://naris.nmis.gov.ph/ | public_html_directory | irregular | approved_with_attribution | published | NULL | 1 | 357 | 0 | 357 | not checked |
 | nmp | nmp-regional-area-site-museums | https://www.nationalmuseum.gov.ph/our-museums/regional-area-and-site-museums/ | public_html_directory | irregular | approved_with_attribution | published | NULL | 1 | 17 | 0 | 17 | not checked |

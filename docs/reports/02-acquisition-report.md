@@ -1,6 +1,6 @@
 # 02 — Acquisition Report
 
-**Generated:** 2026-11-15T13:36:25.172780+00:00  
+**Generated:** 2026-11-15T13:47:37.257408+00:00  
 **Source of truth:** the configured PhilFacilities PostgreSQL database.  
 
 Actual retained releases, checksums, counts, formats, and access failures.
@@ -33,6 +33,7 @@ This report records actual acquired releases and their immutable file identity. 
 | deped-ebeis-masterlist-ncr | DEPED-EBEIS-NCR-2026-11-15 | NULL | NULL | 2026-11-15T12:46:12.688765+00:00 | html | 998059 | 29383079e7ffdc001738deab3a9b0f5883c4d8265d75aa91b7410b266d5ede0e | 5055 | published | published | var/raw/deped/deped-ebeis-masterlist-ncr/DEPED-EBEIS-NCR-2026-11-15/29383079e7ffdc00-deped-ebeis-masterlist-ncr-2026-11-15.html |
 | deped-ebeis-masterlist-ncr | DEPED-EBEIS-NCR-2026-11-15 | NULL | NULL | 2026-11-15T05:58:33.800809+00:00 | html | 998059 | f972cde8c01597a6b7cf064b4735b9d073b7c4746e8d505bd09abe1cbc0e218b | 5055 | published | internal_only | var/raw/deped/deped-ebeis-masterlist-ncr/DEPED-EBEIS-NCR-2026-11-15/f972cde8c01597a6-deped-ebeis-masterlist-ncr-2026-11-15.html |
 | dswd-crcf-directory | DSWD-CRCF-2026-11-15 | NULL | NULL | 2026-11-15T12:42:35.005693+00:00 | html | 686840 | d78ea19327fc8b826679f32627cdc68c59a2a75cf6fed32ae19875f1b950c7b4 | 76 | published | published | var/raw/dswd/dswd-crcf-directory/DSWD-CRCF-2026-11-15/d78ea19327fc8b82-dswd-crcf-directory-2026-11-15.html |
+| dti-negosyo-centers | DTI-NEGOSYO-2026-11-15 | NULL | NULL | 2026-11-15T13:45:19.148562+00:00 | json | 490810 | beac844a0f977e490912e616c77e633736df2114a242c41b69ff5f493824b6e8 | 1427 | published | published | var/raw/dti/dti-negosyo-centers/DTI-NEGOSYO-2026-11-15/beac844a0f977e49-dti-negosyo-centers-2026-11-15.json |
 | nlp-public-libraries | NLP-PUBLIC-LIBRARIES-2025-12 | NULL | 2025-12-01 to 2025-12-31 | 2026-11-15T11:43:23.862354+00:00 | pdf | 1302536 | 45cb64ee6ca567c80e0c98a31b86ab2ec350db7fff2ff10fecad8a5c23f25574 | 1752 | published | published | var/raw/nlp/nlp-public-libraries/NLP-PUBLIC-LIBRARIES-2025-12/45cb64ee6ca567c8-nlp-public-libraries-2025-12.pdf |
 | nmis-naris-accredited-meat-establishments | NMIS-NARIS-2026-11-15 | NULL | NULL | 2026-11-15T12:25:12.420903+00:00 | html | 540677 | 28df89484a5aa14e76093f6d54763ebdb0e455dd773871967f9b10423a2a957f | 357 | published | published | var/raw/nmis/nmis-naris-accredited-meat-establishments/NMIS-NARIS-2026-11-15/28df89484a5aa14e-nmis-naris-accredited-establishments-2026-11-15.html |
 | nmp-regional-area-site-museums | NMP-MUSEUMS-2026-11-15 | NULL | NULL | 2026-11-15T11:45:41.134109+00:00 | json | 5843 | 263f6ceb18acabe1f8be6cef70c5ed0881c2deac341cc9b4829c713e5132d2bb | 17 | published | published | var/raw/nmp/nmp-regional-area-site-museums/NMP-MUSEUMS-2026-11-15/263f6ceb18acabe1-nmp-regional-area-site-museums-2026-11-15.json |
@@ -94,6 +95,7 @@ This report records actual acquired releases and their immutable file identity. 
 | deped-ebeis-masterlist-ncr | DEPED-EBEIS-NCR-2026-11-15 | published | 5055 | 5055 | 0 | 0 | 0 | 0 | 0 | NULL |
 | deped-ebeis-masterlist-ncr | DEPED-EBEIS-NCR-2026-11-15 | published | 5055 | 5055 | 0 | 0 | 0 | 0 | 0 | NULL |
 | dswd-crcf-directory | DSWD-CRCF-2026-11-15 | published | 76 | 76 | 0 | 0 | 0 | 0 | 0 | NULL |
+| dti-negosyo-centers | DTI-NEGOSYO-2026-11-15 | published | 1427 | 1427 | 0 | 0 | 0 | 0 | 0 | NULL |
 | nlp-public-libraries | NLP-PUBLIC-LIBRARIES-2025-12 | published | 1752 | 1752 | 0 | 0 | 0 | 0 | 0 | NULL |
 | nmis-naris-accredited-meat-establishments | NMIS-NARIS-2026-11-15 | published | 357 | 357 | 0 | 88 | 0 | 0 | 0 | NULL |
 | nmp-regional-area-site-museums | NMP-MUSEUMS-2026-11-15 | published | 17 | 17 | 0 | 0 | 0 | 0 | 0 | NULL |
