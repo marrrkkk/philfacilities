@@ -119,6 +119,13 @@ was re-run locally against a production build backed by that synthetic
 database: **47 passed, 5 skipped**. Local runs without the overrides default to
 the real records named above; both paths exercise the same assertions.
 
+Hosted run `43705808887` (commit `73b51f0`) completed all three jobs
+successfully: Python lint/tests, web lint/typecheck/build, and Playwright with
+**47 passed, 5 skipped**. The first hosted attempt exposed two timing-sensitive
+assertions; the suite now waits for the transitioned focus-ring colour with
+auto-retrying CSS assertions and waits for the streamed directory region before
+typing, so late hydration cannot discard keystrokes.
+
 ## Reference-period filters
 
 Live API checks against rights-cleared releases:
