@@ -37,7 +37,7 @@ function escapeRegExp(value: string) {
 
 async function expectSearchQuery(page: Page, expected: string) {
   await expect
-    .poll(() => new URL(page.url()).searchParams.get("q"))
+    .poll(() => new URL(page.url()).searchParams.get("q"), { timeout: 10_000 })
     .toBe(expected);
 }
 
@@ -68,25 +68,23 @@ async function gotoHydrated(page: Page, path: string) {
 }
 
 async function expectMeasuredFocusRing(locator: Locator) {
-  const outline = await locator.evaluate((element) => {
-    const style = getComputedStyle(element);
-    return {
-      color: style.outlineColor,
-      offset: style.outlineOffset,
-      style: style.outlineStyle,
-      width: style.outlineWidth,
-    };
-  });
-
-  expect(outline.style).toBe("solid");
-  expect(outline.width).toBe("3px");
-  expect(outline.color).toBe("rgb(255, 207, 74)");
-  expect(outline.offset).toBe("3px");
+  // The navigation links use `transition-colors`, which animates
+  // `outline-color`; a single computed-style read can catch a blended colour
+  // mid-transition. Auto-retrying CSS assertions wait for the final value.
+  await expect(locator).toHaveCSS("outline-style", "solid");
+  await expect(locator).toHaveCSS("outline-width", "3px");
+  await expect(locator).toHaveCSS("outline-color", "rgb(255, 207, 74)");
+  await expect(locator).toHaveCSS("outline-offset", "3px");
 }
 
 test.describe("directory", () => {
   test("search submits from the keyboard", async ({ page }) => {
     await gotoHydrated(page, "/directory");
+    // Wait for the streamed results region before typing; hydration of that
+    // boundary can replace the input and discard keystrokes typed too early.
+    await expect(page.getByRole("heading", { name: /matching records/i })).toBeVisible({
+      timeout: 15_000,
+    });
     await page.locator("#filter-q").focus();
     await page.keyboard.type(SCHOOL_SEARCH);
     await page.keyboard.press("Enter");
