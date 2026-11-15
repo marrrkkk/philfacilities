@@ -930,6 +930,8 @@ export interface components {
             by_access_class: components["schemas"]["CoverageRow"][];
             /** By Region */
             by_region: components["schemas"]["CoverageRow"][];
+            /** By Lgu Coverage */
+            by_lgu_coverage?: components["schemas"]["LguCoverageRow"][];
             /** Source Coverage */
             source_coverage: components["schemas"]["SourceCoverageRow"][];
             /**
@@ -1490,6 +1492,20 @@ export interface components {
             row_count_parsed?: number | null;
             /** Sha256 */
             sha256: string;
+        };
+        /** LguCoverageRow */
+        LguCoverageRow: {
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "NATIONAL" | "REGIONAL" | "PARTICIPATING_LGUS" | "SELECTED_LGUS" | "UNKNOWN";
+            /** Label */
+            label: string;
+            /** Source Count */
+            source_count: number;
+            /** Dataset Slugs */
+            dataset_slugs?: string[];
         };
         /** LicenseOut */
         LicenseOut: {

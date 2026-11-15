@@ -63,6 +63,7 @@ from .pipeline import (
     run_psgc_ingestion,
     session_factory,
 )
+from .release_rollback import ReleaseRollbackError, rollback_release
 from .source_candidates import (
     load_source_candidates,
     summarize_source_candidates,
@@ -87,8 +88,11 @@ from .sources.nlp import NlpPublicLibraryPdfAdapter
 from .sources.nmis_naris import NmisNarisDirectoryAdapter
 from .sources.pagasa_aws import PagasaAwsAdapter, fetch_pagasa_aws
 from .sources.philhealth import PhilHealthPdfAdapter
+from .sources.philhealth_offices import PhilHealthOfficeAdapter, fetch_philhealth_offices
 from .sources.phlpost import PhlPostLocatorAdapter
 from .sources.ppa import PpaPortListAdapter
+from .sources.quezon_city import QuezonCityLguAdapter, fetch_quezon_city_directory
+from .sources.quezon_city_places import QuezonCityPlacesAdapter, fetch_quezon_city_places
 from .sources.registry import (
     EBEIS_REGIONS,
     REAL_SOURCES,
@@ -975,6 +979,60 @@ def release_notes_command(
     typer.echo(f"manifest_checksum={manifest['checksum']}")
 
 
+@app.command("release-rollback")
+def release_rollback_command(
+    dataset_slug: Annotated[str, typer.Argument(help="Dataset slug to roll back.")],
+    reviewer: Annotated[str, typer.Option(help="Reviewer name or role identifier.")],
+    release_label: Annotated[
+        str | None,
+        typer.Option("--release", help="Release label; defaults to the latest release."),
+    ] = None,
+    note: Annotated[str | None, typer.Option(help="Reason for the rollback.")] = None,
+    dry_run: Annotated[
+        bool, typer.Option("--dry-run", help="Validate and count without changing data.")
+    ] = False,
+    as_json: Annotated[bool, typer.Option("--json", help="Print the result as JSON.")] = False,
+) -> None:
+    """Restore canonical state captured before a release, conservatively.
+
+    Refuses when a later release exists, a facility changed after the release, or
+    later evidence has been linked. Raw source records and the release are retained;
+    the release is marked rolled_back/quarantined.
+    """
+
+    engine, session = _session()
+    try:
+        result = rollback_release(
+            session,
+            dataset_slug=dataset_slug,
+            release_label=release_label,
+            reviewer=reviewer,
+            note=note,
+            dry_run=dry_run,
+        )
+        if not dry_run:
+            session.commit()
+    except ReleaseRollbackError as exc:
+        session.rollback()
+        typer.echo(f"Rollback refused: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+        engine.dispose()
+    if as_json:
+        typer.echo(json.dumps(result, indent=2))
+    else:
+        typer.echo(
+            f"dataset={result['dataset']} release={result['release_label']} "
+            f"dry_run={result['dry_run']} snapshots={result['snapshots']} "
+            f"restored={result['restored']} deleted={result['deleted']} "
+            f"skipped={result['skipped']}"
+        )
+
+
 @app.command("discover-sources")
 def discover_sources(
     target_keys: Annotated[
@@ -1229,6 +1287,64 @@ def load_philhealth(
                 outcomes.append(outcome)
                 typer.echo(f"  {outcome['status']}")
         typer.echo(json.dumps(outcomes, indent=2, default=str))
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("load-philhealth-offices")
+def load_philhealth_offices(
+    input_path: Annotated[
+        Path | None,
+        typer.Option(
+            "--input",
+            help="Preserved PhilHealth Directory of Offices HTML artifact for controlled import.",
+        ),
+    ] = None,
+    reprocess: Annotated[
+        bool,
+        typer.Option(
+            "--reprocess",
+            help="Reprocess an already-preserved release instead of skipping its checksum.",
+        ),
+    ] = False,
+) -> None:
+    """Acquire the public PhilHealth office directory and ingest office identities.
+
+    Office name, source category, region grouping and postal address are
+    published. Telephone numbers, e-mail addresses and schedule text stay in the
+    private raw artifact.
+    """
+
+    settings = get_settings()
+    engine, session = _session()
+    try:
+        if input_path is not None:
+            content = input_path.read_bytes()
+            retrieved_at = datetime.fromtimestamp(input_path.stat().st_mtime, UTC)
+            notes = "Controlled import of a preserved public PhilHealth office-directory artifact."
+        else:
+            with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
+                content, metadata = fetch_philhealth_offices(acquirer)
+            retrieved_at = datetime.now(UTC)
+            notes = f"Acquisition metadata: {json.dumps(metadata, default=str)}"
+        spec = source_spec(
+            REAL_SOURCES["philhealth-offices"],
+            release_label=f"PHILHEALTH-OFFICES-{retrieved_at.date().isoformat()}",
+            filename=f"philhealth-office-directory-{retrieved_at.date().isoformat()}.json",
+            content=content,
+            retrieved_at=retrieved_at,
+            enqueue_cross_source_matches=False,
+            notes=notes,
+        )
+        outcome = run_ingestion(
+            spec=spec,
+            adapter=PhilHealthOfficeAdapter(spec),
+            session=session,
+            settings=settings,
+            reprocess=reprocess,
+        )
+        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
     finally:
         session.close()
         engine.dispose()
@@ -1943,6 +2059,84 @@ def load_ched_heida(
         outcome = run_ingestion(
             spec=spec,
             adapter=ChedHeidaAdapter(spec),
+            session=session,
+            settings=settings,
+            reprocess=reprocess,
+        )
+        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("load-quezon-city")
+def load_quezon_city(
+    reprocess: Annotated[
+        bool,
+        typer.Option(
+            "--reprocess",
+            help="Reprocess an already-preserved release instead of skipping its checksum.",
+        ),
+    ] = False,
+) -> None:
+    """Acquire the Quezon City LGU directories and ingest the eligible subset."""
+
+    settings = get_settings()
+    engine, session = _session()
+    try:
+        with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
+            content, metadata = fetch_quezon_city_directory(acquirer)
+        spec = source_spec(
+            REAL_SOURCES["quezon-city"],
+            release_label=f"QC-LGU-DIRECTORY-{date.today().isoformat()}",
+            filename=f"quezon-city-lgu-directory-{date.today().isoformat()}.json",
+            content=content,
+            retrieved_at=datetime.now(UTC),
+            enqueue_cross_source_matches=False,
+            notes=f"Acquisition metadata: {json.dumps(metadata, default=str)}",
+        )
+        outcome = run_ingestion(
+            spec=spec,
+            adapter=QuezonCityLguAdapter(spec),
+            session=session,
+            settings=settings,
+            reprocess=reprocess,
+        )
+        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("load-quezon-city-places")
+def load_quezon_city_places(
+    reprocess: Annotated[
+        bool,
+        typer.Option(
+            "--reprocess",
+            help="Reprocess an already-preserved release instead of skipping its checksum.",
+        ),
+    ] = False,
+) -> None:
+    """Acquire the Quezon City Places to Visit park and market subset."""
+
+    settings = get_settings()
+    engine, session = _session()
+    try:
+        with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
+            content, metadata = fetch_quezon_city_places(acquirer)
+        spec = source_spec(
+            REAL_SOURCES["quezon-city-places"],
+            release_label=f"QC-LGU-PLACES-{date.today().isoformat()}",
+            filename=f"quezon-city-lgu-places-{date.today().isoformat()}.json",
+            content=content,
+            retrieved_at=datetime.now(UTC),
+            enqueue_cross_source_matches=False,
+            notes=f"Acquisition metadata: {json.dumps(metadata, default=str)}",
+        )
+        outcome = run_ingestion(
+            spec=spec,
+            adapter=QuezonCityPlacesAdapter(spec),
             session=session,
             settings=settings,
             reprocess=reprocess,

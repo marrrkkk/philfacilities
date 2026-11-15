@@ -19,7 +19,7 @@ Measured counts, checksums, release IDs, and rights states are in `docs/reports/
 | Source | Actual outcome | Public state |
 |---|---|---|
 | BetterGov PSGC Q2 2024 mirror | 43,760 units acquired and loaded: 18 regions, 82 provinces, 1,656 municipalities, 42,004 barangays; 2 unknown-level rows skipped | `published` with CC BY-SA 4.0 attribution; supplementary, not the latest official PSA workbook |
-| PhilHealth provider-category PDFs | 26 current PDFs acquired; 25 releases produced publishable rows (24,986 accreditations); one PDF (`MCP_073126.pdf`) returned HTTP 404; the Antenatal release is retained but blocked after its initial parse was withdrawn | `published` with PhilHealth attribution, except the blocked Antenatal release |
+| PhilHealth provider-category PDFs | 26 releases produced publishable rows (28,207 accreditations); one PDF (`MCP_073126.pdf`) returned HTTP 404; the Antenatal release was re-ingested with the corrected parser (3,221 rows, no annex double-count) | `published` with PhilHealth attribution |
 | HOT/OSM health extract | 17,421 source records; 17,410 linked facilities; named features only, `map_geocoded` bbox-centre coordinates, `record_status=unknown` | `published` with ODbL attribution; not a DOH registry |
 | HOT/OSM education extract | 52,839 source records; 52,824 linked facilities; same coordinate/status caveats | `published` with ODbL attribution; not a DepEd masterlist |
 | PSA 2024 Census population via BetterGov | 134,748 observations across 18 regional releases; 43,768 distinct PSGC codes | `published` with CC BY-SA 4.0 compilation attribution; PSA remains authoritative |
@@ -181,7 +181,7 @@ are handled explicitly. Page/row references are retained.
 | Ambulance Service Provider | `AMBU_093026.pdf` | 2026-09-30 |
 | Pelvic Ultrasound | `EMCB-PUTZ_093026.pdf` | 2026-09-30 |
 | Postpartum | `EMCB-PPARTUM_093026.pdf` | 2026-09-30 |
-| Antenatal | `EMCB-ANTE_093026.pdf` | 2026-09-30; corrected parser reads 3,221 provider rows; earlier 6,562-row parse withdrawn; blocked |
+| Antenatal | `EMCB-ANTE_093026.pdf` | 2026-09-30; corrected parser reads 3,221 provider rows and stops at page 120; earlier 6,562-row annex double-count was withdrawn; re-ingested and published |
 | Transvaginal Ultrasound | `EMCB-TVU_093026.pdf` | 2026-09-30 |
 | Clinical Laboratory | `EMCB-LAB_093026.pdf` | 2026-09-30 |
 

@@ -1,0 +1,15 @@
+{
+  "dataset_id": "b1bd7a41-da28-4c2c-ba68-322a35bb8d8a",
+  "slug": "philhealth-emcb-ante",
+  "publication_status": "blocked",
+  "redistribution_status": "approved_with_attribution",
+  "gate_status": "approved",
+  "source_release_label": "PHILHEALTH-EMCB-ANTE_093026-2026-09-30",
+  "release_ingestion_status": "withdrawn",
+  "release_publication_status": "blocked",
+  "row_count_parsed": 6562,
+  "source_records": 0,
+  "facility_links": 0,
+  "captured_at": "2026-11-15T18:22:03.618557+00:00",
+  "note": "Pre-reingestion state after corrected parser dry-run read 3,221 rows ending on page 120; PDF annex pages 121-240 are excluded."
+}

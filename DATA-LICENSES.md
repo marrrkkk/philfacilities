@@ -22,7 +22,7 @@ has been bypassed.
 | Dataset | Publisher / source | Rights state | Publication state | Evidence and scope |
 |---|---|---|---|---|
 | Synthetic test fixtures (`demo-*`) | This repository | `not_applicable` | Test database only | Deterministically generated; every row has `is_synthetic=true`. Never an official record. The working production database contains zero synthetic facilities. |
-| PhilHealth accredited healthcare facilities (25 provider-category releases) | PhilHealth | `approved_with_attribution` | `published` | PhilHealth's public site disclaimer permits use/reproduction for educational or informative purposes without written permission. Attribution is retained. The index listed 27 PDF links; 26 files were acquired and 25 releases produced publishable rows (24,986 accreditations across 13,546 facilities). `MCP_073126.pdf` returns HTTP 404. The acquired Antenatal release is retained but blocked: its first parse recorded 6,562 rows, a review found the PDF's expiry/sector annex had been counted as provider rows, all derived records were withdrawn, and the corrected parser re-reads 3,221 provider rows. It is not published. Terms-based decision, not a legal opinion. |
+| PhilHealth accredited healthcare facilities (26 provider-category releases) | PhilHealth | `approved_with_attribution` | `published` | PhilHealth's public site disclaimer permits use/reproduction for educational or informative purposes without written permission. Attribution is retained. The index listed 27 PDF links; 26 releases now produce publishable rows (28,207 accreditations across 13,546 linked facilities). `MCP_073126.pdf` returns HTTP 404. The Antenatal release was re-ingested with the corrected parser: 3,221 provider rows, ending at page 120; the PDF's expiry/sector annex (pages 121–240) is not counted. Evidence: `docs/operations/evidence/2026-11-16-philhealth-antenatal-reingestion/`. Terms-based decision, not a legal opinion. |
 | PSGC Q2 2024 snapshot (BetterGov Classification API) | BetterGov.PH, derived from PSA PSGC | `approved_with_attribution` | `published` | BetterGov publishes the classification API under CC BY-SA 4.0. The snapshot is supplementary, versioned as `PSGC-Q2-2024-BETTERGOV`, and is **not** the latest official PSA release. 43,760 units were loaded. Attribution and share-alike are retained. |
 | OpenStreetMap health facilities (HOT Philippines GeoParquet extract) | OpenStreetMap contributors, via HOT and BetterGov.PH | `approved_with_attribution` | `published` | ODbL 1.0. 17,421 source records; 17,410 linked facilities. Coordinates are bbox-centre map geocodes (`map_geocoded`), not official or GPS locations. A mapped feature does not establish operational status. Attribution is required; derivative databases remain share-alike. |
 | OpenStreetMap education facilities (HOT Philippines GeoParquet extract) | OpenStreetMap contributors, via HOT and BetterGov.PH | `approved_with_attribution` | `published` | ODbL 1.0. 52,839 source records; 52,824 linked facilities. Same coordinate, status, attribution, and share-alike caveats. This is not a DepEd masterlist. |
@@ -88,7 +88,7 @@ facility detail source evidence apply the same gate.
 | PSGC Q2 2024 | `PSGC-Q2-2024-BETTERGOV` | BetterGov API JSON | 43,760 units | 18 regions, 82 provinces, 1,656 municipalities, 42,004 barangays; two unknown-level rows skipped with warnings. SHA-256 `3f1fe61d…`. |
 | PSA 2024 Census population | 18 regional releases | BetterGov JSON snapshots | 134,748 observations | 43,768 distinct PSGC codes; source table URLs, release identifiers, and retrieval timestamps retained. |
 | PhilHealth hospitals | `PHILHEALTH-HOSP_093026-2026-09-30` | `HOSP_093026.pdf` | 1,932 accreditations | 75 pages; page/row references retained. Raw PDF retained. |
-| PhilHealth other provider categories | 24 additional dated releases | Category PDFs | 22,825 accreditations | Includes one Antenatal release retained but `blocked` after its derived records were withdrawn. |
+| PhilHealth other provider categories | 25 additional dated releases | Category PDFs | 26,273 accreditations | Includes the re-ingested Antenatal release (3,221 accreditations) after the annex double-count was corrected and withdrawn records were removed. |
 | PhilHealth Birthing Homes | No release | `MCP_073126.pdf` | 0 | HTTP 404 at the published URL; recorded as `not_found`, no rows fabricated. |
 | OSM health | `HOT-OSM-PHL-HEALTH-2026-11-15` | `health_facilities.parquet` | 17,421 source records | Immutable GeoParquet with checksum; only named features become facilities. |
 | OSM education | `HOT-OSM-PHL-EDUCATION-2026-11-15` | `education_facilities.parquet` | 52,839 source records | Immutable GeoParquet with checksum; only named features become facilities. |
@@ -152,8 +152,9 @@ The current public boundary is verified by integration tests and by the measured
   internally;
 - blocked official sources have no releases and no public facilities;
 - blocked or internal source evidence is omitted from public facility detail pages;
-- the PhilHealth Antenatal release is retained but blocked; its withdrawn parse is not published, and
-  the 3,184 source-less change events from that parse were exported and removed;
+- the Antenatal PhilHealth release was re-ingested with the corrected parser; its 3,221
+  provider rows stop at page 120, the 121–240 annex is not counted, and the earlier
+  3,184 source-less change events remain exported and removed;
 - OSM records remain labelled crowd-sourced with `map_geocoded` coordinates and unknown operational
   status.
 

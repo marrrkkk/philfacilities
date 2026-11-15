@@ -70,6 +70,7 @@ from .contracts import (
 )
 from .eligibility import exclusion_reason
 from .matching import enqueue_cross_source_candidates
+from .release_rollback import capture_facility_snapshot
 from .storage import RawStore, build_store
 
 # Kept as a compatibility alias for callers that imported the old set. New code
@@ -621,6 +622,7 @@ def _apply_candidate(
         session.add(facility)
         session.flush()
         created = True
+        capture_facility_snapshot(session, release=release, facility=facility, was_created=True)
         if facility_by_entity is not None:
             facility_by_entity[entity_id] = facility.id
         stats["facilities_created"] += 1
@@ -640,6 +642,7 @@ def _apply_candidate(
             )
         )
     else:
+        capture_facility_snapshot(session, release=release, facility=facility, was_created=False)
         changed = {}
         # Enrichment-only releases (enrollment totals, resources) carry no ownership
         # evidence. They must never demote an identified school or hospital to an

@@ -47,6 +47,12 @@ from philfacilities_ingest.sources.nlp import NlpPublicLibraryPdfAdapter
 from philfacilities_ingest.sources.nmis_naris import NmisNarisDirectoryAdapter
 from philfacilities_ingest.sources.pagasa_aws import PagasaAwsAdapter, parse_aws_html
 from philfacilities_ingest.sources.philhealth import PhilHealthPdfAdapter, _row_key, parse_catalog
+from philfacilities_ingest.sources.philhealth_offices import (
+    PhilHealthOfficeAdapter,
+)
+from philfacilities_ingest.sources.philhealth_offices import (
+    parse_office_html as parse_philhealth_office_html,
+)
 from philfacilities_ingest.sources.phlpost import PhlPostLocatorAdapter
 from philfacilities_ingest.sources.ppa import PpaPortListAdapter
 from philfacilities_ingest.sources.psgc import parse_psgc_workbook
@@ -338,6 +344,24 @@ def test_philhealth_pdf_parser_extracts_accreditation_rows() -> None:
     assert first.accreditations[0].authority == "PhilHealth"
     assert first.accreditations[0].valid_until == date(2027, 12, 31)
     assert first.accreditations[0].page_reference.startswith("page:")
+
+
+def test_philhealth_antenatal_rows_do_not_overwrite_facility_subtype() -> None:
+    content = philhealth_pdf()
+    spec = _spec(
+        agency="philhealth",
+        slug="demo-philhealth-antenatal",
+        filename="synthetic-philhealth-antenatal-2026-09-30.pdf",
+        content=content,
+        reference_end=date(2026, 9, 30),
+    )
+    adapter = PhilHealthPdfAdapter(spec, provider_category="Antenatal")
+    candidates = adapter.normalize(adapter.parse(spec))
+    assert candidates
+    assert all(candidate.facility_subtype is None for candidate in candidates)
+    assert all(
+        candidate.accreditations[0].provider_category == "Antenatal" for candidate in candidates
+    )
 
 
 def test_philhealth_row_keys_keep_repeated_rows_on_the_same_page_distinct() -> None:
@@ -1353,6 +1377,106 @@ def test_sss_branch_locator_withholds_contact_person_and_publishes_institution_f
     assert alabang.roles[0].role_type == "OPERATOR"
     assert alabang.roles[0].entity_type == "GOCC"
     assert "JUAN DELA CRUZ" not in json.dumps(
+        [candidate.__dict__ for candidate in candidates.values()], default=str
+    )
+
+
+def test_philhealth_office_directory_withholds_contacts_and_keeps_institution_fields() -> None:
+    document = """
+    <div class="accordion">
+      <div class="accordion-item">
+        <div class="accordion-content"><div class="accordion-inner"><div class="pro1">
+          <h2>PRO I - Dagupan</h2>
+          <h4>Regional Office</h4>
+          <p class="address">Akia Building, Old De Venecia Highway<br>
+            Dagupan City, Pangasinan<br>
+            (075) 515-1111<br>
+            <a href="mailto:region1@philhealth.gov.ph">region1@philhealth.gov.ph</a></p>
+          <h4>Local Health Insurance Offices</h4>
+          <h6>LHIO Ilocos Norte</h6>
+          <p class="address">Ground Floor, Valdez Building A, Valdez Center, San Nicolas,
+            Ilocos Norte<br>(077) 600-0482<br>
+            laoag.pro1@philhealth.gov.ph</p>
+          <h6>One Mall Express Valenzuela</h6>
+          <p>Tuesday - Friday<br>9:00 AM - 5:00PM</p>
+        </div></div></div>
+      </div>
+      <div class="accordion-item">
+        <div class="accordion-content"><div class="accordion-inner"><div class="proncr">
+          <h2>PRO NCR</h2>
+          <h4>Regional Office</h4>
+          <p class="address">18th to 19th Flr (Penthouse), Panorama Technocenter,<br>
+            1029 Epifanio de los Santos Ave, Proj. 7, Quezon City</p>
+        </div></div></div>
+      </div>
+    </div>
+    """
+    records = parse_philhealth_office_html(document)
+    assert len(records) == 4
+    assert records[0]["office_category"] == "REGIONAL_OFFICE"
+    assert records[0]["address"] == (
+        "Akia Building, Old De Venecia Highway, Dagupan City, Pangasinan"
+    )
+    assert records[0]["phone_numbers"] == ["(075) 515-1111"]
+    assert records[0]["emails"] == ["region1@philhealth.gov.ph"]
+    assert records[1]["office_category"] == "LOCAL_HEALTH_INSURANCE_OFFICE"
+    assert records[1]["address"] == (
+        "Ground Floor, Valdez Building A, Valdez Center, San Nicolas, Ilocos Norte"
+    )
+    assert records[2]["address"] is None
+    assert records[2]["schedule_text"] == ["Tuesday - Friday", "9:00 AM - 5:00PM"]
+    assert records[3]["region_office"] == "PRO NCR"
+
+    artifact = {
+        "source_url": "https://www.philhealth.gov.ph/about_us/directory/",
+        "records": records,
+    }
+    spec = _spec(
+        agency="philhealth",
+        slug="philhealth-office-directory",
+        filename="philhealth-office-directory.json",
+        content=json.dumps(artifact).encode("utf-8"),
+    )
+    adapter = PhilHealthOfficeAdapter(spec)
+    parsed = adapter.parse(spec)
+    assert len(parsed.rows) == 4
+    assert parsed.rows[0].normalized_payload == {
+        "office_name": "Regional Office",
+        "office_category": "REGIONAL_OFFICE",
+        "source_section": "Regional Office",
+        "region_office": "PRO I - Dagupan",
+        "address": "Akia Building, Old De Venecia Highway, Dagupan City, Pangasinan",
+    }
+    serialized = json.dumps([row.normalized_payload for row in parsed.rows], ensure_ascii=False)
+    assert "region1@philhealth.gov.ph" not in serialized
+    assert "(075) 515-1111" not in serialized
+    assert "9:00 AM" not in serialized
+    result = adapter.validate(parsed)
+    assert result.rejected_rows == 0
+    assert {issue.code for issue in result.issues} == {"missing_office_address"}
+
+    candidates = {candidate.source_record_key: candidate for candidate in adapter.normalize(parsed)}
+    regional = next(
+        candidate
+        for candidate in candidates.values()
+        if candidate.display_name == "PhilHealth Regional Office — I - Dagupan"
+    )
+    assert regional.facility_type == "government_office"
+    assert regional.facility_subtype == "PUBLIC_SERVICE_CENTER"
+    assert regional.inclusion_class == "GOVERNMENT_FACILITY"
+    assert regional.ownership_type == "GOCC"
+    assert regional.operator_type == "GOCC"
+    assert regional.public_access_class == "SERVICE_USERS_ONLY"
+    assert regional.location.latitude is None
+    assert regional.functions[0].function_code == "PUBLIC_SERVICE_COUNTER"
+    assert regional.roles[0].entity_type == "GOCC"
+    lhio = next(
+        candidate
+        for candidate in candidates.values()
+        if candidate.display_name == "PhilHealth LHIO Ilocos Norte"
+    )
+    assert lhio.facility_kind == "facility"
+    assert "region1@philhealth.gov.ph" not in json.dumps(
         [candidate.__dict__ for candidate in candidates.values()], default=str
     )
 

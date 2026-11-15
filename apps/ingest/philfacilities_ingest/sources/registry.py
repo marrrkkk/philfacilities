@@ -65,6 +65,21 @@ PHILHEALTH_ATTRIBUTION = (
     "Philippine Health Insurance Corporation (PhilHealth) — Accredited Healthcare "
     "Facilities directory"
 )
+PHILHEALTH_OFFICE_DIRECTORY_URL = "https://www.philhealth.gov.ph/about_us/directory/"
+PHILHEALTH_OFFICE_RIGHTS_BASIS = (
+    "The PhilHealth Directory of Offices is a public information page of the Philippine "
+    "Health Insurance Corporation, a government-owned and controlled corporation. "
+    "PhilHealth's published site disclaimer states that its information may be used for "
+    "educational or informative purposes and may be reproduced, copied or downloaded "
+    "without written permission from PhilHealth. PhilFacilities publishes only the "
+    "institutional office name, source category, region grouping and postal address with "
+    "attribution. Telephone numbers, e-mail addresses and schedule text are withheld from "
+    "the public record and retained only in the private preserved artifact. This is a "
+    "terms-based publication decision, not a completed legal review."
+)
+PHILHEALTH_OFFICE_ATTRIBUTION = (
+    "Philippine Health Insurance Corporation (PhilHealth) — Directory of Offices"
+)
 BETTERGOV_PSGC_URL = "https://statistics.bettergov.ph/api/classification/psgc"
 BETTERGOV_PSGC_RIGHTS_BASIS = (
     "BetterGov.PH publishes the classification API under CC BY-SA 4.0. The snapshot "
@@ -234,6 +249,48 @@ NMIS_NARIS_RIGHTS_BASIS = (
     "the release of record. This is a documented product decision, not a legal opinion."
 )
 NMIS_NARIS_ATTRIBUTION = "National Meat Inspection Service — NARIS Accredited Meat Establishments"
+QUEZON_CITY_DIRECTORY_URL = "https://quezoncity.gov.ph/qc-barangays/"
+QUEZON_CITY_HEALTH_SITEMAP_URL = "https://quezoncity.gov.ph/health_centers-sitemap.xml"
+QUEZON_CITY_BARANGAY_SITEMAP_URL = "https://quezoncity.gov.ph/brgy-directory-sitemap.xml"
+QUEZON_CITY_RIGHTS_BASIS = (
+    "The Quezon City Government, a local government unit, publishes its health-centre "
+    "and barangay directories as public web pages. No explicit prohibition, access "
+    "control or terms-of-use restriction was found on the inspected pages. RA 8293 "
+    "section 176 provides that no copyright subsists in a work of the Government of the "
+    "Philippines, while prior approval may be required for commercial use. "
+    "PhilFacilities publishes only reviewed institutional fields (facility or barangay "
+    "name, category, postal address, district and, where the LGU itself publishes a "
+    "Google Maps place link, map-geocoded coordinates) for non-commercial "
+    "public-interest use with attribution and takedown-on-notice. Health-centre "
+    "telephone numbers, barangay officials, e-mail addresses and social-media links are "
+    "withheld. COVID-19 swab-testing designations, administrative health offices and "
+    "barangay pages without explicit Barangay Hall evidence are not converted into "
+    "facility records. This is a documented publication decision, not a legal opinion."
+)
+QUEZON_CITY_ATTRIBUTION = "Quezon City Government — Health Center directory and Barangay Directory"
+QUEZON_CITY_PLACES_URL = "https://quezoncity.gov.ph/places/"
+QUEZON_CITY_PLACES_SEARCH_URL = (
+    "https://quezoncity.gov.ph/wp-json/wp/v2/search?subtype=places&per_page=100&page=1"
+)
+QUEZON_CITY_PLACES_RIGHTS_BASIS = (
+    "The Quezon City Government publishes its Places to Visit directory as public web "
+    "pages and exposes the same public place entries through its search endpoint. No "
+    "explicit prohibition, access control or terms-of-use restriction was found on the "
+    "inspected pages. RA 8293 section 176 provides that no copyright subsists in a work "
+    "of the Government of the Philippines, while prior approval may be required for "
+    "commercial use. PhilFacilities publishes only reviewed institutional fields "
+    "(facility name, postal address, published operating hours, admission-fee text and "
+    "coordinates from a Google Maps link embedded on the official page) for "
+    "non-commercial public-interest use with attribution and takedown-on-notice. "
+    "Telephone numbers, e-mail addresses, contact-person names and social-media links "
+    "are withheld. Library pages are not re-ingested because the National Library of the "
+    "Philippines directory already covers those branches; museum, church, commercial, "
+    "campus and monument pages are outside this release's scope. This is a documented "
+    "publication decision, not a legal opinion."
+)
+QUEZON_CITY_PLACES_ATTRIBUTION = (
+    "Quezon City Government — Places to Visit directory (parks and public market subset)"
+)
 PPA_PORT_LIST_URL = (
     "https://ppa.com.ph/sites/default/files/List%20of%20Ports%20covered%20in%20PPA%20Statistics.pdf"
 )
@@ -381,6 +438,39 @@ REAL_SOURCES: dict[str, RealSource] = {
         requested_publication_status=PUBLICATION_APPROVED,
         terms_url=PHILHEALTH_INDEX_URL,
         note="One dataset release is created per provider-category PDF.",
+    ),
+    "philhealth-offices": RealSource(
+        key="philhealth-offices",
+        agency_code="philhealth",
+        agency_name="Philippine Health Insurance Corporation",
+        dataset_slug="philhealth-office-directory",
+        dataset_name="PhilHealth Directory of Offices",
+        source_url=PHILHEALTH_OFFICE_DIRECTORY_URL,
+        access_method="public_html_directory",
+        update_pattern="irregular",
+        rights=RIGHTS_APPROVED_ATTRIBUTION,
+        rights_basis=PHILHEALTH_OFFICE_RIGHTS_BASIS,
+        attribution_text=PHILHEALTH_OFFICE_ATTRIBUTION,
+        personal_data_status="phone_email_and_schedule_withheld_from_public_record",
+        requested_publication_status=PUBLICATION_APPROVED,
+        terms_url=PHILHEALTH_OFFICE_DIRECTORY_URL,
+        coverage_scope="NATIONAL_PARTIAL",
+        coverage_note=(
+            "The official Directory of Offices lists 19 regional-office groups with "
+            "regional/branch offices, LHIOs, satellite offices, PhilHealth Express "
+            "counters, service desks, business centres and one-stop service centres. "
+            "The page does not state that every office, partner counter or extension "
+            "point is included, and it supplies no coordinates, PSGC codes, office "
+            "hours or current operating status."
+        ),
+        note=(
+            "Server-rendered accordion directory. Office name, source section/category, "
+            "region grouping and postal address are published; telephone numbers, e-mail "
+            "addresses and schedule text stay in the private raw artifact. Entries with no "
+            "postal address remain published with a missing-address warning rather than an "
+            "invented location. Express counters and service desks are modelled as facility "
+            "units; regional/branch/LHIO offices as facilities."
+        ),
     ),
     "osm-health": RealSource(
         key="osm-health",
@@ -657,6 +747,73 @@ REAL_SOURCES: dict[str, RealSource] = {
             "cards collapse to 76 unique facility cards by facility name and address. "
             "Cards supply a facility name, DSWD Field Office and postal address only; "
             "no coordinates, PSGC codes, walk-in access rules or operational status."
+        ),
+    ),
+    "quezon-city": RealSource(
+        key="quezon-city",
+        agency_code="quezon-city",
+        agency_name="Quezon City Government",
+        dataset_slug="quezon-city-lgu-directory",
+        dataset_name="Quezon City health-centre and barangay directories",
+        source_url=QUEZON_CITY_DIRECTORY_URL,
+        access_method="public_html_directory",
+        update_pattern="irregular",
+        rights=RIGHTS_APPROVED_ATTRIBUTION,
+        rights_basis=QUEZON_CITY_RIGHTS_BASIS,
+        attribution_text=QUEZON_CITY_ATTRIBUTION,
+        requested_publication_status=PUBLICATION_APPROVED,
+        terms_url=QUEZON_CITY_DIRECTORY_URL,
+        coverage_scope="SINGLE_LGU",
+        coverage_note=(
+            "Official Quezon City Government directories acquired on 16 November 2026: "
+            "81 health-centre sitemap pages and 142 barangay directory pages. The release "
+            "publishes 68 barangay health centres and the 40 barangay pages whose address "
+            "link explicitly names a Barangay Hall. Remaining pages are retained in the "
+            "private payload but are not converted into facilities. This is Quezon City "
+            "coverage only; it is not a national or complete LGU inventory."
+        ),
+        note=(
+            "Two server-rendered directories. Health pages supply name, WordPress health "
+            "category, postal address and telephone; barangay pages supply an official "
+            "address, contact fields, officials and schools. The adapter withholds phone, "
+            "e-mail, social-media and personal-name fields; health-centre records have no "
+            "coordinates. Barangay-hall coordinates come from Google Maps links embedded "
+            "on the LGU page and are labelled map_geocoded. COVID-19 swab-testing pages, "
+            "health administrative offices and barangay pages without a hall-labelled map "
+            "place are excluded with warnings."
+        ),
+    ),
+    "quezon-city-places": RealSource(
+        key="quezon-city-places",
+        agency_code="quezon-city",
+        agency_name="Quezon City Government",
+        dataset_slug="quezon-city-lgu-places",
+        dataset_name="Quezon City Places to Visit directory (park and market subset)",
+        source_url=QUEZON_CITY_PLACES_URL,
+        access_method="public_html_directory",
+        update_pattern="irregular",
+        rights=RIGHTS_APPROVED_ATTRIBUTION,
+        rights_basis=QUEZON_CITY_PLACES_RIGHTS_BASIS,
+        attribution_text=QUEZON_CITY_PLACES_ATTRIBUTION,
+        requested_publication_status=PUBLICATION_APPROVED,
+        terms_url=QUEZON_CITY_PLACES_URL,
+        coverage_scope="SINGLE_LGU",
+        coverage_note=(
+            "Official Quezon City Places to Visit directory acquired on 16 November 2026. "
+            "The public search endpoint advertises 65 place pages. This release publishes "
+            "only Kamuning Market and four park/open-space pages; 23 Quezon City Public "
+            "Library pages are already covered by the NLP public-library directory and "
+            "are not re-ingested. Museum, church, commercial, campus and monument pages "
+            "are excluded. This is Quezon City coverage only; it is not a national or "
+            "complete LGU inventory."
+        ),
+        note=(
+            "Server-rendered public place pages discovered through the site's public search "
+            "endpoint. Pages supply a name, postal address, operating hours, admission-fee "
+            "text and, on some pages, a Google Maps link. The adapter withholds telephone "
+            "numbers, e-mail addresses, contact-person names and social-media links. "
+            "Coordinates are labelled map_geocoded; presence in a visitor directory is not "
+            "proof of current operation, ownership or service availability."
         ),
     ),
     "nmis-naris": RealSource(

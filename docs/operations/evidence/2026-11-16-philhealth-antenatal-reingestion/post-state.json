@@ -1,0 +1,20 @@
+{
+  "slug": "philhealth-emcb-ante",
+  "dataset_status": "published",
+  "redistribution_status": "approved_with_attribution",
+  "source_release_label": "PHILHEALTH-EMCB-ANTE_093026-2026-09-30",
+  "ingestion_status": "published",
+  "release_status": "published",
+  "row_count_parsed": 3221,
+  "sha256": "a6245006008377678d38a42d24132d7368d3630152223bb710d7d98b2ece2231",
+  "source_records": 3221,
+  "facility_links": 3221,
+  "unique_facilities": 3178,
+  "accreditations": 3221,
+  "snapshots": 3178,
+  "max_page": 120,
+  "rows_after_page_120": 0,
+  "subtype_changes_vs_snapshot": 0,
+  "captured_at": "2026-11-15T18:44:48.355634+00:00",
+  "note": "Post-reingestion state. Corrected parser read 3,221 provider rows and stopped at page 120; the 121-240 annex was not counted. Antenatal normalization now leaves facility_subtype unset, and the 3,178 prior subtypes restored from snapshots remain unchanged."
+}

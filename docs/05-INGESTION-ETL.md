@@ -67,10 +67,10 @@ uv run philfacilities-ingest load-philhealth --file HOSP_093026.pdf
 ```
 
 - Discovers the public accredited-provider index and parses category-specific PDF links, including four links inside malformed, unclosed HTML anchors.
-- The index exposes 27 links. 25 categories are published; the acquired Antenatal release is retained but blocked after review (its first 6,562-row parse counted the two-up PDF's expiry/sector annex as provider rows, all derived records were withdrawn, and the corrected parser re-reads 3,221 provider rows); `MCP_073126.pdf` is linked but returns HTTP 404 and is recorded as a broken source.
+- The index exposes 27 links. 26 categories are published; the Antenatal release was re-ingested with the corrected parser after its first 6,562-row parse counted the two-up PDF's expiry/sector annex as provider rows (3,221 rows, ending at page 120); `MCP_073126.pdf` is linked but returns HTTP 404 and is recorded as a broken source.
 - Preserves each PDF with a SHA-256 checksum and page/row references.
 - Uses the category-independent identity key `philhealth:<normalized name>:<municipality>` so one provider can carry multiple benefit-package accreditations without duplicate facilities.
-- Current coverage: 24,986 accreditations across 25 categories, linked to 13,546 public facilities.
+- Current coverage: 28,207 accreditations across 26 categories, linked to 13,546 facilities (13,545 public).
 - A 404, non-PDF response, or signature failure is recorded as a source check and does not overwrite the previous release.
 - Raw PDFs and parsed rows are published only because the dataset's rights state is `approved_with_attribution`; attribution remains on the dataset.
 

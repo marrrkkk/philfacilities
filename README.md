@@ -2,28 +2,28 @@
 
 > **An open, source-linked registry of Philippine schools and health facilities, built as reusable public data infrastructure.**
 
-**Status date:** 15 November 2026  
+**Status date:** 16 November 2026  
 **Implementation state:** real-data pipeline operational; coverage is partial and not nationwide-complete. Synthetic records are absent from the working production database.
 
 PhilFacilities acquires publicly available and permitted data, preserves every original release, normalizes records without destroying source values, enforces source-rights publication gates, and exposes the result through a versioned read API, searchable directory, map, and bulk downloads.
 
 ## Current data state
 
-Measured from the configured PostgreSQL/PostGIS database on 15 November 2026:
+Measured from the configured PostgreSQL/PostGIS database on 16 November 2026:
 
 | Measure | Actual state |
 |---|---|
-| Canonical facilities | **92,422** |
-| Public facilities | **61,806** (API-gated) |
-| Non-public facilities | **30,616** (DepEd internal, blocked, review-pending, or otherwise not publication-approved) |
+| Canonical facilities | **98,036** |
+| Public facilities | **67,297** (API-gated) |
+| Non-public facilities | **30,739** (DepEd internal, blocked, review-pending, or otherwise not publication-approved) |
 | Synthetic facilities in the working database | **0** |
-| Registered datasets | **44** |
-| Retained source releases | **55** |
+| Registered datasets | **52** |
+| Retained source releases | **67** |
 | Published geographic units | **43,760** (BetterGov PSGC Q2 2024 mirror) |
 | Published population observations | **134,748** across 18 PSA 2024 Census regional releases |
-| Published health accreditations | **24,986** across 25 PhilHealth provider categories |
-| Public facilities with coordinates | **44,751**, all `map_geocoded` |
-| Public facilities without coordinates | **17,055** (kept in text search; never given invented coordinates) |
+| Published health accreditations | **28,207** across 26 PhilHealth provider categories |
+| Public facilities with coordinates | **44,836**, all `map_geocoded` |
+| Public facilities without coordinates | **22,461** (kept in text search; never given invented coordinates) |
 
 These counts describe processed source records, not the complete national facility universe. OSM/HOT records are crowd-sourced map features, not official DOH or DepEd registries. The DepEd EBEIS NCR extract contains school-head names; the current source release is approved for institution-level publication with those names withheld, while the canonical DepEd facility records remain `internal`/`DISCOVERY_CANDIDATE` pending field-level mapping and privacy review. See [`docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`](docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md).
 
@@ -31,7 +31,7 @@ These counts describe processed source records, not the complete national facili
 
 | Source | Data used | Rights/publication state | Caveat |
 |---|---|---|---|
-| PhilHealth accredited healthcare facilities | 25 provider-category PDFs, 24,986 accreditations | `approved_with_attribution` / `published` | Accreditation is benefit-package-specific and time-bound; one linked PDF (`MCP_073126.pdf`) returns HTTP 404; one acquired Antenatal release is retained but blocked after review (see below). |
+| PhilHealth accredited healthcare facilities | 26 provider-category PDFs, 28,207 accreditations | `approved_with_attribution` / `published` | Accreditation is benefit-package-specific and time-bound; one linked PDF (`MCP_073126.pdf`) returns HTTP 404. The previously blocked Antenatal release was re-ingested with the corrected parser (3,221 rows; no annex double-count). |
 | HOT/OSM health extract | 17,421 source records; 17,410 linked facilities | `approved_with_attribution` (ODbL) / `published` | Crowd-sourced; coordinates are bounding-box centres (`map_geocoded`); operational status unknown. |
 | HOT/OSM education extract | 52,839 source records; 52,824 linked facilities | `approved_with_attribution` (ODbL) / `published` | Crowd-sourced; not a DepEd masterlist; same coordinate/status caveats. |
 | BetterGov PSGC Q2 2024 mirror | 43,760 geographic units | `approved_with_attribution` (CC BY-SA 4.0) / `published` | Supplementary snapshot; **not** the latest official PSA release. Codes are stored as strings with leading zeros. |
@@ -42,6 +42,9 @@ These counts describe processed source records, not the complete national facili
 | DSWD Centers and Residential Care Facilities | Official CRCF directory; 76 facilities | `approved_with_attribution` / `published` | Institutional name, field office and postal address only; no coordinates, admission rules, or inferred operational status. |
 | NMIS NARIS accredited meat establishments | Public accreditation directory; 357 facilities | `approved_with_attribution` / `published` | Factual establishment name, LTO number, type and postal address. Many operators are private; a licence is not proof of current operation. Recheck currently returns a WAF/TLS failure, so the verified 15 November 2026 artifact is the release of record. |
 | PHLPost post-office locator | Public locator table; 1,272 facilities | `approved_with_attribution` / `published` | Factual locator fields only, with attribution and takedown-on-notice; the page's copyright notice is recorded. |
+| PhilHealth Directory of Offices | Official office directory; 293 offices | `approved_with_attribution` / `published` | 19 regional-office groups, including LHIOs, express centres, service desks, business centres, satellite/branch offices and one-stop shops. Name, source category, region grouping and postal address only; telephone, e-mail and schedule text withheld. 261 carry a printed postal address; none carry coordinates. |
+| Quezon City LGU directories | Official health-centre and barangay directories; 108 facilities (68 barangay health centres, 40 barangay halls) | `approved_with_attribution` / `published` | Quezon City only. 39 barangay halls carry `map_geocoded` coordinates from LGU-published Google Maps links; health centres have postal addresses only. 7 health offices, 5 COVID-19 swab-testing pages, 1 HOPE page and 102 barangay pages without explicit hall evidence were retained privately and excluded. Phone, e-mail and personal-name fields withheld. |
+| Quezon City Places directory | Official visitor directory; 5 facilities (1 public market, 4 parks/open spaces) | `approved_with_attribution` / `published` | Quezon City only. 3 of 5 carry `map_geocoded` coordinates from LGU-published Google Maps links. 23 QCPL library pages were not re-ingested because NLP already publishes 22 QCPL records; 37 museum, church, commercial, campus and monument pages are outside scope. Phone, e-mail, contact-person and social fields withheld. |
 
 ### Internal-only and blocked sources
 
@@ -273,7 +276,7 @@ Required data reports are under [`docs/reports/`](docs/reports/):
 - 21,644 public facilities have no current coordinates and remain searchable without map placement.
 - 5,036 located public facilities lack a PSGC assignment; no geography was guessed.
 - OSM duplicate identifiers and missing names are reported as open quality issues rather than silently merged or dropped.
-- The Antenatal PhilHealth PDF is retained but blocked. Its first successful parse recorded 6,562 rows, then a post-ingestion review found that the two-up PDF's expiry/sector annex (pages 121–240) had been counted as provider rows. All derived records were withdrawn, 3,178 facilities were restored from the parse's `EMCB-ANTE` subtype to their recorded prior values, and 3,184 source-less history events were exported and removed; the corrected parser re-reads 3,221 provider rows, and the release awaits validated re-ingestion. The linked Birthing Homes PDF returns HTTP 404. Neither gap is filled with invented data.
+- The Antenatal PhilHealth PDF was re-ingested with the corrected parser. Its first parse had recorded 6,562 rows because the two-up PDF's expiry/sector annex (pages 121–240) was counted as provider rows; that release was withdrawn and its derived records removed. The corrected `philhealth-pdf-1.2.0` parser reads 3,221 provider rows, stops at page 120, and produced 3,221 accreditations for 3,178 existing facilities. Evidence: `docs/operations/evidence/2026-11-16-philhealth-antenatal-reingestion/`. The linked Birthing Homes PDF still returns HTTP 404 and is not replaced with invented data.
 - Hosted CI, a hosted scheduled run, production monitoring/paging, a licensed production basemap, production backups/PITR, and external security/legal review remain external release gates.
 
 ## License
