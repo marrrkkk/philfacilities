@@ -1,0 +1,97 @@
+name: Source adapter or source access
+description: Propose a new government source, adapter, or schema-verification task with rights context.
+title: "[Source]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not attach restricted raw files, signed agreements, credentials, or personal data.
+        Record access evidence and terms status in `docs/03-SOURCE-REGISTER.md` and
+        `DATA-LICENSES.md`. A source is not verified until the actual file or response has been
+        inspected.
+
+  - type: input
+    id: agency
+    attributes:
+      label: Publisher / agency
+      placeholder: e.g. Department of Education, DOH, PhilHealth, PSA
+    validations:
+      required: true
+
+  - type: input
+    id: source_url
+    attributes:
+      label: Official source URL
+      description: The agency's official page, download, or documented API — not a third-party mirror.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: access
+    attributes:
+      label: Access method
+      options:
+        - Public download
+        - Public searchable directory
+        - Requires account, terms flow, or FOI request
+        - Documented authenticated API
+        - Unknown / needs discovery
+    validations:
+      required: true
+
+  - type: dropdown
+    id: rights
+    attributes:
+      label: Current rights status
+      description: See the publication statuses in `docs/09-OPEN-SOURCE-GOVERNANCE.md`.
+      options:
+        - UNKNOWN
+        - REVIEW_REQUIRED
+        - INTERNAL_ONLY
+        - METADATA_ONLY
+        - DERIVED_FIELDS_ONLY
+        - PUBLIC_REUSE_ALLOWED
+        - NOT_APPLICABLE (synthetic fixture only)
+    validations:
+      required: true
+
+  - type: textarea
+    id: fields
+    attributes:
+      label: Known or expected fields
+      description: Distinguish verified fields from fields inferred from a form or third-party schema.
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Access evidence
+      description: What has actually been observed? Include HTTP status, file size, checksum, and date where safe.
+      placeholder: |
+        Retrieved YYYY-MM-DD:
+        HTTP status:
+        File/schema inspected:
+        SHA-256 (if a non-restricted file):
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed adapter scope
+      description: Parser, validation, missingness, coordinate precision, and idempotency plan.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Confirmation
+      options:
+        - label: I did not mark the source acquired or schema-verified without evidence.
+          required: true
+        - label: I did not assume public viewability means permission to redistribute.
+          required: true
+        - label: Any sample fixture I provide is synthetic or safe to redistribute.
+          required: true

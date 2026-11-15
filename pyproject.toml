@@ -1,0 +1,43 @@
+[project]
+name = "philfacilities"
+version = "0.1.0"
+description = "Open, source-linked registry of Philippine schools and health facilities"
+readme = "README.md"
+requires-python = ">=3.12,<3.15"
+license = { text = "Apache-2.0" }
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3",
+  "pytest-cov>=6.0",
+  "ruff>=0.9",
+  "httpx>=0.28",
+]
+
+[tool.uv.workspace]
+members = ["apps/api", "apps/ingest"]
+
+[tool.uv.sources]
+philfacilities-api = { workspace = true }
+philfacilities-ingest = { workspace = true }
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["apps/web", "packages", ".venv", "var"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
+ignore = ["B008"]
+
+[tool.pytest.ini_options]
+testpaths = ["apps/api/tests", "apps/ingest/tests", "tests"]
+addopts = "-ra"
+markers = [
+  "integration: requires a live PostgreSQL/PostGIS database",
+  "contract: checks the public API contract",
+  "data_quality: validates source data invariants",
+]
+
+[tool.coverage.run]
+source = ["apps/api/philfacilities_api", "apps/ingest/philfacilities_ingest"]

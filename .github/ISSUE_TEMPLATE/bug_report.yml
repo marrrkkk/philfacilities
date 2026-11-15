@@ -1,0 +1,94 @@
+name: Bug report
+description: Report a reproducible defect in the web app, API, ingestion pipeline, or operations tooling.
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include credentials, signed agreements, personal data, or restricted source rows.
+        Security vulnerabilities must follow `SECURITY.md` in the repository root through the
+        private route, not a public issue.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Which part of the monorepo does this affect?
+      options:
+        - Web app
+        - Public API
+        - Ingestion / source adapter
+        - Database / migrations
+        - Generated API client / OpenAPI
+        - Operations / CI / tooling
+        - Documentation
+    validations:
+      required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the defect and the observed behavior.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: Provide exact commands or browser steps. Use synthetic data or redact restricted material.
+      placeholder: |
+        1. Start the API and web app ...
+        2. Open /directory ...
+        3. Observe ...
+    validations:
+      required: true
+
+  - type: input
+    id: tracker
+    attributes:
+      label: Tracker ID or related issue
+      description: e.g. M5-03, M6-02, or a link to an existing issue.
+    validations:
+      required: false
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Commit, OS, Node/pnpm, Python/uv, browser, and whether the database is synthetic or official.
+      placeholder: |
+        Commit:
+        OS:
+        Node/pnpm:
+        Python/uv:
+        Browser:
+        Data: synthetic demo / test database / other
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Logs, screenshots, or test output
+      description: Paste safe output only. Do not include secrets or restricted source content.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Confirmation
+      options:
+        - label: I removed secrets, personal data, and restricted source material from this report.
+          required: true
+        - label: This is not a security vulnerability requiring private disclosure.
+          required: true

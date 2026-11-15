@@ -1,0 +1,48 @@
+{
+  "generated_at": "2026-11-14T16:46:34.869910+00:00",
+  "purpose": "Deterministic synthetic fixtures for PhilFacilities tests and demo.",
+  "files": [
+    {
+      "filename": "synthetic-psgc-2026-q3.xlsx",
+      "bytes": 9038,
+      "sha256": "2cea1da8b3a39b1c89132d5c1b0e8e09823ba8a6f456bebcd359293c2509e773",
+      "synthetic": true,
+      "notice": "Synthetic demonstration data; not an official government release."
+    },
+    {
+      "filename": "synthetic-deped-masterlist-2024-2025.xlsx",
+      "bytes": 6832,
+      "sha256": "bd1200f38a2b7b92f5f15ffd099518e277bae9d8a3f6b8654ccbb5b0a6262ea2",
+      "synthetic": true,
+      "notice": "Synthetic demonstration data; not an official government release."
+    },
+    {
+      "filename": "synthetic-deped-enrollment-2023-2025.xlsx",
+      "bytes": 6903,
+      "sha256": "e7c8125652bebf6b7ae1e5d0f25188448e6f20fac74bf06010bf9d88a1648cca",
+      "synthetic": true,
+      "notice": "Synthetic demonstration data; not an official government release."
+    },
+    {
+      "filename": "synthetic-deped-resources-2024-2025.xlsx",
+      "bytes": 6789,
+      "sha256": "543c67349e0d1f4d48ad3f94560942e8fb0ee7c33174aa3ca14e6a85047fcbdb",
+      "synthetic": true,
+      "notice": "Synthetic demonstration data; not an official government release."
+    },
+    {
+      "filename": "synthetic-doh-facilities-2026.csv",
+      "bytes": 1773,
+      "sha256": "d573f174722ba0e4f1b898459ee3fb898442a7a178e65d49b8bdf938a646fcae",
+      "synthetic": true,
+      "notice": "Synthetic demonstration data; not an official government release."
+    },
+    {
+      "filename": "synthetic-philhealth-hospitals-2026-09-30.pdf",
+      "bytes": 2820,
+      "sha256": "65cd44e55ce063b4e24eba9111e0463a27e68f6c64b080f42a8fed786ff3ce17",
+      "synthetic": true,
+      "notice": "Synthetic demonstration data; not an official government release."
+    }
+  ]
+}

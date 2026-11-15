@@ -1,0 +1,126 @@
+name: Source monitoring
+
+on:
+  schedule:
+    # Daily check pass. Each source decides whether it is due based on next_check_at.
+    - cron: "17 3 * * *"
+    # Weekly refresh of rights-cleared sources. Loaders skip unchanged checksums.
+    - cron: "17 4 * * 0"
+    # Monthly discovery-only probe. Does not register, download, or publish a dataset.
+    - cron: "17 5 1 * *"
+  workflow_dispatch:
+    inputs:
+      refresh_approved:
+        description: "Also refresh rights-cleared sources (PSGC, population, PhilHealth, OSM)."
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: source-monitoring
+  cancel-in-progress: false
+
+jobs:
+  check-due-sources:
+    name: Check due sources
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      PHILFACILITIES_DATABASE_URL: ${{ secrets.PHILFACILITIES_DATABASE_URL }}
+      PHILFACILITIES_ALERT_WEBHOOK_URL: ${{ secrets.PHILFACILITIES_ALERT_WEBHOOK_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: "3.14"
+
+      - name: Install Python workspace
+        run: uv sync --locked --all-packages
+
+      - name: Check configured database secret
+        id: database
+        run: |
+          if [ -z "${PHILFACILITIES_DATABASE_URL:-}" ]; then
+            echo "PHILFACILITIES_DATABASE_URL is not configured; skipping source checks."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run due source checks
+        if: steps.database.outputs.configured == 'true'
+        run: uv run philfacilities-ingest check-due-sources
+
+      - name: Show monitoring snapshot
+        if: steps.database.outputs.configured == 'true'
+        run: uv run philfacilities-ingest monitoring
+
+  refresh-approved:
+    name: Refresh rights-cleared sources
+    if: >-
+      github.event_name == 'workflow_dispatch' && inputs.refresh_approved ||
+      (github.event_name == 'schedule' && github.event.schedule == '17 4 * * 0')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      PHILFACILITIES_DATABASE_URL: ${{ secrets.PHILFACILITIES_DATABASE_URL }}
+      PHILFACILITIES_ALERT_WEBHOOK_URL: ${{ secrets.PHILFACILITIES_ALERT_WEBHOOK_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: "3.14"
+
+      - name: Install Python workspace
+        run: uv sync --locked --all-packages
+
+      - name: Check configured database secret
+        id: database
+        run: |
+          if [ -z "${PHILFACILITIES_DATABASE_URL:-}" ]; then
+            echo "PHILFACILITIES_DATABASE_URL is not configured; skipping refresh."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Refresh approved sources
+        if: steps.database.outputs.configured == 'true'
+        run: scripts/refresh_approved_sources.sh
+
+  discover-sources:
+    name: Probe discovery-only sources
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'schedule' && github.event.schedule == '17 5 1 * *')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: "3.14"
+
+      - name: Install Python workspace
+        run: uv sync --locked --all-packages
+
+      - name: Probe discovery-only sources
+        run: |
+          mkdir -p var/reports
+          uv run philfacilities-ingest discover-sources \
+            --output "var/reports/discovery-$(date -u +%Y%m%dT%H%M%SZ).json"
+
+      - name: Upload discovery evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: discovery-probe
+          path: var/reports/discovery-*.json
+          if-no-files-found: error

@@ -1,0 +1,82 @@
+name: Feature or product task
+description: Propose a scoped change to the data model, API, web app, map, ingestion, or operations.
+title: "[Feature]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Read `README.md`, `AGENTS.md`, and `planning/TRACKER.md` first. The tracker is the single
+        execution checklist. Do not include secrets, personal data, or restricted source material.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Which part of the product does this affect?
+      options:
+        - Web app / UX
+        - Public API / contract
+        - Data model / migrations
+        - Ingestion / source adapter
+        - Identity matching / quality
+        - Geography / PSGC
+        - Map / basemap
+        - Operations / deployment
+        - Documentation / governance
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or user need
+      description: What is missing or hard to do today, and for whom?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Describe the smallest complete vertical change. Note alternatives considered.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: What observable evidence would prove this is complete?
+      placeholder: |
+        - A test verifies ...
+        - The endpoint returns ...
+        - The page shows ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: data_rights
+    attributes:
+      label: Data and rights impact
+      description: Does this add a source, field, publication scope, export, or personal-data surface?
+      placeholder: No new source data. / Requires M1 rights review before publication.
+    validations:
+      required: true
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies and blockers
+      description: Tracker IDs, source access, legal review, design audit, or deployment prerequisites.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Confirmation
+      options:
+        - label: I checked the tracker and this is not already covered.
+          required: true
+        - label: I have not invented source endpoints, fields, terms, or data.
+          required: true

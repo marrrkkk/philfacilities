@@ -1,0 +1,172 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    name: Python lint and tests
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgis/postgis:17-3.5
+        env:
+          POSTGRES_USER: philfacilities
+          POSTGRES_PASSWORD: philfacilities
+          POSTGRES_DB: philfacilities_test
+        ports:
+          - 54330:5432
+        options: >-
+          --health-cmd "pg_isready -U philfacilities -d philfacilities_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 30
+    env:
+      PHILFACILITIES_TEST_DATABASE_URL: postgresql+psycopg://philfacilities:philfacilities@localhost:54330/philfacilities_test
+      DATABASE_URL: postgresql+psycopg://philfacilities:philfacilities@localhost:54330/philfacilities_test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: "3.14"
+
+      - name: Install Python workspace
+        run: uv sync --locked --all-packages
+
+      - name: Ruff lint
+        run: uv run ruff check .
+
+      - name: Ruff format check
+        run: uv run ruff format --check .
+
+      - name: Pytest (unit, contract, integration, data quality)
+        run: uv run pytest
+
+      - name: Python dependency audit
+        run: uv run --with pip-audit pip-audit
+
+  web:
+    name: Web lint, typecheck, and build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install JavaScript workspace
+        run: pnpm install --frozen-lockfile
+
+      - name: JavaScript dependency audit (production dependencies)
+        run: pnpm audit --prod
+
+      - name: ESLint
+        run: pnpm lint
+
+      - name: TypeScript
+        run: pnpm typecheck
+
+      - name: Next.js production build
+        run: pnpm build
+
+  e2e:
+    name: Playwright end-to-end and accessibility
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgis/postgis:17-3.5
+        env:
+          POSTGRES_USER: philfacilities
+          POSTGRES_PASSWORD: philfacilities
+          POSTGRES_DB: philfacilities_test
+        ports:
+          - 54330:5432
+        options: >-
+          --health-cmd "pg_isready -U philfacilities -d philfacilities_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 30
+    env:
+      PHILFACILITIES_DATABASE_URL: postgresql+psycopg://philfacilities:philfacilities@localhost:54330/philfacilities_test
+      DATABASE_URL: postgresql+psycopg://philfacilities:philfacilities@localhost:54330/philfacilities_test
+      API_BASE_URL: http://127.0.0.1:8010
+      NEXT_PUBLIC_API_URL: http://127.0.0.1:8010
+      NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
+      PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: "3.14"
+
+      - uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install Python workspace
+        run: uv sync --locked --all-packages
+
+      - name: Install JavaScript workspace
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify OpenAPI and generated client are current
+        run: |
+          pnpm typegen
+          git diff --exit-code -- packages/api-client/openapi.json packages/api-client/src/schema.ts
+
+      - name: Apply migrations
+        run: uv run alembic -c apps/api/alembic.ini upgrade head
+
+      - name: Load synthetic demonstration data
+        run: uv run philfacilities-ingest load-demo --reset
+
+      - name: Build web application
+        run: pnpm build
+
+      - name: Install Playwright Chromium
+        run: pnpm --filter @philfacilities/web exec playwright install --with-deps chromium
+
+      - name: Start API and web server
+        run: |
+          uv run uvicorn philfacilities_api.main:app --host 127.0.0.1 --port 8010 > /tmp/philfacilities-api.log 2>&1 &
+          pnpm --filter @philfacilities/web start > /tmp/philfacilities-web.log 2>&1 &
+          for _ in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:8010/healthz > /dev/null \
+              && curl --fail --silent http://127.0.0.1:3000/ > /dev/null; then
+              echo "API and web are ready."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Services did not become ready in time."
+          tail -100 /tmp/philfacilities-api.log || true
+          tail -100 /tmp/philfacilities-web.log || true
+          exit 1
+
+      - name: Playwright functional and axe checks
+        run: pnpm --filter @philfacilities/web test:e2e

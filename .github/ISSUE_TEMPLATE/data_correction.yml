@@ -1,0 +1,71 @@
+name: Data correction
+description: Report a suspected error in a published facility record, with source evidence.
+title: "[Data correction]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The public correction intake is not enabled yet. Use this form only in the repository's
+        reviewed issue workflow. Do not include learner, patient, staff, or beneficiary personal
+        data, private contact details, credentials, or restricted source files.
+
+        A correction without a source reference may be closed as unverifiable. The project does not
+        overwrite source values; it records new evidence and reviews the canonical result.
+
+  - type: input
+    id: facility
+    attributes:
+      label: Facility identifier
+      description: Canonical slug or UUID from the facility profile.
+    validations:
+      required: true
+
+  - type: input
+    id: field
+    attributes:
+      label: Field to correct
+      description: e.g. display_name, ownership, location, school enrollment, accreditation expiry.
+    validations:
+      required: true
+
+  - type: input
+    id: current
+    attributes:
+      label: Current published value
+    validations:
+      required: true
+
+  - type: input
+    id: proposed
+    attributes:
+      label: Proposed value
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Source evidence
+      description: Official source URL, release label, reference period, page/row reference, and publication date.
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Explain any uncertainty. Do not paste restricted raw data.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Confirmation
+      options:
+        - label: This report contains no personal or restricted data.
+          required: true
+        - label: I understand that source values are preserved and this may require human review.
+          required: true
+        - label: I am not asking the project to infer a value that the source does not support.
+          required: true
