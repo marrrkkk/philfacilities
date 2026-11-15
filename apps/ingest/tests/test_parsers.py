@@ -21,6 +21,12 @@ from philfacilities_ingest.fixtures import (
 )
 from philfacilities_ingest.sources.bettergov import OSMParquetAdapter
 from philfacilities_ingest.sources.bir import BirRevenueDistrictOfficeAdapter, parse_rao_lines
+from philfacilities_ingest.sources.ched_heida import (
+    ChedHeidaAdapter,
+    parse_hei_rows,
+    parse_records_found,
+    parse_region_links,
+)
 from philfacilities_ingest.sources.common import RequiredColumnsError, normalise_code
 from philfacilities_ingest.sources.deped import (
     DepEdEnrollmentAdapter,
@@ -1044,6 +1050,207 @@ def test_dti_negosyo_centers_reject_missing_names_and_duplicate_ids() -> None:
         "missing_center_name",
         "duplicate_center_id",
         "missing_address",
+    }
+
+
+def test_ched_heida_parser_extracts_institutional_fields_only() -> None:
+    directory_html = """
+    <a href="https://heida.ched.gov.ph/hei-directory/1" class="group">
+      <h3 class="text-xl font-bold">Region I (Ilocos Region)</h3>
+      <div>Browse Directory</div>
+    </a>
+    <a href="https://heida.ched.gov.ph/hei-directory/2" class="group">
+      <h3 class="text-xl font-bold">Region II (Cagayan Valley)</h3>
+      <div>Browse Directory</div>
+    </a>
+    """
+    assert parse_region_links(directory_html) == [
+        {"id": "1", "name": "Region I (Ilocos Region)"},
+        {"id": "2", "name": "Region II (Cagayan Valley)"},
+    ]
+
+    region_html = """
+    <div>153 Records Found</div>
+    <table>
+      <thead><tr>
+        <th>HEI Name &amp; Code</th><th>Type</th><th>Contact Info</th>
+        <th>Address</th><th>Institutional Head</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td><div><span class="text-sm font-bold text-gray-900">Example Private College</span>
+            <span class="mt-1 text-xs font-mono text-gray-400">1122</span></div></td>
+          <td><span class="inline-flex uppercase text-orange-600">
+            Private Non-Sectarian Stock</span></td>
+          <td><a href="mailto:person@example.test">person@example.test</a>
+            <div>075-000-0000</div></td>
+          <td>Mc Arthur Highway, Urdaneta City, Pangasinan</td>
+          <td><span>Dr. Person Name</span></td>
+        </tr>
+        <tr>
+          <td><div><span class="text-sm font-bold text-gray-900">Example State University</span>
+            <span class="mt-1 text-xs font-mono text-gray-400">1001</span></div></td>
+          <td><span class="inline-flex uppercase text-blue-600">
+            Chartered State College/University (Main)</span></td>
+          <td><div></div></td>
+          <td>Batac, Ilocos Norte</td>
+          <td><span>Not available</span></td>
+        </tr>
+      </tbody>
+    </table>
+    """
+    assert parse_records_found(region_html) == 153
+    rows = parse_hei_rows(region_html)
+    assert rows == [
+        {
+            "name": "Example Private College",
+            "code": "1122",
+            "type": "Private Non-Sectarian Stock",
+            "address": "Mc Arthur Highway, Urdaneta City, Pangasinan",
+        },
+        {
+            "name": "Example State University",
+            "code": "1001",
+            "type": "Chartered State College/University (Main)",
+            "address": "Batac, Ilocos Norte",
+        },
+    ]
+    serialized = json.dumps(rows)
+    assert "person@example.test" not in serialized
+    assert "075-000-0000" not in serialized
+    assert "Dr. Person Name" not in serialized
+
+
+def test_ched_heida_normalizes_public_private_and_unknown_types() -> None:
+    artifact = {
+        "directory_url": "https://heida.ched.gov.ph/hei-directory",
+        "retrieved_at": "2026-11-15T14:00:00+00:00",
+        "records": [
+            {
+                "region_id": "1",
+                "region": "Region I (Ilocos Region)",
+                "name": "Example Private College",
+                "code": "1122",
+                "type": "Private Non-Sectarian Stock",
+                "address": "Urdaneta City, Pangasinan",
+                "source_page": "https://heida.ched.gov.ph/hei-directory/1?page=1",
+            },
+            {
+                "region_id": "1",
+                "region": "Region I (Ilocos Region)",
+                "name": "Example State University",
+                "code": "1001",
+                "type": "Chartered State College/University (Main)",
+                "address": "Batac, Ilocos Norte",
+                "source_page": "https://heida.ched.gov.ph/hei-directory/1?page=1",
+            },
+            {
+                "region_id": "1",
+                "region": "Region I (Ilocos Region)",
+                "name": "Example Local College",
+                "code": "1156",
+                "type": "Local Government College/University",
+                "address": "Bayambang, Pangasinan",
+                "source_page": "https://heida.ched.gov.ph/hei-directory/1?page=2",
+            },
+            {
+                "region_id": "1",
+                "region": "Region I (Ilocos Region)",
+                "name": "Example Other Institution",
+                "code": None,
+                "type": "Others, please specify",
+                "address": "Laoag City, Ilocos Norte",
+                "source_page": "https://heida.ched.gov.ph/hei-directory/1?page=2",
+            },
+        ],
+    }
+    spec = _spec(
+        agency="ched",
+        slug="ched-heida-hei-directory",
+        filename="ched-heida.json",
+        content=json.dumps(artifact).encode("utf-8"),
+    )
+    adapter = ChedHeidaAdapter(spec)
+    parsed = adapter.parse(spec)
+    assert len(parsed.rows) == 4
+    assert "contact" not in parsed.rows[0].normalized_payload
+    assert "head" not in parsed.rows[0].normalized_payload
+    result = adapter.validate(parsed)
+    assert result.rejected_rows == 0
+    assert {issue.code for issue in result.issues} == {"ownership_not_established"}
+
+    candidates = {candidate.display_name: candidate for candidate in adapter.normalize(parsed)}
+    private = candidates["Example Private College"]
+    assert private.facility_type == "school"
+    assert private.facility_subtype == "HIGHER_EDUCATION_INSTITUTION"
+    assert private.inclusion_class == "PRIVATE_PUBLIC_SERVICE_PROVIDER"
+    assert private.ownership_type == "PRIVATE_CORPORATE"
+    assert private.operator_type == "PRIVATE_CORPORATE"
+    assert private.public_access_class == "UNKNOWN"
+    assert private.record_status == "active_in_registry"
+    assert private.location.latitude is None
+    assert private.location.precision == "unknown"
+    assert private.functions[0].function_code == "EDUCATION"
+    assert private.functions[0].evidence["institution_type"] == "Private Non-Sectarian Stock"
+
+    state = candidates["Example State University"]
+    assert state.inclusion_class == "GOVERNMENT_FACILITY"
+    assert state.ownership_type == "PUBLIC_EDUCATIONAL_INSTITUTION"
+    assert state.operator_type == "PUBLIC_EDUCATIONAL_INSTITUTION"
+
+    local = candidates["Example Local College"]
+    assert local.inclusion_class == "GOVERNMENT_FACILITY"
+    assert local.ownership_type == "LOCAL_GOVERNMENT"
+    assert local.operator_type == "LOCAL_GOVERNMENT"
+
+    other = candidates["Example Other Institution"]
+    assert other.inclusion_class == "DISCOVERY_CANDIDATE"
+    assert other.ownership_type == "UNKNOWN"
+    assert other.operator_type == "UNKNOWN"
+
+
+def test_ched_heida_rejects_duplicate_codes_and_missing_names() -> None:
+    artifact = {
+        "records": [
+            {
+                "region_id": "1",
+                "region": "Region I",
+                "name": "",
+                "code": "1001",
+                "type": "Private Non-Sectarian Stock",
+                "address": "Address",
+            },
+            {
+                "region_id": "1",
+                "region": "Region I",
+                "name": "Duplicate College",
+                "code": "2002",
+                "type": "Private Non-Sectarian Stock",
+                "address": "Address",
+            },
+            {
+                "region_id": "1",
+                "region": "Region I",
+                "name": "Duplicate College",
+                "code": "2002",
+                "type": "Private Non-Sectarian Stock",
+                "address": "Address",
+            },
+        ]
+    }
+    spec = _spec(
+        agency="ched",
+        slug="ched-heida-hei-directory",
+        filename="ched-heida.json",
+        content=json.dumps(artifact).encode("utf-8"),
+    )
+    adapter = ChedHeidaAdapter(spec)
+    parsed = adapter.parse(spec)
+    result = adapter.validate(parsed)
+    assert result.rejected_rows == 2
+    assert {issue.code for issue in result.issues} == {
+        "missing_institution_name",
+        "duplicate_institution_key",
     }
 
 

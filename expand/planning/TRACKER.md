@@ -53,7 +53,7 @@
 | ID | Task | Status | Dependencies | Acceptance evidence |
 |---|---|---|---|---|
 | AF1-01 | Import all candidates from `docs/03-SOURCE-REGISTER.md` into source registry | NOT STARTED | Existing source registry | Every source has source ID, custodian, URL and initial state |
-| AF1-02 | Verify DILG DRRM-PULSE data/export mechanism and terms | NOT STARTED | None | Actual map/profile records inspected; access and reuse state documented |
+| AF1-02 | Verify DILG DRRM-PULSE data/export mechanism and terms | DONE | None | Public `/api/facilities.geojson` returned exactly one validated command-centre feature regardless of query parameters; `/api/map-layers.geojson` returned an empty collection; map/LGU pages inspected. Feed is not a usable bulk inventory and emergency coordinates require security review. `PUBLIC FEED INSPECTED — NOT USABLE FOR BULK INGEST`; no bulk request or bypass. Evidence: `docs/03-SOURCE-REGISTER.md` §6A, `/tmp/opencode/drrm.geojson`. |
 | AF1-03 | Verify DSWD CRCF directory and Standards Bureau download files | DONE | Publication decision | Official CRCF directory acquired; 76 institution-level facilities published with attribution; Standards Bureau dated lists remain discovery targets |
 | AF1-04 | Acquire NLP December 2025 public-libraries directory | DONE | Publication decision | Official PDF acquired; 1,752 institution-level rows parsed; personal librarian contacts withheld. Evidence: `DATA-LICENSES.md`, `expand/DATA-RIGHTS-REGISTER.md`. |
 | AF1-05 | Obtain BFP August 2025 logistical report attachment and inspect schema | NOT STARTED | FOI attachment access | Original file, metadata, exact station fields, coverage and rights status |
@@ -107,7 +107,7 @@ These tasks extend AF1. They are intentionally `NOT STARTED` because the source 
 | AF2-04 | BFP station report parser/import | NOT STARTED | AF1-05, rights approval | Actual station list parsed; volunteer-brigade gap retained |
 | AF2-05 | BFP regional official directory adapters where justified | NOT STARTED | AF1-05 | Source-specific regional listings parsed with retrieval/source date |
 | AF2-06 | Add further PhilHealth provider categories | NOT STARTED | Existing parser, rights approval | Category-specific source data/fields/expiry and facility matches verified |
-| AF2-07 | CHED institution data acquisition when source is verified | DEFERRED | Official bulk/API source and rights | Actual schema and source release acquired |
+| AF2-07 | CHED institution data acquisition when source is verified | DONE | Official bulk/API source and rights | Public HEIDA directory acquired: 18 regional directories, 280 pages, 2,716 rows, 2,711 unique institutions after 5 duplicate rows; 0 coordinates. Release `CHED-HEIDA-2026-11-15`, SHA-256 `abe2884...ee334`; 527 public educational institutions, 159 local-government colleges/universities, 868 NGO/non-profit, 616 private corporate, 418 religious/faith-based; 123 unknown/CHED-supervised rows internal. Evidence: `apps/ingest/philfacilities_ingest/sources/ched_heida.py`, `tests/test_parsers.py`, `/v1/coverage`. |
 | AF2-08 | TESDA provider/assessment-centre data acquisition when source is verified | DEFERRED | Official bulk/API source and rights | Actual provider records and identifiers acquired |
 
 ## AF2B — Additional national directories and public-service locations
@@ -163,7 +163,7 @@ Only implement these after the corresponding AF1 source is acquired, schema-insp
 
 | ID | Task | Status | Dependencies | Acceptance evidence |
 |---|---|---|---|---|
-| AF5-01 | Acquire DILG-PULSE public participating-LGU facility data | NOT STARTED | AF1-02, rights | Validated DRRM facility records imported with participating-LGU scope |
+| AF5-01 | Acquire DILG-PULSE public participating-LGU facility data | BLOCKED | AF1-02, rights | Public facility feed returned exactly one validated command-centre feature; map-layer endpoint empty. No broader validated export, written terms or emergency-coordinate security review exists, so no bulk ingest is claimed. |
 | AF5-02 | Acquire current evacuation-centre inventories from OCD/NDRRMC/LGUs | NOT STARTED | AF1-11, rights | Facility designation, capacity unit, status and source date retained |
 | AF5-03 | Acquire official BFP fire-station data | NOT STARTED | AF1-05, AF2-04 | Station records published with coverage gaps documented |
 | AF5-04 | Acquire official PNP public station directory | NOT STARTED | AF1-10, rights | Official source records only; security review passed |
@@ -209,7 +209,7 @@ Only implement these after the corresponding AF1 source is acquired, schema-insp
 
 | Source | Discovery evidence | Current implementation status |
 |---|---|---|
-| DILG DRRM-PULSE | Public methodology/map/LGU directory; validates participating-LGU submissions | DISCOVERED; export/rights/ingestion not verified |
+| DILG DRRM-PULSE | Public methodology/map/LGU directory; validates participating-LGU submissions. Facility GeoJSON returned one command-centre feature; map-layer GeoJSON was empty | INSPECTED; not usable for bulk ingest; rights/security review outstanding |
 | DPWH NGOB inventory | 2024 order and inventory forms exist | DISCOVERED; national data file not acquired |
 | Philippine Geoportal | Facility-related layers catalogued; per-layer restrictions and dates need review | DISCOVERED; layer data not yet validated for publication |
 | DSWD CRCF | Public directory and dated Standards Bureau lists | DISCOVERED; source file/reuse decision pending |
@@ -232,6 +232,8 @@ Append each completed task with date, tracker IDs, branch/PR/commit, source rele
 | 2026-11-15 | AF1-47 | Added the data inclusion and publication policy, ADR 0008, `PUBLICLY_AVAILABLE_VERIFIED`, API rights-gate tests and a code/data `NOTICE` | Verified public availability with no explicit prohibition can support publication; explicit restrictions still control |
 | 2026-11-15 | AF1-21, AF2-15, AF6-01 | Added and ran the PPA port-list adapter against the 22-page official PDF; registered release `PPA-PORT-LIST-2026-11-15`; documented rights basis and hierarchy caveats | 574 port records published: 303 government and 271 private providers; 0 validation issues, 0 duplicate keys; 0 coordinates; PPA list retained as directory subset |
 | 2026-11-15 | AF1-18, AF2-12 | Added and ran the DTI Negosyo Center adapter against the public `regions-overview` and `by-region` JSON endpoints; registered release `DTI-NEGOSYO-2026-11-15`; documented terms, contact withholding and host/ownership caveats | 1,427 active center records across 17 regions published as government service units; 0 validation issues, 0 duplicate keys; phone/email withheld; no coordinates, ownership, operator, host, hours or access inferred |
+| 2026-11-15 | AF1-39, AF2-07 | Added and ran the CHED HEIDA public-directory adapter; read 18 regional directories and 280 pages; registered release `CHED-HEIDA-2026-11-15` under `PUBLICLY_AVAILABLE_VERIFIED` with attribution and takedown-on-notice | 2,716 rows parsed, 2,711 unique institutions published after 5 duplicate rows; 0 coordinates; 527 public educational institutions, 159 LGU colleges/universities, 868 NGO/non-profit, 616 private corporate, 418 religious/faith-based; 123 unknown/CHED-supervised rows internal. No campus-level or operational-status claim. |
+| 2026-11-15 | AF1-02, AF5-01 | Inspected DILG DRRM-PULSE public facility/map-layer endpoints and supporting pages | Public facility feed returned one validated command-centre feature regardless of query parameters; map-layer endpoint empty. Not a usable bulk inventory; bulk ingest remains blocked pending a broader validated export, written terms and emergency-coordinate security review. |
 
 ## Decision log
 
@@ -256,7 +258,7 @@ The tracker now covers all qualifying facilities regardless of ownership. Govern
 - [x] AF0-10: Ensure private providers are first-class searchable/map/API records, but separated in filters, metrics and exports from government-facility counts. Evidence: `tests/test_inclusion_model.py`.
 - [ ] AF0-11: Define and test exclusions for ordinary businesses, retail buildings, malls, factories, warehouses, residences and unrelated company records.
 - [ ] AF1-38: Audit DepEd source releases for both public and private schools, and document coverage/rights separately.
-- [ ] AF1-39: Investigate private HEI facility-level records through CHED; verify campus vs institution identity.
+- [x] AF1-39: Investigate private HEI facility-level records through CHED; verify campus vs institution identity. Evidence: public HEIDA directory acquired; institutional type supplies ownership evidence; 1,902 private institutions published as `PRIVATE_PUBLIC_SERVICE_PROVIDER`; the directory does not expose campus-level records, so institution identity is retained without inventing campuses.
 - [x] AF1-40: Investigate all available private DOH-licensed and PhilHealth-accredited facility categories; preserve licence/accreditation scope and expiry. Evidence: 25 published PhilHealth categories with validity dates; `DATA-LICENSES.md`.
 - [ ] AF1-41: Investigate private TESDA-registered TVIs and assessment centres using authorized provider-level records, not regional aggregate counts.
 - [ ] AF1-42: Investigate DSWD-accredited private/NGO social-welfare providers; minimize personal/resident data.

@@ -1,6 +1,6 @@
 # 03 — Schema Report
 
-**Generated:** 2026-11-15T13:47:37.257408+00:00  
+**Generated:** 2026-11-15T14:28:56.207026+00:00  
 **Source of truth:** the configured PhilFacilities PostgreSQL database.  
 
 Original stored keys, types, presence, and missing-value counts by dataset.
@@ -56,9 +56,24 @@ Nested objects are reported as a JSON type rather than flattened. Counts are mea
 | revenue_region_name | 124 | 0 | 0 | string | Bicol Region |
 | revenue_region_number | 124 | 0 | 0 | string | 1 |
 
-### `ched-hei-directory`
+### `ched-heida-hei-directory`
 
-No source records are stored for this dataset, so no original schema can be reported.
+- Declared schema version: `not recorded`
+- Stored source records: 2711
+- Distinct source-record keys: 2711
+- Duplicate source-record keys: 0
+- Blank source-record keys: 0
+
+| Original key | Present | Missing | Null/blank | JSON types | Sample value |
+|---|---|---|---|---|---|
+| address | 2711 | 0 | 1 | null, string | #005 Maysan Road, Valenzuela City, Metro Manila |
+| code | 2711 | 0 | 0 | string | - |
+| name | 2711 | 0 | 0 | string | 1MRDA Academic Center |
+| region | 2711 | 0 | 0 | string | Bangsamoro Autonomous Region In Muslim Mindanao (BARMM) |
+| region_id | 2711 | 0 | 0 | string | 1 |
+| source_page | 2711 | 0 | 0 | string | https://heida.ched.gov.ph/hei-directory/10?page=1 |
+| source_row | 2711 | 0 | 0 | number | 1 |
+| type | 2711 | 0 | 0 | string | Chartered State College/University (Main) |
 
 ### `deped-ebeis-masterlist-ncr`
 

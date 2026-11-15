@@ -1,6 +1,6 @@
 # 04 — Data Quality Report
 
-**Generated:** 2026-11-15T13:47:37.257408+00:00  
+**Generated:** 2026-11-15T14:28:56.207026+00:00  
 **Source of truth:** the configured PhilFacilities PostgreSQL database.  
 
 Accepted, rejected, missing, duplicate, geographic, coordinate, and identity measures.
@@ -11,13 +11,13 @@ This snapshot reports measured counts from the current database. A zero value me
 
 | Total | Synthetic | Public | Non-public |
 |---|---|---|---|
-| 94423 | 0 | 63807 | 30616 |
+| 97134 | 0 | 66395 | 30739 |
 
 ### By facility type
 
 | Facility type | Facilities |
 |---|---|
-| school | 57868 |
+| school | 60579 |
 | health_facility | 30956 |
 | government_office | 2823 |
 | library | 1752 |
@@ -30,7 +30,7 @@ This snapshot reports measured counts from the current database. A zero value me
 
 | Facilities | With coordinates | Without any current location | With a current location but no PSGC |
 |---|---|---|---|
-| 94423 | 70311 | 24112 | 14304 |
+| 97134 | 70311 | 26823 | 14304 |
 
 ### Current coordinate precision
 
@@ -45,13 +45,13 @@ A linked record is matched to a canonical facility by an exact agency identifier
 
 | Measure | Count |
 |---|---|
-| Facility-domain source records | 112227 |
-| Records linked to a canonical facility | 112201 |
+| Facility-domain source records | 114938 |
+| Records linked to a canonical facility | 114912 |
 | Records without a canonical link | 26 |
-| Facilities with at least one source link | 94423 |
+| Facilities with at least one source link | 97134 |
 | Facilities linked from more than one dataset | 5594 |
 | Facilities linked from more than one agency | 0 |
-| Links created as new canonical records | 86341 |
+| Links created as new canonical records | 89052 |
 | Links matched by exact agency identifier | 25860 |
 | Pending / ambiguous match candidates | 0 |
 
@@ -91,10 +91,13 @@ The source's 2024 Census tables include 42 Manila city-district rows whose label
 
 | Issue code | Severity | Status | Count |
 |---|---|---|---|
-| location_missing | info | open | 41879 |
+| location_missing | info | open | 44590 |
 | duplicate_osm_id | error | open | 3572 |
+| ownership_not_established | warning | open | 123 |
 | missing_facility_name | error | open | 25 |
+| duplicate_institution_key | error | open | 5 |
 | coordinate_outside_philippines_bbox | error | open | 1 |
+| missing_address | warning | open | 1 |
 
 ## Source-to-database reconciliation
 
@@ -103,6 +106,7 @@ Reported rows are the source's own count where recorded; parsed and stored count
 | Dataset | Release | Reported rows | Parsed rows | Stored records | Linked records | Unlinked records | Unmatched PSGC | Missing location | Invalid coordinates | Duplicate source rows |
 |---|---|---|---|---|---|---|---|---|---|---|
 | bir-revenue-district-offices | BIR-RAO-006-2025 | 124 | 124 | 124 | 124 | 0 | 0 | 124 | 0 | 0 |
+| ched-heida-hei-directory | CHED-HEIDA-2026-11-15 | 2716 | 2716 | 2711 | 2711 | 0 | 0 | 2711 | 0 | 0 |
 | deped-ebeis-masterlist-ncr | DEPED-EBEIS-NCR-2026-11-15 | 5055 | 5055 | 5055 | 5055 | 0 | 0 | 5055 | 0 | 0 |
 | deped-ebeis-masterlist-ncr | DEPED-EBEIS-NCR-2026-11-15 | 5055 | 5055 | 5055 | 5055 | 0 | 0 | 5055 | 0 | 0 |
 | dswd-crcf-directory | DSWD-CRCF-2026-11-15 | 76 | 76 | 76 | 76 | 0 | 0 | 76 | 0 | 0 |
@@ -173,6 +177,7 @@ Counts facilities whose stored field-level assertions disagree across sources. C
 | Dataset | Release | Input | Parsed | Accepted | Rejected | Duplicate IDs | With coords | PSGC provided | PSGC matched | Match candidates | Run status | Error |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | bir-revenue-district-offices | BIR-RAO-006-2025 | 0 | 124 | 124 | 0 | 0 | 0 | 0 | 0 | 0 | published | NULL |
+| ched-heida-hei-directory | CHED-HEIDA-2026-11-15 | 0 | 2716 | 2711 | 5 | 5 | 0 | 0 | 0 | 0 | published | NULL |
 | deped-ebeis-masterlist-ncr | DEPED-EBEIS-NCR-2026-11-15 | 0 | 5055 | 5055 | 0 | 0 | 0 | 0 | 0 | 0 | published | NULL |
 | deped-ebeis-masterlist-ncr | DEPED-EBEIS-NCR-2026-11-15 | 0 | 5055 | 5055 | 0 | 0 | 0 | 0 | 0 | 0 | published | NULL |
 | dswd-crcf-directory | DSWD-CRCF-2026-11-15 | 0 | 76 | 76 | 0 | 0 | 0 | 0 | 0 | 0 | published | NULL |
@@ -211,7 +216,6 @@ Counts facilities whose stored field-level assertions disagree across sources. C
 | phlpost-post-office-locator | PHLPOST-LOCATOR-2026-11-15 | 0 | 1272 | 1272 | 0 | 0 | 0 | 0 | 0 | 0 | published | NULL |
 | phlpost-post-office-locator | PHLPOST-LOCATOR-2026-11-15 | 0 | 1272 | 1272 | 0 | 0 | 0 | 0 | 0 | 0 | published | NULL |
 | ppa-port-list | PPA-PORT-LIST-2026-11-15 | 0 | 574 | 574 | 0 | 0 | 0 | 0 | 0 | 0 | published | NULL |
-| psa-census-2024-population | PSA-2024-CENSUS-Central-Luzon-2024-07-01 | 9729 | 9729 | 9729 | 0 | NULL | NULL | NULL | NULL | NULL | published | NULL |
 | psa-census-2024-population | PSA-2024-CENSUS-Western-Visayas-2024-07-01 | 10488 | 10488 | 10488 | 0 | NULL | NULL | NULL | NULL | NULL | published | NULL |
 | psa-census-2024-population | PSA-2024-CENSUS-Central-Visayas-2024-07-01 | 7248 | 7248 | 7248 | 0 | NULL | NULL | NULL | NULL | NULL | published | NULL |
 | psa-census-2024-population | PSA-2024-CENSUS-Negros-Island-Region-NIR-2024-07-01 | 4260 | 4260 | 4260 | 0 | NULL | NULL | NULL | NULL | NULL | published | NULL |
@@ -219,7 +223,7 @@ Counts facilities whose stored field-level assertions disagree across sources. C
 | psa-census-2024-population | PSA-2024-CENSUS-Region-XIII-Caraga-2024-07-01 | 4173 | 4173 | 4173 | 0 | NULL | NULL | NULL | NULL | NULL | published | NULL |
 | psa-census-2024-population | PSA-2024-CENSUS-Region-XII-SOCCSKSARGEN-2024-07-01 | 3453 | 3453 | 3453 | 0 | NULL | NULL | NULL | NULL | NULL | published | NULL |
 | psa-census-2024-population | PSA-2024-CENSUS-MIMAROPA-Region-2024-07-01 | 4617 | 4617 | 4617 | 0 | NULL | NULL | NULL | NULL | NULL | published | NULL |
-| psa-census-2024-population | PSA-2024-CENSUS-Region-XI-Davao-Region-2024-07-01 | 3651 | 3651 | 3651 | 0 | NULL | NULL | NULL | NULL | NULL | published | NULL |
+| psa-census-2024-population | PSA-2024-CENSUS-Cagayan-Valley-2024-07-01 | 7230 | 7230 | 7230 | 0 | NULL | NULL | NULL | NULL | NULL | published | NULL |
 | psa-census-2024-population | PSA-2024-CENSUS-Region-X-Northern-Mindanao-2024-07-01 | 6363 | 6363 | 6363 | 0 | NULL | NULL | NULL | NULL | NULL | published | NULL |
 | psa-census-2024-population | PSA-2024-CENSUS-Bangsamoro-Autonomous-Region-In-Muslim-Mindanao-BARMM-2024-07-01 | 6900 | 6900 | 6900 | 0 | NULL | NULL | NULL | NULL | NULL | published | NULL |
 | psa-census-2024-population | PSA-2024-CENSUS-Ilocos-Region-2024-07-01 | 10191 | 10191 | 10191 | 0 | NULL | NULL | NULL | NULL | NULL | published | NULL |
@@ -227,8 +231,9 @@ Counts facilities whose stored field-level assertions disagree across sources. C
 | psa-census-2024-population | PSA-2024-CENSUS-Eastern-Visayas-2024-07-01 | 13545 | 13545 | 13545 | 0 | NULL | NULL | NULL | NULL | NULL | published | NULL |
 | psa-census-2024-population | PSA-2024-CENSUS-Zamboanga-Peninsula-2024-07-01 | 7230 | 7230 | 7230 | 0 | NULL | NULL | NULL | NULL | NULL | published | NULL |
 | psa-census-2024-population | PSA-2024-CENSUS-Cordillera-Administrative-Region-CAR-2024-07-01 | 7230 | 7230 | 7230 | 0 | NULL | NULL | NULL | NULL | NULL | published | NULL |
+| psa-census-2024-population | PSA-2024-CENSUS-Region-XI-Davao-Region-2024-07-01 | 3651 | 3651 | 3651 | 0 | NULL | NULL | NULL | NULL | NULL | published | NULL |
 | psa-census-2024-population | PSA-2024-CENSUS-CALABARZON-2024-07-01 | 12423 | 12423 | 12423 | 0 | NULL | NULL | NULL | NULL | NULL | published | NULL |
-| psa-census-2024-population | PSA-2024-CENSUS-Cagayan-Valley-2024-07-01 | 7230 | 7230 | 7230 | 0 | NULL | NULL | NULL | NULL | NULL | published | NULL |
+| psa-census-2024-population | PSA-2024-CENSUS-Central-Luzon-2024-07-01 | 9729 | 9729 | 9729 | 0 | NULL | NULL | NULL | NULL | NULL | published | NULL |
 
 ## Interpretation limits
 

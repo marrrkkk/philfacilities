@@ -1,6 +1,6 @@
 # 05 — Source Rights and Publication Report
 
-**Generated:** 2026-11-15T13:47:37.257408+00:00  
+**Generated:** 2026-11-15T14:28:56.207026+00:00  
 **Source of truth:** the configured PhilFacilities PostgreSQL database.  
 
 Recorded rights states and the technical publication gate per dataset and release.
@@ -16,7 +16,7 @@ Recorded rights states and the technical publication gate per dataset and releas
 | psa-census-2024-population | approved_with_attribution | approved | BetterGov.PH publishes the Philippine Data Explorer's original material under CC BY-SA 4.0. The population values are saved PSA OpenSTAT snapshots reproduced without aggregation; PSA remains the authoritative source. BetterGov.PH states that its preview does not itself establish redistribution rights, so this publication decision relies on the CC BY-SA 4.0 licence for the compilation and retains the PSA table URL, release identifier and attribution. No new PSA terms review is claimed. | BetterGov.PH Philippine Data Explorer (CC BY-SA 4.0), sourced from PSA OpenSTAT; Philippine Statistics Authority remains the authoritative source | NULL |
 | psgc-bettergov-q2-2024 | approved_with_attribution | published | BetterGov.PH publishes the classification API under CC BY-SA 4.0. The snapshot mirrors PSA PSGC Q2 2024; it is supplementary and is not the latest official PSA workbook. Attribution is retained and adaptations share the same licence. | BetterGov.PH Classification API (CC BY-SA 4.0), derived from PSA PSGC Q2 2024 | NULL |
 | bir-revenue-district-offices | approved_with_attribution | published | RAO No. 006-2025 is an official issuance of the Bureau of Internal Revenue, a government agency. RA 8293 section 176 provides that no copyright subsists in a work of the Government of the Philippines, while prior approval may be required for commercial use. PhilFacilities publishes the institutional office list with attribution for non-commercial public-interest use. The PDF is image-only; OCR recovered text is stored alongside the original file and is not treated as a replacement for the official document. This is a documented publication decision, not a legal opinion. | Bureau of Internal Revenue — Revenue Administrative Order No. 006-2025, List of Revenue Regions and Revenue District Offices (9 December 2025) | NULL |
-| ched-hei-directory | review_required | blocked | The official endpoint was reachable only through a human terms/access flow or returned an access-control challenge. No redistribution decision exists; the dataset remains blocked. | NULL | NULL |
+| ched-heida-hei-directory | publicly_available_verified | published | The CHED HEIDA public HEI directory is a publicly available, server-rendered directory published by the Commission on Higher Education, a government agency. No explicit prohibition, access control or terms-of-use restriction was found on the directory pages. RA 8293 section 176 provides that no copyright subsists in a work of the Government of the Philippines, while prior approval may be required for commercial use. PhilFacilities publishes only reviewed institutional fields (name, CHED code, institutional type, address and region) for non-commercial public-interest use with attribution and takedown-on-notice. Contact details and institutional-head names are discarded during acquisition. This is a documented publication decision under the root inclusion policy, not a legal opinion. | Commission on Higher Education — HEIDA Higher Education Institution Directory | NULL |
 | deped-ebeis-masterlist-ncr | approved_with_attribution | published | The EBEIS masterlist is a public result set of the Department of Education, a government agency. RA 8293 section 176 provides that no copyright subsists in a work of the Government of the Philippines, while prior approval may be required for commercial use. PhilFacilities publishes institution-level school fields with attribution for non-commercial public-interest use. School-head names and other personal fields remain in the private source store and are not exposed by the public API. This is a documented publication decision, not a legal opinion. | Department of Education — Enhanced Basic Education Information System (EBEIS) school masterlist | school_head_names_retained_privately_not_published |
 | deped-machine-ready-files | review_required | blocked | The official endpoint was reachable only through a human terms/access flow or returned an access-control challenge. No redistribution decision exists; the dataset remains blocked. | NULL | NULL |
 | doh-nhfr | review_required | blocked | The official endpoint was reachable only through a human terms/access flow or returned an access-control challenge. No redistribution decision exists; the dataset remains blocked. | NULL | NULL |
@@ -83,6 +83,7 @@ Recorded rights states and the technical publication gate per dataset and releas
 | psa-census-2024-population | PSA-2024-CENSUS-Cagayan-Valley-2024-07-01 | approved_with_attribution | published |
 | psa-census-2024-population | PSA-2024-CENSUS-Ilocos-Region-2024-07-01 | approved_with_attribution | published |
 | bir-revenue-district-offices | BIR-RAO-006-2025 | approved_with_attribution | published |
+| ched-heida-hei-directory | CHED-HEIDA-2026-11-15 | publicly_available_verified | published |
 | deped-ebeis-masterlist-ncr | DEPED-EBEIS-NCR-2026-11-15 | approved_with_attribution | published |
 | deped-ebeis-masterlist-ncr | DEPED-EBEIS-NCR-2026-11-15 | restricted_non_redistributable | internal_only |
 | dswd-crcf-directory | DSWD-CRCF-2026-11-15 | approved_with_attribution | published |
@@ -132,6 +133,7 @@ Recorded rights states and the technical publication gate per dataset and releas
 | philhealth-mcc | 3127 | 0 |
 | philhealth-gamot | 3067 | 1 |
 | osm-health-facilities | 2774 | 14636 |
+| ched-heida-hei-directory | 2588 | 123 |
 | philhealth-dots | 2065 | 1 |
 | philhealth-hosp | 1927 | 1 |
 | nlp-public-libraries | 1752 | 0 |
@@ -161,7 +163,6 @@ Recorded rights states and the technical publication gate per dataset and releas
 | philhealth-ctf | 16 | 0 |
 | philhealth-chibp | 11 | 0 |
 | philhealth-ciu | 2 | 0 |
-| ched-hei-directory | 0 | 0 |
 | deped-ebeis-masterlist-ncr | 0 | 5055 |
 | deped-machine-ready-files | 0 | 0 |
 | doh-nhfr | 0 | 0 |
@@ -180,6 +181,7 @@ Recorded rights states and the technical publication gate per dataset and releas
 - `publicly_available_verified` is public-compatible when the exact release is verified, publicly available, and not subject to an explicit prohibition, and only reviewed institutional fields are published with provenance, attribution, and takedown-on-notice.
 - DepEd EBEIS contains school-head names. The current source release is published for institution-level fields with those names withheld; canonical facility rows remain `internal` until field-level mapping and privacy review.
 - PHLPost publishes 1,272 factual locator facilities under a recorded product decision; an earlier review-required release is retained internally.
-- Official PSA PSGC, official DepEd Machine-Ready Files, DOH NHFR/HFSRB, CHED, and TESDA are not published because no verified public release or agreement-based publication decision exists.
+- CHED HEIDA is published under `publicly_available_verified` for institutional fields only; contact details and institutional-head names are discarded and 123 unknown/CHED-supervised rows remain internal.
+- Official PSA PSGC, official DepEd Machine-Ready Files, DOH NHFR/HFSRB, TESDA, and DILG DRRM-PULSE are not published because no verified public release, broader validated export, or agreement-based publication decision exists.
 - OSM-derived records carry ODbL attribution and are labelled non-official.
 

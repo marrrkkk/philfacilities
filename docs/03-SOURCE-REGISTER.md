@@ -27,7 +27,9 @@ Measured counts, checksums, release IDs, and rights states are in `docs/reports/
 | Official PSA PSGC workbook | HTTP 403 Cloudflare challenge; no file acquired | `blocked` |
 | DepEd Machine-Ready Files | HTTP 403 / human terms flow; no file acquired | `blocked` |
 | DOH NHFR / HFSRB | HTTP 403 Cloudflare challenge; no file or agreement accepted | `blocked` |
-| CHED / TESDA | Directory pages reachable, but no verified bulk export or reuse terms | `blocked` (discovery only) |
+| CHED HEIDA | 2,716 institution rows read from 280 pages across 18 regional directories; 2,711 unique records published after 5 duplicate rows were rejected; 0 coordinates | `published` under `publicly_available_verified` with attribution; 123 unknown/CHED-supervised rows remain internal |
+| DILG DRRM-PULSE | Public facility GeoJSON returned one validated command-centre feature; map-layers returned an empty collection | `blocked`; not a usable bulk inventory |
+| TESDA TVI | Directory page reachable, but no verified bulk export or reuse terms | `blocked` (discovery only) |
 | GeoRiskPH, HazardHunterPH, PHIVOLCS, PAGASA, DENR-MGB | Discovery probes only; no layer acquired | `blocked` |
 
 The exact unauthenticated GET probe results, including TLS failures and HTTP statuses, are preserved in `docs/operations/evidence/2026-11-15-source-access/source-probes-2026-11-15.txt`.
@@ -54,7 +56,7 @@ The exact unauthenticated GET probe results, including TLS failures and HTTP sta
 | NMIS NARIS | https://naris.nmis.gov.ph/ | Public accreditation directory; current recheck hits a WAF/TLS failure | Published; 357 establishments | Factual establishment fields only; many operators are private; licence is not operational status |
 | PPA ports | https://ppa.com.ph/sites/default/files/List%20of%20Ports%20covered%20in%20PPA%20Statistics.pdf | HTTP 200 PDF, 22 pages | Published; 574 port rows | 303 government and 271 private providers; hierarchy and RORO marks preserved; no coordinates, owner names or operational status inferred |
 | DTI Negosyo Centers | https://negosyocenter.dti.gov.ph/negosyo-center-directory | HTTP 200 JSON API | Published; 1,427 active center records | Government service units with unspecified ownership/operator; contact fields withheld; no coordinates, host classification or operational status inferred |
-| CHED HEIDA | https://heida.ched.gov.ph/hei-directory | HTTP 200 HTML | Later expansion | No complete bulk national export or documented public API verified |
+| CHED HEIDA | https://heida.ched.gov.ph/hei-directory | HTTP 200 server-rendered HTML; 280 pages across 18 regional directories | Published; 2,711 unique institution records | Institutional fields only; no coordinates, PSGC codes, campus-level precision or operational status; 123 unknown/CHED-supervised rows internal |
 | TESDA TVI | https://www.tesda.gov.ph/TVI | HTTP 200 HTML; monitor records an access challenge | Later expansion | No public JSON API or verified bulk export |
 | TESDA Assessment Centers | https://www.tesda.gov.ph/AssessmentCenters | Not independently acquired | Later expansion | Terms and programmatic access not verified |
 | HazardHunterPH | https://hazardhunter.georisk.gov.ph/ | HTTP 200 HTML | Discovery only | No hazard layer or publication decision acquired |
@@ -256,16 +258,65 @@ verified until the workbook is acquired.
 - Directory: https://heida.ched.gov.ph/hei-directory
 - Portal: https://heida.ched.gov.ph/
 
-The public directory returned HTTP 200 on 15 November 2026. A complete national machine-readable
-dataset and documented public REST API were not verified. The portal describes API/developer
-capabilities as upcoming HEIDA v2 features. Do not scrape behind a login or invent an API.
+### Acquired public directory (15 November 2026)
+
+- The public directory returned HTTP 200. It is server-rendered HTML with 18 regional directories
+  and 10-row pagination; 280 pages were read and 2,716 institution rows were parsed.
+- No login, CAPTCHA, access control or explicit prohibition was encountered. The portal's HEIDA v2
+  materials describe API/developer support as future functionality, so the adapter uses only the
+  public directory and does not invent or probe an administrative API.
+- Observed institutional fields: institution name, CHED code, institutional type, address and
+  region. Contact details and institutional-head names are discarded during acquisition and never
+  stored in the public artifact.
+- Five duplicate source rows were rejected; 2,711 unique institutions were created with 0
+  coordinates and 0 PSGC assignments. No geography or campus-level precision is inferred.
+- Ownership is classified only from the published institutional type: `Chartered State
+  College/University` → `PUBLIC_EDUCATIONAL_INSTITUTION`; `Local Government College/University` →
+  `LOCAL_GOVERNMENT`; private sectarian → `RELIGIOUS_FAITH_BASED`; private non-sectarian stock →
+  `PRIVATE_CORPORATE`; private non-stock/foundation/non-profit → `NGO_NON_PROFIT`.
+  `Others, please specify`, `CHED-Supervised Institution` and unrecognised types remain
+  `DISCOVERY_CANDIDATE`/`UNKNOWN` and internal (123 rows).
+- Published distribution: 527 chartered state colleges/universities, 159 local-government
+  colleges/universities (160 parsed before duplicate rejection), 868 NGO/non-profit, 616 private
+  corporate and 418 religious/faith-based institutions. Private institutions are first-class
+  `PRIVATE_PUBLIC_SERVICE_PROVIDER` records and are never counted as government facilities.
+- Release: `CHED-HEIDA-2026-11-15`, dataset `ched-heida-hei-directory`, SHA-256
+  `abe288429833c855d818b3b68ece9bed383a1627d8c8c6a51e43958f77cee334`.
+- The directory lists recognised institutions under each regional office. It does not state that
+  every campus, satellite, extension site or institution is included, so coverage is
+  `NATIONAL_PARTIAL`, not a census. Presence is not proof of current operation or public access.
 
 Acquisition tasks:
 
-- [ ] Inspect public HTML/network responses for permitted structured data.
-- [ ] Contact CHED or use a formal request for a public institution export.
-- [ ] Record official institution identifiers and address fields.
+- [x] Inspect public HTML/network responses for permitted structured data.
+- [x] Record official institution identifiers and address fields.
+- [ ] Contact CHED for a campus-level or complete export where the public directory is insufficient.
 - [ ] Do not automate behind login or bypass access restrictions.
+
+## 6A. DILG — DRRM-PULSE (partial public feed)
+
+- Portal: https://drrm.ncr.dilg.gov.ph/
+- Map: https://drrm.ncr.dilg.gov.ph/map
+- Participating LGUs: https://drrm.ncr.dilg.gov.ph/lgus
+
+The portal describes a DILG-NCR project where LGU staff encode DRRM facilities and DILG field
+officers validate records before publication. Public endpoints were inspected through normal
+unauthenticated access on 15 November 2026:
+
+- `https://drrm.ncr.dilg.gov.ph/api/facilities.geojson` returned exactly one feature
+  (`Marikina Rescue 161 / MCDRRMO Command Center`, id 13, coordinates
+  `[121.1214673, 14.6627424]`, subcategory `command_center`) regardless of query parameters.
+- `https://drrm.ncr.dilg.gov.ph/api/map-layers.geojson` returned an empty feature collection.
+- The `/map` page states that only DILG-validated records are shown; the Marikina support tab
+  listed the same single command-centre record.
+
+This public feed is **not** a usable bulk facility inventory and does not demonstrate the
+participating-LGU coverage implied by the portal. The one exact coordinate is an emergency
+command-centre location; public release of operational emergency coordinates also requires a
+security review. The source remains `blocked` pending a broader validated export, written terms,
+and that review. No bulk request, bypass, or inference was performed. Evidence:
+`/tmp/opencode/drrm.geojson` and `/tmp/opencode/drrm_marikina_support.html` (local probe
+artifacts; not published).
 
 ## 7. TESDA — training providers
 

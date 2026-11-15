@@ -1,6 +1,6 @@
 # 01 — Complete Government Data Source Directory
 
-**Generated:** 2026-11-15T13:47:37.257408+00:00  
+**Generated:** 2026-11-15T14:28:56.207026+00:00  
 **Source of truth:** the configured PhilFacilities PostgreSQL database.  
 
 Every registered dataset and every discovery-only source that was probed.
@@ -17,7 +17,7 @@ This directory lists every dataset registered in the platform and the discovery-
 | bettergov | psa-census-2024-population | https://statistics.bettergov.ph/api | public_json_api | saved PSA OpenSTAT snapshot; checked periodically | approved_with_attribution | approved | NULL | 18 | 134748 | 134748 | 0 | ok (200) at 2026-11-15 06:07:20.927644+00:00 |
 | bettergov | psgc-bettergov-q2-2024 | https://statistics.bettergov.ph/api/classification/psgc | public_api | quarterly snapshot | approved_with_attribution | published | NULL | 0 | 0 | 0 | 0 | ok (200) at 2026-11-15 06:07:18.746135+00:00 |
 | bir | bir-revenue-district-offices | https://bir-cdn.bir.gov.ph/BIR/pdf/RAO%20No.%206-2025.pdf | public_scanned_pdf_local_ocr | issuance-based | approved_with_attribution | published | NULL | 1 | 124 | 0 | 124 | not checked |
-| ched | ched-hei-directory | https://heida.ched.gov.ph/hei-directory | public_html_directory | unknown | review_required | blocked | NULL | 0 | 0 | 0 | 0 | ok (200) at 2026-11-15 06:07:29.742643+00:00 |
+| ched | ched-heida-hei-directory | https://heida.ched.gov.ph/hei-directory | public_html_directory | irregular | publicly_available_verified | published | NULL | 1 | 2711 | 0 | 2711 | not checked |
 | deped | deped-ebeis-masterlist-ncr | https://ebeis.deped.gov.ph/beis/reports_info/masterlist | public_html_form | school year | approved_with_attribution | published | school_head_names_retained_privately_not_published | 2 | 10110 | 0 | 5055 | ok (200) at 2026-11-15 06:07:25.478678+00:00 |
 | deped | deped-machine-ready-files | https://www.deped.gov.ph/machine-ready-files/ | human_download | school year | review_required | blocked | NULL | 0 | 0 | 0 | 0 | access_blocked (403) at 2026-11-15 06:07:27.038103+00:00 |
 | doh | doh-nhfr | https://nhfr.doh.gov.ph/VActivefacilitiesList | official_registry | weekly | review_required | blocked | NULL | 0 | 0 | 0 | 0 | access_blocked (403) at 2026-11-15 06:07:27.965646+00:00 |
@@ -75,7 +75,6 @@ The following registered datasets are deliberately blocked or internal-only. The
 
 | Dataset | Status | Reason / latest check |
 |---|---|---|
-| ched-hei-directory | blocked | The official endpoint was reachable only through a human terms/access flow or returned an access-control challenge. No redistribution decision exists; the dataset remains blocked. |
 | deped-machine-ready-files | blocked | The source returned an access/verification page or an authentication denial. No bypass was attempted; a human-assisted or authorized route is required. |
 | doh-nhfr | blocked | The source returned an access/verification page or an authentication denial. No bypass was attempted; a human-assisted or authorized route is required. |
 | philhealth-emcb-ante | blocked | PhilHealth public provider-category PDF. date encoded in source file name (093026). Publication relies on PhilHealth's published reuse statement; attribution retained. Post-ingestion review (2026-11-15): the first successful parse recorded 6,562 rows, but this is a two-up landscape PDF; pages 1-120 carry provider rows and pages 121-240 carry only the expiry/sector annex. The withdrawn run counted annex rows as provider rows. All derived source records, accreditations, and facility links were removed. Corrected parser philhealth-pdf-1.2.0 re-reads 3,221 provider rows from the retained raw file. This release remains blocked pending a validated re-ingestion. |

@@ -66,6 +66,7 @@ from .sources.bettergov_stats import (
     load_population_snapshot,
 )
 from .sources.bir import BirRevenueDistrictOfficeAdapter
+from .sources.ched_heida import ChedHeidaAdapter, fetch_heida_directory
 from .sources.deped import DepEdEnrollmentAdapter, DepEdMasterlistAdapter, DepEdResourceAdapter
 from .sources.deped_ebeis import DepEdEBEISAdapter
 from .sources.doh import DOHNHFRAdapter
@@ -1514,6 +1515,64 @@ def load_dti_negosyo(
         engine.dispose()
 
 
+@app.command("load-ched-heida")
+def load_ched_heida(
+    input_path: Annotated[
+        Path | None,
+        typer.Option(
+            "--input",
+            help="Preserved CHED HEIDA JSON artifact for controlled import.",
+        ),
+    ] = None,
+    reprocess: Annotated[
+        bool,
+        typer.Option(
+            "--reprocess",
+            help="Reprocess an already-preserved release instead of skipping its checksum.",
+        ),
+    ] = False,
+) -> None:
+    """Acquire the public CHED HEIDA HEI directory and ingest its institutions.
+
+    The directory supplies institutional name, CHED code, type, address and region
+    only. Contact details and institutional-head names are discarded. No
+    coordinates, PSGC codes, campus counts or operational status are inferred.
+    """
+
+    settings = get_settings()
+    engine, session = _session()
+    try:
+        if input_path is not None:
+            content = input_path.read_bytes()
+            retrieved_at = datetime.fromtimestamp(input_path.stat().st_mtime, UTC)
+            notes = "Controlled import of a preserved public CHED HEIDA JSON artifact."
+        else:
+            with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
+                content, metadata = fetch_heida_directory(acquirer)
+            retrieved_at = datetime.now(UTC)
+            notes = f"Acquisition metadata: {json.dumps(metadata, default=str)}"
+        spec = source_spec(
+            REAL_SOURCES["ched-heida"],
+            release_label=f"CHED-HEIDA-{retrieved_at.date().isoformat()}",
+            filename=f"ched-heida-hei-directory-{retrieved_at.date().isoformat()}.json",
+            content=content,
+            retrieved_at=retrieved_at,
+            enqueue_cross_source_matches=False,
+            notes=notes,
+        )
+        outcome = run_ingestion(
+            spec=spec,
+            adapter=ChedHeidaAdapter(spec),
+            session=session,
+            settings=settings,
+            reprocess=reprocess,
+        )
+        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
+    finally:
+        session.close()
+        engine.dispose()
+
+
 @app.command("load-dswd-crcf")
 def load_dswd_crcf(
     reprocess: Annotated[
@@ -1684,6 +1743,9 @@ def load_real(
     ] = False,
     skip_ppa: Annotated[bool, typer.Option(help="Skip the PPA port list.")] = False,
     skip_dti: Annotated[bool, typer.Option(help="Skip the DTI Negosyo Center directory.")] = False,
+    skip_ched: Annotated[
+        bool, typer.Option(help="Skip the CHED HEIDA higher-education directory.")
+    ] = False,
     skip_crcf: Annotated[bool, typer.Option(help="Skip the DSWD CRCF directory.")] = False,
     purge: Annotated[bool, typer.Option(help="Purge synthetic records first.")] = True,
 ) -> None:
@@ -1912,6 +1974,26 @@ def load_real(
                 settings=settings,
             )
             typer.echo(f"DTI Negosyo Centers: {dti_result.status} {dti_result.stats}")
+
+        if not skip_ched:
+            with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
+                ched_content, ched_metadata = fetch_heida_directory(acquirer)
+            ched_spec = source_spec(
+                REAL_SOURCES["ched-heida"],
+                release_label=f"CHED-HEIDA-{date.today().isoformat()}",
+                filename=f"ched-heida-hei-directory-{date.today().isoformat()}.json",
+                content=ched_content,
+                retrieved_at=datetime.now(UTC),
+                enqueue_cross_source_matches=False,
+                notes=f"Acquisition metadata: {json.dumps(ched_metadata, default=str)}",
+            )
+            ched_result = run_ingestion(
+                spec=ched_spec,
+                adapter=ChedHeidaAdapter(ched_spec),
+                session=session,
+                settings=settings,
+            )
+            typer.echo(f"CHED HEIs: {ched_result.status} {ched_result.stats}")
 
         if not skip_crcf:
             with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:

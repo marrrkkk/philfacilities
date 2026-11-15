@@ -1,6 +1,6 @@
 # 02 — Acquisition Report
 
-**Generated:** 2026-11-15T13:47:37.257408+00:00  
+**Generated:** 2026-11-15T14:28:56.207026+00:00  
 **Source of truth:** the configured PhilFacilities PostgreSQL database.  
 
 Actual retained releases, checksums, counts, formats, and access failures.
@@ -30,6 +30,7 @@ This report records actual acquired releases and their immutable file identity. 
 | psa-census-2024-population | PSA-2024-CENSUS-Cagayan-Valley-2024-07-01 | 2026-08-12T09:17:53+00:00 | 2024-07-01 to 2024-07-01 | 2026-09-09T18:49:18.394000+00:00 | json | 887663 | 1b1cea5da487810ff3e05ac84f0e03576cdb727ad386e13731369c9407839893 | 7230 | published | published | var/raw/bettergov/psa-census-2024-population/PSA-2024-CENSUS-Cagayan-Valley-2024-07-01/1b1cea5da487810f-psa-2024-census-cagayan-valley.json |
 | psa-census-2024-population | PSA-2024-CENSUS-Ilocos-Region-2024-07-01 | 2026-08-12T09:17:53+00:00 | 2024-07-01 to 2024-07-01 | 2026-09-09T18:49:18.387000+00:00 | json | 1254503 | 6bebc7e8674f67a5e5c56b8384ffb04a2a3f4bbcbf72e21fa81a356fd9b73ddc | 10191 | published | published | var/raw/bettergov/psa-census-2024-population/PSA-2024-CENSUS-Ilocos-Region-2024-07-01/6bebc7e8674f67a5-psa-2024-census-ilocos-region.json |
 | bir-revenue-district-offices | BIR-RAO-006-2025 | NULL | 2025-12-09 to 2025-12-09 | 2026-11-15T12:25:49.446956+00:00 | pdf | 737658 | 1a22960c7043043eaf5bd4a68f0ef43d4c7274705df845667529d0ee30e9eb3f | 124 | published | published | var/raw/bir/bir-revenue-district-offices/BIR-RAO-006-2025/1a22960c7043043e-bir-rao-006-2025.pdf |
+| ched-heida-hei-directory | CHED-HEIDA-2026-11-15 | NULL | NULL | 2026-11-15T14:13:26.253688+00:00 | json | 991751 | abe288429833c855d818b3b68ece9bed383a1627d8c8c6a51e43958f77cee334 | 2716 | published | published | var/raw/ched/ched-heida-hei-directory/CHED-HEIDA-2026-11-15/abe288429833c855-ched-heida-hei-directory-2026-11-15.json |
 | deped-ebeis-masterlist-ncr | DEPED-EBEIS-NCR-2026-11-15 | NULL | NULL | 2026-11-15T12:46:12.688765+00:00 | html | 998059 | 29383079e7ffdc001738deab3a9b0f5883c4d8265d75aa91b7410b266d5ede0e | 5055 | published | published | var/raw/deped/deped-ebeis-masterlist-ncr/DEPED-EBEIS-NCR-2026-11-15/29383079e7ffdc00-deped-ebeis-masterlist-ncr-2026-11-15.html |
 | deped-ebeis-masterlist-ncr | DEPED-EBEIS-NCR-2026-11-15 | NULL | NULL | 2026-11-15T05:58:33.800809+00:00 | html | 998059 | f972cde8c01597a6b7cf064b4735b9d073b7c4746e8d505bd09abe1cbc0e218b | 5055 | published | internal_only | var/raw/deped/deped-ebeis-masterlist-ncr/DEPED-EBEIS-NCR-2026-11-15/f972cde8c01597a6-deped-ebeis-masterlist-ncr-2026-11-15.html |
 | dswd-crcf-directory | DSWD-CRCF-2026-11-15 | NULL | NULL | 2026-11-15T12:42:35.005693+00:00 | html | 686840 | d78ea19327fc8b826679f32627cdc68c59a2a75cf6fed32ae19875f1b950c7b4 | 76 | published | published | var/raw/dswd/dswd-crcf-directory/DSWD-CRCF-2026-11-15/d78ea19327fc8b82-dswd-crcf-directory-2026-11-15.html |
@@ -92,6 +93,7 @@ This report records actual acquired releases and their immutable file identity. 
 | psa-census-2024-population | PSA-2024-CENSUS-Cagayan-Valley-2024-07-01 | published | 7230 | 7230 | 0 | NULL | NULL | NULL | NULL | NULL |
 | psa-census-2024-population | PSA-2024-CENSUS-Ilocos-Region-2024-07-01 | published | 10191 | 10191 | 0 | NULL | NULL | NULL | NULL | NULL |
 | bir-revenue-district-offices | BIR-RAO-006-2025 | published | 124 | 124 | 0 | 0 | 0 | 0 | 0 | NULL |
+| ched-heida-hei-directory | CHED-HEIDA-2026-11-15 | published | 2716 | 2711 | 5 | 0 | 0 | 0 | 0 | NULL |
 | deped-ebeis-masterlist-ncr | DEPED-EBEIS-NCR-2026-11-15 | published | 5055 | 5055 | 0 | 0 | 0 | 0 | 0 | NULL |
 | deped-ebeis-masterlist-ncr | DEPED-EBEIS-NCR-2026-11-15 | published | 5055 | 5055 | 0 | 0 | 0 | 0 | 0 | NULL |
 | dswd-crcf-directory | DSWD-CRCF-2026-11-15 | published | 76 | 76 | 0 | 0 | 0 | 0 | 0 | NULL |

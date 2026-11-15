@@ -1,6 +1,6 @@
 # PhilFacilities — Master Implementation Tracker
 
-**Status:** Real-data pipeline operational with partial, source-limited coverage. Sources with a recorded publication decision are published; official PSA, DepEd Machine-Ready, DOH, CHED, and TESDA acquisition remains blocked or unverified. No nationwide-completeness claim is made.  
+**Status:** Real-data pipeline operational with partial, source-limited coverage. Sources with a recorded publication decision are published; CHED HEIDA is published under the public-availability policy; official PSA, DepEd Machine-Ready, DOH, and TESDA acquisition remains blocked or unverified. No nationwide-completeness claim is made.  
 **Last updated:** 15 November 2026.
 
 This is the single source of truth for execution status. Update this file when work begins, is blocked, or meets acceptance criteria. A checked box means the evidence exists — not merely that code was drafted.
@@ -19,36 +19,39 @@ This is the single source of truth for execution status. Update this file when w
 | Milestone | Status | Exit condition |
 |---|---|---|
 | M0 — Repository and design audit | REVIEW | Monorepo baseline, CI, reference design measurements |
-| M1 — Source acquisition and rights | IN PROGRESS | Publication decisions recorded; official PSA/DepEd Machine-Ready/DOH/CHED/TESDA access remains blocked |
+| M1 — Source acquisition and rights | IN PROGRESS | Publication decisions recorded; CHED HEIDA published under `publicly_available_verified`; official PSA/DepEd Machine-Ready/DOH/TESDA access remains blocked |
 | M2 — Canonical model and geography | DONE | Migrations, PSGC history, source/provenance model |
 | M3 — ETL and quality | DONE | Repeatable real-source pipelines, quality issues, and reports |
 | M4 — Public API v1 | DONE | 39-path contract-tested read API and generated client |
 | M5 — Directory and facility pages | DONE | Searchable, accessible web directory on public real data |
 | M6 — Map experience | REVIEW | Precision-aware map and list fallback; production basemap provider still open |
 | M7 — Public release readiness | IN PROGRESS | Rights-cleared data published; operations/legal/security gates remain open |
-| M8 — Source expansion | DEFERRED | CHED/TESDA and other domains after source validation |
+| M8 — Source expansion | IN PROGRESS | CHED HEIDA published; TESDA and other domains await verified source access and rights |
 | M9 — Real-data integration and automation | IN PROGRESS | Real sources acquired, published, monitored, and documented |
 
 ## Current measured state (15 November 2026)
 
 | Measure | Actual state | Evidence |
 |---|---|---|
-| Canonical facilities | **92,422** | `philfacilities-ingest status`; database query |
-| Public facilities | **61,806** | Publication-gate query |
-| Non-public facilities | **30,616** | Internal, blocked, review-pending, or otherwise not publication-approved |
+| Canonical facilities | **97,134** | `philfacilities-ingest status`; database query |
+| Public facilities | **66,395** | Publication-gate query |
+| Non-public facilities | **30,739** | Internal, blocked, review-pending, or otherwise not publication-approved |
+| Government facilities | **54,309** | `inclusion_class=GOVERNMENT_FACILITY`, `publication_status=public` |
+| Private public-service providers | **12,086** | `inclusion_class=PRIVATE_PUBLIC_SERVICE_PROVIDER`, `publication_status=public` |
+| Public-access venues | **0** | No verified public-access venue source has been published yet |
 | Synthetic facilities in working DB | **0** | Database query |
-| Registered datasets | **44** | `source.datasets` |
-| Retained source releases | **55** | `source.releases` |
-| Source checks | **90** | `source.source_checks` |
+| Registered datasets | **47** | `source.datasets` |
+| Retained source releases | **58** | `source.releases` |
+| Source checks | **87** | `source.source_checks` |
 | Published geographic units | **43,760** BetterGov PSGC Q2 2024 | `geo.administrative_units` |
 | Published population observations | **134,748** across 18 regional releases | `stats.population_observations` |
 | Published PhilHealth accreditations | **24,986** across 25 provider categories | `health.accreditations` |
-| Public facilities with coordinates | **44,751**, all `map_geocoded` | `core.facility_locations` |
-| Public facilities without coordinates | **17,055** | Quality query; no coordinates invented |
-| Located public facilities without PSGC | **14,216** | Quality query; no geography guessed |
-| Open quality issues | `location_missing` 30,041; `duplicate_osm_id` 3,572; `missing_facility_name` 25; `coordinate_outside_philippines_bbox` 1 | `quality.issues` |
+| Public facilities with coordinates | **44,751** (88 `geocoded`, 44,663 `map_geocoded`) | `core.facility_locations` |
+| Public facilities without coordinates | **21,644** | Quality query; no coordinates invented |
+| Located public facilities without PSGC | **5,036** | Quality query; no geography guessed |
+| Open quality issues | `location_missing` 44,590; `duplicate_osm_id` 3,572; `ownership_not_established` 123; `missing_facility_name` 25; `duplicate_institution_key` 5; `coordinate_outside_philippines_bbox` 1; `missing_address` 1 | `quality.issues` |
 | OpenAPI paths | **39** | `packages/api-client/openapi.json` |
-| Python tests | **80 passing** | `uv run pytest` |
+| Python tests | **103 passing** | `uv run pytest` |
 | Current-location invariant | **70,311 current rows / 70,311 facilities** | Unique partial index `uq_core_facility_locations_current`; migration `0005_unique_current_location` |
 
 These counts describe processed source records. They are not the complete national facility universe.
@@ -84,12 +87,12 @@ These counts describe processed source records. They are not the complete nation
 | M1-10 | Inventory PhilHealth accredited-provider files | DONE | Public index | 27 provider-category PDF links inventoried from the public index; date basis recorded per file. Evidence: `docs/operations/evidence/2026-11-15-source-access/philhealth-inventory.txt` |
 | M1-11 | Parse/inspect PhilHealth hospital PDF sample | DONE | M1-10 | Real 30 Sep 2026 hospital/infirmary PDF parsed with page/row references; official-layout regression fixture added |
 | M1-12 | Complete source rights register | DONE | All registered sources | `DATA-LICENSES.md` and `docs/reports/05-source-rights-report.md` record rights, publication, personal-data, and evidence status for all 44 datasets. No formal legal review is claimed |
-| M1-13 | Decide which sources/fields can be published | IN PROGRESS | M1-12 | Published: PhilHealth, HOT/OSM, BetterGov PSGC, PSA population, NLP, NMP, BIR, PHLPost, DSWD CRCF, and NMIS NARIS. DepEd EBEIS has a published source release for institution-level fields; canonical rows remain internal. Blocked: official PSA/DepEd Machine-Ready/DOH/CHED/TESDA. External legal review remains open |
+| M1-13 | Decide which sources/fields can be published | IN PROGRESS | M1-12 | Published: PhilHealth, HOT/OSM, BetterGov PSGC, PSA population, NLP, NMP, BIR, PHLPost, DSWD CRCF, NMIS NARIS, PPA, DTI Negosyo Centers, and CHED HEIDA. DepEd EBEIS has a published source release for institution-level fields; canonical rows remain internal. Blocked: official PSA/DepEd Machine-Ready/DOH/TESDA and DILG DRRM-PULSE. CHED is published under `publicly_available_verified` with institutional fields only. External legal review remains open |
 | M1-14 | Acquire BetterGov PSGC Q2 2024 mirror | DONE | BetterGov public API | 43,760 units from 18 regional collections; codes preserved as strings; labelled as a supplementary snapshot, not official PSA |
 | M1-15 | Acquire PSA 2024 Census population via BetterGov | DONE | BetterGov public API | 134,748 observations from 18 saved regional tables; source URLs and release metadata retained |
 | M1-16 | Acquire HOT/OSM health and education extracts | DONE | Public GeoParquet | 17,421 health and 52,839 education source records; ODbL attribution retained |
 | M1-17 | Acquire DepEd EBEIS NCR result set | DONE | Public form | 5,055 school rows retained. Current source release is `approved_with_attribution`/`published` for institution-level fields; canonical rows remain `internal` pending field-level mapping/privacy review. School-head names are never public |
-| M1-18 | Investigate CHED, TESDA, hazard, and additional agencies | DONE | Discovery only | Actual probe results recorded; no facility release or publication decision claimed. See `docs/03-SOURCE-REGISTER.md` |
+| M1-18 | Investigate CHED, TESDA, hazard, and additional agencies | DONE | Discovery only | CHED HEIDA was subsequently acquired and published; TESDA remains blocked by an access challenge and no verified provider-level bulk export; hazard sources remain discovery-only; the DILG DRRM-PULSE public feed was inspected and deferred as a one-feature feed. See `docs/03-SOURCE-REGISTER.md` |
 
 ## M2 — Data model and geography
 
@@ -194,7 +197,7 @@ These counts describe processed source records. They are not the complete nation
 
 | ID | Task | Status | Dependencies | Acceptance evidence |
 |---|---|---|---|---|
-| M8-01 | CHED institution source acquisition | DEFERRED | Official export/terms | HEIDA directory reachable (HTTP 200); no verified bulk export, public API, or reuse terms |
+| M8-01 | CHED institution source acquisition | DONE | Official export/terms | Public HEIDA directory acquired under `publicly_available_verified`: 18 regional directories, 280 pages, 2,716 rows, 2,711 unique institutions after 5 duplicate rows; 0 coordinates. Release `CHED-HEIDA-2026-11-15`. 527 public educational institutions, 159 LGU colleges/universities, 868 NGO/non-profit, 616 private corporate, 418 religious/faith-based; 123 unknown/CHED-supervised rows internal. Evidence: `apps/ingest/philfacilities_ingest/sources/ched_heida.py`, `tests/test_parsers.py`, `/v1/coverage` |
 | M8-02 | TESDA provider source acquisition | DEFERRED | Official export/terms | Directory page reachable but monitor records `access_blocked`; no provider-level bulk export or reuse terms |
 | M8-03 | Additional PhilHealth provider categories | DEFERRED | M1-10 | All 25 currently published categories loaded; a new category requires index/parser review |
 | M8-04 | Public correction workflow | DEFERRED | M5 | Reviewed moderation/audit flow not built |
@@ -290,6 +293,8 @@ Append entries here. Every entry should include date, tracker IDs, branch/PR/com
 | 2026-11-15 | M1-12, M1-13, M9-24 | Added the data inclusion and publication policy, ADR 0008, `PUBLICLY_AVAILABLE_VERIFIED`, API gate tests, and a code/data `NOTICE`; aligned `DATA-LICENSES.md`, source register, governance docs, reports, and both trackers; recorded DepEd EBEIS, PHLPost, DSWD CRCF, and NMIS NARIS publication states | Policy and docs are consistent with the working database; explicit restrictions and personal data remain excluded |
 | 2026-11-15 | M9-24, AF1-21, AF2-15 | Added and ran the PPA port-list adapter against the official 22-page PDF; registered `PPA-PORT-LIST-2026-11-15` and aligned `DATA-LICENSES.md`, both source registers, and both trackers | 574 port records published: 303 government and 271 private public-service providers; hierarchy and RORO marks preserved; no coordinates or operational status inferred |
 | 2026-11-15 | AF1-18, AF2-12 | Added and ran the DTI Negosyo Center adapter against the public JSON directory; registered `DTI-NEGOSYO-2026-11-15` and aligned the rights/source registers | 1,427 active center records published as government service units; contact fields withheld; no coordinates, ownership, operator, host, hours or access inferred |
+| 2026-11-15 | M1-13, M8-01, AF1-39, AF2-07 | Added and ran the CHED HEIDA public-directory adapter; registered `CHED-HEIDA-2026-11-15` under `PUBLICLY_AVAILABLE_VERIFIED` and aligned the rights/source registers | 2,716 rows parsed, 2,711 unique institutions published after 5 duplicate rows; 0 coordinates; 527 public educational institutions, 159 LGU colleges/universities, 868 NGO/non-profit, 616 private corporate, 418 religious/faith-based; 123 unknown/CHED-supervised rows internal. No campus-level, operational-status or public-access claim |
+| 2026-11-15 | AF1-02, AF5-01 | Inspected the DILG DRRM-PULSE public facility/map-layer endpoints and supporting pages; recorded the negative/partial finding and security caveat | One validated command-centre feature returned regardless of query parameters; map-layers empty. Bulk ingest remains blocked pending a broader validated export, written terms and emergency-coordinate security review |
 
 ## Decision log
 

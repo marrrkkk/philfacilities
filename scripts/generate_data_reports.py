@@ -1375,9 +1375,12 @@ def build_rights_report(connection: Connection, generated_at: str) -> str:
         "remain `internal` until field-level mapping and privacy review.\n"
         "- PHLPost publishes 1,272 factual locator facilities under a recorded product "
         "decision; an earlier review-required release is retained internally.\n"
-        "- Official PSA PSGC, official DepEd Machine-Ready Files, DOH NHFR/HFSRB, CHED, and "
-        "TESDA are not published because no verified public release or agreement-based "
-        "publication decision exists.\n"
+        "- CHED HEIDA is published under `publicly_available_verified` for institutional "
+        "fields only; contact details and institutional-head names are discarded and 123 "
+        "unknown/CHED-supervised rows remain internal.\n"
+        "- Official PSA PSGC, official DepEd Machine-Ready Files, DOH NHFR/HFSRB, TESDA, and "
+        "DILG DRRM-PULSE are not published because no verified public release, broader "
+        "validated export, or agreement-based publication decision exists.\n"
         "- OSM-derived records carry ODbL attribution and are labelled non-official.\n"
     )
 

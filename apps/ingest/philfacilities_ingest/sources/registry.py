@@ -25,6 +25,7 @@ from philfacilities_api.rights import (
     PUBLICATION_BLOCKED,
     PUBLICATION_INTERNAL_ONLY,
     RIGHTS_APPROVED_ATTRIBUTION,
+    RIGHTS_PUBLICLY_AVAILABLE_VERIFIED,
     RIGHTS_REVIEW_REQUIRED,
     normalize_rights,
     rights_allow_public,
@@ -218,6 +219,22 @@ DTI_NEGOSYO_RIGHTS_BASIS = (
     "product decision, not a legal opinion."
 )
 DTI_NEGOSYO_ATTRIBUTION = "Department of Trade and Industry — Negosyo Center finder"
+CHED_HEIDA_DIRECTORY_URL = "https://heida.ched.gov.ph/hei-directory"
+CHED_HEIDA_RIGHTS_BASIS = (
+    "The CHED HEIDA public HEI directory is a publicly available, server-rendered "
+    "directory published by the Commission on Higher Education, a government agency. "
+    "No explicit prohibition, access control or terms-of-use restriction was found on "
+    "the directory pages. RA 8293 section 176 provides that no copyright subsists in a "
+    "work of the Government of the Philippines, while prior approval may be required "
+    "for commercial use. PhilFacilities publishes only reviewed institutional fields "
+    "(name, CHED code, institutional type, address and region) for non-commercial "
+    "public-interest use with attribution and takedown-on-notice. Contact details and "
+    "institutional-head names are discarded during acquisition. This is a documented "
+    "publication decision under the root inclusion policy, not a legal opinion."
+)
+CHED_HEIDA_ATTRIBUTION = (
+    "Commission on Higher Education — HEIDA Higher Education Institution Directory"
+)
 
 
 @dataclass(frozen=True)
@@ -425,15 +442,34 @@ REAL_SOURCES: dict[str, RealSource] = {
         key="ched-heida",
         agency_code="ched",
         agency_name="Commission on Higher Education",
-        dataset_slug="ched-hei-directory",
-        dataset_name="CHED HEIDA higher-education institution directory",
-        source_url="https://heida.ched.gov.ph/hei-directory",
+        dataset_slug="ched-heida-hei-directory",
+        dataset_name="CHED HEIDA Higher Education Institution Directory",
+        source_url=CHED_HEIDA_DIRECTORY_URL,
         access_method="public_html_directory",
-        update_pattern="unknown",
-        rights=RIGHTS_REVIEW_REQUIRED,
-        rights_basis=OFFICIAL_BLOCKED_BASIS,
-        requested_publication_status=PUBLICATION_BLOCKED,
-        note="Public directory pages exist; no verified bulk export or documented API.",
+        update_pattern="irregular",
+        rights=RIGHTS_PUBLICLY_AVAILABLE_VERIFIED,
+        rights_basis=CHED_HEIDA_RIGHTS_BASIS,
+        attribution_text=CHED_HEIDA_ATTRIBUTION,
+        requested_publication_status=PUBLICATION_APPROVED,
+        terms_url=CHED_HEIDA_DIRECTORY_URL,
+        coverage_scope="NATIONAL_PARTIAL",
+        coverage_note=(
+            "CHED's public HEI directory lists recognized higher-education institutions "
+            "under each of the 18 regional offices. It does not state that every campus, "
+            "satellite, extension site or institution is included, and it supplies no "
+            "coordinates or PSGC codes. Ownership is classified only from the published "
+            "institutional type; 'Others', 'CHED-Supervised Institution' and unrecognised "
+            "types remain internal."
+        ),
+        note=(
+            "Server-rendered public directory with region pages and 10-row pagination. "
+            "The adapter retains only institutional name, CHED code, type, address and "
+            "region; contact details and institutional-head names are discarded. "
+            "Chartered state colleges/universities are classified as public educational "
+            "institutions, local government colleges/universities as local-government "
+            "facilities, and private institutions as private public-service providers. "
+            "Directory presence is not proof of current operation or public access."
+        ),
     ),
     "tesda-tvi": RealSource(
         key="tesda-tvi",
@@ -909,6 +945,13 @@ def check_sources(
                         source,
                         url=DTI_NEGOSYO_API_URL,
                         expected_marker="region",
+                    )
+                elif key == "ched-heida":
+                    result, status = _check_url(
+                        client,
+                        session,
+                        source,
+                        expected_marker="HEI Directory",
                     )
                 elif key == "national-museum":
                     result, status = _check_url(client, session, source, expected_marker="uk-card")
