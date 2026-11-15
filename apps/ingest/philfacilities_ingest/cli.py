@@ -61,6 +61,11 @@ from .pipeline import (
     run_psgc_ingestion,
     session_factory,
 )
+from .source_candidates import (
+    load_source_candidates,
+    summarize_source_candidates,
+    validate_source_candidates,
+)
 from .sources.bettergov import OSMParquetAdapter, load_psgc_release_payload
 from .sources.bettergov_stats import (
     CENSUS_2024_DATASET_IDS,
@@ -482,6 +487,46 @@ def status() -> None:
     finally:
         session.close()
         engine.dispose()
+
+
+@app.command("source-candidates")
+def source_candidates_command(
+    path: Annotated[
+        Path | None,
+        typer.Option(
+            "--path",
+            help="Candidate registry JSON. Defaults to expand/source-candidates.json.",
+        ),
+    ] = None,
+    as_json: Annotated[
+        bool, typer.Option("--json", help="Print the validation summary as JSON.")
+    ] = False,
+) -> None:
+    """Validate the researched source-candidate inventory.
+
+    This does not acquire, register, or publish a source. It catches duplicate
+    IDs, missing custodians/URLs, and invalid state values before the register
+    is used for acquisition decisions.
+    """
+
+    payload = load_source_candidates(path)
+    errors = validate_source_candidates(payload)
+    summary = summarize_source_candidates(payload)
+    if as_json:
+        typer.echo(json.dumps({"summary": summary, "errors": errors}, indent=2))
+    else:
+        typer.echo(f"source candidates: {summary['total']}")
+        typer.echo(f"evidence: {summary['by_evidence_state']}")
+        typer.echo(f"access: {summary['by_access_state']}")
+        typer.echo(f"rights: {summary['by_rights_state']}")
+        typer.echo(f"coverage: {summary['by_coverage_scope']}")
+        if errors:
+            for error in errors:
+                typer.echo(f"ERROR: {error}", err=True)
+        else:
+            typer.echo("validation: ok")
+    if errors:
+        raise typer.Exit(code=1)
 
 
 @app.command("backfill-assertions")

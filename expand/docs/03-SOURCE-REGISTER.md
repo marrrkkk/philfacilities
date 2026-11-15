@@ -39,6 +39,28 @@ Also record independent blockers such as `ACCESS_BLOCKED`, `HUMAN_DOWNLOAD_REQUI
 
 A homepage loading is not proof that its data endpoint works. A directory listing is not proof of an API. A file being publicly downloadable is not proof that it can be republished.
 
+### Machine-readable candidate registry
+
+[`expand/source-candidates.json`](../source-candidates.json) is the normalized inventory of
+the candidates in this register. Each entry records a stable source ID, custodian, title, one
+or more official URLs, normalized evidence/access/rights/coverage states, priority, next
+action, related tracker IDs, and the last verification date. The prose rows below remain the
+evidence narrative; the JSON is an index, not a second interpretation of the source.
+
+The inventory is intentionally separate from `source.datasets`. A candidate has not been
+acquired, schema-verified, rights-reviewed, or published, and must not appear in the public
+source catalogue just because it is listed here. Promotion to a dataset remains an explicit
+ingestion decision with a release, checksum, parser, tests, and publication decision.
+
+Validate it with:
+
+```bash
+uv run philfacilities-ingest source-candidates --json
+```
+
+The command fails on duplicate IDs, missing custodians/URLs, malformed URLs, or values outside
+the declared state vocabularies. Tests: `tests/test_source_candidates.py`.
+
 ---
 
 # A. Primary facility registries and agency directories
