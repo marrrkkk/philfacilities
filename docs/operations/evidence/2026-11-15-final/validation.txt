@@ -110,6 +110,15 @@ skip link, mobile menu Escape/focus return, measured design tokens, CSP nonce
 freshness and coverage, CSP-violation monitoring, responsive overflow, and axe
 serious/critical checks on the public pages.
 
+### CI end-to-end path
+
+CI cannot download restricted or bulk real sources, so the Playwright job loads
+`philfacilities-ingest load-demo --reset` and supplies the suite's fixture
+environment variables with the deterministic synthetic records. The same suite
+was re-run locally against a production build backed by that synthetic
+database: **47 passed, 5 skipped**. Local runs without the overrides default to
+the real records named above; both paths exercise the same assertions.
+
 ## Reference-period filters
 
 Live API checks against rights-cleared releases:
