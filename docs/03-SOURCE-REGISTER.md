@@ -22,8 +22,19 @@ Measured counts, checksums, release IDs, and rights states are in `docs/reports/
 | PhilHealth provider-category PDFs | 26 releases produced publishable rows (28,207 accreditations); one PDF (`MCP_073126.pdf`) returned HTTP 404; the Antenatal release was re-ingested with the corrected parser (3,221 rows, no annex double-count) | `published` with PhilHealth attribution |
 | HOT/OSM health extract | 17,421 source records; 17,410 linked facilities; named features only, `map_geocoded` bbox-centre coordinates, `record_status=unknown` | `published` with ODbL attribution; not a DOH registry |
 | HOT/OSM education extract | 52,839 source records; 52,824 linked facilities; same coordinate/status caveats | `published` with ODbL attribution; not a DepEd masterlist |
+| HOT/OSM public-service POIs | 22,246 parsed; 22,058 accepted; 18,800 linked facilities | `published` with ODbL attribution; crowd-sourced, not an official office/service registry; unknown ownership keeps most rows internal |
+| HOT/OSM airports, heliports and terminals | 300 parsed; 296 linked facilities | `published` with ODbL attribution; not a CAAP aerodrome register |
+| HOT/OSM sea ports and ferry terminals | 930 parsed; 912 linked facilities | `published` with ODbL attribution; not a PPA/MARINA inventory |
+| HOT/OSM railway stations | 151 linked facilities | `published` with ODbL attribution; crowd-sourced line/station context |
+| NHA GeoServer — DOH health-facility layer | 31,016 records ingested and published | `published` with NHA layer attribution; partial NHFR alternate, not the blocked official DOH export |
+| NHA GeoServer — landholdings | 169 records published | `published`; land/site records only, no occupancy or personal fields |
+| DOE existing power plants | 661 parsed rows across Luzon, Visayas, Mindanao (Sep 2026) and off-grid (Apr 2026) releases; 635 linked facilities | `published` with DOE attribution; capacity/status are source-stated |
+| LRTA Lines 1–2 stations | 33 stations derived from official station-distance tables | `published` with LRTA attribution |
+| MRT-3 stations | 13 stations from the official station page | `published` with MRT-3 attribution |
+| PRC regional offices | 16 offices from the official locator | `published` with PRC attribution; contact/personal fields withheld |
+| BuCor OPPF operating facilities | 7 official records | `published` with BuCor attribution; public institutional fields only |
 | PSA 2024 Census population via BetterGov | 134,748 observations across 18 regional releases; 43,768 distinct PSGC codes | `published` with CC BY-SA 4.0 compilation attribution; PSA remains authoritative |
-| DepEd EBEIS masterlist (NCR) | 5,055 records acquired from 169 result pages | Current source release `published` for institution-level fields; canonical rows remain `internal` pending field-level mapping/privacy review |
+| DepEd EBEIS masterlists (19 regional result sets) | 83,218 records acquired across all verified region keys, 15–16 November 2026 | Current source releases `published` for institution-level fields; canonical rows remain `internal` pending field-level mapping/privacy review |
 | Official PSA PSGC workbook | HTTP 403 Cloudflare challenge; no file acquired | `blocked` |
 | DepEd Machine-Ready Files | HTTP 403 / human terms flow; no file acquired | `blocked` |
 | DOH NHFR / HFSRB | HTTP 403 Cloudflare challenge; no file or agreement accepted | `blocked` |
@@ -57,6 +68,12 @@ The exact unauthenticated GET probe results, including TLS failures and HTTP sta
 | PPA ports | https://ppa.com.ph/sites/default/files/List%20of%20Ports%20covered%20in%20PPA%20Statistics.pdf | HTTP 200 PDF, 22 pages | Published; 574 port rows | 303 government and 271 private providers; hierarchy and RORO marks preserved; no coordinates, owner names or operational status inferred |
 | DTI Negosyo Centers | https://negosyocenter.dti.gov.ph/negosyo-center-directory | HTTP 200 JSON API | Published; 1,427 active center records | Government service units with unspecified ownership/operator; contact fields withheld; no coordinates, host classification or operational status inferred |
 | CHED HEIDA | https://heida.ched.gov.ph/hei-directory | HTTP 200 server-rendered HTML; 280 pages across 18 regional directories | Published; 2,711 unique institution records | Institutional fields only; no coordinates, PSGC codes, campus-level precision or operational status; 123 unknown/CHED-supervised rows internal |
+| NHA GeoServer | https://nha.maps.arcgis.com/ or NHA WFS endpoint used by the adapter | HTTP 200 GeoJSON/WFS | Published; 31,016 DOH health-facility, 169 landholding and 946 project records (projects excluded) | Partial NHFR alternate; layer provenance retained; projects are not facilities; no occupancy data |
+| DOE power plants | https://www.doe.gov.ph/ (grid-specific existing-power-plant lists) | HTTP 200 HTML/PDF-derived tables | Published; 661 rows across four grid releases | Grid, plant type/status and capacity as stated; no coordinates inferred |
+| LRTA stations | https://lrta.gov.ph/ | HTTP 200 HTML station-distance tables | Published; 33 stations | Station set derived from distance tables; no coordinates added |
+| MRT-3 stations | https://www.mrt3.gov.ph/ or official station page | HTTP 200 HTML | Published; 13 stations | Official station page only |
+| PRC offices | PRC official regional-office locator | HTTP 200 HTML | Published; 16 regional offices | Offsite service centres absent from the inspected locator; contact/personal fields withheld |
+| BuCor OPPF facilities | https://www.bucor.gov.ph/ (OPPF operating facilities list) | HTTP 200 HTML | Published; 7 facilities | Public institutional fields only; no security-sensitive operational detail |
 | TESDA TVI | https://www.tesda.gov.ph/TVI | HTTP 200 HTML; monitor records an access challenge | Later expansion | No public JSON API or verified bulk export |
 | TESDA Assessment Centers | https://www.tesda.gov.ph/AssessmentCenters | Not independently acquired | Later expansion | Terms and programmatic access not verified |
 | HazardHunterPH | https://hazardhunter.georisk.gov.ph/ | HTTP 200 HTML | Discovery only | No hazard layer or publication decision acquired |
@@ -87,15 +104,17 @@ The exact unauthenticated GET probe results, including TLS failures and HTTP sta
 
 The Machine-Ready Files page advertises these families, but the actual files were not acquired. Do not treat advertised coverage as verified schema or content.
 
-### EBEIS NCR result set (acquired, internal only)
+### EBEIS regional result sets (acquired, internal only)
 
 - `https://ebeis.deped.gov.ph/beis/reports_info/masterlist` returned HTTP 200 on 15 November 2026.
 - The NCR result set contained **5,055 rows across 169 result pages**.
+- All 19 verified region keys were acquired on 16 November 2026: **83,218 rows** in total, from 78 (PSO) to 9,660 (Region IV-A) rows per region. Pages after the first are fetched with bounded, paced concurrency (4 workers, 0.4-second minimum start spacing); results are consumed in page order.
 - Observed columns: `School ID`, `School Name`, `Head / Position`, `Address`, `School Type`.
-- The parser created 5,055 internal school records with zero coordinates and zero PSGC assignments. It did not guess geography or coordinates.
-- The dataset is `approved_with_attribution` in the source registry. The re-ingested 15 November 2026 release is `published` for institution-level fields; the earlier `restricted_non_redistributable` release is retained. School-head names and other personal fields are withheld.
-- Canonical DepEd facilities remain `internal`/`DISCOVERY_CANDIDATE` (5,055 records) until field-level mapping and privacy review. The absence of an explicit reuse licence is not the reason for keeping them internal.
-- Evidence: `docs/reports/02-acquisition-report.md`, `docs/reports/03-schema-report.md`, and `var/reports/deped-ebeis-masterlist-ncr-*`.
+- The parser created 83,218 internal school records with zero coordinates and zero PSGC assignments. It did not guess geography or coordinates.
+- The dataset is `approved_with_attribution` in the source registry. The current regional releases are `published` for institution-level fields; earlier NCR releases are retained. School-head names and other personal fields are withheld.
+- Canonical DepEd facilities remain `internal`/`DISCOVERY_CANDIDATE` (83,218 records) until field-level mapping and privacy review. The absence of an explicit reuse licence is not the reason for keeping them internal.
+- The result table has no reliable per-row public/private sector field, so rows are not published as either government schools or private schools.
+- Evidence: `docs/reports/02-acquisition-report.md`, `docs/reports/03-schema-report.md`, and `var/reports/deped-ebeis-masterlist-*-2026-11-16-*.json`.
 
 ### Acquisition tasks
 

@@ -14,7 +14,10 @@ from __future__ import annotations
 
 import html
 import re
+import threading
+import time
 from collections.abc import Iterable
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from typing import Any
@@ -237,6 +240,99 @@ NBI_RIGHTS_BASIS = (
     "is a documented publication decision, not a legal opinion."
 )
 NBI_ATTRIBUTION = "National Bureau of Investigation — Regional & District Offices"
+NHA_DOH_HF_URL = (
+    "https://maps.nha.gov.ph/geoserver/NHA_PH/ows?service=WFS&version=1.0.0"
+    "&request=GetFeature&typeName=NHA_PH:DOH%20HF&outputFormat=application/json"
+)
+NHA_PROJECT_URL = (
+    "https://maps.nha.gov.ph/geoserver/NHA_PH/ows?service=WFS&version=1.0.0"
+    "&request=GetFeature&typeName=NHA_PH:NHA_Project_Loc&outputFormat=application/json"
+)
+NHA_LANDHOLDINGS_URL = (
+    "https://maps.nha.gov.ph/geoserver/NHA_PH/ows?service=WFS&version=1.0.0"
+    "&request=GetFeature&typeName=NHA_PH:NHA%20LANDHOLDINGS&outputFormat=application/json"
+)
+NHA_RIGHTS_BASIS = (
+    "The National Housing Authority publishes this GeoServer WFS layer on a public, "
+    "unauthenticated endpoint. No explicit prohibition, login, form or licence gate was "
+    "found on the endpoint or the NHA site. Under the product owner's public-record "
+    "inclusion decision, PhilFacilities publishes the institutional facility fields with "
+    "provenance and attribution, and records a takedown-on-notice route. This is a "
+    "documented publication decision, not a legal opinion; the layer is labelled a "
+    "partial alternate route for the blocked DOH NHFR, not the official registry."
+)
+NHA_ATTRIBUTION = (
+    "National Housing Authority — NHA_PH GeoServer, 'DOH HF' layer (accessed 16 November "
+    "2026); an official but partial alternate route for the DOH National Health Facility "
+    "Registry"
+)
+LRTA_DISTANCE_URL = "https://www.lrta.gov.ph/distance-between-stations/"
+LRTA_RIGHTS_BASIS = (
+    "The Light Rail Transit Authority is a government-owned and controlled corporation. "
+    "Its public Distance Between Stations page is an official government work. RA 8293 "
+    "section 176 provides that no copyright subsists in a work of the Government of the "
+    "Philippines, while prior approval may be required for commercial use. PhilFacilities "
+    "publishes the derived station names and interval distances with attribution for "
+    "non-commercial public-interest use. The page is not a complete station inventory and "
+    "supplies no coordinates, opening dates or operating status."
+)
+LRTA_ATTRIBUTION = (
+    "Light Rail Transit Authority — Distance Between Stations, Line 1 and Line 2 "
+    "(page modified 15 October 2026)"
+)
+MRT3_STATIONS_URL = "https://www.mrt3.com/index.php/menu-stations"
+MRT3_RIGHTS_BASIS = (
+    "The MRT-3 official site publishes its station carousel as a public information "
+    "service for a government-owned rail line. The page names 13 stations and gives "
+    "landmark descriptions, but is not dated as a current station inventory and carries "
+    "older station labels. PhilFacilities publishes the station names with attribution "
+    "for non-commercial public-interest use and preserves the source labels; no "
+    "coordinates, addresses, fares, opening dates or operating status are inferred."
+)
+MRT3_ATTRIBUTION = "Metro Rail Transit Line 3 — MRT-3 Stations (official site)"
+BUCOR_OPPF_URL = "https://bucor.gov.ph/?page_id=303"
+BUCOR_RIGHTS_BASIS = (
+    "The Bureau of Corrections publishes the OPPF facilities page as a public "
+    "information service. The site footer states that all content is in the public "
+    "domain unless otherwise stated. PhilFacilities publishes only the facility name "
+    "and the official detail-page link. No addresses, coordinates, population, "
+    "security arrangements or personal data are extracted. The page is a seven-"
+    "facility directory subset, not a national corrections register."
+)
+BUCOR_ATTRIBUTION = "Bureau of Corrections — OPPF facilities"
+PRC_LOCATOR_URL = "https://info.prc.gov.ph/prc-office-locator/regional-offices"
+PRC_RIGHTS_BASIS = (
+    "The Professional Regulation Commission publishes its office locator as a public "
+    "information service on an official government subdomain. The page supplies "
+    "office names, short address labels and embedded map pins. No login, form, "
+    "licence gate or explicit prohibition was found. RA 8293 section 176 provides "
+    "that no copyright subsists in a work of the Government of the Philippines, "
+    "while prior approval may be required for commercial use. PhilFacilities "
+    "publishes the factual office name, address label and map-pin coordinates with "
+    "attribution for non-commercial public-interest use. The page is a regional-"
+    "office directory subset, not a complete service-counter inventory, and the map "
+    "pin is not a surveyed building location."
+)
+PRC_ATTRIBUTION = (
+    "Professional Regulation Commission — Office Locator, Regional Offices "
+    "(accessed 16 November 2026)"
+)
+DOE_LOEPP_RIGHTS_BASIS = (
+    "The Department of Energy publishes dated 'List of Existing Power Plants' PDFs "
+    "through its official website and public media endpoint. No login, form, licence "
+    "gate or explicit prohibition was found on the list page or the linked files. "
+    "RA 8293 section 176 provides that no copyright subsists in a work of the "
+    "Government of the Philippines, while prior approval may be required for "
+    "commercial use. PhilFacilities publishes the factual facility name, DOE code, "
+    "resource/technology, capacity, location labels, operator/owner labels and "
+    "commissioning date with attribution for non-commercial public-interest use. "
+    "Inclusion in the list is registry evidence only and is not an operating-status "
+    "claim. No coordinates, PSGC codes or legal-ownership conclusions are inferred."
+)
+DOE_LOEPP_ATTRIBUTION = (
+    "Department of Energy — List of Existing Power Plants (grid-connected Luzon, "
+    "Visayas and Mindanao as of 30 September 2026; off-grid as of 30 April 2026)"
+)
 NMIS_NARIS_URL = "https://naris.nmis.gov.ph/"
 NMIS_NARIS_RIGHTS_BASIS = (
     "NARIS is the National Meat Inspection Service's public accreditation directory. "
@@ -559,6 +655,121 @@ REAL_SOURCES: dict[str, RealSource] = {
         note=(
             "Crowd-sourced map features, not an official DepEd list. Coordinates are "
             "bbox-centre map geocodes and record status is unknown."
+        ),
+    ),
+    "osm-points-of-interest": RealSource(
+        key="osm-points-of-interest",
+        agency_code="osm",
+        agency_name="OpenStreetMap contributors (via HOT and BetterGov.PH)",
+        dataset_slug="osm-public-service-facilities",
+        dataset_name=(
+            "OpenStreetMap public-service facilities (HOT Philippines points-of-interest layer)"
+        ),
+        source_url=(
+            "https://production-raw-data-api.s3.amazonaws.com/ISO3/PHL/_layers/osm/"
+            "points_of_interest.parquet"
+        ),
+        access_method="public_geoparquet",
+        update_pattern="irregular snapshot",
+        rights=RIGHTS_APPROVED_ATTRIBUTION,
+        rights_basis=OSM_RIGHTS_BASIS,
+        attribution_text=OSM_ATTRIBUTION,
+        requested_publication_status=PUBLICATION_APPROVED,
+        license_identifier="ODbL-1.0",
+        terms_url="https://opendatacommons.org/licenses/odbl/1-0/",
+        coverage_scope="NATIONAL_PARTIAL",
+        coverage_note=(
+            "Named features only. Selected tags: fire station, police, town hall, "
+            "public building, post office, courthouse, prison, marketplace, library, "
+            "community centre, social facility, arts centre, bus station, museum and "
+            "gallery. Coverage and completeness are crowd-sourced and unknown."
+        ),
+        note=(
+            "Crowd-sourced map features used as an alternate route where official "
+            "registries are blocked. Coordinates are bbox-centre map geocodes and "
+            "operational status is unknown."
+        ),
+    ),
+    "osm-airports": RealSource(
+        key="osm-airports",
+        agency_code="osm",
+        agency_name="OpenStreetMap contributors (via HOT and BetterGov.PH)",
+        dataset_slug="osm-airports",
+        dataset_name="OpenStreetMap airports, heliports and terminals (HOT Philippines extract)",
+        source_url=(
+            "https://production-raw-data-api.s3.amazonaws.com/ISO3/PHL/_layers/osm/airports.parquet"
+        ),
+        access_method="public_geoparquet",
+        update_pattern="irregular snapshot",
+        rights=RIGHTS_APPROVED_ATTRIBUTION,
+        rights_basis=OSM_RIGHTS_BASIS,
+        attribution_text=OSM_ATTRIBUTION,
+        requested_publication_status=PUBLICATION_APPROVED,
+        license_identifier="ODbL-1.0",
+        terms_url="https://opendatacommons.org/licenses/odbl/1-0/",
+        coverage_scope="NATIONAL_PARTIAL",
+        coverage_note=(
+            "Named aerodromes, helipads and airport terminals only; runways, taxiways "
+            "and navigation aids are excluded. Crowd-sourced coverage is incomplete."
+        ),
+        note=(
+            "Alternate coverage for blocked CAAP/DOTr sources. Not an official aerodrome "
+            "registry; operator and operating status are not inferred."
+        ),
+    ),
+    "osm-sea-ports": RealSource(
+        key="osm-sea-ports",
+        agency_code="osm",
+        agency_name="OpenStreetMap contributors (via HOT and BetterGov.PH)",
+        dataset_slug="osm-sea-ports",
+        dataset_name="OpenStreetMap sea ports and ferry terminals (HOT Philippines extract)",
+        source_url=(
+            "https://production-raw-data-api.s3.amazonaws.com/ISO3/PHL/_layers/osm/"
+            "sea_ports.parquet"
+        ),
+        access_method="public_geoparquet",
+        update_pattern="irregular snapshot",
+        rights=RIGHTS_APPROVED_ATTRIBUTION,
+        rights_basis=OSM_RIGHTS_BASIS,
+        attribution_text=OSM_ATTRIBUTION,
+        requested_publication_status=PUBLICATION_APPROVED,
+        license_identifier="ODbL-1.0",
+        terms_url="https://opendatacommons.org/licenses/odbl/1-0/",
+        coverage_scope="NATIONAL_PARTIAL",
+        coverage_note=(
+            "Named ferry terminals and port/harbour features only. Crowd-sourced "
+            "coverage is incomplete and ownership/operator is often unrecorded."
+        ),
+        note=(
+            "Alternate transport coverage alongside the official PPA port list. Not a "
+            "port census; no berth, capacity or operating-status claim is made."
+        ),
+    ),
+    "osm-railways": RealSource(
+        key="osm-railways",
+        agency_code="osm",
+        agency_name="OpenStreetMap contributors (via HOT and BetterGov.PH)",
+        dataset_slug="osm-railway-stations",
+        dataset_name="OpenStreetMap railway stations (HOT Philippines extract)",
+        source_url=(
+            "https://production-raw-data-api.s3.amazonaws.com/ISO3/PHL/_layers/osm/railways.parquet"
+        ),
+        access_method="public_geoparquet",
+        update_pattern="irregular snapshot",
+        rights=RIGHTS_APPROVED_ATTRIBUTION,
+        rights_basis=OSM_RIGHTS_BASIS,
+        attribution_text=OSM_ATTRIBUTION,
+        requested_publication_status=PUBLICATION_APPROVED,
+        license_identifier="ODbL-1.0",
+        terms_url="https://opendatacommons.org/licenses/odbl/1-0/",
+        coverage_scope="NATIONAL_PARTIAL",
+        coverage_note=(
+            "Named railway stations and halts only; rail lines and unnamed features are "
+            "excluded. Crowd-sourced coverage is incomplete."
+        ),
+        note=(
+            "Alternate coverage for blocked PNR/DOTr station sources. Not an official "
+            "rail inventory; operating status and current station names are not inferred."
         ),
     ),
     "deped-ebeis": RealSource(
@@ -1142,6 +1353,325 @@ REAL_SOURCES: dict[str, RealSource] = {
             "in the private raw artifact."
         ),
     ),
+    "nha-doh-hf": RealSource(
+        key="nha-doh-hf",
+        agency_code="nha",
+        agency_name="National Housing Authority",
+        dataset_slug="nha-doh-health-facilities",
+        dataset_name="NHA GeoServer — DOH health facility layer (partial NHFR alternate)",
+        source_url=NHA_DOH_HF_URL,
+        access_method="public_wfs",
+        update_pattern="irregular",
+        rights=RIGHTS_PUBLICLY_AVAILABLE_VERIFIED,
+        rights_basis=NHA_RIGHTS_BASIS,
+        attribution_text=NHA_ATTRIBUTION,
+        personal_data_status="institutional_fields_only",
+        requested_publication_status=PUBLICATION_APPROVED,
+        terms_url="https://nha.gov.ph/",
+        coverage_scope="NATIONAL_PARTIAL",
+        coverage_note=(
+            "The public WFS layer returned 31,016 health-facility features on 16 November "
+            "2026: barangay health stations, rural health units, birthing homes, hospitals, "
+            "infirmaries, laboratories, drug-treatment centres and blood centres. It is an "
+            "official alternate route for the blocked DOH NHFR, but it is a partial layer "
+            "with no stated release date, completeness note or operating-status field."
+        ),
+        note=(
+            "Preserves the source facility code, name, type, ownership label, PSGC labels "
+            "and codes, coordinates and prec_latlo flag. The layer uses the older ARMM PSGC "
+            "series for the Bangsamoro region; codes are not remapped to current BARMM "
+            "codes. Presence is registry evidence only and does not prove an operating "
+            "status or building-level precision."
+        ),
+    ),
+    "nha-housing-projects": RealSource(
+        key="nha-housing-projects",
+        agency_code="nha",
+        agency_name="National Housing Authority",
+        dataset_slug="nha-housing-project-locations",
+        dataset_name="NHA GeoServer — housing project locations",
+        source_url=NHA_PROJECT_URL,
+        access_method="public_wfs",
+        update_pattern="irregular",
+        rights=RIGHTS_PUBLICLY_AVAILABLE_VERIFIED,
+        rights_basis=NHA_RIGHTS_BASIS,
+        attribution_text=(
+            "National Housing Authority — NHA_PH GeoServer, 'NHA_Project_Loc' layer "
+            "(accessed 16 November 2026)"
+        ),
+        personal_data_status="institutional_fields_only",
+        requested_publication_status=PUBLICATION_APPROVED,
+        terms_url="https://nha.gov.ph/",
+        coverage_scope="NATIONAL_PARTIAL",
+        coverage_note=(
+            "The public WFS layer returned 946 project-location features on 16 November "
+            "2026. These are NHA project sites, not operating facilities; the layer does "
+            "not state completion, occupancy or current status and carries NHA place "
+            "labels rather than standard PSGC codes."
+        ),
+        note=(
+            "Preserves project code, name, class, office/place labels, unit count and "
+            "developer where supplied. No PSGC code, occupancy or operational status is "
+            "inferred. Point geometry is labelled as the source project location."
+        ),
+    ),
+    "nha-landholdings": RealSource(
+        key="nha-landholdings",
+        agency_code="nha",
+        agency_name="National Housing Authority",
+        dataset_slug="nha-landholdings",
+        dataset_name="NHA GeoServer — landholdings",
+        source_url=NHA_LANDHOLDINGS_URL,
+        access_method="public_wfs",
+        update_pattern="irregular",
+        rights=RIGHTS_PUBLICLY_AVAILABLE_VERIFIED,
+        rights_basis=NHA_RIGHTS_BASIS,
+        attribution_text=(
+            "National Housing Authority — NHA_PH GeoServer, 'NHA LANDHOLDINGS' layer "
+            "(accessed 16 November 2026)"
+        ),
+        personal_data_status="institutional_fields_only",
+        requested_publication_status=PUBLICATION_APPROVED,
+        terms_url="https://nha.gov.ph/",
+        coverage_scope="NATIONAL_PARTIAL",
+        coverage_note=(
+            "The public WFS layer returned 169 property features on 16 November 2026 "
+            "(160 with point geometry). These are NHA landholdings, not facilities; no "
+            "occupancy, tenancy or operating status is published."
+        ),
+        note=(
+            "Preserves property name, layer/classification, region label, source area in "
+            "square metres and location text. Area values are not recalculated."
+        ),
+    ),
+    "doe-power-luzon": RealSource(
+        key="doe-power-luzon",
+        agency_code="doe",
+        agency_name="Department of Energy",
+        dataset_slug="doe-power-plants-luzon",
+        dataset_name="DOE List of Existing Power Plants — Luzon grid (September 2026)",
+        source_url=(
+            "https://d24qbtp4vooyzi.cloudfront.net/api/media/file/"
+            "DOE-EPIMB_LoEPP%20as%20of%20September%202026_Luzon%20Grid.pdf"
+            "?prefix=dev%2Fmedia"
+        ),
+        access_method="public_pdf",
+        update_pattern="monthly/quarterly",
+        rights=RIGHTS_APPROVED_ATTRIBUTION,
+        rights_basis=DOE_LOEPP_RIGHTS_BASIS,
+        attribution_text=DOE_LOEPP_ATTRIBUTION,
+        personal_data_status="institutional_fields_only",
+        requested_publication_status=PUBLICATION_APPROVED,
+        terms_url="https://doe.gov.ph/",
+        coverage_scope="REGIONAL",
+        coverage_note=(
+            "The Luzon-grid list covers existing grid-connected power plants in the "
+            "Luzon grid as of 30 September 2026. It is a generation-facility list, not "
+            "a complete energy-infrastructure register, and supplies no coordinates."
+        ),
+        note=(
+            "Preserves DOE facility code, official name, resource/technology, "
+            "connection, installed/dependable capacity, unit count, place labels, "
+            "operator/owner/IPPA, owner type, contract type and commissioning date. "
+            "Unit rows are preserved separately; blanks are not back-filled."
+        ),
+    ),
+    "doe-power-visayas": RealSource(
+        key="doe-power-visayas",
+        agency_code="doe",
+        agency_name="Department of Energy",
+        dataset_slug="doe-power-plants-visayas",
+        dataset_name="DOE List of Existing Power Plants — Visayas grid (September 2026)",
+        source_url=(
+            "https://d24qbtp4vooyzi.cloudfront.net/api/media/file/"
+            "DOE-EPIMB_LoEPP%20as%20of%20September%202026_Visayas%20Grid.pdf"
+            "?prefix=dev%2Fmedia"
+        ),
+        access_method="public_pdf",
+        update_pattern="monthly/quarterly",
+        rights=RIGHTS_APPROVED_ATTRIBUTION,
+        rights_basis=DOE_LOEPP_RIGHTS_BASIS,
+        attribution_text=DOE_LOEPP_ATTRIBUTION,
+        personal_data_status="institutional_fields_only",
+        requested_publication_status=PUBLICATION_APPROVED,
+        terms_url="https://doe.gov.ph/",
+        coverage_scope="REGIONAL",
+        coverage_note=(
+            "The Visayas-grid list covers existing grid-connected power plants in the "
+            "Visayas grid as of 30 September 2026. It supplies no coordinates."
+        ),
+        note=(
+            "Preserves the DOE coding, source labels, capacities, place labels and "
+            "operator/owner evidence; no legal-ownership or operating-status inference."
+        ),
+    ),
+    "doe-power-mindanao": RealSource(
+        key="doe-power-mindanao",
+        agency_code="doe",
+        agency_name="Department of Energy",
+        dataset_slug="doe-power-plants-mindanao",
+        dataset_name="DOE List of Existing Power Plants — Mindanao grid (September 2026)",
+        source_url=(
+            "https://d24qbtp4vooyzi.cloudfront.net/api/media/file/"
+            "DOE-EPIMB_LoEPP%20as%20of%20September%202026_Mindanao%20Grid.pdf"
+            "?prefix=dev%2Fmedia"
+        ),
+        access_method="public_pdf",
+        update_pattern="monthly/quarterly",
+        rights=RIGHTS_APPROVED_ATTRIBUTION,
+        rights_basis=DOE_LOEPP_RIGHTS_BASIS,
+        attribution_text=DOE_LOEPP_ATTRIBUTION,
+        personal_data_status="institutional_fields_only",
+        requested_publication_status=PUBLICATION_APPROVED,
+        terms_url="https://doe.gov.ph/",
+        coverage_scope="REGIONAL",
+        coverage_note=(
+            "The Mindanao-grid list covers existing grid-connected power plants in the "
+            "Mindanao grid as of 30 September 2026. It supplies no coordinates."
+        ),
+        note=(
+            "Preserves the DOE coding, source labels, capacities, place labels and "
+            "operator/owner evidence; no legal-ownership or operating-status inference."
+        ),
+    ),
+    "doe-power-offgrid": RealSource(
+        key="doe-power-offgrid",
+        agency_code="doe",
+        agency_name="Department of Energy",
+        dataset_slug="doe-power-plants-offgrid",
+        dataset_name="DOE List of Existing Power Plants — off-grid (April 2026)",
+        source_url=(
+            "https://d24qbtp4vooyzi.cloudfront.net/api/media/file/"
+            "List%20of%20Existing%20Power%20Plants%20Off-Grid%20as%20of%2030%20April%202026.pdf"
+            "?prefix=dev%2Fmedia"
+        ),
+        access_method="public_pdf",
+        update_pattern="irregular",
+        rights=RIGHTS_APPROVED_ATTRIBUTION,
+        rights_basis=DOE_LOEPP_RIGHTS_BASIS,
+        attribution_text=DOE_LOEPP_ATTRIBUTION,
+        personal_data_status="institutional_fields_only",
+        requested_publication_status=PUBLICATION_APPROVED,
+        terms_url="https://doe.gov.ph/",
+        coverage_scope="NATIONAL_PARTIAL",
+        coverage_note=(
+            "The off-grid list covers existing off-grid power plants in Luzon, Visayas "
+            "and Mindanao as of 30 April 2026. It is not a complete electrification or "
+            "microgrid register and supplies no coordinates."
+        ),
+        note=(
+            "Preserves facility name, subtype, installed/dependable capacity, place and "
+            "region labels, operator, owner type, operating hours and commissioning "
+            "date. Off-grid rows have no official-name or unit-count column."
+        ),
+    ),
+    "lrta-stations": RealSource(
+        key="lrta-stations",
+        agency_code="lrta",
+        agency_name="Light Rail Transit Authority",
+        dataset_slug="lrta-lrt-stations",
+        dataset_name="LRTA Line 1 and Line 2 station distances (derived station list)",
+        source_url=LRTA_DISTANCE_URL,
+        access_method="public_html_directory",
+        update_pattern="irregular",
+        rights=RIGHTS_APPROVED_ATTRIBUTION,
+        rights_basis=LRTA_RIGHTS_BASIS,
+        attribution_text=LRTA_ATTRIBUTION,
+        personal_data_status="institutional_fields_only",
+        requested_publication_status=PUBLICATION_APPROVED,
+        terms_url="https://www.lrta.gov.ph/website-privacy-policy/",
+        coverage_scope="SELECTED_LGUS",
+        coverage_note=(
+            "Covers the Line 1 and Line 2 stations named in the official interval table "
+            "(Metro Manila). The page is not a complete LRT inventory, is not dated as a "
+            "station list, and supplies no coordinates, addresses or operating status."
+        ),
+        note=(
+            "The page lists station pairs and interval distances. Unique station names are "
+            "derived from the intervals and labelled as derived; no coordinate or "
+            "opening-status claim is made."
+        ),
+    ),
+    "mrt3-stations": RealSource(
+        key="mrt3-stations",
+        agency_code="dotr",
+        agency_name="Department of Transportation — MRT-3",
+        dataset_slug="mrt3-stations",
+        dataset_name="MRT-3 station directory (official station page)",
+        source_url=MRT3_STATIONS_URL,
+        access_method="public_html_directory",
+        update_pattern="irregular",
+        rights=RIGHTS_APPROVED_ATTRIBUTION,
+        rights_basis=MRT3_RIGHTS_BASIS,
+        attribution_text=MRT3_ATTRIBUTION,
+        personal_data_status="institutional_fields_only",
+        requested_publication_status=PUBLICATION_APPROVED,
+        coverage_scope="SELECTED_LGUS",
+        coverage_note=(
+            "Covers the 13 station names listed on the MRT-3 site along EDSA in Metro "
+            "Manila. The page is not a dated station inventory, carries older station "
+            "labels, and supplies no coordinates, addresses or operating status."
+        ),
+        note=(
+            "Station names are preserved verbatim. The page is an older public "
+            "information page; no current-name crosswalk, coordinate or operating-status "
+            "claim is made."
+        ),
+    ),
+    "bucor-oppf": RealSource(
+        key="bucor-oppf",
+        agency_code="bucor",
+        agency_name="Bureau of Corrections",
+        dataset_slug="bucor-oppf-facilities",
+        dataset_name="Bureau of Corrections — OPPF operating prison and penal facilities",
+        source_url=BUCOR_OPPF_URL,
+        access_method="public_html_directory",
+        update_pattern="irregular",
+        rights=RIGHTS_APPROVED_ATTRIBUTION,
+        rights_basis=BUCOR_RIGHTS_BASIS,
+        attribution_text=BUCOR_ATTRIBUTION,
+        personal_data_status="institutional_fields_only",
+        requested_publication_status=PUBLICATION_APPROVED,
+        terms_url="https://bucor.gov.ph/",
+        coverage_scope="DIRECTORY_SUBSET",
+        coverage_note=(
+            "The OPPF page lists seven BuCor operating prison and penal facilities with "
+            "links to one detail page each. It is not a national corrections register: "
+            "BJMP, provincial and sub-provincial jails are separate custodians."
+        ),
+        note=(
+            "Only the facility name and official detail-page link are published. No "
+            "address, coordinate, capacity, population, operating status or security "
+            "information is present or inferred."
+        ),
+    ),
+    "prc-offices": RealSource(
+        key="prc-offices",
+        agency_code="prc",
+        agency_name="Professional Regulation Commission",
+        dataset_slug="prc-regional-offices",
+        dataset_name="PRC regional offices (official office locator)",
+        source_url=PRC_LOCATOR_URL,
+        access_method="public_html_directory",
+        update_pattern="irregular",
+        rights=RIGHTS_APPROVED_ATTRIBUTION,
+        rights_basis=PRC_RIGHTS_BASIS,
+        attribution_text=PRC_ATTRIBUTION,
+        personal_data_status="institutional_fields_only",
+        requested_publication_status=PUBLICATION_APPROVED,
+        terms_url="https://www.prc.gov.ph/",
+        coverage_scope="REGIONAL",
+        coverage_note=(
+            "The official locator page enumerates PRC regional offices with embedded "
+            "map pins and short address labels. It is not a complete inventory of "
+            "satellite, mall-based or host-agency service counters."
+        ),
+        note=(
+            "Publishes office name, address label and embedded map-pin coordinates. "
+            "Coordinates are labelled map_geocoded, not survey-grade GPS. No PSGC "
+            "code, building ownership, office hours or operating status is inferred."
+        ),
+    ),
 }
 
 
@@ -1608,9 +2138,50 @@ def psgc_units(collections: dict[str, list[dict[str, Any]]]):
 
 EBEIS_URL = "https://ebeis.deped.gov.ph/beis/reports_info/viewMasterList"
 EBEIS_REGIONS = {
-    "ncr": ("13", "National Capital Region"),
+    "region-i": ("1", "Region I"),
+    "region-ii": ("2", "Region II"),
+    "region-iii": ("3", "Region III"),
+    "region-iva": ("4", "Region IV-A"),
+    "mimaropa": ("17", "MIMAROPA"),
+    "region-v": ("5", "Region V"),
+    "region-vi": ("6", "Region VI"),
+    "region-vii": ("7", "Region VII"),
+    "region-viii": ("8", "Region VIII"),
+    "region-ix": ("9", "Region IX"),
+    "region-x": ("10", "Region X"),
+    "region-xi": ("11", "Region XI"),
+    "region-xii": ("12", "Region XII"),
+    "caraga": ("16", "CARAGA"),
+    "barmm": ("15", "BARMM"),
+    "car": ("14", "CAR"),
+    "ncr": ("13", "NCR"),
+    "nir": ("18", "NIR"),
+    "pso": ("19", "PSO"),
 }
 EBEIS_PAGE_SIZE = 30
+# Minimum spacing between request *starts* across all worker threads. The form
+# is a small government application, so concurrency is capped and paced rather
+# than replaced by an unbounded burst.
+EBEIS_PAGE_DELAY_SECONDS = 0.4
+EBEIS_FETCH_WORKERS = 4
+
+
+class _EbeisPacer:
+    """Space request starts by a minimum interval across worker threads."""
+
+    def __init__(self, interval: float) -> None:
+        self._interval = max(0.0, interval)
+        self._lock = threading.Lock()
+        self._next_start = 0.0
+
+    def wait(self) -> None:
+        with self._lock:
+            now = time.monotonic()
+            start = max(now, self._next_start)
+            self._next_start = start + self._interval
+            delay = start - now
+        if delay > 0:
+            time.sleep(delay)
 
 
 def _ebeis_page(acquirer: HttpAcquirer, region_id: str, page: int) -> FetchResult:
@@ -1629,6 +2200,33 @@ def _ebeis_page(acquirer: HttpAcquirer, region_id: str, page: int) -> FetchResul
             f"DepEd EBEIS page {page} returned HTTP {result.status_code}.", result=result
         )
     return result
+
+
+def _fetch_ebeis_pages(
+    acquirer: HttpAcquirer,
+    region_id: str,
+    pages: range,
+    pacer: _EbeisPacer,
+    workers: int,
+) -> dict[int, FetchResult]:
+    """Fetch one contiguous page range concurrently, keyed by page number."""
+
+    def fetch(page: int) -> tuple[int, FetchResult]:
+        pacer.wait()
+        return page, _ebeis_page(acquirer, region_id, page)
+
+    results: dict[int, FetchResult] = {}
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        futures = [pool.submit(fetch, page) for page in pages]
+        try:
+            for future in as_completed(futures):
+                page, result = future.result()
+                results[page] = result
+        except Exception:
+            for future in futures:
+                future.cancel()
+            raise
+    return results
 
 
 def fetch_ebeis_region(
@@ -1655,15 +2253,23 @@ def fetch_ebeis_region(
     header, rows = parse_masterlist_html(document)
     all_rows: list[dict[str, Any]] = list(rows)
     page_results = [first]
-    for page in range(2, pages + 1):
-        result = _ebeis_page(acquirer, region_id, page)
-        page_results.append(result)
-        _header, batch = parse_masterlist_html(result.content.decode("utf-8", errors="replace"))
-        if _header != header:
-            raise AcquisitionError(
-                f"DepEd EBEIS page {page} changed its table header; acquisition stopped."
-            )
-        all_rows.extend(batch)
+    # Pages are fetched in small concurrent chunks. Results are still consumed
+    # in page order, so a changed header stops the release before later chunks
+    # are requested and the aggregate stays deterministic.
+    workers = max(1, min(EBEIS_FETCH_WORKERS, pages - 1))
+    pacer = _EbeisPacer(EBEIS_PAGE_DELAY_SECONDS)
+    for chunk_start in range(2, pages + 1, workers):
+        chunk = range(chunk_start, min(chunk_start + workers, pages + 1))
+        chunk_results = _fetch_ebeis_pages(acquirer, region_id, chunk, pacer, workers)
+        for page in chunk:
+            result = chunk_results[page]
+            page_results.append(result)
+            _header, batch = parse_masterlist_html(result.content.decode("utf-8", errors="replace"))
+            if _header != header:
+                raise AcquisitionError(
+                    f"DepEd EBEIS page {page} changed its table header; acquisition stopped."
+                )
+            all_rows.extend(batch)
     if len(all_rows) != total:
         raise AcquisitionError(
             f"DepEd EBEIS reported {total} rows but {len(all_rows)} were parsed; "

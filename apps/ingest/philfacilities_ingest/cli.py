@@ -8,7 +8,7 @@ import json
 import uuid
 from datetime import UTC, date, datetime
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 import typer
 from philfacilities_api.models import (
@@ -46,6 +46,12 @@ from .fixtures import (
     philhealth_pdf,
     psgc_workbook,
 )
+from .fusion import (
+    apply_fusions,
+    auto_merge_exact_duplicates,
+    build_attribute_fusions,
+    fusion_report,
+)
 from .lgu_inventory import validate_inventory
 from .manifest import render_release_notes, write_release_manifest
 from .matching import (
@@ -77,6 +83,7 @@ from .source_inventory import (
     validate_source_inventory,
     write_source_inventory,
 )
+from .source_report import enrich_source_inventory, validate_report_fields, write_source_reports
 from .sources.bettergov import OSMParquetAdapter, load_psgc_release_payload
 from .sources.bettergov_stats import (
     CENSUS_2024_DATASET_IDS,
@@ -84,24 +91,31 @@ from .sources.bettergov_stats import (
     load_population_snapshot,
 )
 from .sources.bir import BirRevenueDistrictOfficeAdapter
+from .sources.bucor import BucorFacilityAdapter
 from .sources.cainta import CaintaHealthCenterAdapter, fetch_cainta_health_centers
 from .sources.ched_heida import ChedHeidaAdapter, fetch_heida_directory
 from .sources.deped import DepEdEnrollmentAdapter, DepEdMasterlistAdapter, DepEdResourceAdapter
 from .sources.deped_ebeis import DepEdEBEISAdapter
+from .sources.doe_power import DOE_GRID_URLS, DoePowerPlantAdapter
 from .sources.doh import DOHNHFRAdapter
 from .sources.dswd_crcf import DswdCrcfDirectoryAdapter
 from .sources.dti_negosyo import DtiNegosyoCenterAdapter, fetch_negosyo_centers
+from .sources.lrta import LrtaStationAdapter, fetch_distance_page
 from .sources.mandaluyong import MandaluyongBarangayAdapter, fetch_mandaluyong_directory
+from .sources.mrt3 import Mrt3StationAdapter, fetch_mrt3_stations
 from .sources.national_museum import NationalMuseumDirectoryAdapter, fetch_national_museum_directory
 from .sources.nbi import NbiOfficeAdapter, fetch_nbi_offices
+from .sources.nha_wfs import NhaDohFacilityAdapter, NhaHousingProjectAdapter, NhaLandholdingAdapter
 from .sources.nlp import NlpPublicLibraryPdfAdapter
 from .sources.nmis_naris import NmisNarisDirectoryAdapter
+from .sources.osm_facilities import LAYER_FILES, OsmFacilityLayerAdapter
 from .sources.pagasa_aws import PagasaAwsAdapter, fetch_pagasa_aws
 from .sources.pasay import PasayHealthCenterAdapter, fetch_pasay_health_centers
 from .sources.philhealth import PhilHealthPdfAdapter
 from .sources.philhealth_offices import PhilHealthOfficeAdapter, fetch_philhealth_offices
 from .sources.phlpost import PhlPostLocatorAdapter
 from .sources.ppa import PpaPortListAdapter
+from .sources.prc import PrcOfficeAdapter
 from .sources.quezon_city import QuezonCityLguAdapter, fetch_quezon_city_directory
 from .sources.quezon_city_places import QuezonCityPlacesAdapter, fetch_quezon_city_places
 from .sources.registry import (
@@ -483,6 +497,131 @@ def ingest_file(
         engine.dispose()
 
 
+@app.command("fuse-attributes")
+def fuse_attributes_command(
+    apply: Annotated[
+        bool,
+        typer.Option(
+            "--apply/--no-apply",
+            help="Apply agreed or confirmed safe fields to canonical facility rows.",
+        ),
+    ] = False,
+    dry_run: Annotated[
+        bool,
+        typer.Option("--dry-run", help="Report what would be applied without changing facilities."),
+    ] = False,
+    limit: Annotated[
+        int | None,
+        typer.Option("--limit", min=1, help="Only process the first N facilities (for a sample)."),
+    ] = None,
+    all_facilities: Annotated[
+        bool,
+        typer.Option(
+            "--all/--multi-source-only",
+            help=(
+                "Fuse every facility, including single-source ones. The default fuses only "
+                "facilities linked to more than one source record."
+            ),
+        ),
+    ] = False,
+) -> None:
+    """Materialise field-level fusions and retain every conflicting value.
+
+    Source assertions and raw releases are never rewritten. With ``--apply``
+    only agreed claims (or confirmed claims) for a small safe field set are
+    copied to the canonical facility; conflicts stay reviewable.
+    """
+
+    engine, session = _session()
+    try:
+        if limit is not None:
+            facility_ids = list(
+                session.scalars(select(Facility.id).order_by(Facility.id).limit(limit)).all()
+            )
+        else:
+            facility_ids = None
+        stats = build_attribute_fusions(
+            session,
+            facility_ids=facility_ids,
+            multi_source_only=not all_facilities,
+            progress=lambda current: typer.echo(
+                f"  fused facilities={current.facilities_scanned} "
+                f"attributes={current.attributes_written} conflicts={current.conflict}",
+                err=True,
+            ),
+        )
+        applied = (
+            apply_fusions(session, facility_ids=facility_ids, dry_run=dry_run) if apply else None
+        )
+        if not dry_run:
+            session.commit()
+        typer.echo(json.dumps({"fusion": stats.as_dict(), "applied": applied}, indent=2))
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("fusion-report")
+def fusion_report_command(
+    as_json: Annotated[bool, typer.Option("--json", help="Emit the report as JSON.")] = False,
+) -> None:
+    """Report fused attributes, conflicts and retained alternative values."""
+
+    engine, session = _session()
+    try:
+        report = fusion_report(session)
+    finally:
+        session.close()
+        engine.dispose()
+    if as_json:
+        typer.echo(json.dumps(report, indent=2, default=str))
+        return
+    typer.echo(json.dumps(report["by_status"], indent=2))
+    typer.echo(f"total={report['total']} conflicts={len(report['conflict_samples'])} sample(s)")
+    for row in report["conflict_samples"][:10]:
+        typer.echo(
+            f"{row['facility'][:60]} · {row['attribute']}={row['selected_value']!r} "
+            f"({row['distinct_values']} distinct values)"
+        )
+
+
+@app.command("auto-merge-duplicates")
+def auto_merge_duplicates_command(
+    apply: Annotated[
+        bool,
+        typer.Option(
+            "--apply/--dry-run",
+            help="Apply the deterministic merges. The default is a dry run.",
+        ),
+    ] = False,
+    limit: Annotated[int, typer.Option(min=1, help="Maximum candidates to consider.")] = 100,
+) -> None:
+    """Merge only exact normalized name + PSGC + address duplicates.
+
+    Ambiguous candidates remain ``pending`` for human review. A merge retires the
+    source facility but retains its source links and claims on the survivor.
+    """
+
+    engine, session = _session()
+    try:
+        stats = auto_merge_exact_duplicates(session, dry_run=not apply, limit=limit)
+        if apply:
+            build_attribute_fusions(session)
+            session.commit()
+        else:
+            session.rollback()
+        typer.echo(json.dumps(stats, indent=2, default=str))
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+        engine.dispose()
+
+
 @app.command("status")
 def status() -> None:
     """Show measured database counts and latest ingestion runs."""
@@ -640,6 +779,82 @@ def source_inventory_command(
             typer.echo("validation: ok")
     if errors:
         raise typer.Exit(code=1)
+
+
+@app.command("source-report")
+def source_report_command(
+    register: Annotated[
+        Path | None,
+        typer.Option(
+            "--register",
+            help="Source register Markdown. Defaults to expand/docs/03-SOURCE-REGISTER.md.",
+        ),
+    ] = None,
+    candidates: Annotated[
+        Path | None,
+        typer.Option(
+            "--candidates",
+            help="Candidate registry JSON. Defaults to expand/source-candidates.json.",
+        ),
+    ] = None,
+    probes: Annotated[
+        Path | None,
+        typer.Option(
+            "--probes",
+            help="Probe ledger. Defaults to the 16 Nov 2026 category-search ledger.",
+        ),
+    ] = None,
+    region_ledger: Annotated[
+        Path | None,
+        typer.Option(
+            "--region-ledger",
+            help="Region search ledger JSON. Defaults to expand/data/region-search-ledger.json.",
+        ),
+    ] = None,
+    output_dir: Annotated[
+        Path | None,
+        typer.Option(
+            "--output-dir",
+            help="Directory for probe-ledger.jsonl, gap-report.md, blocked-register.md and "
+            "acquisition-queue.md. Defaults to expand/data.",
+        ),
+    ] = None,
+    json_output: Annotated[
+        Path | None,
+        typer.Option("--json-output", help="Also write the enriched inventory JSON here."),
+    ] = None,
+    csv_output: Annotated[
+        Path | None,
+        typer.Option("--csv-output", help="Also write the enriched inventory CSV here."),
+    ] = None,
+) -> None:
+    """Emit the data.md research deliverables from the merged source inventory.
+
+    The command enriches the inventory with the required output fields, validates
+    it, and writes the probe ledger, gap report, blocked register and acquisition
+    queue. It does not acquire a source, approve rights or publish records.
+    """
+
+    payload = build_source_inventory(register, candidates, probes)
+    enrich_source_inventory(payload)
+    errors = validate_report_fields(payload)
+    if errors:
+        for error in errors:
+            typer.echo(f"ERROR: {error}", err=True)
+        raise typer.Exit(code=1)
+
+    written = write_source_reports(payload, output_dir=output_dir, region_ledger_path=region_ledger)
+    inventory_written: list[Path] = []
+    if json_output is not None or csv_output is not None:
+        inventory_written = list(write_source_inventory(payload, json_output, csv_output))
+
+    typer.echo(f"sources={len(payload.get('sources') or [])}")
+    typer.echo(f"probe_ledger={written.probe_ledger}")
+    typer.echo(f"gap_report={written.gap_report}")
+    typer.echo(f"blocked_register={written.blocked_register}")
+    typer.echo(f"acquisition_queue={written.acquisition_queue}")
+    for path in inventory_written:
+        typer.echo(f"inventory={path}")
 
 
 @app.command("validate-lgu-inventory")
@@ -1571,25 +1786,50 @@ def load_population(
 def load_osm(
     domain: Annotated[
         list[str] | None,
-        typer.Option("--domain", help="health, education, or both. Default both."),
+        typer.Option(
+            "--domain",
+            help=(
+                "health, education, points-of-interest, airports, sea-ports, railways, "
+                "or 'all'. Default health+education."
+            ),
+        ),
     ] = None,
 ) -> None:
-    """Acquire the HOT/OSM GeoParquet extracts and ingest named features.
+    """Acquire HOT/OSM GeoParquet extracts and ingest named qualifying features.
 
-    Coordinates are bbox-centre map geocodes, not verified facility locations.
-    OSM features are not evidence of operational status.
+    Health and education use the full extract. The other domains are filtered to
+    named public-service facility tags. Coordinates are bbox-centre map geocodes,
+    not verified facility locations, and OSM features are not evidence of
+    operational status.
     """
 
-    domains = domain or ["health", "education"]
+    builtin = {"health", "education"}
+    filtered = set(LAYER_FILES)
+    requested = domain or ["health", "education"]
+    domains: list[str] = []
+    for item in requested:
+        if item == "all":
+            domains.extend(["health", "education", *LAYER_FILES])
+            continue
+        if item not in builtin | filtered:
+            raise typer.BadParameter(
+                "Domain must be health, education, points-of-interest, airports, "
+                "sea-ports, railways, or all."
+            )
+        domains.append(item)
+    domains = list(dict.fromkeys(domains))
     settings = get_settings()
     engine, session = _session()
     outcomes = []
     try:
         with HttpAcquirer(settings, timeout_seconds=180.0) as acquirer:
             for item in domains:
-                if item not in {"health", "education"}:
-                    raise typer.BadParameter("Domain must be 'health' or 'education'.")
-                source = REAL_SOURCES[f"osm-{item}"]
+                if item in builtin:
+                    source = REAL_SOURCES[f"osm-{item}"]
+                    filename = f"{item}_facilities.parquet"
+                else:
+                    source = REAL_SOURCES[f"osm-{item}"]
+                    filename = LAYER_FILES[item]
                 typer.echo(f"→ {source.dataset_slug}")
                 result = acquirer.fetch(source.source_url, max_bytes=200 * 1024 * 1024)
                 status = classify_response(result)
@@ -1598,7 +1838,7 @@ def load_osm(
                     source_spec(
                         source,
                         release_label=f"HOT-OSM-PHL-{item.upper()}-{date.today().isoformat()}",
-                        filename=f"{item}_facilities.parquet",
+                        filename=filename,
                         content=result.content,
                     ),
                 )[1]
@@ -1616,11 +1856,11 @@ def load_osm(
                         {"domain": item, "status": status, "http_status": result.status_code}
                     )
                     continue
-                validate_signature(result, filename=f"{item}_facilities.parquet")
+                validate_signature(result, filename=filename)
                 spec = source_spec(
                     source,
                     release_label=f"HOT-OSM-PHL-{item.upper()}-{date.today().isoformat()}",
-                    filename=f"{item}_facilities.parquet",
+                    filename=filename,
                     content=result.content,
                     retrieved_at=datetime.now(UTC),
                     enqueue_cross_source_matches=False,
@@ -1629,9 +1869,14 @@ def load_osm(
                         "geocodes; no operational status is inferred."
                     ),
                 )
+                adapter = (
+                    OSMParquetAdapter(spec, facility_domain=item)
+                    if item in builtin
+                    else OsmFacilityLayerAdapter(spec, layer=item)
+                )
                 outcome = run_ingestion(
                     spec=spec,
-                    adapter=OSMParquetAdapter(spec, facility_domain=item),
+                    adapter=adapter,
                     session=session,
                     settings=settings,
                 )
@@ -1653,7 +1898,10 @@ def load_osm(
 
 @app.command("load-deped-ebeis")
 def load_deped_ebeis(
-    region: Annotated[str, typer.Option(help="Verified EBEIS region key; default ncr.")] = "ncr",
+    region: Annotated[
+        str,
+        typer.Option(help="Verified EBEIS region key, or 'all' for every region; default ncr."),
+    ] = "ncr",
     reprocess: Annotated[
         bool,
         typer.Option(
@@ -1665,46 +1913,79 @@ def load_deped_ebeis(
     """Acquire the public EBEIS masterlist and store it internal-only.
 
     The result set contains school-head names and has no explicit reuse licence.
-    Records are never exposed by the public API in this state.
+    Records are never exposed by the public API in this state. ``--region all``
+    fetches regions sequentially, while each region's pages are fetched with
+    bounded, paced concurrency.
     """
 
-    if region not in EBEIS_REGIONS:
-        raise typer.BadParameter(f"Unknown EBEIS region {region!r}; known: {sorted(EBEIS_REGIONS)}")
+    region_keys = list(EBEIS_REGIONS) if region == "all" else [region]
+    unknown = [key for key in region_keys if key not in EBEIS_REGIONS]
+    if unknown:
+        raise typer.BadParameter(
+            f"Unknown EBEIS region(s) {unknown}; known: {sorted(EBEIS_REGIONS)}; use 'all'"
+        )
     settings = get_settings()
     engine, session = _session()
+    outcomes: dict[str, Any] = {}
     try:
         with HttpAcquirer(settings, timeout_seconds=180.0) as acquirer:
-            content, metadata = fetch_ebeis_region(acquirer, region)
-        spec = source_spec(
-            REAL_SOURCES["deped-ebeis"],
-            release_label=f"DEPED-EBEIS-{region.upper()}-{date.today().isoformat()}",
-            filename=f"deped-ebeis-masterlist-{region}-{date.today().isoformat()}.html",
-            content=content,
-            retrieved_at=datetime.now(UTC),
-            enqueue_cross_source_matches=False,
-            notes=(
-                f"Public EBEIS result set for {metadata['region_name']}: "
-                f"{metadata['reported_rows']} rows across {metadata['fetched_pages']} pages. "
-                "Aggregated acquisition artifact; internal-only pending terms/privacy review."
-            ),
-        )
-        outcome = run_ingestion(
-            spec=spec,
-            adapter=DepEdEBEISAdapter(spec),
-            session=session,
-            settings=settings,
-            reprocess=reprocess,
-        )
-        typer.echo(
-            json.dumps(
-                {**outcome.__dict__, "acquisition": metadata},
-                indent=2,
-                default=str,
-            )
-        )
+            for region_key in region_keys:
+                region_id, region_name = EBEIS_REGIONS[region_key]
+                try:
+                    content, metadata = fetch_ebeis_region(acquirer, region_key)
+                    if region_key == "ncr":
+                        dataset_slug = REAL_SOURCES["deped-ebeis"].dataset_slug
+                        dataset_name = REAL_SOURCES["deped-ebeis"].dataset_name
+                    else:
+                        dataset_slug = f"deped-ebeis-masterlist-{region_key}"
+                        dataset_name = f"DepEd EBEIS school masterlist ({region_name} result set)"
+                    spec = source_spec(
+                        REAL_SOURCES["deped-ebeis"],
+                        dataset_slug=dataset_slug,
+                        dataset_name=dataset_name,
+                        release_label=(
+                            f"DEPED-EBEIS-{region_key.upper()}-{date.today().isoformat()}"
+                        ),
+                        filename=(
+                            f"deped-ebeis-masterlist-{region_key}-{date.today().isoformat()}.html"
+                        ),
+                        content=content,
+                        retrieved_at=datetime.now(UTC),
+                        enqueue_cross_source_matches=False,
+                        notes=(
+                            f"Public EBEIS result set for {region_name} (region_id {region_id}): "
+                            f"{metadata['reported_rows']} rows across "
+                            f"{metadata['fetched_pages']} pages. Aggregated acquisition "
+                            "artifact; internal-only pending terms/privacy review."
+                        ),
+                    )
+                    outcome = run_ingestion(
+                        spec=spec,
+                        adapter=DepEdEBEISAdapter(spec),
+                        session=session,
+                        settings=settings,
+                        reprocess=reprocess,
+                    )
+                    outcomes[region_key] = {
+                        "status": outcome.status,
+                        "stats": outcome.stats,
+                        "acquisition": metadata,
+                        "report_json": outcome.report_json,
+                    }
+                    typer.echo(
+                        f"{region_key}: {metadata['reported_rows']} rows -> {outcome.status}"
+                    )
+                except Exception as exc:  # keep other regions running; record the failure
+                    session.rollback()
+                    outcomes[region_key] = {
+                        "status": "failed",
+                        "error": f"{type(exc).__name__}: {exc}",
+                    }
+                    typer.echo(f"{region_key}: FAILED {type(exc).__name__}: {exc}", err=True)
     finally:
         session.close()
         engine.dispose()
+    typer.echo(json.dumps(outcomes, indent=2, default=str))
 
 
 @app.command("load-nlp")
@@ -2186,6 +2467,488 @@ def load_nbi_offices(
     finally:
         session.close()
         engine.dispose()
+
+
+def _load_nha_layer(
+    *,
+    source_key: str,
+    adapter_class: type,
+    release_prefix: str,
+    filename_prefix: str,
+    input_path: Path | None,
+    reprocess: bool,
+) -> None:
+    settings = get_settings()
+    engine, session = _session()
+    try:
+        if input_path is not None:
+            content = input_path.read_bytes()
+            retrieved_at = datetime.fromtimestamp(input_path.stat().st_mtime, UTC)
+            notes = "Controlled import of a preserved NHA WFS GeoJSON artifact."
+        else:
+            with HttpAcquirer(settings, timeout_seconds=180.0) as acquirer:
+                result = acquirer.fetch(REAL_SOURCES[source_key].source_url)
+            if result.status_code >= 400 or result.error:
+                raise typer.BadParameter(
+                    f"NHA WFS request failed: HTTP {result.status_code} {result.error or ''}"
+                )
+            content = result.content
+            retrieved_at = datetime.now(UTC)
+            notes = (
+                f"NHA WFS GeoJSON, HTTP {result.status_code}, {len(content)} bytes, "
+                f"sha256={result.sha256}."
+            )
+        spec = source_spec(
+            REAL_SOURCES[source_key],
+            release_label=f"{release_prefix}-{retrieved_at.date().isoformat()}",
+            filename=f"{filename_prefix}-{retrieved_at.date().isoformat()}.geojson",
+            content=content,
+            retrieved_at=retrieved_at,
+            enqueue_cross_source_matches=False,
+            notes=notes,
+        )
+        outcome = run_ingestion(
+            spec=spec,
+            adapter=adapter_class(spec),
+            session=session,
+            settings=settings,
+            reprocess=reprocess,
+        )
+        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("load-nha-doh-hf")
+def load_nha_doh_hf(
+    input_path: Annotated[
+        Path | None,
+        typer.Option(
+            "--input",
+            help="Preserved NHA WFS GeoJSON artifact for controlled import.",
+        ),
+    ] = None,
+    reprocess: Annotated[
+        bool,
+        typer.Option(
+            "--reprocess",
+            help="Reprocess an already-preserved release instead of skipping its checksum.",
+        ),
+    ] = False,
+) -> None:
+    """Acquire the public NHA 'DOH HF' WFS layer and ingest its facilities.
+
+    This is a partial official alternate route for the blocked DOH National
+    Health Facility Registry. It publishes institutional fields and source
+    coordinates only; no operating status or building-level precision is inferred.
+    """
+
+    _load_nha_layer(
+        source_key="nha-doh-hf",
+        adapter_class=NhaDohFacilityAdapter,
+        release_prefix="NHA-DOH-HF",
+        filename_prefix="nha-doh-hf",
+        input_path=input_path,
+        reprocess=reprocess,
+    )
+
+
+@app.command("load-nha-housing-projects")
+def load_nha_housing_projects(
+    input_path: Annotated[
+        Path | None,
+        typer.Option(
+            "--input",
+            help="Preserved NHA project-location GeoJSON artifact for controlled import.",
+        ),
+    ] = None,
+    reprocess: Annotated[
+        bool,
+        typer.Option(
+            "--reprocess",
+            help="Reprocess an already-preserved release instead of skipping its checksum.",
+        ),
+    ] = False,
+) -> None:
+    """Acquire the public NHA housing-project location layer.
+
+    The records are project sites, not operating facilities. No completion,
+    occupancy, operational status or PSGC code is inferred.
+    """
+
+    _load_nha_layer(
+        source_key="nha-housing-projects",
+        adapter_class=NhaHousingProjectAdapter,
+        release_prefix="NHA-PROJECTS",
+        filename_prefix="nha-housing-projects",
+        input_path=input_path,
+        reprocess=reprocess,
+    )
+
+
+@app.command("load-nha-landholdings")
+def load_nha_landholdings(
+    input_path: Annotated[
+        Path | None,
+        typer.Option(
+            "--input",
+            help="Preserved NHA landholdings GeoJSON artifact for controlled import.",
+        ),
+    ] = None,
+    reprocess: Annotated[
+        bool,
+        typer.Option(
+            "--reprocess",
+            help="Reprocess an already-preserved release instead of skipping its checksum.",
+        ),
+    ] = False,
+) -> None:
+    """Acquire the public NHA landholdings layer.
+
+    These are property sites, not facilities. Area values are preserved as
+    published and are not recalculated.
+    """
+
+    _load_nha_layer(
+        source_key="nha-landholdings",
+        adapter_class=NhaLandholdingAdapter,
+        release_prefix="NHA-LANDHOLDINGS",
+        filename_prefix="nha-landholdings",
+        input_path=input_path,
+        reprocess=reprocess,
+    )
+
+
+@app.command("load-lrta-stations")
+def load_lrta_stations(
+    input_path: Annotated[
+        Path | None,
+        typer.Option("--input", help="Preserved LRTA distance-page HTML for controlled import."),
+    ] = None,
+    reprocess: Annotated[
+        bool,
+        typer.Option(
+            "--reprocess",
+            help="Reprocess an already-preserved release instead of skipping its checksum.",
+        ),
+    ] = False,
+) -> None:
+    """Derive LRT Line 1/Line 2 station facilities from the official distance table."""
+
+    settings = get_settings()
+    engine, session = _session()
+    try:
+        if input_path is not None:
+            content = input_path.read_bytes()
+            retrieved_at = datetime.fromtimestamp(input_path.stat().st_mtime, UTC)
+            notes = "Controlled import of a preserved LRTA distance-page HTML artifact."
+        else:
+            with HttpAcquirer(settings, timeout_seconds=60.0) as acquirer:
+                content, metadata = fetch_distance_page(acquirer)
+            retrieved_at = datetime.now(UTC)
+            notes = f"Acquisition metadata: {json.dumps(metadata, default=str)}"
+        spec = source_spec(
+            REAL_SOURCES["lrta-stations"],
+            release_label=f"LRTA-STATIONS-{retrieved_at.date().isoformat()}",
+            filename=f"lrta-distance-stations-{retrieved_at.date().isoformat()}.html",
+            content=content,
+            retrieved_at=retrieved_at,
+            enqueue_cross_source_matches=False,
+            notes=notes,
+        )
+        outcome = run_ingestion(
+            spec=spec,
+            adapter=LrtaStationAdapter(spec),
+            session=session,
+            settings=settings,
+            reprocess=reprocess,
+        )
+        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("load-mrt3-stations")
+def load_mrt3_stations(
+    input_path: Annotated[
+        Path | None,
+        typer.Option("--input", help="Preserved MRT-3 station-page HTML for controlled import."),
+    ] = None,
+    reprocess: Annotated[
+        bool,
+        typer.Option(
+            "--reprocess",
+            help="Reprocess an already-preserved release instead of skipping its checksum.",
+        ),
+    ] = False,
+) -> None:
+    """Ingest the official MRT-3 station directory (13 station names).
+
+    Station labels are preserved verbatim; the page supplies no coordinates,
+    addresses or operating status, so those fields are left unknown.
+    """
+
+    settings = get_settings()
+    engine, session = _session()
+    try:
+        if input_path is not None:
+            content = input_path.read_bytes()
+            retrieved_at = datetime.fromtimestamp(input_path.stat().st_mtime, UTC)
+            notes = "Controlled import of a preserved MRT-3 station-page HTML artifact."
+        else:
+            with HttpAcquirer(settings, timeout_seconds=60.0) as acquirer:
+                content, metadata = fetch_mrt3_stations(acquirer)
+            retrieved_at = datetime.now(UTC)
+            notes = f"Acquisition metadata: {json.dumps(metadata, default=str)}"
+        spec = source_spec(
+            REAL_SOURCES["mrt3-stations"],
+            release_label=f"MRT3-STATIONS-{retrieved_at.date().isoformat()}",
+            filename=f"mrt3-stations-{retrieved_at.date().isoformat()}.html",
+            content=content,
+            retrieved_at=retrieved_at,
+            enqueue_cross_source_matches=False,
+            notes=notes,
+        )
+        outcome = run_ingestion(
+            spec=spec,
+            adapter=Mrt3StationAdapter(spec),
+            session=session,
+            settings=settings,
+            reprocess=reprocess,
+        )
+        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("load-bucor-facilities")
+def load_bucor_facilities(
+    input_path: Annotated[
+        Path | None,
+        typer.Option(
+            "--input",
+            help="Preserved BuCor OPPF HTML artifact for controlled import.",
+        ),
+    ] = None,
+    reprocess: Annotated[
+        bool,
+        typer.Option(
+            "--reprocess",
+            help="Reprocess an already-preserved release instead of skipping its checksum.",
+        ),
+    ] = False,
+) -> None:
+    """Acquire the Bureau of Corrections OPPF facility list.
+
+    The page is a seven-facility directory subset, not a national corrections
+    register. Only facility names and official detail-page links are published;
+    no address, coordinate, capacity or operating status is present or inferred.
+    """
+
+    settings = get_settings()
+    engine, session = _session()
+    try:
+        if input_path is not None:
+            content = input_path.read_bytes()
+            retrieved_at = datetime.fromtimestamp(input_path.stat().st_mtime, UTC)
+            notes = "Controlled import of a preserved BuCor OPPF HTML artifact."
+        else:
+            with HttpAcquirer(settings, timeout_seconds=60.0) as acquirer:
+                result = acquirer.fetch(REAL_SOURCES["bucor-oppf"].source_url)
+            if result.status_code >= 400 or result.error:
+                raise typer.BadParameter(
+                    f"BuCor OPPF request failed: HTTP {result.status_code} {result.error or ''}"
+                )
+            content = result.content
+            retrieved_at = datetime.now(UTC)
+            notes = (
+                f"BuCor OPPF HTML, HTTP {result.status_code}, {len(content)} bytes, "
+                f"sha256={result.sha256}."
+            )
+        spec = source_spec(
+            REAL_SOURCES["bucor-oppf"],
+            release_label=f"BUCOR-OPPF-{retrieved_at.date().isoformat()}",
+            filename=f"bucor-oppf-{retrieved_at.date().isoformat()}.html",
+            content=content,
+            retrieved_at=retrieved_at,
+            enqueue_cross_source_matches=False,
+            notes=notes,
+        )
+        outcome = run_ingestion(
+            spec=spec,
+            adapter=BucorFacilityAdapter(spec),
+            session=session,
+            settings=settings,
+            reprocess=reprocess,
+        )
+        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("load-prc-offices")
+def load_prc_offices(
+    input_path: Annotated[
+        Path | None,
+        typer.Option(
+            "--input",
+            help="Preserved PRC office-locator HTML artifact for controlled import.",
+        ),
+    ] = None,
+    reprocess: Annotated[
+        bool,
+        typer.Option(
+            "--reprocess",
+            help="Reprocess an already-preserved release instead of skipping its checksum.",
+        ),
+    ] = False,
+) -> None:
+    """Acquire PRC regional offices from the official office locator.
+
+    The page supplies office names, short address labels and embedded map pins.
+    It is a regional-office directory subset, not a complete service-counter
+    inventory, and the map pin is not a surveyed building location.
+    """
+
+    settings = get_settings()
+    engine, session = _session()
+    try:
+        if input_path is not None:
+            content = input_path.read_bytes()
+            retrieved_at = datetime.fromtimestamp(input_path.stat().st_mtime, UTC)
+            notes = "Controlled import of a preserved PRC office-locator HTML artifact."
+        else:
+            with HttpAcquirer(settings, timeout_seconds=60.0) as acquirer:
+                result = acquirer.fetch(REAL_SOURCES["prc-offices"].source_url)
+            if result.status_code >= 400 or result.error:
+                raise typer.BadParameter(
+                    f"PRC office-locator request failed: HTTP {result.status_code} "
+                    f"{result.error or ''}"
+                )
+            content = result.content
+            retrieved_at = datetime.now(UTC)
+            notes = (
+                f"PRC office-locator HTML, HTTP {result.status_code}, "
+                f"{len(content)} bytes, sha256={result.sha256}."
+            )
+        spec = source_spec(
+            REAL_SOURCES["prc-offices"],
+            release_label=f"PRC-OFFICES-{retrieved_at.date().isoformat()}",
+            filename=f"prc-offices-{retrieved_at.date().isoformat()}.html",
+            content=content,
+            retrieved_at=retrieved_at,
+            enqueue_cross_source_matches=False,
+            notes=notes,
+        )
+        outcome = run_ingestion(
+            spec=spec,
+            adapter=PrcOfficeAdapter(spec),
+            session=session,
+            settings=settings,
+            reprocess=reprocess,
+        )
+        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("load-doe-power-plants")
+def load_doe_power_plants(
+    grid: Annotated[
+        str | None,
+        typer.Option(
+            "--grid",
+            help="One of Luzon, Visayas, Mindanao or Off-grid. Defaults to all four.",
+        ),
+    ] = None,
+    input_path: Annotated[
+        Path | None,
+        typer.Option(
+            "--input",
+            help="Preserved DOE PDF for controlled import. Requires --grid.",
+        ),
+    ] = None,
+    reprocess: Annotated[
+        bool,
+        typer.Option(
+            "--reprocess",
+            help="Reprocess an already-preserved release instead of skipping its checksum.",
+        ),
+    ] = False,
+) -> None:
+    """Acquire the DOE existing-power-plant PDFs and ingest each grid separately.
+
+    These are registry lists, not operating-status claims. The adapter preserves
+    unit rows and source labels; no coordinates, PSGC codes or legal-ownership
+    conclusions are inferred.
+    """
+
+    source_keys = {
+        "Luzon": ("doe-power-luzon", "DOE-LOEPP-LUZON", date(2026, 9, 30)),
+        "Visayas": ("doe-power-visayas", "DOE-LOEPP-VISAYAS", date(2026, 9, 30)),
+        "Mindanao": ("doe-power-mindanao", "DOE-LOEPP-MINDANAO", date(2026, 9, 30)),
+        "Off-grid": ("doe-power-offgrid", "DOE-LOEPP-OFFGRID", date(2026, 4, 30)),
+    }
+    if grid is not None and grid not in source_keys:
+        raise typer.BadParameter(f"Unknown grid {grid!r}; use one of {sorted(source_keys)}.")
+    if input_path is not None and grid is None:
+        raise typer.BadParameter("--input requires --grid so the PDF can be identified.")
+    selected = [grid] if grid else list(source_keys)
+    settings = get_settings()
+    for selected_grid in selected:
+        source_key, release_prefix, reference_end = source_keys[selected_grid]
+        engine, session = _session()
+        try:
+            if input_path is not None:
+                content = input_path.read_bytes()
+                retrieved_at = datetime.fromtimestamp(input_path.stat().st_mtime, UTC)
+                notes = "Controlled import of a preserved DOE LoEPP PDF artifact."
+            else:
+                with HttpAcquirer(settings, timeout_seconds=180.0) as acquirer:
+                    result = acquirer.fetch(DOE_GRID_URLS[selected_grid])
+                if result.status_code >= 400 or result.error:
+                    raise typer.BadParameter(
+                        f"DOE {selected_grid} request failed: "
+                        f"HTTP {result.status_code} {result.error or ''}"
+                    )
+                content = result.content
+                retrieved_at = datetime.now(UTC)
+                notes = (
+                    f"DOE LoEPP PDF, HTTP {result.status_code}, {len(content)} bytes, "
+                    f"sha256={result.sha256}."
+                )
+            spec = source_spec(
+                REAL_SOURCES[source_key],
+                release_label=f"{release_prefix}-{reference_end.isoformat()}",
+                filename=f"{source_key}-{reference_end.isoformat()}.pdf",
+                content=content,
+                retrieved_at=retrieved_at,
+                reference_period_end=reference_end,
+                enqueue_cross_source_matches=False,
+                notes=notes,
+            )
+            outcome = run_ingestion(
+                spec=spec,
+                adapter=DoePowerPlantAdapter(spec, grid=selected_grid),
+                session=session,
+                settings=settings,
+                reprocess=reprocess,
+            )
+            typer.echo(
+                json.dumps(
+                    {"grid": selected_grid, **outcome.__dict__},
+                    indent=2,
+                    default=str,
+                )
+            )
+        finally:
+            session.close()
+            engine.dispose()
 
 
 @app.command("load-ched-heida")

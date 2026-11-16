@@ -107,8 +107,8 @@ def test_committed_openapi_document_matches_the_application():
     assert committed == app.openapi()
 
 
-def test_error_envelope_and_request_headers(openapi_client):
-    response = openapi_client.get(
+def test_error_envelope_and_request_headers(client):
+    response = client.get(
         "/v1/facilities/does-not-exist",
         headers={"X-Request-ID": "contract-test-request"},
     )

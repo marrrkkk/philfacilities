@@ -631,6 +631,44 @@ class AttributeAssertion(Base):
     asserted_at: Mapped[datetime] = created_at()
 
 
+class FacilityAttributeFusion(Base):
+    """One derived, provenance-preserving value per facility attribute.
+
+    Every source claim remains in ``core.attribute_assertions`` and the raw
+    release is never rewritten. This table records which claim was selected for
+    display and *every* conflicting normalized value with its provenance, so a
+    disagreement is visible instead of being lost during deduplication.
+    """
+
+    __tablename__ = "facility_attribute_fusions"
+    __table_args__ = (
+        UniqueConstraint("facility_id", "attribute_name", name="uq_facility_attribute_fusion"),
+        Index("ix_core_attribute_fusions_status", "status"),
+        {"schema": "core"},
+    )
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    facility_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("core.facilities.id", ondelete="CASCADE"), nullable=False
+    )
+    attribute_name: Mapped[str] = mapped_column(String(80), nullable=False)
+    selected_value: Mapped[str | None] = mapped_column(Text)
+    selected_normalized_value: Mapped[str | None] = mapped_column(Text)
+    selected_source_record_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("source.records.id", ondelete="SET NULL")
+    )
+    selection_method: Mapped[str] = mapped_column(String(80), nullable=False)
+    status: Mapped[str] = mapped_column(String(30), nullable=False, default="single_source")
+    confidence: Mapped[Decimal] = mapped_column(
+        Numeric(4, 3), nullable=False, default=Decimal("0.5")
+    )
+    distinct_value_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    claim_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    alternatives: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB)
+    algorithm_version: Mapped[str] = mapped_column(String(40), nullable=False)
+    computed_at: Mapped[datetime] = created_at()
+
+
 class SchoolProfile(Base):
     __tablename__ = "profiles"
     __table_args__ = (

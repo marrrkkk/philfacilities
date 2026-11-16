@@ -29,7 +29,7 @@ Acquired and published with recorded rights:
 
 Acquired; source release published for institution-level fields, canonical rows internal:
 
-- DepEd EBEIS NCR: 5,055 school rows. The current source release applies the institution-level publication decision; school-head names are withheld. Canonical facility rows remain `internal` pending field-level mapping and privacy review.
+- DepEd EBEIS: 83,218 school rows across 19 regional result sets. The current source release applies the institution-level publication decision; school-head names are withheld. Canonical facility rows remain `internal` pending field-level mapping and privacy review.
 
 Blocked or unverified:
 

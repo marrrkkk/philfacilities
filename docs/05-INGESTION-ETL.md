@@ -1,7 +1,7 @@
 # 05 — Ingestion and ETL
 
 **Status:** implemented for the sources that are accessible and have a documented publication decision. Official PSA, DepEd Machine-Ready, and DOH acquisition remain blocked. Verified, publicly available sources with no explicit prohibition may be published under `docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`.  
-**Current working database:** 92,422 canonical facilities, 61,806 public, 30,616 non-public (including 5,055 DepEd EBEIS rows), 0 synthetic.
+**Current working database:** 228,291 canonical facilities, 99,352 public, 128,939 non-public (including 83,218 DepEd EBEIS rows), 121,651 with a current location, 0 synthetic.
 
 The ingestion system is a first-class product component. It is reproducible, observable, source-aware, and safe to rerun. Every pipeline follows:
 
@@ -91,14 +91,18 @@ uv run philfacilities-ingest load-osm --domain education
 - These records are explicitly labelled as crowd-sourced, non-official map features.
 - Open quality issues (`duplicate_osm_id`, `missing_facility_name`) remain visible instead of being silently merged or deleted.
 
-### 2.5 DepEd EBEIS NCR (institution-level publication approved)
+### 2.5 DepEd EBEIS regional result sets (institution-level publication approved)
 
 ```bash
 uv run philfacilities-ingest load-deped-ebeis --region ncr
 ```
 
 - Fetches the public EBEIS result set for a verified region key.
-- Stores the aggregated HTML payload and normalizes 5,055 school rows.
+- The first page establishes the result count. Remaining pages are fetched by a
+  small bounded thread pool (4 workers) with one shared 0.4-second start-spacing
+  pacer, so the form is not hit in bursts. Pages are still consumed in order:
+  a changed table header stops acquisition before any later chunk is requested.
+- `--region all` acquires all 19 verified region keys; the 16 November 2026 pass stored 83,218 school rows.
 - The result set includes school-head personal names. Those names stay in the private raw store and are not published.
 - The dataset is `approved_with_attribution`. The re-ingested 15 November 2026 release is `published` for institution-level fields; the earlier `restricted_non_redistributable` release is retained. Canonical facility rows remain `internal` pending field-level mapping and privacy review.
 - Do not add personal fields to a public export. A field-level privacy review is required for any new field.
@@ -224,6 +228,43 @@ uv run philfacilities-ingest match-candidates-merge <candidate-id> --reviewer <n
 ```
 
 A rejected candidate is retained, so the same record/candidate pair is not queued again for the same algorithm version. A merge is transactional, moves source evidence, retires the duplicate as a `merged` tombstone, and writes a change event. Reviewer names and notes are not exposed publicly.
+
+### Field-level fusion
+
+Merging identities is not enough: sources often disagree about the same
+attribute. `philfacilities_ingest.fusion` materialises one derived value per
+facility/attribute plus every competing value and its provenance in
+`core.facility_attribute_fusions`. Source records are never rewritten.
+
+- Empty/missing claims are ignored rather than treated as zero or false.
+- Identical normalized claims become `agreed`.
+- Disagreeing claims become `conflict`; the preferred claim is retained as the
+  derived value and all alternatives remain in the `alternatives` JSON payload.
+- A single-source claim remains `single_source` and is not presented as
+  cross-source agreement.
+- `apply_fusions` only writes agreed/single-source values for the safe fields
+  `facility_subtype`, `ownership`, `ownership_type`, `operator_type`,
+  `public_access_class` and `record_status`. Names and other curatorial fields
+  are not overwritten.
+
+```bash
+uv run philfacilities-ingest fuse-attributes            # facilities linked to >1 source
+uv run philfacilities-ingest fuse-attributes --all      # include single-source facilities
+uv run philfacilities-ingest apply-fusions --dry-run
+uv run philfacilities-ingest apply-fusions
+uv run philfacilities-ingest fusion-report --json
+```
+
+`auto-merge-duplicates` consolidates only candidates that already met the exact
+normalized-name + compatible-type test and either share the same PSGC with an
+exact address (`confidence >= 0.900`) or are geo-name matches at `<=25 m` with
+an exact name and official-side evidence. Candidates between 25 m and 50 m
+remain pending for human review; the command never merges them automatically.
+
+```bash
+uv run philfacilities-ingest auto-merge-duplicates --dry-run
+uv run philfacilities-ingest auto-merge-duplicates --apply
+```
 
 ## 7. Scheduling and source freshness
 

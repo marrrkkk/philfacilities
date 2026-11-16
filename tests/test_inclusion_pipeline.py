@@ -123,6 +123,8 @@ def _candidate(
     sector_code: str | None = None,
     roles: list[RoleData] | None = None,
     facility_kind: str = "facility",
+    latitude: float | None = None,
+    longitude: float | None = None,
 ) -> FacilityCandidate:
     accreditations = []
     if sector_code is not None:
@@ -146,7 +148,12 @@ def _candidate(
         inclusion_class=inclusion_class,
         public_access_class="SERVICE_USERS_ONLY",
         record_status="operational",
-        location=LocationData(precision="unknown"),
+        location=LocationData(
+            latitude=latitude,
+            longitude=longitude,
+            precision="source_gps" if latitude is not None else "unknown",
+            method="synthetic_point" if latitude is not None else None,
+        ),
         accreditations=accreditations,
         roles=roles or [],
     )
@@ -212,6 +219,53 @@ def test_conflicting_sector_codes_stay_unknown_and_internal(db_session) -> None:
     assert facility.ownership_type == "UNKNOWN"
     assert facility.inclusion_class == "DISCOVERY_CANDIDATE"
     assert facility.publication_status == "internal"
+
+
+def test_duplicate_entity_rows_replace_the_current_location(db_session) -> None:
+    """A repeated agency ID maps to one facility; only one location stays current."""
+
+    from philfacilities_api.models import FacilityLocation
+
+    token = uuid.uuid4().hex[:10]
+    spec = _spec(token)
+    entity_id = "duplicate-osm-node"
+    candidates = [
+        _candidate(
+            "duplicate-a",
+            "Synthetic Duplicate Feature",
+            entity_id=entity_id,
+            latitude=14.100001,
+            longitude=121.100001,
+        ),
+        _candidate(
+            "duplicate-b",
+            "Synthetic Duplicate Feature",
+            entity_id=entity_id,
+            latitude=14.200002,
+            longitude=121.200002,
+        ),
+    ]
+
+    result = run_ingestion(
+        spec=spec,
+        adapter=_StaticAdapter(spec, candidates),
+        session=db_session,
+    )
+    assert result.status == "published"
+
+    facility = _facility_for_release(db_session, result.release_id)
+    assert facility is not None
+    locations = db_session.scalars(
+        select(FacilityLocation)
+        .where(FacilityLocation.facility_id == facility.id)
+        .order_by(FacilityLocation.created_at)
+    ).all()
+    current = [location for location in locations if location.is_current]
+    retired = [location for location in locations if not location.is_current]
+    assert len(current) == 1
+    assert len(retired) == 1
+    assert float(current[0].latitude) == 14.200002
+    assert retired[0].valid_to is not None
 
 
 def test_enrichment_release_cannot_demote_classified_facility(db_session) -> None:

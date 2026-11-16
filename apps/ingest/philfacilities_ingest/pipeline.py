@@ -4,6 +4,7 @@ import hashlib
 import json
 import re
 import uuid
+from collections import Counter
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from decimal import Decimal
@@ -708,18 +709,24 @@ def _apply_candidate(
                     )
                 )
 
-    assertion_keys = {
-        (attribute, normalized or "")
-        for attribute, normalized in session.execute(
-            select(
-                AttributeAssertion.attribute_name,
-                AttributeAssertion.normalized_value,
-            ).where(
-                AttributeAssertion.facility_id == facility.id,
-                AttributeAssertion.source_record_id == record.id,
+    # A facility created in this call cannot already have assertions for this
+    # record, so the per-row existence query is only needed for updates.
+    assertion_keys = (
+        set()
+        if created
+        else {
+            (attribute, normalized or "")
+            for attribute, normalized in session.execute(
+                select(
+                    AttributeAssertion.attribute_name,
+                    AttributeAssertion.normalized_value,
+                ).where(
+                    AttributeAssertion.facility_id == facility.id,
+                    AttributeAssertion.source_record_id == record.id,
+                )
             )
-        )
-    }
+        }
+    )
     _assert_facility_fields(
         session,
         facility=facility,
@@ -769,14 +776,26 @@ def _apply_candidate(
         if location.latitude is not None and location.longitude is not None:
             geom = WKTElement(f"POINT({location.longitude} {location.latitude})", srid=4326)
         existing_location = None
-        if not created:
-            existing_location = session.scalars(
+        # A facility created in this call cannot already have a current
+        # location, so skip the lookup entirely for new bulk-load rows.
+        current_location = (
+            None
+            if created
+            else session.scalars(
                 select(FacilityLocation).where(
                     FacilityLocation.facility_id == facility.id,
-                    FacilityLocation.source_record_id == record.id,
                     FacilityLocation.is_current.is_(True),
                 )
             ).first()
+        )
+        if current_location is not None and current_location.source_record_id == record.id:
+            existing_location = current_location
+        elif current_location is not None:
+            # Only one current location is allowed per facility. The earlier
+            # row keeps its own record link as history; the new claim becomes
+            # current instead of rewriting provenance.
+            current_location.is_current = False
+            current_location.valid_to = date.today()
         if existing_location is None:
             session.add(
                 FacilityLocation(
@@ -1309,12 +1328,19 @@ def _reconcile_source_record_keys(
     if len(parsed_by_ref) != len(parsed_rows):
         raise ValueError("Parser produced duplicate row references; reprocess aborted.")
 
+    legacy_ref_counts = Counter(record.row_number_or_page for record in existing_records)
     assignments: list[tuple[SourceRecord, ParsedRow]] = []
     assigned_rows: set[str] = set()
     for record in existing_records:
         row = None
         keyed = parsed_by_key.get(record.source_record_key)
-        if keyed is not None and keyed.row_reference == record.row_number_or_page:
+        if keyed is not None and (
+            keyed.row_reference == record.row_number_or_page
+            or legacy_ref_counts[record.row_number_or_page] > 1
+        ):
+            # A parser fix may have made a formerly duplicated row reference
+            # unique. In that case the stable record key is the only
+            # unambiguous link between the stored record and the parsed row.
             row = keyed
         elif record.row_number_or_page in parsed_by_ref:
             row = parsed_by_ref[record.row_number_or_page]
@@ -1591,7 +1617,6 @@ def run_ingestion(
                     validation_status=row.validation_status,
                 )
                 session.add(record)
-                session.flush()
                 unchanged_by_key[row.source_record_key] = False
             else:
                 payload_hash = _hash(row.raw_payload)
@@ -1601,7 +1626,14 @@ def run_ingestion(
                 record.raw_record_hash = payload_hash
                 record.validation_status = row.validation_status
             record_by_key[row.source_record_key] = record
-            record_by_row[row.row_reference] = record.id
+        # One flush assigns IDs to every new record. Flushing inside the loop
+        # costs one database round trip per row on large releases.
+        session.flush()
+        record_by_row = {
+            row.row_reference: record_by_key[row.source_record_key].id
+            for row in parsed.rows
+            if row.source_record_key in record_by_key
+        }
         _record_issues(
             session,
             issues=validation.issues,

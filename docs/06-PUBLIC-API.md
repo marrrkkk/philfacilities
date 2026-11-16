@@ -22,7 +22,7 @@ Every public endpoint applies the same gate:
 2. it must link to a source release whose dataset rights are in the public set (`approved_public_redistribution`, `approved_with_attribution`, or `publicly_available_verified`);
 3. the dataset and release publication states must be `approved` or `published`.
 
-Synthetic records are allowed only when explicitly labelled synthetic in a non-production environment. The working database currently has **0 synthetic facilities**. DepEd EBEIS NCR has 5,055 retained records. Its current source release is `published` for institution-level fields, but canonical facility rows remain `internal`/`DISCOVERY_CANDIDATE` pending field-level mapping and privacy review; school-head names are never public. `publicly_available_verified` is a public-compatible state for verified, publicly available datasets with no explicit prohibition; it does not bypass the publication gate.
+Synthetic records are allowed only when explicitly labelled synthetic in a non-production environment. The working database currently has **0 synthetic facilities**. DepEd EBEIS has 83,218 retained records across 19 regional result sets. Its current source release is `published` for institution-level fields, but canonical facility rows remain `internal`/`DISCOVERY_CANDIDATE` pending field-level mapping and privacy review; school-head names are never public. `publicly_available_verified` is a public-compatible state for verified, publicly available datasets with no explicit prohibition; it does not bypass the publication gate.
 
 ## 3. Endpoint families
 
@@ -151,7 +151,7 @@ GET /v1/downloads/schools.csv
 GET /v1/downloads/health-facilities.csv
 ```
 
-Downloads use the same publication gate as the JSON endpoints. The working database has **61,806 public facilities**. At the earlier 83,769-row benchmark, CSV was about **31 MB** and Parquet about **6.3 MB**; re-measure after the current release. CSV cells are neutralized against spreadsheet-formula injection. Restricted, internal-only, and review-pending sources never enter an export. A dataset with `publicly_available_verified` enters an export only after its release gate is approved or published and its fields have passed the policy review.
+Downloads use the same publication gate as the JSON endpoints. The working database has **99,352 public facilities**. At the earlier 83,769-row benchmark, CSV was about **31 MB** and Parquet about **6.3 MB**; re-measure after the current release. CSV cells are neutralized against spreadsheet-formula injection. Restricted, internal-only, and review-pending sources never enter an export. A dataset with `publicly_available_verified` enters an export only after its release gate is approved or published and its fields have passed the policy review.
 
 ## 4. Pagination
 

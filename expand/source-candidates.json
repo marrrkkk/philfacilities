@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "as_of": "2026-11-15",
+  "as_of": "2026-11-16",
   "description": "Machine-readable inventory of researched source candidates. Presence is not acquisition, rights approval, or a publication decision. The prose register remains the evidence narrative.",
   "allowed_states": {
     "evidence": [
@@ -136,21 +136,21 @@
     {
       "source_id": "bucor.facilities",
       "custodian": "BuCor",
-      "title": "BuCor correctional facilities",
+      "title": "Bureau of Corrections OPPF operating prison and penal facilities",
       "urls": [
-        "https://bucor.gov.ph/"
+        "https://bucor.gov.ph/?page_id=303"
       ],
-      "evidence_state": "DISCOVERY_ONLY",
-      "access_state": "UNVERIFIED",
-      "rights_state": "REVIEW_REQUIRED",
-      "coverage_scope": "UNKNOWN_COVERAGE",
+      "evidence_state": "PUBLISHED",
+      "access_state": "OPEN",
+      "rights_state": "PUBLISHED",
+      "coverage_scope": "DIRECTORY_SUBSET",
       "priority": "P2",
-      "notes": "`DISCOVERY ONLY`. No verified reusable facility dataset in this pass. Security-sensitive attributes must be excluded.",
-      "next_action": "**P2/conditional.** Include only publicly acknowledged locations and safe fields.",
+      "notes": "`PUBLISHED`. The OPPF page lists seven BuCor operating prison and penal facilities with official detail-page links on 16 Nov 2026. It is not a national corrections register and omits BJMP, provincial and sub-provincial jails. Only facility names and detail links are published; no address, coordinate, capacity, population or operational status is present.",
+      "next_action": "Do not infer national coverage; seek BJMP and provincial jail sources separately if safe fields can be published.",
       "tracker_ids": [
         "AF6-06"
       ],
-      "last_verified": "2026-11-15"
+      "last_verified": "2026-11-16"
     },
     {
       "source_id": "caap.airports",
@@ -227,12 +227,12 @@
         "https://projectbukas.deped.gov.ph/"
       ],
       "evidence_state": "DIRECTORY_CONTENT_VERIFIED",
-      "access_state": "HUMAN_DOWNLOAD_REQUIRED",
+      "access_state": "OPEN",
       "rights_state": "REVIEW_REQUIRED",
       "coverage_scope": "NATIONAL_PARTIAL",
       "priority": "P0",
-      "notes": "`DIRECTORY CONTENT VERIFIED`. DepEd publishes downloadable data families, but its file acquisition has a human download/terms or feedback flow. Do not assume an official API. Earlier source page listed enrollment through SY2024–25 and several characteristics files at SY2023–24; recheck latest release.",
-      "next_action": "**P0.** Obtain original official files, inspect exact workbooks/sheets/headers, save the accepted terms and reference period, then automate parsing and any permitted future download.",
+      "notes": "`DIRECTORY CONTENT VERIFIED AND ACQUIRED`. The public EBEIS result form exposes 19 region groups (18 regions plus PSO). Live page counts total 83,218 rows on 16 Nov 2026: Region I 4,370; Region II 3,705; Region III 7,781; Region IV-A 9,660; MIMAROPA 3,114; Region V 5,476; Region VI 4,383; Region VII 4,873; Region VIII 5,157; Region IX 4,113; Region X 4,541; Region XI 3,971; Region XII 3,614; CARAGA 2,995; BARMM 4,268; CAR 2,613; NCR 5,055; NIR 3,451; PSO 78. All region result sets are ingested internal-only pending terms/privacy review. School-head names remain in the private raw store and are omitted from normalized records; ownership/sector is not reliably exposed, so canonical rows remain discovery candidates. DepEd Machine-Ready files remain blocked by HTTP 403/human terms flow.",
+      "next_action": "**P1.** Obtain an authoritative sector/ownership field or separate DepEd releases before public canonical publication; retain release-level publication for institutional fields only. Refresh all region result sets on the next school year and compare row counts.",
       "tracker_ids": [
         "AF1-38",
         "AF1-48",
@@ -352,6 +352,28 @@
         "AF5-02"
       ],
       "last_verified": "2026-11-15"
+    },
+    {
+      "source_id": "doe.power_plants",
+      "custodian": "Department of Energy",
+      "title": "DOE List of Existing Power Plants (grid and off-grid PDFs)",
+      "urls": [
+        "https://d24qbtp4vooyzi.cloudfront.net/api/media/file/DOE-EPIMB_LoEPP%20as%20of%20September%202026_Luzon%20Grid.pdf?prefix=dev%2Fmedia",
+        "https://d24qbtp4vooyzi.cloudfront.net/api/media/file/DOE-EPIMB_LoEPP%20as%20of%20September%202026_Visayas%20Grid.pdf?prefix=dev%2Fmedia",
+        "https://d24qbtp4vooyzi.cloudfront.net/api/media/file/DOE-EPIMB_LoEPP%20as%20of%20September%202026_Mindanao%20Grid.pdf?prefix=dev%2Fmedia",
+        "https://d24qbtp4vooyzi.cloudfront.net/api/media/file/List%20of%20Existing%20Power%20Plants%20Off-Grid%20as%20of%2030%20April%202026.pdf?prefix=dev%2Fmedia"
+      ],
+      "evidence_state": "PUBLISHED",
+      "access_state": "OPEN",
+      "rights_state": "PUBLISHED",
+      "coverage_scope": "NATIONAL_PARTIAL",
+      "priority": "P1",
+      "notes": "`PUBLISHED`. Four official dated PDFs were retrieved on 16 November 2026: Luzon 213 rows, Visayas 80, Mindanao 102 (all 30 September 2026) and off-grid 266 (30 April 2026), 661 rows total. Each row preserves the DOE facility code, official name, resource/technology, connection, installed and dependable capacity, unit count, place labels, operator/owner, owner type and commissioning date. Unit rows with blank names/operators are kept separately and blanks are not back-filled. The lists supply no coordinates or PSGC codes; registry presence is not an operating-status claim. Ingested as utility_facility / POWER_PLANT.",
+      "next_action": "Refresh the four PDFs on their next publication cycle. Add coordinates and PSGC only from another official source; do not infer them from place names.",
+      "tracker_ids": [
+        "M9-25"
+      ],
+      "last_verified": "2026-11-16"
     },
     {
       "source_id": "doh.licensed_facilities",
@@ -644,6 +666,45 @@
       "last_verified": "2026-11-15"
     },
     {
+      "source_id": "lrta.stations",
+      "custodian": "Light Rail Transit Authority",
+      "title": "LRTA Line 1 and Line 2 station distances (derived station list)",
+      "urls": [
+        "https://www.lrta.gov.ph/distance-between-stations/"
+      ],
+      "evidence_state": "PUBLISHED",
+      "access_state": "OPEN",
+      "rights_state": "PUBLISHED",
+      "coverage_scope": "DIRECTORY_SUBSET",
+      "priority": "P2",
+      "notes": "`PUBLISHED`. Official page publishes station-pair interval distances, not a station inventory. 33 unique station names were derived from the Line 1 and Line 2 tables on 16 Nov 2026 and ingested as transport_facility / LRT_STATION. No coordinates, addresses, opening dates or operating status are supplied; the derivation is recorded in each record.",
+      "next_action": "Verify current station names and dates before enrichment; do not infer national rail coverage.",
+      "tracker_ids": [
+        "AF6-06"
+      ],
+      "last_verified": "2026-11-16"
+    },
+    {
+      "source_id": "mrt3.stations",
+      "custodian": "MRT-3 / Department of Transportation",
+      "title": "MRT-3 station directory",
+      "urls": [
+        "https://www.mrt3.com/index.php/menu-stations",
+        "https://www.mrt3.com/"
+      ],
+      "evidence_state": "PUBLISHED",
+      "access_state": "OPEN",
+      "rights_state": "PUBLISHED",
+      "coverage_scope": "DIRECTORY_SUBSET",
+      "priority": "P2",
+      "notes": "`PUBLISHED`. Official station carousel returned HTTP 200 on 16 Nov 2026; 13 station names and landmark descriptions were ingested as transport_facility / MRT_STATION (release `MRT3-STATIONS-2026-11-16`). Source labels are preserved verbatim and include older names such as `Araneta CenterCubao`, `Santolan Annapolis` and `Buendia`; no current-name mapping is inferred. No coordinates, addresses, fares, opening dates or operating status are supplied.",
+      "next_action": "Seek a current MRT-3 operations/station inventory with coordinates and operating status; keep the published labels as source evidence.",
+      "tracker_ids": [
+        "AF6-06"
+      ],
+      "last_verified": "2026-11-16"
+    },
+    {
       "source_id": "nationalmuseum.museums",
       "custodian": "National Museum of the Philippines",
       "title": "National Museum regional, area, and site museums",
@@ -688,20 +749,58 @@
       "custodian": "National Housing Authority",
       "title": "NHA WFS DOH health-facility layer",
       "urls": [
-        "https://maps.nha.gov.ph/geoserver/NHA_PH/ows?service=WFS&version=1.0.0&request=GetCapabilities"
+        "https://maps.nha.gov.ph/geoserver/NHA_PH/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=NHA_PH:DOH%20HF&outputFormat=application/json"
       ],
-      "evidence_state": "RECORDS_OBSERVED",
+      "evidence_state": "PUBLISHED",
       "access_state": "OPEN",
-      "rights_state": "REVIEW_REQUIRED",
+      "rights_state": "PUBLISHED",
       "coverage_scope": "NATIONAL_PARTIAL",
-      "priority": "REVIEW",
-      "notes": "Public WFS GetFeature returned 3 sampled features from a layer reporting 31,016 total features on 15 Nov 2026. Fields include fac_code, fac_name, fac_type, ownershp, region/province/municipality/barangay names and PSGC-style codes, latitude/longitude and prec_latlo. The layer appears derived from DOH data; ownership values, duplicate risk against existing health records, and redistribution rights are not yet established.",
-      "next_action": "Compare identities and ownership/type distributions against the canonical health registry; obtain written rights/derivation evidence before any publish or enrichment decision.",
+      "priority": "P1",
+      "notes": "`PUBLISHED`. Public WFS GetFeature returned 31,016 features on 16 Nov 2026 (18 MB). Fields include fac_code, fac_name, fac_type, ownershp, region/province/municipality/barangay names and PSGC-style codes, latitude/longitude and prec_latlo. Ingested as a partial official alternate route for the blocked DOH NHFR; no operating status or building-level precision is inferred. ARMM PSGC codes are preserved, not remapped.",
+      "next_action": "Compare identities and ownership/type distributions against PhilHealth and OSM health records; retain conflicts; seek DOH HFSRB licensed-facility files as an additional independent route.",
       "tracker_ids": [
         "AF1-27",
         "AF3-06"
       ],
-      "last_verified": "2026-11-15"
+      "last_verified": "2026-11-16"
+    },
+    {
+      "source_id": "nha.wfs_housing_projects",
+      "custodian": "National Housing Authority",
+      "title": "NHA WFS housing project locations",
+      "urls": [
+        "https://maps.nha.gov.ph/geoserver/NHA_PH/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=NHA_PH:NHA_Project_Loc&outputFormat=application/json"
+      ],
+      "evidence_state": "PUBLISHED",
+      "access_state": "OPEN",
+      "rights_state": "PUBLISHED",
+      "coverage_scope": "NATIONAL_PARTIAL",
+      "priority": "P2",
+      "notes": "`PUBLISHED`. Public WFS layer returned 946 project-location features on 16 Nov 2026. These are NHA project sites, not operating facilities; the layer states no completion, occupancy or current status and carries NHA place labels instead of standard PSGC codes. All 946 source records were preserved; 0 were admitted to the facility registry because project records are excluded by the platform's related-asset policy.",
+      "next_action": "Use as project/site context. Do not turn project points into facilities without completion and occupancy evidence.",
+      "tracker_ids": [
+        "AF1-27"
+      ],
+      "last_verified": "2026-11-16"
+    },
+    {
+      "source_id": "nha.wfs_landholdings",
+      "custodian": "National Housing Authority",
+      "title": "NHA WFS landholdings",
+      "urls": [
+        "https://maps.nha.gov.ph/geoserver/NHA_PH/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=NHA_PH:NHA%20LANDHOLDINGS&outputFormat=application/json"
+      ],
+      "evidence_state": "PUBLISHED",
+      "access_state": "OPEN",
+      "rights_state": "PUBLISHED",
+      "coverage_scope": "NATIONAL_PARTIAL",
+      "priority": "P2",
+      "notes": "`PUBLISHED`. Public WFS layer returned 169 property features on 16 Nov 2026 (160 with point geometry). These are NHA landholdings, not service facilities; no occupancy, tenancy or operating status is published. Ingested as housing_service sites with source area in square metres; 169 facilities published, 9 with unknown coordinates.",
+      "next_action": "Keep as property/site context; do not infer public access or occupancy.",
+      "tracker_ids": [
+        "AF1-27"
+      ],
+      "last_verified": "2026-11-16"
     },
     {
       "source_id": "nlp.public_libraries",
@@ -770,6 +869,87 @@
         "AF5-02"
       ],
       "last_verified": "2026-11-15"
+    },
+    {
+      "source_id": "osm.airports",
+      "custodian": "OpenStreetMap contributors (via HOT and BetterGov.PH)",
+      "title": "OpenStreetMap airports, heliports and terminals (HOT Philippines extract)",
+      "urls": [
+        "https://production-raw-data-api.s3.amazonaws.com/ISO3/PHL/_layers/osm/airports.parquet"
+      ],
+      "evidence_state": "RECORDS_OBSERVED",
+      "access_state": "OPEN",
+      "rights_state": "PUBLISHED",
+      "coverage_scope": "NATIONAL_PARTIAL",
+      "priority": "P1",
+      "notes": "Public GeoParquet layer with 6,543 features. Filtered to named aerodromes, helipads and airport terminals; runways, taxiways and navigation aids are excluded. Alternate coverage for blocked CAAP/DOTr sources. Not an official aerodrome registry; operator, ownership and operating status are not inferred. Coordinates are bounding-box centres (`map_geocoded`). ODbL attribution required.",
+      "next_action": "**P1.** Ingest named qualifying features and compare with the CAAP area-centre directory if it becomes accessible; do not claim a complete airport census.",
+      "tracker_ids": [
+        "AF2-04",
+        "AF5-03"
+      ],
+      "last_verified": "2026-11-16"
+    },
+    {
+      "source_id": "osm.points_of_interest",
+      "custodian": "OpenStreetMap contributors (via HOT and BetterGov.PH)",
+      "title": "OpenStreetMap public-service points of interest (HOT Philippines extract)",
+      "urls": [
+        "https://production-raw-data-api.s3.amazonaws.com/ISO3/PHL/_layers/osm/points_of_interest.parquet"
+      ],
+      "evidence_state": "RECORDS_OBSERVED",
+      "access_state": "OPEN",
+      "rights_state": "PUBLISHED",
+      "coverage_scope": "NATIONAL_PARTIAL",
+      "priority": "P1",
+      "notes": "Public GeoParquet layer with 421,482 features. Filtered to named features with selected tags: town hall 10,140; police 2,157; marketplace 2,077; community centre 1,706; fire station 1,135; social facility 1,102; post office 878; museum 401; library 395; courthouse 323; prison 190; public building 173; gallery 48; about 20,725 named qualifying features. This is an alternate route where BFP, PNP, DILG/local-government, market, library and community-facility registries are blocked. Coordinates are bounding-box centres (`map_geocoded`), not building-verified; coverage is crowd-sourced and operational status is unknown. ODbL attribution required.",
+      "next_action": "**P1.** Ingest the filtered layer, record parsed/accepted/rejected counts and source-tag coverage, then compare against official BFP/PNP/LGU/library releases. Never treat an OSM feature as proof of ownership, opening or current operation.",
+      "tracker_ids": [
+        "AF2-04",
+        "AF5-03",
+        "M9-06"
+      ],
+      "last_verified": "2026-11-16"
+    },
+    {
+      "source_id": "osm.railways",
+      "custodian": "OpenStreetMap contributors (via HOT and BetterGov.PH)",
+      "title": "OpenStreetMap railway stations (HOT Philippines extract)",
+      "urls": [
+        "https://production-raw-data-api.s3.amazonaws.com/ISO3/PHL/_layers/osm/railways.parquet"
+      ],
+      "evidence_state": "RECORDS_OBSERVED",
+      "access_state": "OPEN",
+      "rights_state": "PUBLISHED",
+      "coverage_scope": "NATIONAL_PARTIAL",
+      "priority": "P2",
+      "notes": "Public GeoParquet layer with 592 features. Filtered to named railway stations and halts; rail lines and unnamed features are excluded. Alternate coverage for blocked PNR/DOTr station sources. Not an official rail inventory; current station names and operating status are not inferred. Coordinates are bounding-box centres (`map_geocoded`). ODbL attribution required.",
+      "next_action": "**P2.** Ingest named qualifying features and compare with LRTA/MRT-3 station releases; retain unmatched and conflicting records for review.",
+      "tracker_ids": [
+        "AF2-04",
+        "M9-06"
+      ],
+      "last_verified": "2026-11-16"
+    },
+    {
+      "source_id": "osm.sea_ports",
+      "custodian": "OpenStreetMap contributors (via HOT and BetterGov.PH)",
+      "title": "OpenStreetMap sea ports and ferry terminals (HOT Philippines extract)",
+      "urls": [
+        "https://production-raw-data-api.s3.amazonaws.com/ISO3/PHL/_layers/osm/sea_ports.parquet"
+      ],
+      "evidence_state": "RECORDS_OBSERVED",
+      "access_state": "OPEN",
+      "rights_state": "PUBLISHED",
+      "coverage_scope": "NATIONAL_PARTIAL",
+      "priority": "P2",
+      "notes": "Public GeoParquet layer with 1,640 features. Filtered to named ferry terminals, ports and harbour features. Complements the official PPA port list; it is not a port census and carries no berth, capacity, ownership or operating-status claim. Coordinates are bounding-box centres (`map_geocoded`). ODbL attribution required.",
+      "next_action": "**P2.** Ingest named qualifying features; compare against PPA ports and retain conflicts or unmatched records without forced merging.",
+      "tracker_ids": [
+        "AF2-04",
+        "M9-06"
+      ],
+      "last_verified": "2026-11-16"
     },
     {
       "source_id": "pagasa.climate",
@@ -932,18 +1112,18 @@
         "https://www.prc.gov.ph/InteractiveMap-v2-37.html",
         "https://info.prc.gov.ph/prc-office-locator/regional-offices"
       ],
-      "evidence_state": "DIRECTORY_CONTENT_VERIFIED",
+      "evidence_state": "PUBLISHED",
       "access_state": "OPEN",
-      "rights_state": "REVIEW_REQUIRED",
-      "coverage_scope": "DIRECTORY_SUBSET",
+      "rights_state": "PUBLISHED",
+      "coverage_scope": "REGIONAL",
       "priority": "P1",
-      "notes": "`DIRECTORY CONTENT VERIFIED`. The interactive location map enumerates many service centres, including mall/LGU-hosted points. These are PRC-operated service locations, not necessarily PRC-owned real estate. No public API verified.",
-      "next_action": "**P1.** Inspect current map/detail pages and data payload; preserve facility-vs-host location distinction and opening-hour freshness.",
+      "notes": "`PUBLISHED`. The official PRC office locator on info.prc.gov.ph returned 16 regional-office cards on 16 November 2026. Each card supplies an office name, a short address label and an embedded map pin (latitude/longitude). Ingested as government_office / NATIONAL_AGENCY_OFFICE with precision=map_geocoded; the pin is not a surveyed building location. The locator is a regional-office subset, not a complete inventory of satellite, mall-based or host-agency service counters, and it does not state office hours or operating status.",
+      "next_action": "Re-probe the service-centers view and add only officially enumerated counters; keep host-vs-PRC premises and map-pin precision explicit.",
       "tracker_ids": [
         "AF1-20",
         "AF2-14"
       ],
-      "last_verified": "2026-11-15"
+      "last_verified": "2026-11-16"
     },
     {
       "source_id": "tesda.providers",
