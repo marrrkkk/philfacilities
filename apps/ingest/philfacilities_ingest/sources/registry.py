@@ -291,6 +291,20 @@ QUEZON_CITY_PLACES_RIGHTS_BASIS = (
 QUEZON_CITY_PLACES_ATTRIBUTION = (
     "Quezon City Government — Places to Visit directory (parks and public market subset)"
 )
+MANDALUYONG_DIRECTORY_URL = "https://mandaluyong.gov.ph/government/barangays/"
+MANDALUYONG_RIGHTS_BASIS = (
+    "The Mandaluyong City Government, a local government unit, publishes its barangay "
+    "directory as a public web page. No explicit prohibition, access control or "
+    "terms-of-use restriction was found on the inspected page. RA 8293 section 176 "
+    "provides that no copyright subsists in a work of the Government of the Philippines, "
+    "while prior approval may be required for commercial use. PhilFacilities publishes "
+    "only reviewed institutional fields (barangay name, district, published barangay "
+    "code and office address) for non-commercial public-interest use with attribution "
+    "and takedown-on-notice. Telephone numbers and chairperson names are withheld. The "
+    "source labels an office address, not a barangay hall; no hall subtype or walk-in "
+    "access is inferred. This is a documented publication decision, not a legal opinion."
+)
+MANDALUYONG_ATTRIBUTION = "City Government of Mandaluyong — Barangay Directory"
 PPA_PORT_LIST_URL = (
     "https://ppa.com.ph/sites/default/files/List%20of%20Ports%20covered%20in%20PPA%20Statistics.pdf"
 )
@@ -814,6 +828,40 @@ REAL_SOURCES: dict[str, RealSource] = {
             "numbers, e-mail addresses, contact-person names and social-media links. "
             "Coordinates are labelled map_geocoded; presence in a visitor directory is not "
             "proof of current operation, ownership or service availability."
+        ),
+    ),
+    "mandaluyong": RealSource(
+        key="mandaluyong",
+        agency_code="mandaluyong",
+        agency_name="City Government of Mandaluyong",
+        dataset_slug="mandaluyong-lgu-barangay-directory",
+        dataset_name="Mandaluyong City Barangay Directory",
+        source_url=MANDALUYONG_DIRECTORY_URL,
+        access_method="public_html_table",
+        update_pattern="irregular",
+        rights=RIGHTS_APPROVED_ATTRIBUTION,
+        rights_basis=MANDALUYONG_RIGHTS_BASIS,
+        attribution_text=MANDALUYONG_ATTRIBUTION,
+        personal_data_status="phone_and_chairperson_withheld_from_public_record",
+        requested_publication_status=PUBLICATION_APPROVED,
+        terms_url=MANDALUYONG_DIRECTORY_URL,
+        coverage_scope="SINGLE_LGU",
+        coverage_note=(
+            "Official Mandaluyong City barangay directory acquired on 16 November 2026. "
+            "The page table lists all 27 barangays with district, published barangay "
+            "code, office address, contact numbers, chairperson and an optional image. "
+            "This is Mandaluyong City coverage only; it is not a national or complete "
+            "LGU inventory. The directory supplies postal office addresses but no "
+            "coordinates, office hours, walk-in access rules or current operating status."
+        ),
+        note=(
+            "Server-rendered public table (28 rows including the header). The adapter "
+            "publishes barangay name, district, published code and office address, and "
+            "withholds telephone numbers and chairperson names. The source does not call "
+            "the location a barangay hall, so records are modelled as barangay government "
+            "offices rather than halls. The one address that explicitly names a covered "
+            "court is modelled as a community facility with barangay-office and "
+            "covered-court functions. No geocoding was performed."
         ),
     ),
     "nmis-naris": RealSource(

@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -241,6 +242,14 @@ def is_blocker_page(result: FetchResult) -> bool:
     if "text/html" not in content_type and result.status_code < 400:
         return False
     text = result.content[:200_000].decode("utf-8", errors="ignore").lower()
+    # Inline script/style configuration can mention challenge support without the
+    # page itself being an access-control interstitial. Check visible text only.
+    text = re.sub(
+        r"<(script|style)\b[^>]*>.*?</\1\s*>",
+        " ",
+        text,
+        flags=re.DOTALL,
+    )
     return any(marker in text for marker in BLOCKER_MARKERS)
 
 

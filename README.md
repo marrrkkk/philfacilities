@@ -1,6 +1,6 @@
 # PhilFacilities
 
-> **An open, source-linked registry of Philippine schools and health facilities, built as reusable public data infrastructure.**
+> **An open, source-linked registry of Philippine schools, health facilities, public-service facilities and community venues, built as reusable public data infrastructure.**
 
 **Status date:** 16 November 2026  
 **Implementation state:** real-data pipeline operational; coverage is partial and not nationwide-complete. Synthetic records are absent from the working production database.
@@ -13,17 +13,17 @@ Measured from the configured PostgreSQL/PostGIS database on 16 November 2026:
 
 | Measure | Actual state |
 |---|---|
-| Canonical facilities | **98,036** |
-| Public facilities | **67,297** (API-gated) |
+| Canonical facilities | **98,063** |
+| Public facilities | **67,324** (API-gated) |
 | Non-public facilities | **30,739** (DepEd internal, blocked, review-pending, or otherwise not publication-approved) |
 | Synthetic facilities in the working database | **0** |
-| Registered datasets | **52** |
-| Retained source releases | **67** |
+| Registered datasets | **53** |
+| Retained source releases | **68** |
 | Published geographic units | **43,760** (BetterGov PSGC Q2 2024 mirror) |
 | Published population observations | **134,748** across 18 PSA 2024 Census regional releases |
 | Published health accreditations | **28,207** across 26 PhilHealth provider categories |
 | Public facilities with coordinates | **44,836**, all `map_geocoded` |
-| Public facilities without coordinates | **22,461** (kept in text search; never given invented coordinates) |
+| Public facilities without coordinates | **22,488** (kept in text search; never given invented coordinates) |
 
 These counts describe processed source records, not the complete national facility universe. OSM/HOT records are crowd-sourced map features, not official DOH or DepEd registries. The DepEd EBEIS NCR extract contains school-head names; the current source release is approved for institution-level publication with those names withheld, while the canonical DepEd facility records remain `internal`/`DISCOVERY_CANDIDATE` pending field-level mapping and privacy review. See [`docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`](docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md).
 
@@ -45,6 +45,7 @@ These counts describe processed source records, not the complete national facili
 | PhilHealth Directory of Offices | Official office directory; 293 offices | `approved_with_attribution` / `published` | 19 regional-office groups, including LHIOs, express centres, service desks, business centres, satellite/branch offices and one-stop shops. Name, source category, region grouping and postal address only; telephone, e-mail and schedule text withheld. 261 carry a printed postal address; none carry coordinates. |
 | Quezon City LGU directories | Official health-centre and barangay directories; 108 facilities (68 barangay health centres, 40 barangay halls) | `approved_with_attribution` / `published` | Quezon City only. 39 barangay halls carry `map_geocoded` coordinates from LGU-published Google Maps links; health centres have postal addresses only. 7 health offices, 5 COVID-19 swab-testing pages, 1 HOPE page and 102 barangay pages without explicit hall evidence were retained privately and excluded. Phone, e-mail and personal-name fields withheld. |
 | Quezon City Places directory | Official visitor directory; 5 facilities (1 public market, 4 parks/open spaces) | `approved_with_attribution` / `published` | Quezon City only. 3 of 5 carry `map_geocoded` coordinates from LGU-published Google Maps links. 23 QCPL library pages were not re-ingested because NLP already publishes 22 QCPL records; 37 museum, church, commercial, campus and monument pages are outside scope. Phone, e-mail, contact-person and social fields withheld. |
+| Mandaluyong City barangay directory | Official barangay table; 27 facilities (26 barangay offices, 1 covered-court multi-use record) | `approved_with_attribution` / `published` | Mandaluyong City only. The source publishes an office address, not a barangay-hall classification, so no hall subtype is inferred. One address explicitly names a covered court and is modelled with barangay-office and covered-court functions. No coordinates; telephone numbers and chairperson names withheld. |
 
 ### Internal-only and blocked sources
 

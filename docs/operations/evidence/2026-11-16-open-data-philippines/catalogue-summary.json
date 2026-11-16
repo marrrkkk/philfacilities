@@ -1,0 +1,3887 @@
+{
+  "source": "Open Data Philippines public catalogue API",
+  "source_url": "https://data.gov.ph/",
+  "api_host": "https://api.data.gov.ph",
+  "retrieved_at": "2026-11-16",
+  "total": 175,
+  "page_size": 175,
+  "datasets": [
+    {
+      "id": "63ac042dbd735f0bcd01fbb0",
+      "identifier": "9iay6g6c-fmm6-nnx4-dp0b-p6rm0fgfirx8",
+      "name": "COVID-19 DOH Data Drop (December 06, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1672217645234",
+      "date_modified_ms": "1672219885049",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63ac0d4fbd735f0bcd01fff6",
+      "identifier": "1bbspwlt-ux4h-vzjv-nusk-vjfwar2c9fzu",
+      "name": "COVID-19 DOH Data Drop (December 07, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1672219983343",
+      "date_modified_ms": "1672220620410",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63ab9d4dbd735f0bcd01cc30",
+      "identifier": "nmjjdf1x-w6cp-ke9k-swi2-cpotv6a8h2fz",
+      "name": "COVID-19 DOH Data Drop (December 01, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1672191309472",
+      "date_modified_ms": "1672191911753",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63abeefabd735f0bcd01eef4",
+      "identifier": "mnon335q-9p38-wpbj-vcq8-j9a8s8kuus6o",
+      "name": "COVID-19 DOH Data Drop (December 04, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1672212218708",
+      "date_modified_ms": "1672215584216",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63ac1365bd735f0bcd02065f",
+      "identifier": "w38xomp9-g2wg-3zdd-667b-uuxfj0f6ym9e",
+      "name": "COVID-19 DOH Data Drop (December 09, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1672221541259",
+      "date_modified_ms": "1672222189612",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63aba03ebd735f0bcd01cfe3",
+      "identifier": "z62zzmj2-v046-ywh4-x3je-qrbz72gffy6n",
+      "name": "COVID-19 DOH Data Drop (December 02, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1672192062045",
+      "date_modified_ms": "1672208290174",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63ab949abd735f0bcd01c52e",
+      "identifier": "nzile04p-h5nn-fcoy-lxfc-qc9n4z2pb3ym",
+      "name": "COVID-19 DOH Data Drop (November 28, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1672189082512",
+      "date_modified_ms": "1672190303954",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63ac397cbd735f0bcd021623",
+      "identifier": "1yxyezyh-oj03-eawi-35pb-fhkikur08xvd",
+      "name": "COVID-19 DOH Data Drop (December 12, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1672231292138",
+      "date_modified_ms": "1672231919504",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63ac3332bd735f0bcd021002",
+      "identifier": "o4ofe7vu-yct0-rram-qcky-axo4dm8otl3z",
+      "name": "COVID-19 DOH Data Drop (December 10, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1672229682451",
+      "date_modified_ms": "1672230452332",
+      "resource_count": 15,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63abe0a5bd735f0bcd01e79c",
+      "identifier": "qyzezwxw-7l6e-63w5-njqu-7v9d0v2abyx0",
+      "name": "COVID-19 DOH Data Drop (December 03, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1672208549234",
+      "date_modified_ms": "1672211400580",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63abfd01bd735f0bcd01f71e",
+      "identifier": "hh6yshgh-i3ni-z7m0-5tvc-njmsc81pskcr",
+      "name": "COVID-19 DOH Data Drop (December 05, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1672215809727",
+      "date_modified_ms": "1672217365478",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63ac3f4abd735f0bcd021d00",
+      "identifier": "liv59cte-k8v9-yn0q-rexq-gll743d08pek",
+      "name": "COVID-19 DOH Data Drop (December 14, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1672232778913",
+      "date_modified_ms": "1672233446468",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63ac3c6cbd735f0bcd021a1e",
+      "identifier": "i51f0xbd-mc71-rig0-f8k8-g93r5irw3fei",
+      "name": "COVID-19 DOH Data Drop (December 13, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1672232044977",
+      "date_modified_ms": "1672232670057",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63ac1054bd735f0bcd020359",
+      "identifier": "avkg3h9g-ejgl-34og-cabh-2g1svawumiws",
+      "name": "COVID-19 DOH Data Drop (December 08, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1672220756604",
+      "date_modified_ms": "1672221366000",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63ac369dbd735f0bcd021395",
+      "identifier": "2gj4cvxr-klm6-2zgx-pyxg-1rr84nj59nw1",
+      "name": "COVID-19 DOH Data Drop (December 11, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1672230557566",
+      "date_modified_ms": "1672231192757",
+      "resource_count": 15,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63ab9a08bd735f0bcd01c90a",
+      "identifier": "ky0vqvv6-o8w7-gah0-yprp-dpo3ti2bncdb",
+      "name": "COVID-19 DOH Data Drop (November 30, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1672190472908",
+      "date_modified_ms": "1672191209716",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63a3b8eabd735f0bcd00f653",
+      "identifier": "43ol00ru-m2p8-y7mm-vfyz-qn1htsjy1vna",
+      "name": "Higher Education Statistical Data (2019)",
+      "publisher": "Commissions on Higher Education",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1671674090574",
+      "date_modified_ms": "1671767475550",
+      "resource_count": 15,
+      "resource_formats": [
+        ".pdf"
+      ]
+    },
+    {
+      "id": "63a1501c3872330a5421089b",
+      "identifier": "qm6xopkn-yiko-58ef-wlpm-zn7zn3mphg0r",
+      "name": "COVID-19 DOH Data Drop (November 22, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1671516188807",
+      "date_modified_ms": "1671673893233",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf"
+      ]
+    },
+    {
+      "id": "63a2993cbd735f0bcd00cce6",
+      "identifier": "bs6dovhk-jm3d-d0kn-9jbv-mysfu9ljox0h",
+      "name": "Higher Education Statistical Data (2018)",
+      "publisher": "Commissions on Higher Education",
+      "license": "Open [open]",
+      "topics": [
+        "Education and Training"
+      ],
+      "tags": [
+        "Education"
+      ],
+      "date_created_ms": "1671600444383",
+      "date_modified_ms": "1671674009861",
+      "resource_count": 16,
+      "resource_formats": [
+        ".pdf"
+      ]
+    },
+    {
+      "id": "63a2984fbd735f0bcd00cc08",
+      "identifier": "vl9xyut0-okcy-aexu-l0nf-s9x5is4zsry0",
+      "name": "Higher Education Statistical Data (2017)",
+      "publisher": "Commissions on Higher Education",
+      "license": "Open [open]",
+      "topics": [
+        "Education and Training"
+      ],
+      "tags": [
+        "Education"
+      ],
+      "date_created_ms": "1671600207644",
+      "date_modified_ms": "1671673977449",
+      "resource_count": 15,
+      "resource_formats": [
+        ".pdf"
+      ]
+    },
+    {
+      "id": "63a12c053872330a54210097",
+      "identifier": "7kcmz6y1-x4r3-2wxa-khoq-brawfxygsl3j",
+      "name": "COVID-19 DOH Data Drop (November 21, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1671506949882",
+      "date_modified_ms": "1671672546435",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf"
+      ]
+    },
+    {
+      "id": "63a2826ebd735f0bcd00c78a",
+      "identifier": "ei4kgtfa-jodc-3jwc-3mmf-u34tgpg9dl0d",
+      "name": "DOTr- Procurement Monitoring Report (2020)",
+      "publisher": "Department of Transportation",
+      "license": "Open [open]",
+      "topics": [
+        "Transport"
+      ],
+      "tags": [
+        "Transportation"
+      ],
+      "date_created_ms": "1671594606486",
+      "date_modified_ms": "1671594683588",
+      "resource_count": 2,
+      "resource_formats": [
+        ".pdf"
+      ]
+    },
+    {
+      "id": "63a25ab13872330a54212f7e",
+      "identifier": "dp49mtk0-kgjn-hbuo-1k80-8uawbepir3co",
+      "name": "DOTr- Other Procurement Monitoring Report",
+      "publisher": "Department of Transportation",
+      "license": "Open [open]",
+      "topics": [
+        "Transport"
+      ],
+      "tags": [
+        "Transportation"
+      ],
+      "date_created_ms": "1671584433141",
+      "date_modified_ms": "1671593978462",
+      "resource_count": 5,
+      "resource_formats": [
+        ".pdf"
+      ]
+    },
+    {
+      "id": "63a28150bd735f0bcd00c66a",
+      "identifier": "di8jknhw-3wo7-y85m-hxt2-cgsgz5ima6ne",
+      "name": "DOTr- Procurement Monitoring Report (2019)",
+      "publisher": "Department of Transportation",
+      "license": "Open [open]",
+      "topics": [
+        "Transport"
+      ],
+      "tags": [
+        "Transportation"
+      ],
+      "date_created_ms": "1671594320566",
+      "date_modified_ms": "1671594345564",
+      "resource_count": 2,
+      "resource_formats": [
+        ".pdf"
+      ]
+    },
+    {
+      "id": "63a28337bd735f0bcd00c84a",
+      "identifier": "j7gh1a6v-foal-yb4a-t7u4-ebezinf30ftp",
+      "name": "DOTr- Procurement Monitoring Report (2021)",
+      "publisher": "Department of Transportation",
+      "license": "Open [open]",
+      "topics": [
+        "Transport"
+      ],
+      "tags": [
+        "Transportation"
+      ],
+      "date_created_ms": "1671594807910",
+      "date_modified_ms": "1671594919145",
+      "resource_count": 2,
+      "resource_formats": [
+        ".pdf"
+      ]
+    },
+    {
+      "id": "63a262653872330a542134fa",
+      "identifier": "fd5yqw1v-wyiz-4nwj-rag5-r43jzo80msnj",
+      "name": "DOTr- Procurement Monitoring Report (2018)",
+      "publisher": "Department of Transportation",
+      "license": "Open [open]",
+      "topics": [
+        "Transport"
+      ],
+      "tags": [
+        "Transportation"
+      ],
+      "date_created_ms": "1671586405391",
+      "date_modified_ms": "1671594533642",
+      "resource_count": 9,
+      "resource_formats": [
+        ".pdf"
+      ]
+    },
+    {
+      "id": "63a2999cbd735f0bcd00ce10",
+      "identifier": "dhx59i41-36mg-pwve-w4zh-yoym3lxkeqbt",
+      "name": "Higher Education Statistical Data (2022)",
+      "publisher": "Commissions on Higher Education",
+      "license": "Open [open]",
+      "topics": [
+        "Education and Training"
+      ],
+      "tags": [
+        "Education"
+      ],
+      "date_created_ms": "1671600540724",
+      "date_modified_ms": "1671600663959",
+      "resource_count": 1,
+      "resource_formats": [
+        ".pdf"
+      ]
+    },
+    {
+      "id": "639fd86d3872330a5420c2f8",
+      "identifier": "n12stbku-htit-80dh-vrpd-qi08gapju7kn",
+      "name": "COVID-19 DOH Data Drop (November 18, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1671420013132",
+      "date_modified_ms": "1671586092782",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63a2620d3872330a54213495",
+      "identifier": "1vaemjtl-f37l-z0n3-49d1-quo1kn2bickh",
+      "name": "COVID-19 DOH Data Drop (November 27, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1671586317432",
+      "date_modified_ms": "1671612845073",
+      "resource_count": 15,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63a261443872330a54213390",
+      "identifier": "16l1ftg4-jiro-ounz-rxof-tzl0tdzt7f63",
+      "name": "DOTr- Procurement Monitoring Report (2017)",
+      "publisher": "Department of Transportation",
+      "license": "Open [open]",
+      "topics": [
+        "Transport"
+      ],
+      "tags": [
+        "Transportation"
+      ],
+      "date_created_ms": "1671586116378",
+      "date_modified_ms": "1671593558744",
+      "resource_count": 2,
+      "resource_formats": [
+        ".pdf"
+      ]
+    },
+    {
+      "id": "63a105a93872330a5420f4a8",
+      "identifier": "5n0v8xzo-u9o5-s87o-evga-4et1irg116js",
+      "name": "COVID-19 DOH Data Drop (November 15, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1671497129849",
+      "date_modified_ms": "1671499687367",
+      "resource_count": 15,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63a1689e3872330a54211174",
+      "identifier": "n1jt6db7-qq9w-70n3-jk8e-47z37143zyg0",
+      "name": "Works of National Artists",
+      "publisher": "National Commission for Culture and the Arts",
+      "license": "Open [open]",
+      "topics": [
+        "Arts, Culture and Heritage"
+      ],
+      "tags": [
+        "Culture",
+        "Arts"
+      ],
+      "date_created_ms": "1671522462404",
+      "date_modified_ms": "1671522576958",
+      "resource_count": 1,
+      "resource_formats": [
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63a11e573872330a5420fca6",
+      "identifier": "0plmp7x4-8cr6-nld3-9wqa-ymwsv5xi01b7",
+      "name": "COVID-19 DOH Data Drop (November 20, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1671503447059",
+      "date_modified_ms": "1671506007259",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63a0fe553872330a5420f1e1",
+      "identifier": "4jawngoo-8aaq-x9mx-wjw2-sh7tzwx9lghy",
+      "name": "COVID-19 DOH Data Drop (November 14, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1671495253826",
+      "date_modified_ms": "1671497055352",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63a16abd3872330a5421133a",
+      "identifier": "oxjo0bjn-d0fi-e8v9-32ut-5w4xiwh1sc2t",
+      "name": "Local Inventory of Cultural Property (PRECUP)",
+      "publisher": "National Commission for Culture and the Arts",
+      "license": "Open [open]",
+      "topics": [
+        "Arts, Culture and Heritage"
+      ],
+      "tags": [
+        "Culture",
+        "Arts"
+      ],
+      "date_created_ms": "1671523005158",
+      "date_modified_ms": "1671523112554",
+      "resource_count": 1,
+      "resource_formats": [
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63a110a93872330a5420f775",
+      "identifier": "jaqa1thz-xsah-h8r8-zg8j-b7tuf4uwyp0l",
+      "name": "COVID-19 DOH Data Drop (November 19, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1671499945505",
+      "date_modified_ms": "1671503265232",
+      "resource_count": 14,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "639fcce43872330a5420bb6b",
+      "identifier": "hya7sdra-4lbd-zlcc-rtmy-a93y4tjf7s1e",
+      "name": "COVID-19 DOH Data Drop (November 10, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1671417060835",
+      "date_modified_ms": "1671418998472",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63a00a543872330a5420d51e",
+      "identifier": "4zsjpkc9-r4f0-ze2e-s42p-8qve93s7ddpp",
+      "name": "COVID-19 DOH Data Drop (November 13, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1671432788139",
+      "date_modified_ms": "1671435111067",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "639fbf6f3872330a5420b0b3",
+      "identifier": "m67gf2j5-n2q9-2h1l-zo6o-lm8doqd6f64i",
+      "name": "COVID-19 DOH Data Drop (November 16, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1671413615709",
+      "date_modified_ms": "1671414747283",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "639fd8813872330a5420c344",
+      "identifier": "hy5ol5kq-qj5z-4jxu-c6x5-ikmfgq550966",
+      "name": "COVID-19 DOH Data Drop (November 11, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1671420033729",
+      "date_modified_ms": "1671426504340",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "639fc48b3872330a5420b76d",
+      "identifier": "haq7r5xd-rjsc-ms3s-nkhw-8dl2hgia6sa3",
+      "name": "COVID-19 DOH Data Drop (November 17, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1671414923085",
+      "date_modified_ms": "1671419868644",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "639fb5cd3872330a5420a93a",
+      "identifier": "13vr40iv-zaq2-5pm8-76a3-8eihc743b3dz",
+      "name": "COVID-19 DOH Data Drop (November 08, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1671411149230",
+      "date_modified_ms": "1671413290736",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "639fc0d73872330a5420b273",
+      "identifier": "1csvz9vc-4844-ctak-u0r1-a9cq8h0115n0",
+      "name": "COVID-19 DOH Data Drop (November 09, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1671413975029",
+      "date_modified_ms": "1671416943337",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63a002463872330a5420d071",
+      "identifier": "bw7de9sq-xkgn-o7uv-hvj4-gupahtpm28pu",
+      "name": "COVID-19 DOH Data Drop (November 12, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1671430726992",
+      "date_modified_ms": "1671432617507",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "6391760e3872330a541da6a1",
+      "identifier": "ik616dce-oy2a-w0zu-016h-dxr5ikd4p2u6",
+      "name": "COVID-19 DOH Data Drop (November 12, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1670477326206",
+      "date_modified_ms": "1671413237287",
+      "resource_count": 17,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "639c826a3872330a54203e98",
+      "identifier": "p3tcb60f-jube-wcfz-oafv-29n337hb2t1m",
+      "name": "COVID-19 DOH Data Drop (December 03, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1671201386958",
+      "date_modified_ms": "1671413248127",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf"
+      ]
+    },
+    {
+      "id": "639c01bf3872330a54201de9",
+      "identifier": "39rcn6d4-ajep-67sw-srgs-srdingv3qz9e",
+      "name": "COVID-19 DOH Data Drop (November 05, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1671168447995",
+      "date_modified_ms": "1671169724724",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "6397f5d73872330a541f0b23",
+      "identifier": "v6ko9636-zms8-awh3-3cip-67703wi2m0cn",
+      "name": "COVID-19 DOH Data Drop (October 09, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1670903255307",
+      "date_modified_ms": "1671162072271",
+      "resource_count": 18,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "639bcf383872330a542012e4",
+      "identifier": "03148we9-ziuw-w7y7-stsb-cu6hfryubarh",
+      "name": "COVID-19 DOH Data Drop (November 04, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1671155512702",
+      "date_modified_ms": "1671162351412",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "639c12b23872330a5420287f",
+      "identifier": "oevtzp2q-d31y-2co9-vgrh-189jbdxii7pc",
+      "name": "COVID-19 DOH Data Drop (November 07, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1671172786625",
+      "date_modified_ms": "1671175652656",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "6397d0e63872330a541ef5e4",
+      "identifier": "jsxcyidp-4vlm-6is9-72oh-e2uu21x5zbhs",
+      "name": "COVID-19 DOH Data Drop (October 08, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1670893798555",
+      "date_modified_ms": "1671162035944",
+      "resource_count": 18,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "639c07ed3872330a542020fd",
+      "identifier": "fpvot363-l97f-81cg-ku1y-nlf4gip90crw",
+      "name": "COVID-19 DOH Data Drop (November 06, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1671170029205",
+      "date_modified_ms": "1671172289476",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "6392dc693872330a541e1865",
+      "identifier": "2ngs1y9n-os1x-mom3-m7aa-eqay5whww6be",
+      "name": "COVID-19 DOH Data Drop (October 07, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1670569065066",
+      "date_modified_ms": "1671162131294",
+      "resource_count": 19,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63981b0c3872330a541f22b2",
+      "identifier": "a7w2it0q-2mv7-yh4d-o8c4-ewpmmu0bpuby",
+      "name": "Covid-19 DOH Data Drop (November 03, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1670912780609",
+      "date_modified_ms": "1670922628409",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "6397c17e3872330a541eefaf",
+      "identifier": "tya0391u-30dj-3owi-piy1-h2mwusa4m55a",
+      "name": "COVID-19 DOH Data Drop (October 30, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1670889854805",
+      "date_modified_ms": "1670900940557",
+      "resource_count": 18,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "6397dff63872330a541effe6",
+      "identifier": "vw9coa4b-3jov-ld6j-r31h-wdwchtbe8art",
+      "name": "Covid-19 DOH Data Drop (November 01, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1670897654190",
+      "date_modified_ms": "1670922583100",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "6396c8f03872330a541eacb2",
+      "identifier": "r8u7e93p-ilrg-vuje-3iat-c213llju95j8",
+      "name": "Covid-19 DOH Data Drop (October 31, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1670826224227",
+      "date_modified_ms": "1670922537819",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "6397f9133872330a541f0d79",
+      "identifier": "oa2loocv-nlwq-etr6-gz6d-gtshzmru824g",
+      "name": "Covid-19 DOH Data Drop (November 02, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1670904083399",
+      "date_modified_ms": "1670922606627",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "6396d5d73872330a541eb94a",
+      "identifier": "nnzg67y1-c4pj-r759-repr-4hre97xpr6y3",
+      "name": "COVID-19 DOH Data Drop (October 29, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1670829527777",
+      "date_modified_ms": "1670830931830",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "6392c5323872330a541e0ee5",
+      "identifier": "mggrgqc0-063g-72rv-fkg2-dkhf3h9btio4",
+      "name": "Covid-19 DOH Data Drop (October 06, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1670563122174",
+      "date_modified_ms": "1670823256589",
+      "resource_count": 19,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "6391ac633872330a541dd787",
+      "identifier": "v6pgjisd-pgpt-8db3-sb3u-fnv41lknmsfn",
+      "name": "COVID-19 DOH Data Drop (October 15, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1670491235325",
+      "date_modified_ms": "1670828227400",
+      "resource_count": 20,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "639682453872330a541e881e",
+      "identifier": "on260wto-iic5-gqn8-0fv1-9qpkguh6mn1g",
+      "name": "COVID-19 DOH Data Drop (October 11, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1670808133624",
+      "date_modified_ms": "1670814128227",
+      "resource_count": 18,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "6391fe583872330a541defe7",
+      "identifier": "tvypvp75-hlji-ddat-06bn-ew1m4u2w8v8k",
+      "name": "COVID-19 DOH Data Drop (October 17, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1670512216744",
+      "date_modified_ms": "1670827689064",
+      "resource_count": 19,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "6396c0473872330a541ea791",
+      "identifier": "ob9r3dpi-jfok-jd2p-jqvm-0qr7ytv8ho3l",
+      "name": "Covid-19 DOH Data Drop (October 27, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1670824007535",
+      "date_modified_ms": "1670827240548",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63969a4a3872330a541e9ad4",
+      "identifier": "u8id8uwf-laf2-4gvj-ey2d-p2lvagaq22yv",
+      "name": "COVID-19 DOH Data Drop (October 13, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1670814282221",
+      "date_modified_ms": "1670816529967",
+      "resource_count": 18,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "6396cd533872330a541eaf52",
+      "identifier": "u5egbkgu-byoc-csju-d1e2-z8dc7cl6h8bq",
+      "name": "Covid-19 DOH Data Drop (October 28, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1670827347146",
+      "date_modified_ms": "1670829143633",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63968aad3872330a541e8e4b",
+      "identifier": "wecjb6gl-iq6w-6ex7-qjwc-j2wgsmtmywgq",
+      "name": "COVID-19 DOH Data Drop (October 12, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1670810285401",
+      "date_modified_ms": "1670812105867",
+      "resource_count": 18,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "6391972a3872330a541dc283",
+      "identifier": "xze7c7zp-o2er-gdr5-9ha3-q2w8j5sgtws4",
+      "name": "COVID-19 DOH Data Drop (October 14, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1670485802017",
+      "date_modified_ms": "1670828017452",
+      "resource_count": 19,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "6391ce153872330a541de21f",
+      "identifier": "llgif0wv-yfo7-eodl-en0b-hvrfswgoy7kz",
+      "name": "COVID-19 DOH Data Drop (October 16, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1670499861077",
+      "date_modified_ms": "1670833039427",
+      "resource_count": 19,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63903eb93872330a541d704b",
+      "identifier": "gerln36v-hwbi-7ytg-d1l5-jl5ifjoet44q",
+      "name": "COVID-19 DOH Data Drop (October 10, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1670397625645",
+      "date_modified_ms": "1670807964956",
+      "resource_count": 19,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "6391925f3872330a541dbbf7",
+      "identifier": "7sfm6k7q-yg0n-xjxo-6su2-h4wttw54w4bo",
+      "name": "COVID-19 DOH Data Drop (October 21, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1670484575778",
+      "date_modified_ms": "1670486916191",
+      "resource_count": 17,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "6391a04f3872330a541dcd79",
+      "identifier": "qc10wl99-9ghc-k5wy-47mp-mz2hox2hol61",
+      "name": "COVID-19 DOH Data Drop (October 25, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1670488143711",
+      "date_modified_ms": "1670488846229",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "633247dbbc852e079f29cfbb",
+      "identifier": "5nq4jdmo-karg-jj3q-0iey-79o7nj7fzbf2",
+      "name": "COVID-19 DOH Data Drop (September 17, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1664239579924",
+      "date_modified_ms": "1670478118480",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "637b1b98b9c1b5089b0b9cd6",
+      "identifier": "s09xnye7-sfto-9x5d-rvv9-bagbrdz1vm7r",
+      "name": "COVID-19 DOH Data Drop (March 05, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1669012376253",
+      "date_modified_ms": "1670477073598",
+      "resource_count": 18,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "6391a3913872330a541dd107",
+      "identifier": "tw7kaf73-v6ki-dyuc-vqzq-m8gfgz64lbp7",
+      "name": "COVID-19 DOH Data Drop (October 26, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1670488977640",
+      "date_modified_ms": "1670489732049",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "639195753872330a541dbf53",
+      "identifier": "udmq1vwx-vx63-armm-lcwn-2x1tf80j3xt7",
+      "name": "COVID-19 DOH Data Drop (October 22, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1670485365268",
+      "date_modified_ms": "1670486892573",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "639188c63872330a541db5b1",
+      "identifier": "w731necj-ckj4-n9x9-oq5b-vmd3oax9jbi7",
+      "name": "COVID-19 DOH Data Drop (October 19, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1670482118461",
+      "date_modified_ms": "1670486956086",
+      "resource_count": 17,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "637ad08cd02cf0087100ee19",
+      "identifier": "ot07cb5k-0ksa-fywc-89xd-jgnc74yydyws",
+      "name": "COVID-19 DOH Data Drop (November 05, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1668993164418",
+      "date_modified_ms": "1670481061892",
+      "resource_count": 17,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "639185293872330a541db24c",
+      "identifier": "69jld3u5-vhfs-sx0d-c48a-sdpt8hrx8vvq",
+      "name": "COVID-19 DOH Data Drop (October 18, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1670481193266",
+      "date_modified_ms": "1670486970324",
+      "resource_count": 17,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "6391986b3872330a541dc4a0",
+      "identifier": "ed1r08wb-ffh0-696j-j4fw-srfsmtejz2sk",
+      "name": "COVID-19 DOH Data Drop (October 23, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1670486123795",
+      "date_modified_ms": "1670486871701",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63919c733872330a541dca8c",
+      "identifier": "3zk5hml5-9kiy-xkfd-svo2-7lcb4r1ucsj4",
+      "name": "COVID-19 DOH Data Drop (October 24, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1670487155029",
+      "date_modified_ms": "1670487999419",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63918ca03872330a541db88b",
+      "identifier": "ufh7swb0-oico-qzcx-zou0-nph5ehwdi2wa",
+      "name": "COVID-19 DOH Data Drop (October 20, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1670483104333",
+      "date_modified_ms": "1670486934787",
+      "resource_count": 17,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "656808aca2aa0c79a5f45ec4",
+      "identifier": "293x21u3-w9me-39j8-0p7m-54nju8nrrsce",
+      "name": "Tourism Demand Statistics on Philippine Tourism Satellite Account (2000-2022)",
+      "publisher": "Department of Tourism",
+      "license": "Open [open]",
+      "topics": [
+        "Travel and Tourism"
+      ],
+      "tags": [
+        "tourism satellite account"
+      ],
+      "date_created_ms": "1701316780970",
+      "date_modified_ms": "1701321242209",
+      "resource_count": 1,
+      "resource_formats": [
+        ".pdf"
+      ]
+    },
+    {
+      "id": "6567fda92e65f0742269bc2c",
+      "identifier": "pqj5mu1b-5tsg-7dcb-oj3y-s1jcu1ys2h3a",
+      "name": "Tourism Demand Statistics on Visitor Arrivals to the Philippines",
+      "publisher": "Department of Tourism",
+      "license": "Open [open]",
+      "topics": [
+        "Travel and Tourism"
+      ],
+      "tags": [
+        "Visitor arrival"
+      ],
+      "date_created_ms": "1701313961562",
+      "date_modified_ms": "1701316966977",
+      "resource_count": 16,
+      "resource_formats": [
+        ".pdf"
+      ]
+    },
+    {
+      "id": "63917a583872330a541daaf2",
+      "identifier": "zkn3dj3a-8q8j-3tn8-ybwc-wycq0elukpzp",
+      "name": "COVID-19 DOH Data Drop (November 19, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1670478424010",
+      "date_modified_ms": "1701321255665",
+      "resource_count": 15,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "639181cf3872330a541daeec",
+      "identifier": "vuo95enr-tttu-24cu-3x70-agzd8kcvhkop",
+      "name": "COVID-19 DOH Data Drop (November 26, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1670480335550",
+      "date_modified_ms": "1701321231748",
+      "resource_count": 15,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "6567e0abb314a47117fb6883",
+      "identifier": "tvb965di-8d3e-ay0w-9m4p-xrla2ngt5th5",
+      "name": "Compendium of Employees' Compensation (EC) Statistics",
+      "publisher": "Employees' Compensation Commission",
+      "license": "Open [open]",
+      "topics": [
+        "Labor and Employment"
+      ],
+      "tags": [
+        "employees' compensation"
+      ],
+      "date_created_ms": "1701306539569",
+      "date_modified_ms": "1701321265736",
+      "resource_count": 8,
+      "resource_formats": [
+        ".pdf"
+      ]
+    },
+    {
+      "id": "65682bb318639379ce648b01",
+      "identifier": "mhb14dc0-8tio-af0u-6nac-euxrn6bz48rm",
+      "name": "Power Generation by Fuel Source, 1990-2020",
+      "publisher": "Department of Energy",
+      "license": "Open [open]",
+      "topics": [
+        "Energy"
+      ],
+      "tags": [
+        "Fuel",
+        "Fuel Source",
+        "Power",
+        "Power Generation"
+      ],
+      "date_created_ms": "1701325747170",
+      "date_modified_ms": "1701326015323",
+      "resource_count": 1,
+      "resource_formats": [
+        ".csv"
+      ]
+    },
+    {
+      "id": "63282f64bc852e079f27fb91",
+      "identifier": "pc9rmcgz-qxih-8fjv-zp6r-oupspn7gpbks",
+      "name": "COVID-19 DOH Data Drop (April 23, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1663577956754",
+      "date_modified_ms": "1669106000822",
+      "resource_count": 18,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "62f0592847ecf4030e6ab364",
+      "identifier": "v5juxrya-3155-1ep0-mvhk-hgyjyp4913dq",
+      "name": "COVID-19 DOH Data Drop (July 09, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1659918632125",
+      "date_modified_ms": "1669104951397",
+      "resource_count": 17,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "632946e4bc852e079f282fec",
+      "identifier": "o9bmgc4g-pnfu-k9go-6fad-5fzstq4fhwk2",
+      "name": "COVID-19 DOH Data Drop (April 09, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1663649508658",
+      "date_modified_ms": "1669106041660",
+      "resource_count": 18,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63295d4abc852e079f283c99",
+      "identifier": "kee806l0-dp5h-0cff-ulmg-nbqgcmdfdviu",
+      "name": "COVID-19 DOH Data Drop (March 26, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1663655242665",
+      "date_modified_ms": "1669106069041",
+      "resource_count": 17,
+      "resource_formats": [
+        ".csv",
+        ".pdf"
+      ]
+    },
+    {
+      "id": "62ecd68947ecf4030e6aacd7",
+      "identifier": "wl1o9038-8h9o-t921-qi55-9erypq68hc9z",
+      "name": "COVID-19 DOH Data Drop (May 28, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1659688585191",
+      "date_modified_ms": "1669095051143",
+      "resource_count": 17,
+      "resource_formats": [
+        ".csv",
+        ".pdf"
+      ]
+    },
+    {
+      "id": "62ecd82347ecf4030e6aadae",
+      "identifier": "hpe73xrp-sq1p-jfqm-y7np-x8768gux4vi7",
+      "name": "COVID-19 DOH Data Drop (June 04, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1659688995874",
+      "date_modified_ms": "1669095085234",
+      "resource_count": 18,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "631fe093b194230577e53bcb",
+      "identifier": "l6xdlzdg-ixdr-yuve-tw7k-0cgug0ceul10",
+      "name": "Historical Enrollment Data",
+      "publisher": "Department of Education",
+      "license": "Open [open]",
+      "topics": [
+        "Education and Training"
+      ],
+      "tags": [
+        "BalikEskwela",
+        "Education"
+      ],
+      "date_created_ms": "1663033491738",
+      "date_modified_ms": "1669105845704",
+      "resource_count": 3,
+      "resource_formats": [
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "630edf3337ae7204a59a98e5",
+      "identifier": "0yvown9v-s0sk-s9az-tk1w-h3axwgvpv5pf",
+      "name": "COVID-19 DOH Data Drop (July 30, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1661919027177",
+      "date_modified_ms": "1669105764330",
+      "resource_count": 15,
+      "resource_formats": [
+        ".csv",
+        ".pdf"
+      ]
+    },
+    {
+      "id": "62ecb0150deb8f02516a28f4",
+      "identifier": "6b5fnuxz-ftjh-i6sv-xl9v-r20o4x4hyp8x",
+      "name": "COVID-19 DOH Data Drop (May 21, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1659678741023",
+      "date_modified_ms": "1669095019701",
+      "resource_count": 18,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "630db5d037ae7204a59a5c95",
+      "identifier": "cremfnhf-joh3-x1bf-cz2v-hn3w9g8ipd3r",
+      "name": "COVID-19 DOH Data Drop (August 06, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1661842896243",
+      "date_modified_ms": "1669105701145",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "62ecdea847ecf4030e6ab21e",
+      "identifier": "3f4antpp-lnw0-i5ea-f1i2-t9vghd1o40tj",
+      "name": "COVID-19 DOH Data Drop (July 02, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1659690664866",
+      "date_modified_ms": "1669104925821",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "6321286bbc852e079f266e5d",
+      "identifier": "88n23r6n-n3xm-382z-uc59-4zkyzqoyc10y",
+      "name": "MEIPD - Philippines Metallic Production",
+      "publisher": "Mines and Geosciences Bureau - Department of Environment and Natural Resources",
+      "license": "Open [open]",
+      "topics": [
+        "Environment and Natural Resources"
+      ],
+      "tags": [
+        "Mining",
+        "Mining Industry",
+        "Metallic Mines",
+        "Metallic"
+      ],
+      "date_created_ms": "1663117419189",
+      "date_modified_ms": "1669105951143",
+      "resource_count": 93,
+      "resource_formats": [
+        ".pdf"
+      ]
+    },
+    {
+      "id": "630edc1f37ae7204a59a9530",
+      "identifier": "r9eqpb7x-1vy5-6rsb-wwbs-2n0aq4nz7jia",
+      "name": "COVID-19 DOH Data Drop (July 23, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1661918239972",
+      "date_modified_ms": "1669105738140",
+      "resource_count": 15,
+      "resource_formats": [
+        ".csv",
+        ".pdf"
+      ]
+    },
+    {
+      "id": "631fedceb194230577e5438e",
+      "identifier": "6n1zp9zh-rdit-0yvm-9c7w-6towstllshwj",
+      "name": "Historical Number of Schools by Level of Education",
+      "publisher": "Department of Education",
+      "license": "Open [open]",
+      "topics": [
+        "Education and Training"
+      ],
+      "tags": [
+        "BalikEskwela",
+        "Education"
+      ],
+      "date_created_ms": "1663036878814",
+      "date_modified_ms": "1669105867633",
+      "resource_count": 3,
+      "resource_formats": [
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "630d9f6637ae7204a59a4ec3",
+      "identifier": "5d5mkiv0-wxvm-b0ka-hpzy-n34h63lbm48p",
+      "name": "COVID-19 DOH Data Drop (August 20, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1661837158654",
+      "date_modified_ms": "1669105603355",
+      "resource_count": 15,
+      "resource_formats": [
+        ".csv",
+        ".pdf"
+      ]
+    },
+    {
+      "id": "62fdffca661eb504801fad90",
+      "identifier": "bypyykrp-qnu4-7wgo-bg8c-qdkmk2cs3jqu",
+      "name": "MEIPD - Mining Industry Statistics 2013-2022",
+      "publisher": "Mines and Geosciences Bureau - Department of Environment and Natural Resources",
+      "license": "Open [open]",
+      "topics": [
+        "Environment and Natural Resources"
+      ],
+      "tags": [
+        "Mining",
+        "Mining Industry",
+        "MGB"
+      ],
+      "date_created_ms": "1660813258723",
+      "date_modified_ms": "1669105038613",
+      "resource_count": 42,
+      "resource_formats": [
+        ".pdf"
+      ]
+    },
+    {
+      "id": "630dab6d37ae7204a59a5522",
+      "identifier": "ipbc5sdv-ny7e-12re-rltu-pihrxer4gnat",
+      "name": "COVID-19 DOH Data Drop (August 13, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1661840237164",
+      "date_modified_ms": "1669105673803",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "6329700cbc852e079f284a74",
+      "identifier": "nlonbbiw-jzk6-fxx9-j4ye-1g1rzt3b0077",
+      "name": "COVID-19 DOH Data Drop (March 12, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1663660044478",
+      "date_modified_ms": "1669095113809",
+      "resource_count": 17,
+      "resource_formats": [
+        ".csv",
+        ".pdf"
+      ]
+    },
+    {
+      "id": "62ecdda747ecf4030e6ab16a",
+      "identifier": "1jbtoztx-3fkq-zvx8-3krz-7yst4u2z0bm6",
+      "name": "COVID-19 DOH Data Drop (June 25, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1659690407233",
+      "date_modified_ms": "1669104897787",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "6321501cbc852e079f268b8b",
+      "identifier": "f9yrtd25-qfym-gehp-86pe-ddsvkf6mdmu4",
+      "name": "COVID-19 DOH Data Drop (May 07, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1663127580618",
+      "date_modified_ms": "1669105975447",
+      "resource_count": 17,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63158dee37ae7204a59b9a47",
+      "identifier": "mvo5vq48-a0g5-od9z-41lu-zqbkzfg802vb",
+      "name": "COVID-19 DOH Data Drop (August 27, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1662356974529",
+      "date_modified_ms": "1669105790063",
+      "resource_count": 15,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "62ecd97a47ecf4030e6aaf27",
+      "identifier": "rjmyln19-sml5-684u-i9gj-9e60i0x99cqp",
+      "name": "COVID-19 DOH Data Drop (June 11, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1659689338570",
+      "date_modified_ms": "1669104802144",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf"
+      ]
+    },
+    {
+      "id": "63294b3fbc852e079f283301",
+      "identifier": "7pedmzvc-g287-66q5-9kgc-6z2uz5mi30wy",
+      "name": "COVID-19 DOH Data Drop (April 02, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1663650623875",
+      "date_modified_ms": "1669106055034",
+      "resource_count": 18,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "631e8a33b194230577e4e006",
+      "identifier": "c7qu3lqw-v6hx-4fld-s1r4-tfbh15iv8wy7",
+      "name": "COVID-19 DOH Data Drop (May 14, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1662945843061",
+      "date_modified_ms": "1669105823261",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf"
+      ]
+    },
+    {
+      "id": "63042a23661eb50480205be3",
+      "identifier": "rwjnaxnf-4nnu-t2u7-w4z3-iexixzwjf4cx",
+      "name": "MEIPD - Directory of Operating Non-Metallic Mines",
+      "publisher": "Mines and Geosciences Bureau - Department of Environment and Natural Resources",
+      "license": "Open [open]",
+      "topics": [
+        "Environment and Natural Resources"
+      ],
+      "tags": [
+        "Directory",
+        "Mines",
+        "Non-Metallic Mines",
+        "Non-Metallic"
+      ],
+      "date_created_ms": "1661217315292",
+      "date_modified_ms": "1669105549223",
+      "resource_count": 5,
+      "resource_formats": [
+        ".pdf"
+      ]
+    },
+    {
+      "id": "632016dcc3268f05e8bd2674",
+      "identifier": "ua1r4ams-fav9-yyqw-kdww-kjbqxpiev6la",
+      "name": "Annual Average Daily Traffic (AADT)",
+      "publisher": "Metropolitan Manila Development Authority",
+      "license": "Open [open]",
+      "topics": [
+        "Transport"
+      ],
+      "tags": [
+        "Transportation",
+        "Traffic"
+      ],
+      "date_created_ms": "1663047388285",
+      "date_modified_ms": "1669105895046",
+      "resource_count": 11,
+      "resource_formats": [
+        ".pdf"
+      ]
+    },
+    {
+      "id": "632935eebc852e079f282806",
+      "identifier": "e9thg2u4-2m8s-r3sr-b5m2-k0e65g490uk7",
+      "name": "COVID-19 DOH Data Drop (April 16, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1663645166411",
+      "date_modified_ms": "1669106025253",
+      "resource_count": 18,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "632962b7bc852e079f284169",
+      "identifier": "rrortycs-8upq-tfv6-x30i-cy4728c9w0x8",
+      "name": "COVID-19 DOH Data Drop (March 19, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1663656631448",
+      "date_modified_ms": "1669106081914",
+      "resource_count": 18,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63031f32661eb50480203670",
+      "identifier": "tu2swlqc-54t4-yhl0-1tl9-2erlp7mdyg7p",
+      "name": "MEIPD - Directory of Operating Metallic Mines in the Philippines from 2017 to 2022",
+      "publisher": "Mines and Geosciences Bureau - Department of Environment and Natural Resources",
+      "license": "Open [open]",
+      "topics": [
+        "Environment and Natural Resources"
+      ],
+      "tags": [
+        "Directory",
+        "Metallic Mines",
+        "Mines",
+        "Metallic"
+      ],
+      "date_created_ms": "1661148978028",
+      "date_modified_ms": "1669105090961",
+      "resource_count": 5,
+      "resource_formats": [
+        ".pdf"
+      ]
+    },
+    {
+      "id": "62ecdc2547ecf4030e6ab05b",
+      "identifier": "b6uhzw3z-e8q1-38aj-qv0v-2vd1ss5f1dyd",
+      "name": "COVID-19 DOH Data Drop (June 18, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1659690021118",
+      "date_modified_ms": "1669104866161",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "632035d77026bf06ec3deb33",
+      "identifier": "dxzjlad7-i5qt-nyhi-jhix-5a7wzxnwuorf",
+      "name": "Bureau of Jail Management and Penology",
+      "publisher": "Bureau of Jail Management and Penology",
+      "license": "Open [open]",
+      "topics": [
+        "Special Concerns",
+        "Law Enforcement and Justice"
+      ],
+      "tags": [
+        "Law",
+        "Enforcement",
+        "Justice"
+      ],
+      "date_created_ms": "1663055319265",
+      "date_modified_ms": "1669105920882",
+      "resource_count": 8,
+      "resource_formats": [
+        ".png"
+      ]
+    },
+    {
+      "id": "62f05f9c057d68031fa932bc",
+      "identifier": "vghu9xmt-8nbl-jl04-ayd9-7khnx13jugut",
+      "name": "COVID-19 DOH Data Drop (July 16, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1659920284866",
+      "date_modified_ms": "1669105007105",
+      "resource_count": 15,
+      "resource_formats": [
+        ".csv",
+        ".pdf"
+      ]
+    },
+    {
+      "id": "6328294ebc852e079f27f7cb",
+      "identifier": "6gksfkvn-7un4-4ni4-759o-gdwfdmwd7qoy",
+      "name": "COVID-19 DOH Data Drop (September 10, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1663576398464",
+      "date_modified_ms": "1669007618261",
+      "resource_count": 15,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "632823eabc852e079f27f2b0",
+      "identifier": "lgksn3cs-iju0-0tqw-pwla-npycplt53ufb",
+      "name": "COVID-19 DOH Data Drop (September 03, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1663575018339",
+      "date_modified_ms": "1668995617025",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63b3e51dbd735f0bcd031eb5",
+      "identifier": "5dpij7nd-uhrj-wk5l-xv2h-q5pgkiccv9ag",
+      "name": "SY 2020-2021 Masterlist of Schools",
+      "publisher": "Department of Education",
+      "license": "Open [open]",
+      "topics": [
+        "Education and Training"
+      ],
+      "tags": [
+        "Education"
+      ],
+      "date_created_ms": "1672733981787",
+      "date_modified_ms": "1677718176621",
+      "resource_count": 1,
+      "resource_formats": [
+        ".pdf"
+      ]
+    },
+    {
+      "id": "63b4d477bd735f0bcd034382",
+      "identifier": "x0i35cw7-3ebf-sxjz-mgsb-4dpqh0xgola5",
+      "name": "Procurement Monitoring Report",
+      "publisher": "Department of Agriculture",
+      "license": "Open [open]",
+      "topics": [
+        "Agriculture and Food Security"
+      ],
+      "tags": [
+        "Development"
+      ],
+      "date_created_ms": "1672795255945",
+      "date_modified_ms": "1677717751710",
+      "resource_count": 6,
+      "resource_formats": [
+        ".pdf"
+      ]
+    },
+    {
+      "id": "63a160593872330a54210d60",
+      "identifier": "5glikm2x-ivnn-ovjg-7k8e-k8nlydrrzozz",
+      "name": "Local Inventory of Cultural Property (TALAPAMANA)",
+      "publisher": "National Commission for Culture and the Arts",
+      "license": "Open [open]",
+      "topics": [
+        "Arts, Culture and Heritage"
+      ],
+      "tags": [
+        "Culture",
+        "Arts"
+      ],
+      "date_created_ms": "1671520345031",
+      "date_modified_ms": "1677718116454",
+      "resource_count": 5,
+      "resource_formats": [
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "637aef60d02cf0087100fb98",
+      "identifier": "90j8umnd-631v-y9kw-be7t-ihwv0765ojyp",
+      "name": "COVID-19 DOH Data Drop (October 29, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1669001056635",
+      "date_modified_ms": "1677719256551",
+      "resource_count": 17,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63e30457a2c8cd0d1dbb6aaf",
+      "identifier": "7nvukvob-oa0n-ni1v-jqgi-ut6pf6ubq92a",
+      "name": "Commission of Filipino Overseas: Statistical Profile Of Spouses And Other Partners Of Foreign Nationals [1989-2020]",
+      "publisher": "Commission on Filipinos Overseas",
+      "license": "Open [open]",
+      "topics": [
+        "Special Concerns"
+      ],
+      "tags": [
+        "OFW"
+      ],
+      "date_created_ms": "1675822167463",
+      "date_modified_ms": "1676440752750",
+      "resource_count": 8,
+      "resource_formats": [
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63e30bb3a2c8cd0d1dbb70ce",
+      "identifier": "daf5y8k3-vzzt-68n3-h1od-g7twfwbj81kb",
+      "name": "Commission of Filipino Overseas: Statistical Profile Of EVP Participants [2007-2020]",
+      "publisher": "Commission on Filipinos Overseas",
+      "license": "Open [open]",
+      "topics": [
+        "Special Concerns"
+      ],
+      "tags": [
+        "OFW"
+      ],
+      "date_created_ms": "1675824051572",
+      "date_modified_ms": "1676440575529",
+      "resource_count": 6,
+      "resource_formats": [
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63e2ff50a2c8cd0d1dbb6539",
+      "identifier": "q8o5akrp-ers2-7hag-m3ds-h7eki6wqhqs9",
+      "name": "Commission of Filipino Overseas: Statistical Profile Of Registered Filipino Emigrants [1981-2020]",
+      "publisher": "Commission on Filipinos Overseas",
+      "license": "Open [open]",
+      "topics": [
+        "Special Concerns"
+      ],
+      "tags": [
+        "OFW"
+      ],
+      "date_created_ms": "1675820880324",
+      "date_modified_ms": "1676440797512",
+      "resource_count": 8,
+      "resource_formats": [
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63e30defa2c8cd0d1dbb7344",
+      "identifier": "qutiq7f6-f76x-qle9-7huz-za8zauxs7jyj",
+      "name": "Commission of Filipino Overseas: Statistical Profile Of Registered Filipino Au Pairs [2012-2020]",
+      "publisher": "Commission on Filipinos Overseas",
+      "license": "Open [open]",
+      "topics": [
+        "Special Concerns"
+      ],
+      "tags": [
+        "OFW"
+      ],
+      "date_created_ms": "1675824623300",
+      "date_modified_ms": "1676440414590",
+      "resource_count": 7,
+      "resource_formats": [
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63e310a3a2c8cd0d1dbb75af",
+      "identifier": "elt05oxr-dutf-3kjd-lx7k-ebvrxulvbzz7",
+      "name": "Commission of Filipino Overseas: Stock Estimate of Filipinos Overseas [1997-2013]",
+      "publisher": "Commission on Filipinos Overseas",
+      "license": "Open [open]",
+      "topics": [
+        "Special Concerns"
+      ],
+      "tags": [
+        "OFW"
+      ],
+      "date_created_ms": "1675825315294",
+      "date_modified_ms": "1676440393322",
+      "resource_count": 17,
+      "resource_formats": [
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63b7b537bd735f0bcd03c3b5",
+      "identifier": "6iki9qb1-n414-xoqk-jmhf-33894993ioed",
+      "name": "PSA Annual Report (2012-2021)",
+      "publisher": "Philippine Statistics Authority",
+      "license": "Open [open]",
+      "topics": [
+        "National Governance"
+      ],
+      "tags": [
+        "Statistics"
+      ],
+      "date_created_ms": "1672983863113",
+      "date_modified_ms": "1676356723907",
+      "resource_count": 10,
+      "resource_formats": [
+        ".pdf"
+      ]
+    },
+    {
+      "id": "63e1f06da2c8cd0d1dbaf2df",
+      "identifier": "yeuw4shv-9my8-2q88-7ukp-qlll2jpvbn4b",
+      "name": "COVID-19 DOH Data Drop (January 22, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1675751533800",
+      "date_modified_ms": "1675752545944",
+      "resource_count": 17,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63e1ec3ba2c8cd0d1dbaf004",
+      "identifier": "igh224o5-aaot-z7uh-necz-04a1bprjp2t9",
+      "name": "COVID-19 DOH Data Drop (January 15, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1675750459259",
+      "date_modified_ms": "1675751420966",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf"
+      ]
+    },
+    {
+      "id": "63e1f4e4a2c8cd0d1dbaf858",
+      "identifier": "06xdm1xg-oweh-of60-0y1y-iejd6o2vr272",
+      "name": "COVID-19 DOH Data Drop (January 29, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1675752676405",
+      "date_modified_ms": "1675754228525",
+      "resource_count": 17,
+      "resource_formats": [
+        ".csv",
+        ".pdf"
+      ]
+    },
+    {
+      "id": "63e1e6e7a2c8cd0d1dbaec80",
+      "identifier": "qrupvx61-fj6t-cn6j-v07f-vz4iz9gm14ym",
+      "name": "COVID-19 DOH Data Drop (January 10, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1675749095379",
+      "date_modified_ms": "1675749831830",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63e1ae41a2c8cd0d1dbac8c4",
+      "identifier": "q4yrpc0q-vng3-2wr8-p3c3-7jxi8mew1abz",
+      "name": "PNP Anti-Cybercrime Group Annual Operational Accomplishment",
+      "publisher": "PNP Anti-Cybercrime Group",
+      "license": "Open [open]",
+      "topics": [
+        "Defense and National Security",
+        "National Governance"
+      ],
+      "tags": [
+        "cybersecurity",
+        "cybercrime"
+      ],
+      "date_created_ms": "1675734593031",
+      "date_modified_ms": "1675734659254",
+      "resource_count": 1,
+      "resource_formats": [
+        ".pdf"
+      ]
+    },
+    {
+      "id": "63be6cdb502d620c458fdc8c",
+      "identifier": "jexx03tx-9s92-350t-qmf9-8f21cncwl83a",
+      "name": "COVID-19 DOH Data Drop (December 31, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1673424091098",
+      "date_modified_ms": "1675748977226",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63e1de5fa2c8cd0d1dbae470",
+      "identifier": "g9el2hg0-1l9k-ep47-671m-82vr71b7gyyf",
+      "name": "COVID-19 DOH Data Drop (January 09, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1675746911924",
+      "date_modified_ms": "1675747693952",
+      "resource_count": 13,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63db211a6fcf280ca5bc35d2",
+      "identifier": "9d4j43es-tof3-ciul-pux5-r6o2p5azqdz3",
+      "name": "COVID-19 DOH Data Drop (January 08, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1675305242515",
+      "date_modified_ms": "1675307653956",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63db08bb6fcf280ca5bc27c3",
+      "identifier": "rgl8vkzv-psga-kyk3-2mpr-qwdftxf5ut22",
+      "name": "COVID-19 DOH Data Drop (January 06, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1675299003515",
+      "date_modified_ms": "1675300576054",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63db12986fcf280ca5bc2e51",
+      "identifier": "3rukll0s-ribp-sexe-z6iu-ki2cgpd5r5r1",
+      "name": "COVID-19 DOH Data Drop (January 07, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1675301528161",
+      "date_modified_ms": "1675305067155",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63be6e0a502d620c458fdd89",
+      "identifier": "yia3pn2n-mpro-fhkn-dkzb-jkduho9qwkp4",
+      "name": "COVID-19 DOH Data Drop (January 02, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1673424394872",
+      "date_modified_ms": "1675224462367",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63be6d3d502d620c458fdd03",
+      "identifier": "n9j4ekug-owr5-qmhx-6dot-4fe99tdkuw7z",
+      "name": "COVID-19 DOH Data Drop (January 01, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1673424189486",
+      "date_modified_ms": "1675215071356",
+      "resource_count": 15,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63be6e99502d620c458fde3a",
+      "identifier": "o986rt41-hatb-4t0y-ye5v-ztgltcwrkrwg",
+      "name": "COVID-19 DOH Data Drop (January 04, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1673424537714",
+      "date_modified_ms": "1675236215943",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63da169d6fcf280ca5bbe9a8",
+      "identifier": "oh8o6q8m-4cpm-9zdh-7ap7-skjd7o848xy8",
+      "name": "COVID-19 DOH Data Drop (January 05, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1675237021391",
+      "date_modified_ms": "1675241875332",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63be6e4a502d620c458fde00",
+      "identifier": "8s58dvmm-v8kj-ck2o-hpe1-798bffft0od5",
+      "name": "COVID-19 DOH Data Drop (January 03, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH"
+      ],
+      "date_created_ms": "1673424458391",
+      "date_modified_ms": "1675231634190",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63be514c502d620c458fcaeb",
+      "identifier": "7y1yae0i-ck2j-spf4-cruv-38h002zxbu4u",
+      "name": "COVID-19 DOH Data Drop (December 30, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1673417036479",
+      "date_modified_ms": "1675136828580",
+      "resource_count": 17,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63bd2421502d620c458f500a",
+      "identifier": "5lblkos5-w293-4aog-j5ny-nyxokacsaedm",
+      "name": "COVID-19 DOH Data Drop (December 26, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1673339937201",
+      "date_modified_ms": "1673416544490",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63bd23c5502d620c458f4f8f",
+      "identifier": "tq1y2wjx-7e97-ci6n-6b6i-91argy0zu4dd",
+      "name": "COVID-19 DOH Data Drop (December 25, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1673339845411",
+      "date_modified_ms": "1673407944907",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63be504c502d620c458fca5b",
+      "identifier": "x9muce0n-c4lt-p5bh-4ugt-kxixewb0nmax",
+      "name": "COVID-19 DOH Data Drop (December 28, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1673416780957",
+      "date_modified_ms": "1673420138810",
+      "resource_count": 17,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63be4ff1502d620c458fca21",
+      "identifier": "stir120u-hdaz-0jv2-chw8-it55wrd817ke",
+      "name": "COVID-19 DOH Data Drop (December 27, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1673416689329",
+      "date_modified_ms": "1673418862275",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63bd2369502d620c458f4f0a",
+      "identifier": "irl8yoz7-0pvv-g7ct-r3qj-lnupu4vh2fxr",
+      "name": "COVID-19 DOH Data Drop (December 24, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1673339753843",
+      "date_modified_ms": "1673406357308",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63be50d2502d620c458fca95",
+      "identifier": "ug3ejcqq-0dck-gfl8-9ye7-23xs7021deqx",
+      "name": "COVID-19 DOH Data Drop (December 29, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1673416914070",
+      "date_modified_ms": "1673421457934",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63bcd85219898e0c2cc834ce",
+      "identifier": "d0b6hu3y-xa27-kmzh-ktf8-vjyfq1hqgte3",
+      "name": "COVID-19 DOH Data Drop (December 17, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1673320530999",
+      "date_modified_ms": "1673338038253",
+      "resource_count": 15,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63bccc2f19898e0c2cc82a45",
+      "identifier": "2ygw6qut-7fxc-upao-nwtu-lqwibxjr8vuk",
+      "name": "COVID-19 DOH Data Drop (December 16, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1673317423406",
+      "date_modified_ms": "1673338075723",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63bcafa119898e0c2cc81a31",
+      "identifier": "55q2rwsj-08ic-0qay-8ac4-avpztmv9kaje",
+      "name": "COVID-19 DOH Data Drop (December 31, 2022)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1673310113467",
+      "date_modified_ms": "1673313507241",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf"
+      ]
+    },
+    {
+      "id": "63bcfa11502d620c458f305e",
+      "identifier": "0hpaz1sj-vsho-d135-wacg-b7126wdfine0",
+      "name": "COVID-19 DOH Data Drop (December 18, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1673329169972",
+      "date_modified_ms": "1673338012777",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63bd1d73502d620c458f4bf2",
+      "identifier": "wf9czx9w-ivpz-6au4-8npx-69o3rkqcwum2",
+      "name": "COVID-19 DOH Data Drop (December 23, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1673338227883",
+      "date_modified_ms": "1673339548765",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63bd0f2c502d620c458f40a0",
+      "identifier": "1cd1p33e-6zj2-cglm-3wd5-trfeb4xk6v6r",
+      "name": "COVID-19 DOH Data Drop (December 21, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1673334572056",
+      "date_modified_ms": "1673337948853",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63bcbe3a19898e0c2cc820f5",
+      "identifier": "3l1pz14z-p4h7-52rl-o663-a5oeljar9ci6",
+      "name": "COVID-19 DOH Data Drop (December 15, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH"
+      ],
+      "date_created_ms": "1673313850057",
+      "date_modified_ms": "1673316615501",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63bd1693502d620c458f466a",
+      "identifier": "0jcxc49s-mze4-momr-a879-1oawt1xfxvfb",
+      "name": "COVID-19 DOH Data Drop (December 22, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1673336467212",
+      "date_modified_ms": "1673337911007",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63bcff57502d620c458f35ee",
+      "identifier": "81eju96i-gd47-suhp-0iq5-pak70wzpngza",
+      "name": "COVID-19 DOH Data Drop (December 20, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1673330519255",
+      "date_modified_ms": "1673337984550",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63b788cabd735f0bcd03b4fd",
+      "identifier": "ygjfoqqh-6c83-durx-ufxb-mlno79ayt21v",
+      "name": "Annual Performance Report",
+      "publisher": "Department of Labor and Employment",
+      "license": "Open [open]",
+      "topics": [
+        "Labor and Employment"
+      ],
+      "tags": [
+        "labor",
+        "employment"
+      ],
+      "date_created_ms": "1672972490349",
+      "date_modified_ms": "1672973815988",
+      "resource_count": 6,
+      "resource_formats": [
+        ".pdf"
+      ]
+    },
+    {
+      "id": "63b4cb99bd735f0bcd03400d",
+      "identifier": "zyavegde-9lwk-c7x0-wrjo-jjkj4ohgzf67",
+      "name": "Philippine TVET Statistics: National Accomplishment on Assessment and Certification",
+      "publisher": "Technical Education And Skills Development Authority",
+      "license": "Open [open]",
+      "topics": [
+        "Science and Technology",
+        "Education and Training"
+      ],
+      "tags": [
+        "TechVoc",
+        "Skills",
+        "Development"
+      ],
+      "date_created_ms": "1672792985603",
+      "date_modified_ms": "1672793091628",
+      "resource_count": 1,
+      "resource_formats": [
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63b3ed23bd735f0bcd03242c",
+      "identifier": "5o47kia3-f4bt-ai27-ezxt-jr266nf9mvjt",
+      "name": "TESDA Annual Report",
+      "publisher": "Technical Education And Skills Development Authority",
+      "license": "Open [open]",
+      "topics": [
+        "Science and Technology",
+        "Education and Training"
+      ],
+      "tags": [
+        "TechVoc",
+        "Skills",
+        "Development"
+      ],
+      "date_created_ms": "1672736035431",
+      "date_modified_ms": "1672792638939",
+      "resource_count": 9,
+      "resource_formats": [
+        ".pdf"
+      ]
+    },
+    {
+      "id": "63a3bbd9bd735f0bcd00f807",
+      "identifier": "xvmh691z-zecd-m5hs-nwkf-nk1f9lc3iscd",
+      "name": "COVID-19 DOH Data Drop (November 24, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1671674841534",
+      "date_modified_ms": "1672713508548",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63b3b528bd735f0bcd030bdd",
+      "identifier": "gtlwjt8a-l3w7-9kju-tuzl-rz3gi7mxg1gq",
+      "name": "2020 Higher Education Facts and Figures",
+      "publisher": "Commissions on Higher Education",
+      "license": "Open [open]",
+      "topics": [
+        "Education and Training"
+      ],
+      "tags": [
+        "Education"
+      ],
+      "date_created_ms": "1672721704521",
+      "date_modified_ms": "1672732825932",
+      "resource_count": 29,
+      "resource_formats": [
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63a3bc43bd735f0bcd00f841",
+      "identifier": "xwojoc55-danj-jiwk-i897-tjzmsnbn7w9d",
+      "name": "COVID-19 DOH Data Drop (November 25, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1671674947115",
+      "date_modified_ms": "1672709234923",
+      "resource_count": 16,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63a3bcabbd735f0bcd00f877",
+      "identifier": "vynd6tgx-tbm0-0h14-s582-1n8m6x8j0amo",
+      "name": "COVID-19 DOH Data Drop (November 26, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1671675051229",
+      "date_modified_ms": "1672707479216",
+      "resource_count": 15,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63b3e621bd735f0bcd031fe2",
+      "identifier": "plimfvv8-51m1-75rj-tzrw-2zbf8xj96las",
+      "name": "DepEd Data Bits",
+      "publisher": "Department of Education",
+      "license": "Open [open]",
+      "topics": [
+        "Education and Training"
+      ],
+      "tags": [
+        "Education"
+      ],
+      "date_created_ms": "1672734241367",
+      "date_modified_ms": "1672734605338",
+      "resource_count": 7,
+      "resource_formats": [
+        ".pdf"
+      ]
+    },
+    {
+      "id": "63b3e2fcbd735f0bcd031d14",
+      "identifier": "to3vsv4e-j6zp-b0lp-m422-6cm76u6gwxc4",
+      "name": "Historical Number of Teachers in all Levels of Education (Public)",
+      "publisher": "Department of Education",
+      "license": "Open [open]",
+      "topics": [
+        "Education and Training"
+      ],
+      "tags": [
+        "Education"
+      ],
+      "date_created_ms": "1672733436669",
+      "date_modified_ms": "1672733998664",
+      "resource_count": 1,
+      "resource_formats": [
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63a3bad1bd735f0bcd00f752",
+      "identifier": "1rda186k-xs14-7tgy-k33s-ijgw2sbgbece",
+      "name": "COVID-19 DOH Data Drop (November 23, 2021)",
+      "publisher": "Department of Health",
+      "license": "Open [open]",
+      "topics": [
+        "Health"
+      ],
+      "tags": [
+        "COVID-19",
+        "DOH",
+        "Data Drop"
+      ],
+      "date_created_ms": "1671674577393",
+      "date_modified_ms": "1672714913937",
+      "resource_count": 15,
+      "resource_formats": [
+        ".csv",
+        ".pdf",
+        ".xlsx"
+      ]
+    },
+    {
+      "id": "63b3e7d7bd735f0bcd03218e",
+      "identifier": "qkcjdz31-npkt-p5wd-k0fp-eaaxmxmlf1ud",
+      "name": "CY 2020 Last Mile Schools Program in Public Elementary and Junior High School",
+      "publisher": "Department of Education",
+      "license": "Open [open]",
+      "topics": [
+        "Education and Training"
+      ],
+      "tags": [
+        "Education"
+      ],
+      "date_created_ms": "1672734679638",
+      "date_modified_ms": "1672734789546",
+      "resource_count": 1,
+      "resource_formats": [
+        ".pdf"
+      ]
+    },
+    {
+      "id": "63a2995dbd735f0bcd00cd47",
+      "identifier": "54005by8-j3ni-1m7s-cayd-3d699jlsngvn",
+      "name": "Higher Education Statistical Data (2020)",
+      "publisher": "Commissions on Higher Education",
+      "license": "Open [open]",
+      "topics": [
+        "Education and Training"
+      ],
+      "tags": [
+        "Education"
+      ],
+      "date_created_ms": "1671600477676",
+      "date_modified_ms": "1672718421975",
+      "resource_count": 23,
+      "resource_formats": [
+        ".pdf",
+        ".xlsx"
+      ]
+    }
+  ]
+}

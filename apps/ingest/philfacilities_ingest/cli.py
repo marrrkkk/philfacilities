@@ -82,6 +82,7 @@ from .sources.deped_ebeis import DepEdEBEISAdapter
 from .sources.doh import DOHNHFRAdapter
 from .sources.dswd_crcf import DswdCrcfDirectoryAdapter
 from .sources.dti_negosyo import DtiNegosyoCenterAdapter, fetch_negosyo_centers
+from .sources.mandaluyong import MandaluyongBarangayAdapter, fetch_mandaluyong_directory
 from .sources.national_museum import NationalMuseumDirectoryAdapter, fetch_national_museum_directory
 from .sources.nbi import NbiOfficeAdapter, fetch_nbi_offices
 from .sources.nlp import NlpPublicLibraryPdfAdapter
@@ -2137,6 +2138,45 @@ def load_quezon_city_places(
         outcome = run_ingestion(
             spec=spec,
             adapter=QuezonCityPlacesAdapter(spec),
+            session=session,
+            settings=settings,
+            reprocess=reprocess,
+        )
+        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("load-mandaluyong")
+def load_mandaluyong(
+    reprocess: Annotated[
+        bool,
+        typer.Option(
+            "--reprocess",
+            help="Reprocess an already-preserved release instead of skipping its checksum.",
+        ),
+    ] = False,
+) -> None:
+    """Acquire the Mandaluyong City barangay directory and ingest its offices."""
+
+    settings = get_settings()
+    engine, session = _session()
+    try:
+        with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
+            content, metadata = fetch_mandaluyong_directory(acquirer)
+        spec = source_spec(
+            REAL_SOURCES["mandaluyong"],
+            release_label=f"MANDALUYONG-LGU-{date.today().isoformat()}",
+            filename=f"mandaluyong-lgu-barangay-directory-{date.today().isoformat()}.json",
+            content=content,
+            retrieved_at=datetime.now(UTC),
+            enqueue_cross_source_matches=False,
+            notes=f"Acquisition metadata: {json.dumps(metadata, default=str)}",
+        )
+        outcome = run_ingestion(
+            spec=spec,
+            adapter=MandaluyongBarangayAdapter(spec),
             session=session,
             settings=settings,
             reprocess=reprocess,

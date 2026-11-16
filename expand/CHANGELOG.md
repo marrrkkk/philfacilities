@@ -8,6 +8,7 @@
 - Re-ingested the PhilHealth Antenatal category with `philhealth-pdf-1.2.0` after fixing retried-release snapshot idempotency: 3,221 rows and accreditations, ending at page 120; the earlier 6,562-row annex double-count remains withdrawn. Total PhilHealth coverage is now 26 categories / 28,207 accreditations.
 - Made Antenatal accreditation-only for subtype purposes and restored 3,178 prior facility subtypes from release snapshots, so a benefit-package row cannot overwrite the physical facility classification.
 - Added release-scoped facility snapshots, automatic pre-mutation capture, and the conservative `release-rollback` CLI with dry-run, later-release/later-evidence/post-release-change refusal paths, and raw-evidence retention.
+- Added the Mandaluyong City barangay directory release `MANDALUYONG-LGU-2026-11-16`: 27 barangay government offices published from the official table, including one covered-court multi-use record; telephone numbers and chairperson names withheld.
 - Updated the source register, rights register, tracker, and root README with the new releases, publication decisions, counts and evidence.
 
 ## 3.1 — 15 November 2026
