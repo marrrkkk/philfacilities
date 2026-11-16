@@ -89,6 +89,7 @@ from .sources.nbi import NbiOfficeAdapter, fetch_nbi_offices
 from .sources.nlp import NlpPublicLibraryPdfAdapter
 from .sources.nmis_naris import NmisNarisDirectoryAdapter
 from .sources.pagasa_aws import PagasaAwsAdapter, fetch_pagasa_aws
+from .sources.pasay import PasayHealthCenterAdapter, fetch_pasay_health_centers
 from .sources.philhealth import PhilHealthPdfAdapter
 from .sources.philhealth_offices import PhilHealthOfficeAdapter, fetch_philhealth_offices
 from .sources.phlpost import PhlPostLocatorAdapter
@@ -2217,6 +2218,45 @@ def load_cainta_health(
         outcome = run_ingestion(
             spec=spec,
             adapter=CaintaHealthCenterAdapter(spec),
+            session=session,
+            settings=settings,
+            reprocess=reprocess,
+        )
+        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("load-pasay-health")
+def load_pasay_health(
+    reprocess: Annotated[
+        bool,
+        typer.Option(
+            "--reprocess",
+            help="Reprocess an already-preserved release instead of skipping its checksum.",
+        ),
+    ] = False,
+) -> None:
+    """Acquire the Pasay health-care page and ingest its health facilities."""
+
+    settings = get_settings()
+    engine, session = _session()
+    try:
+        with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
+            content, metadata = fetch_pasay_health_centers(acquirer)
+        spec = source_spec(
+            REAL_SOURCES["pasay-health"],
+            release_label=f"PASAY-HEALTH-{date.today().isoformat()}",
+            filename=f"pasay-lgu-health-centers-{date.today().isoformat()}.json",
+            content=content,
+            retrieved_at=datetime.now(UTC),
+            enqueue_cross_source_matches=False,
+            notes=f"Acquisition metadata: {json.dumps(metadata, default=str)}",
+        )
+        outcome = run_ingestion(
+            spec=spec,
+            adapter=PasayHealthCenterAdapter(spec),
             session=session,
             settings=settings,
             reprocess=reprocess,

@@ -320,6 +320,20 @@ CAINTA_RIGHTS_BASIS = (
     "publication decision, not a legal opinion."
 )
 CAINTA_ATTRIBUTION = "Municipality of Cainta, Rizal — Health Centers and Other Services"
+PASAY_HEALTH_URL = "https://pasay.gov.ph/programa/health-care/"
+PASAY_RIGHTS_BASIS = (
+    "The Pasay City Government, a local government unit, publishes its health-care "
+    "programme page as a public web page. No explicit prohibition, access control or "
+    "terms-of-use restriction was found on the inspected page. RA 8293 section 176 "
+    "provides that no copyright subsists in a work of the Government of the Philippines, "
+    "while prior approval may be required for commercial use. PhilFacilities publishes "
+    "only reviewed institutional fields (facility name, published service label and "
+    "postal address) for non-commercial public-interest use with attribution and "
+    "takedown-on-notice. Telephone numbers are withheld. No coordinates, office hours, "
+    "walk-in access rules or current operating status are inferred. This is a documented "
+    "publication decision, not a legal opinion."
+)
+PASAY_ATTRIBUTION = "Pasay City Government — Mga Health Center ng Lungsod Pasay"
 PPA_PORT_LIST_URL = (
     "https://ppa.com.ph/sites/default/files/List%20of%20Ports%20covered%20in%20PPA%20Statistics.pdf"
 )
@@ -909,6 +923,38 @@ REAL_SOURCES: dict[str, RealSource] = {
             "labelled RHU or BHS, using RURAL_HEALTH_UNIT and BARANGAY_HEALTH_STATION "
             "subtypes. The unlabelled RHU 5 entries and the One Cainta satellite health "
             "station are preserved in the raw artifact and excluded. No geocoding was "
+            "performed."
+        ),
+    ),
+    "pasay-health": RealSource(
+        key="pasay-health",
+        agency_code="pasay",
+        agency_name="Pasay City Government",
+        dataset_slug="pasay-lgu-health-centers",
+        dataset_name="Pasay City health-centre directory",
+        source_url=PASAY_HEALTH_URL,
+        access_method="public_html_directory",
+        update_pattern="irregular",
+        rights=RIGHTS_APPROVED_ATTRIBUTION,
+        rights_basis=PASAY_RIGHTS_BASIS,
+        attribution_text=PASAY_ATTRIBUTION,
+        personal_data_status="telephone_numbers_withheld_from_public_record",
+        requested_publication_status=PUBLICATION_APPROVED,
+        terms_url=PASAY_HEALTH_URL,
+        coverage_scope="SINGLE_LGU",
+        coverage_note=(
+            "Official Pasay City health-care programme page acquired on 16 November 2026. "
+            "The 'Mga Health Center ng Lungsod Pasay' section lists 13 city health centres "
+            "and the Doña Marta Lying-In Clinic with printed postal addresses and some "
+            "service labels. This is Pasay City coverage only; it is not a national or "
+            "complete LGU inventory. The page supplies no coordinates, office hours, "
+            "walk-in access rules or current operating status."
+        ),
+        note=(
+            "Elementor-rendered public page. The adapter publishes the 13 health centres "
+            "as OTHER_HEALTH_FACILITY because the source does not state RHU/BHS level, and "
+            "the lying-in clinic as a separate CLINIC with co-location evidence. Telephone "
+            "numbers are withheld and are not stored in the artifact. No geocoding was "
             "performed."
         ),
     ),

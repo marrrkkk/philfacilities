@@ -9,6 +9,7 @@
 - Made Antenatal accreditation-only for subtype purposes and restored 3,178 prior facility subtypes from release snapshots, so a benefit-package row cannot overwrite the physical facility classification.
 - Added release-scoped facility snapshots, automatic pre-mutation capture, and the conservative `release-rollback` CLI with dry-run, later-release/later-evidence/post-release-change refusal paths, and raw-evidence retention.
 - Added the Cainta, Rizal municipal health-centre release `CAINTA-HEALTH-2026-11-16`: 28 labelled RHU/BHS facilities published from the official landing page and six RHU pages; three unlabelled entries retained privately.
+- Added the Pasay City health-centre release `PASAY-HEALTH-2026-11-16`: 13 health centres and the Doña Marta Lying-In Clinic published from the official health-care programme page; telephone numbers withheld.
 - Added the Mandaluyong City barangay directory release `MANDALUYONG-LGU-2026-11-16`: 27 barangay government offices published from the official table, including one covered-court multi-use record; telephone numbers and chairperson names withheld.
 - Updated the source register, rights register, tracker, and root README with the new releases, publication decisions, counts and evidence.
 

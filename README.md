@@ -13,17 +13,17 @@ Measured from the configured PostgreSQL/PostGIS database on 16 November 2026:
 
 | Measure | Actual state |
 |---|---|
-| Canonical facilities | **98,091** |
-| Public facilities | **67,352** (API-gated) |
+| Canonical facilities | **98,105** |
+| Public facilities | **67,366** (API-gated) |
 | Non-public facilities | **30,739** (DepEd internal, blocked, review-pending, or otherwise not publication-approved) |
 | Synthetic facilities in the working database | **0** |
-| Registered datasets | **54** |
-| Retained source releases | **69** |
+| Registered datasets | **55** |
+| Retained source releases | **70** |
 | Published geographic units | **43,760** (BetterGov PSGC Q2 2024 mirror) |
 | Published population observations | **134,748** across 18 PSA 2024 Census regional releases |
 | Published health accreditations | **28,207** across 26 PhilHealth provider categories |
 | Public facilities with coordinates | **44,836**, all `map_geocoded` |
-| Public facilities without coordinates | **22,516** (kept in text search; never given invented coordinates) |
+| Public facilities without coordinates | **22,530** (kept in text search; never given invented coordinates) |
 
 These counts describe processed source records, not the complete national facility universe. OSM/HOT records are crowd-sourced map features, not official DOH or DepEd registries. The DepEd EBEIS NCR extract contains school-head names; the current source release is approved for institution-level publication with those names withheld, while the canonical DepEd facility records remain `internal`/`DISCOVERY_CANDIDATE` pending field-level mapping and privacy review. See [`docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`](docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md).
 
@@ -47,6 +47,7 @@ These counts describe processed source records, not the complete national facili
 | Quezon City Places directory | Official visitor directory; 5 facilities (1 public market, 4 parks/open spaces) | `approved_with_attribution` / `published` | Quezon City only. 3 of 5 carry `map_geocoded` coordinates from LGU-published Google Maps links. 23 QCPL library pages were not re-ingested because NLP already publishes 22 QCPL records; 37 museum, church, commercial, campus and monument pages are outside scope. Phone, e-mail, contact-person and social fields withheld. |
 | Mandaluyong City barangay directory | Official barangay table; 27 facilities (26 barangay offices, 1 covered-court multi-use record) | `approved_with_attribution` / `published` | Mandaluyong City only. The source publishes an office address, not a barangay-hall classification, so no hall subtype is inferred. One address explicitly names a covered court and is modelled with barangay-office and covered-court functions. No coordinates; telephone numbers and chairperson names withheld. |
 | Cainta municipal health-centre directory | Official landing page and six RHU pages; 28 facilities (5 RHUs, 23 barangay health stations) | `approved_with_attribution` / `published` | Cainta, Rizal only. Only records explicitly labelled `(RHU)` or `(BHS)` are published; RHU 5's two unlabelled health centres and the One Cainta satellite health station are retained privately and excluded. The source states 28 health centres, matching the 28 labelled records. No coordinates; contact and personal fields withheld. |
+| Pasay City health-centre directory | Official health-care programme page; 14 facilities (13 health centres, 1 lying-in clinic) | `approved_with_attribution` / `published` | Pasay City only. Health centres are published as `OTHER_HEALTH_FACILITY` because the source does not state RHU/BHS level. The lying-in clinic is a separate `CLINIC` with co-location evidence, not merged into the Doña Marta health centre. No coordinates; telephone numbers withheld. |
 
 ### Internal-only and blocked sources
 
