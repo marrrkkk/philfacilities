@@ -76,6 +76,7 @@ from .sources.bettergov_stats import (
     load_population_snapshot,
 )
 from .sources.bir import BirRevenueDistrictOfficeAdapter
+from .sources.cainta import CaintaHealthCenterAdapter, fetch_cainta_health_centers
 from .sources.ched_heida import ChedHeidaAdapter, fetch_heida_directory
 from .sources.deped import DepEdEnrollmentAdapter, DepEdMasterlistAdapter, DepEdResourceAdapter
 from .sources.deped_ebeis import DepEdEBEISAdapter
@@ -2177,6 +2178,45 @@ def load_mandaluyong(
         outcome = run_ingestion(
             spec=spec,
             adapter=MandaluyongBarangayAdapter(spec),
+            session=session,
+            settings=settings,
+            reprocess=reprocess,
+        )
+        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("load-cainta-health")
+def load_cainta_health(
+    reprocess: Annotated[
+        bool,
+        typer.Option(
+            "--reprocess",
+            help="Reprocess an already-preserved release instead of skipping its checksum.",
+        ),
+    ] = False,
+) -> None:
+    """Acquire the Cainta RHU pages and ingest their labelled health centres."""
+
+    settings = get_settings()
+    engine, session = _session()
+    try:
+        with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
+            content, metadata = fetch_cainta_health_centers(acquirer)
+        spec = source_spec(
+            REAL_SOURCES["cainta-health"],
+            release_label=f"CAINTA-HEALTH-{date.today().isoformat()}",
+            filename=f"cainta-lgu-health-centers-{date.today().isoformat()}.json",
+            content=content,
+            retrieved_at=datetime.now(UTC),
+            enqueue_cross_source_matches=False,
+            notes=f"Acquisition metadata: {json.dumps(metadata, default=str)}",
+        )
+        outcome = run_ingestion(
+            spec=spec,
+            adapter=CaintaHealthCenterAdapter(spec),
             session=session,
             settings=settings,
             reprocess=reprocess,

@@ -305,6 +305,21 @@ MANDALUYONG_RIGHTS_BASIS = (
     "access is inferred. This is a documented publication decision, not a legal opinion."
 )
 MANDALUYONG_ATTRIBUTION = "City Government of Mandaluyong — Barangay Directory"
+CAINTA_HEALTH_URL = "https://www.cainta.gov.ph/healthcentersandservices2025"
+CAINTA_RIGHTS_BASIS = (
+    "The Municipality of Cainta, a local government unit, publishes its health-centre "
+    "landing page and six Rural Health Unit pages as public web pages. No explicit "
+    "prohibition, access control or terms-of-use restriction was found on the inspected "
+    "pages. RA 8293 section 176 provides that no copyright subsists in a work of the "
+    "Government of the Philippines, while prior approval may be required for commercial "
+    "use. PhilFacilities publishes only reviewed institutional fields (health-centre "
+    "name, RHU/BHS source label, barangay and postal address) for non-commercial "
+    "public-interest use with attribution and takedown-on-notice. Telephone numbers, "
+    "e-mail addresses and personal names are withheld. No coordinates, office hours, "
+    "walk-in access rules or current operating status are inferred. This is a documented "
+    "publication decision, not a legal opinion."
+)
+CAINTA_ATTRIBUTION = "Municipality of Cainta, Rizal — Health Centers and Other Services"
 PPA_PORT_LIST_URL = (
     "https://ppa.com.ph/sites/default/files/List%20of%20Ports%20covered%20in%20PPA%20Statistics.pdf"
 )
@@ -862,6 +877,39 @@ REAL_SOURCES: dict[str, RealSource] = {
             "offices rather than halls. The one address that explicitly names a covered "
             "court is modelled as a community facility with barangay-office and "
             "covered-court functions. No geocoding was performed."
+        ),
+    ),
+    "cainta-health": RealSource(
+        key="cainta-health",
+        agency_code="cainta",
+        agency_name="Municipality of Cainta",
+        dataset_slug="cainta-lgu-health-centers",
+        dataset_name="Cainta municipal health-centre directory",
+        source_url=CAINTA_HEALTH_URL,
+        access_method="public_html_directory",
+        update_pattern="irregular",
+        rights=RIGHTS_APPROVED_ATTRIBUTION,
+        rights_basis=CAINTA_RIGHTS_BASIS,
+        attribution_text=CAINTA_ATTRIBUTION,
+        personal_data_status="no_personal_or_contact_fields_published",
+        requested_publication_status=PUBLICATION_APPROVED,
+        terms_url=CAINTA_HEALTH_URL,
+        coverage_scope="SINGLE_LGU",
+        coverage_note=(
+            "Official Cainta, Rizal health-services page and six RHU pages acquired on "
+            "16 November 2026. The landing page states 28 health centres across seven "
+            "barangays; the six RHU pages supply 28 explicitly labelled RHU/BHS records "
+            "plus three unlabelled entries that are retained privately and excluded. "
+            "This is Cainta coverage only; it is not a national or complete LGU "
+            "inventory. The pages supply postal addresses but no coordinates, office "
+            "hours, walk-in access rules or current operating status."
+        ),
+        note=(
+            "Wix-rendered public pages. The adapter publishes only records explicitly "
+            "labelled RHU or BHS, using RURAL_HEALTH_UNIT and BARANGAY_HEALTH_STATION "
+            "subtypes. The unlabelled RHU 5 entries and the One Cainta satellite health "
+            "station are preserved in the raw artifact and excluded. No geocoding was "
+            "performed."
         ),
     ),
     "nmis-naris": RealSource(
