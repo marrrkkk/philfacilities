@@ -1,0 +1,2973 @@
+{
+  "version": 1,
+  "as_of": "2026-11-16",
+  "description": "Merged inventory of researched source candidates from the register, the normalized candidate registry, and live probe ledgers. Presence is not acquisition, schema verification, rights approval, or a publication decision.",
+  "allowed_states": {
+    "evidence": [
+      "DISCOVERED",
+      "RECORDS_OBSERVED",
+      "FILE_DOCUMENT_VERIFIED",
+      "DIRECTORY_CONTENT_VERIFIED",
+      "DIRECTORY_EXAMPLE_VERIFIED",
+      "OFFICIAL_PORTAL_VERIFIED",
+      "OFFICIAL_LAW_VERIFIED",
+      "FOI_ACCESS_CONFIRMED",
+      "FOI_LIMITATION_CONFIRMED",
+      "CATALOGUE_CANDIDATE",
+      "PUBLIC_FEED_INSPECTED_NOT_USABLE",
+      "ACQUIRED",
+      "SCHEMA_VERIFIED",
+      "PUBLISHED",
+      "DISCOVERY_ONLY"
+    ],
+    "access": [
+      "OPEN",
+      "HUMAN_DOWNLOAD_REQUIRED",
+      "FOI_REQUIRED",
+      "AGREEMENT_REQUIRED",
+      "ACCESS_BLOCKED",
+      "UNVERIFIED",
+      "PUBLISHED"
+    ],
+    "rights": [
+      "UNKNOWN",
+      "REVIEW_REQUIRED",
+      "AGREEMENT_REQUIRED",
+      "RESTRICTED",
+      "PUBLISHED",
+      "PUBLICLY_AVAILABLE_VERIFIED"
+    ],
+    "coverage": [
+      "NATIONAL_OFFICIAL_INVENTORY",
+      "NATIONAL_PARTIAL",
+      "REGIONAL",
+      "PARTICIPATING_LGUS",
+      "SELECTED_LGUS",
+      "SINGLE_LGU",
+      "DIRECTORY_SUBSET",
+      "DISCOVERY_LAYER",
+      "UNKNOWN_COVERAGE"
+    ]
+  },
+  "taxonomy_categories": [
+    "GOV_ADMIN",
+    "COMMUNITY",
+    "EDUCATION",
+    "HEALTH",
+    "EMERGENCY_DRM",
+    "SOCIAL_WELFARE",
+    "SPORTS_RECREATION",
+    "PUBLIC_SPACE",
+    "CULTURE_KNOWLEDGE",
+    "PUBLIC_COMMERCE",
+    "UTILITIES_SANITATION",
+    "TRANSPORT",
+    "ENVIRONMENT_AGRI",
+    "HOUSING_SETTLEMENT",
+    "JUSTICE_CORRECTIONS",
+    "OTHER_QUALIFYING"
+  ],
+  "counts": {
+    "total": 84,
+    "from_register": 83,
+    "from_candidates": 42,
+    "probed": 33,
+    "unmatched_probes": 0,
+    "published": 3,
+    "internal_only": 2,
+    "by_category": {
+      "COMMUNITY": 2,
+      "CULTURE_KNOWLEDGE": 4,
+      "EDUCATION": 4,
+      "EMERGENCY_DRM": 8,
+      "ENVIRONMENT_AGRI": 12,
+      "GOV_ADMIN": 13,
+      "HEALTH": 6,
+      "HOUSING_SETTLEMENT": 4,
+      "JUSTICE_CORRECTIONS": 4,
+      "OTHER_QUALIFYING": 8,
+      "PUBLIC_COMMERCE": 3,
+      "PUBLIC_SPACE": 1,
+      "SOCIAL_WELFARE": 3,
+      "TRANSPORT": 7,
+      "UTILITIES_SANITATION": 5
+    },
+    "by_evidence_state": {
+      "CATALOGUE_CANDIDATE": 3,
+      "DIRECTORY_CONTENT_VERIFIED": 16,
+      "DIRECTORY_EXAMPLE_VERIFIED": 1,
+      "DISCOVERED": 33,
+      "DISCOVERY_ONLY": 3,
+      "FILE_DOCUMENT_VERIFIED": 8,
+      "FOI_ACCESS_CONFIRMED": 4,
+      "FOI_LIMITATION_CONFIRMED": 3,
+      "OFFICIAL_LAW_VERIFIED": 1,
+      "OFFICIAL_PORTAL_VERIFIED": 5,
+      "PUBLIC_FEED_INSPECTED_NOT_USABLE": 1,
+      "PUBLISHED": 5,
+      "RECORDS_OBSERVED": 1
+    },
+    "by_access_state": {
+      "ACCESS_BLOCKED": 31,
+      "FOI_REQUIRED": 7,
+      "HUMAN_DOWNLOAD_REQUIRED": 3,
+      "OPEN": 26,
+      "PUBLISHED": 1,
+      "UNVERIFIED": 16
+    },
+    "by_rights_state": {
+      "AGREEMENT_REQUIRED": 1,
+      "PUBLICLY_AVAILABLE_VERIFIED": 4,
+      "PUBLISHED": 10,
+      "REVIEW_REQUIRED": 29,
+      "UNKNOWN": 40
+    },
+    "by_coverage_scope": {
+      "DIRECTORY_SUBSET": 15,
+      "DISCOVERY_LAYER": 8,
+      "NATIONAL_PARTIAL": 19,
+      "PARTICIPATING_LGUS": 2,
+      "REGIONAL": 3,
+      "SELECTED_LGUS": 2,
+      "SINGLE_LGU": 6,
+      "UNKNOWN_COVERAGE": 29
+    },
+    "by_priority": {
+      "P0": 19,
+      "P1": 29,
+      "P2": 22,
+      "UNASSIGNED": 14
+    }
+  },
+  "sources": [
+    {
+      "source_id": "bai.agri_facilities",
+      "custodian": "Bureau of Animal Industry",
+      "title": "BAI",
+      "category": "ENVIRONMENT_AGRI",
+      "urls": [
+        "https://www.bai.da.gov.ph/"
+      ],
+      "evidence_state": "DISCOVERED",
+      "access_state": "ACCESS_BLOCKED",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "UNKNOWN_COVERAGE",
+      "priority": "P1",
+      "next_action": "P1. Retry later and request the official laboratory/station list through DA",
+      "tracker_ids": [],
+      "last_verified": "2026-11-16",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "M. Category search additions — 16 November 2026",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": true
+      },
+      "probes": [
+        {
+          "probe_key": "bai",
+          "observed_at": "2026-11-16",
+          "url": "https://www.bai.da.gov.ph/",
+          "http_status": 0,
+          "content_type": null,
+          "final_url": "https://www.bai.da.gov.ph/",
+          "size_bytes": 0,
+          "error": "curl: (6) Could not resolve host: www.bai.da.gov.ph",
+          "outcome": "TRANSPORT_ERROR"
+        }
+      ],
+      "observed_access_state": "ACCESS_BLOCKED"
+    },
+    {
+      "source_id": "bettergov.open_data",
+      "custodian": "BetterGov",
+      "title": "BetterGov Open Data Portal",
+      "category": "OTHER_QUALIFYING",
+      "urls": [
+        "https://bettergov.ph/",
+        "https://github.com/bettergovph"
+      ],
+      "evidence_state": "DISCOVERED",
+      "access_state": "UNVERIFIED",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "UNKNOWN_COVERAGE",
+      "priority": "P1",
+      "next_action": "Not a substitute for original agency provenance or rights; no need to mirror without added value",
+      "tracker_ids": [],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "G. National government facility/process inventories and project crosswalk sources",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": false
+      },
+      "probes": []
+    },
+    {
+      "source_id": "bettergov.statistics",
+      "custodian": "BetterGov",
+      "title": "Statistics API",
+      "category": "OTHER_QUALIFYING",
+      "urls": [
+        "https://statistics.bettergov.ph/api",
+        "https://statistics.bettergov.ph/api/v1/coverage"
+      ],
+      "evidence_state": "DISCOVERED",
+      "access_state": "UNVERIFIED",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "UNKNOWN_COVERAGE",
+      "priority": null,
+      "next_action": "Supplementary snapshot service, not original PSA publisher or a facility registry. Preserve its snapshot date and original PSA table IDs",
+      "tracker_ids": [],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "H. Geographic/statistical enrichment (not facility registries)",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": false
+      },
+      "probes": []
+    },
+    {
+      "source_id": "bfar.fisheries_facilities",
+      "custodian": "Bureau of Fisheries and Aquatic Resources",
+      "title": "BFAR",
+      "category": "ENVIRONMENT_AGRI",
+      "urls": [
+        "https://www.bfar.da.gov.ph/"
+      ],
+      "evidence_state": "DISCOVERED",
+      "access_state": "ACCESS_BLOCKED",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "UNKNOWN_COVERAGE",
+      "priority": "P1",
+      "next_action": "P1. Retry later and seek the official facility inventory through DA/BFAR",
+      "tracker_ids": [],
+      "last_verified": "2026-11-16",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "M. Category search additions — 16 November 2026",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": true
+      },
+      "probes": [
+        {
+          "probe_key": "bfar",
+          "observed_at": "2026-11-16",
+          "url": "https://www.bfar.da.gov.ph/",
+          "http_status": 0,
+          "content_type": null,
+          "final_url": "https://www.bfar.da.gov.ph/",
+          "size_bytes": 0,
+          "error": "curl: (6) Could not resolve host: www.bfar.da.gov.ph",
+          "outcome": "TRANSPORT_ERROR"
+        }
+      ],
+      "observed_access_state": "ACCESS_BLOCKED"
+    },
+    {
+      "source_id": "bfp.fire_stations",
+      "custodian": "Bureau of Fire Protection",
+      "title": "BFP fire-station and logistical records",
+      "category": "EMERGENCY_DRM",
+      "urls": [
+        "https://www.foi.gov.ph/agencies/bfp/list-of-all-fire-stations/",
+        "https://region3.bfp.gov.ph/contact-us/"
+      ],
+      "evidence_state": "FOI_ACCESS_CONFIRMED",
+      "access_state": "FOI_REQUIRED",
+      "rights_state": "REVIEW_REQUIRED",
+      "coverage_scope": "SINGLE_LGU",
+      "priority": "P0",
+      "next_action": "**P0.** Download the linked attachment through normal public access, inspect its geographic scope/fields, ask BFP about national completeness and refresh frequency.",
+      "tracker_ids": [
+        "AF1-05",
+        "AF2-04",
+        "AF5-03"
+      ],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "C. Emergency, public safety and response facilities",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "`FOI ACCESS CONFIRMED`. The 15 Oct 2025 FOI response links a Google Drive folder named “LOGISTICAL REPORT as of August 2025” and a Fire Stats folder. The response explicitly says volunteer brigade fire-station data was not held in the delivered material. The actual attachment scope/schema must be downloaded and inspected; the request was for Manila, so do not assume nationwide coverage."
+    },
+    {
+      "source_id": "bir.revenue_district_offices",
+      "custodian": "BIR",
+      "title": "BIR revenue regions and revenue district offices",
+      "category": "GOV_ADMIN",
+      "urls": [
+        "https://bir-cdn.bir.gov.ph/BIR/pdf/RAO%20No.%206-2025.pdf",
+        "https://bir-cdn.bir.gov.ph/BIR/pdf/BIR%20Citizen%27s%20Charter%20%282025-Edition%29.pdf"
+      ],
+      "evidence_state": "FILE_DOCUMENT_VERIFIED",
+      "access_state": "OPEN",
+      "rights_state": "PUBLISHED",
+      "coverage_scope": "NATIONAL_PARTIAL",
+      "priority": "P1",
+      "next_action": "**P1.** Keep OCR evidence and confidence; validate physical operating addresses against current BIR pages before adding address fields.",
+      "tracker_ids": [
+        "AF1-17",
+        "AF2-11"
+      ],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "D. Public-facing government service offices and institutional sites",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "`FILE/DOCUMENT VERIFIED`. RAO is a current official office/jurisdiction list, not a full coordinate file. The image-only PDF was processed with local OCR; 128 RDO rows and 19 region headings are published with attribution. OCR text is not a substitute for the official document."
+    },
+    {
+      "source_id": "bjmp.facilities",
+      "custodian": "BJMP",
+      "title": "BJMP jail facilities",
+      "category": "JUSTICE_CORRECTIONS",
+      "urls": [
+        "https://bjmp.gov.ph/"
+      ],
+      "evidence_state": "DISCOVERY_ONLY",
+      "access_state": "ACCESS_BLOCKED",
+      "rights_state": "REVIEW_REQUIRED",
+      "coverage_scope": "UNKNOWN_COVERAGE",
+      "priority": "P2",
+      "next_action": "**P2/conditional.** Verify a public facility-only directory; avoid operational/security details.",
+      "tracker_ids": [
+        "AF6-06"
+      ],
+      "last_verified": "2026-11-16",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "C. Emergency, public safety and response facilities",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": true
+      },
+      "probes": [
+        {
+          "probe_key": "bjmp",
+          "observed_at": "2026-11-16",
+          "url": "https://bjmp.gov.ph/",
+          "http_status": 403,
+          "content_type": "text/html; charset=UTF-8",
+          "final_url": "https://bjmp.gov.ph/",
+          "size_bytes": 5522,
+          "error": null,
+          "outcome": "HTTP_403"
+        }
+      ],
+      "notes": "`DISCOVERY ONLY`. No verified national public bulk list/schema in this pass. Sensitive security and capacity information may be restricted.",
+      "observed_access_state": "ACCESS_BLOCKED"
+    },
+    {
+      "source_id": "bmb.protected_areas",
+      "custodian": "DENR Biodiversity Management Bureau",
+      "title": "DENR-BMB protected-area information system",
+      "category": "ENVIRONMENT_AGRI",
+      "urls": [
+        "https://pais.bmb.gov.ph/index.php",
+        "https://bmb.gov.ph/"
+      ],
+      "evidence_state": "OFFICIAL_PORTAL_VERIFIED",
+      "access_state": "OPEN",
+      "rights_state": "REVIEW_REQUIRED",
+      "coverage_scope": "NATIONAL_PARTIAL",
+      "priority": "P2",
+      "next_action": "**P2 / contextual geography.** Use to associate a facility/site with a protected area only when useful; do not count each protected-area polygon as a facility.",
+      "tracker_ids": [
+        "AF1-26",
+        "AF6-05"
+      ],
+      "last_verified": "2026-11-16",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "F. Environmental, land and geospatial reference sources",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": true
+      },
+      "probes": [
+        {
+          "probe_key": "pais",
+          "observed_at": "2026-11-16",
+          "url": "https://pais.bmb.gov.ph/index.php",
+          "http_status": 0,
+          "content_type": null,
+          "final_url": "https://pais.bmb.gov.ph/index.php",
+          "size_bytes": 0,
+          "error": "curl: (35) TLS connect error: error:0A000126:SSL routines::unexpected eof while reading",
+          "outcome": "TRANSPORT_ERROR"
+        }
+      ],
+      "notes": "`OFFICIAL PORTAL VERIFIED`. Dashboard warns current system data may not fully reflect actual/real-time conditions while updates and validation continue. Protected areas are geographic sites/areas, not individual public-facility points.",
+      "observed_access_state": "ACCESS_BLOCKED"
+    },
+    {
+      "source_id": "bucor.facilities",
+      "custodian": "BuCor",
+      "title": "BuCor correctional facilities",
+      "category": "JUSTICE_CORRECTIONS",
+      "urls": [
+        "https://bucor.gov.ph/"
+      ],
+      "evidence_state": "DISCOVERY_ONLY",
+      "access_state": "UNVERIFIED",
+      "rights_state": "REVIEW_REQUIRED",
+      "coverage_scope": "UNKNOWN_COVERAGE",
+      "priority": "P2",
+      "next_action": "**P2/conditional.** Include only publicly acknowledged locations and safe fields.",
+      "tracker_ids": [
+        "AF6-06"
+      ],
+      "last_verified": "2026-11-16",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "C. Emergency, public safety and response facilities",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": true
+      },
+      "probes": [
+        {
+          "probe_key": "bucor",
+          "observed_at": "2026-11-16",
+          "url": "https://bucor.gov.ph/",
+          "http_status": 200,
+          "content_type": "text/html; charset=UTF-8",
+          "final_url": "https://bucor.gov.ph/",
+          "size_bytes": 141514,
+          "error": null,
+          "outcome": "HTTP_200"
+        }
+      ],
+      "notes": "`DISCOVERY ONLY`. No verified reusable facility dataset in this pass. Security-sensitive attributes must be excluded.",
+      "observed_access_state": "OPEN"
+    },
+    {
+      "source_id": "caap.airports",
+      "custodian": "CAAP",
+      "title": "CAAP area centres and aerodromes",
+      "category": "TRANSPORT",
+      "urls": [
+        "https://www.caap.gov.ph/area-centers/",
+        "https://www.caap.gov.ph/17950-2/",
+        "https://www.caap.gov.ph/"
+      ],
+      "evidence_state": "DIRECTORY_CONTENT_VERIFIED",
+      "access_state": "ACCESS_BLOCKED",
+      "rights_state": "REVIEW_REQUIRED",
+      "coverage_scope": "DIRECTORY_SUBSET",
+      "priority": "P1",
+      "next_action": "**P1/P2.** Acquire current aerodrome directory/AIP or authorized list; verify operator/owner, identifier, coordinates and active status airport by airport.",
+      "tracker_ids": [
+        "AF1-22",
+        "AF2-16",
+        "AF6-01"
+      ],
+      "last_verified": "2026-11-16",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "E. Transport, ports, aviation and fisheries facilities",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": true
+      },
+      "probes": [
+        {
+          "probe_key": "caap",
+          "observed_at": "2026-11-16",
+          "url": "https://www.caap.gov.ph/area-centers/",
+          "http_status": 403,
+          "content_type": "text/html",
+          "final_url": "https://www.caap.gov.ph/area-centers/",
+          "size_bytes": 876,
+          "error": null,
+          "outcome": "HTTP_403"
+        }
+      ],
+      "notes": "`DIRECTORY CONTENT VERIFIED`. Area-centre page was indexed with airport names; direct page access may be restricted to some clients. Not a downloadable national API. CAAP regulatory oversight does not prove CAAP owns/operates every airport.",
+      "observed_access_state": "ACCESS_BLOCKED"
+    },
+    {
+      "source_id": "ched.heida",
+      "custodian": "CHED",
+      "title": "CHED HEIDA higher-education institution directory",
+      "category": "EDUCATION",
+      "urls": [
+        "https://heida.ched.gov.ph/",
+        "https://heida.ched.gov.ph/hei-directory",
+        "https://ched.gov.ph/"
+      ],
+      "evidence_state": "PUBLISHED",
+      "access_state": "OPEN",
+      "rights_state": "PUBLISHED",
+      "coverage_scope": "NATIONAL_PARTIAL",
+      "priority": "P1",
+      "next_action": "**P1.** Seek a campus-level or complete export; retain regional-directory scope and `NATIONAL_PARTIAL` coverage.",
+      "tracker_ids": [
+        "AF1-39",
+        "AF2-07",
+        "M8-01"
+      ],
+      "last_verified": "2026-11-15",
+      "publication_state": "INTERNAL_ONLY",
+      "register_section": "A. Primary facility registries and agency directories",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "`ACQUIRED AND PUBLISHED`. Public server-rendered directory read on 15 Nov 2026: 18 regional directories, 280 pages, 2,716 rows, 2,711 unique after duplicate rejection. No login/CAPTCHA/prohibition encountered. Institutional fields published under `PUBLICLY_AVAILABLE_VERIFIED`; contact details and head names discarded; 123 `Others`/CHED-supervised/unrecognised rows remain internal; no coordinates or PSGC codes."
+    },
+    {
+      "source_id": "da.agri_facilities",
+      "custodian": "Department of Agriculture",
+      "title": "DA",
+      "category": "ENVIRONMENT_AGRI",
+      "urls": [
+        "https://www.da.gov.ph/"
+      ],
+      "evidence_state": "DISCOVERED",
+      "access_state": "OPEN",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "REGIONAL",
+      "priority": "P1",
+      "next_action": "P1. Find the official bureau/regional facility inventory; do not treat programme pages as a facility register",
+      "tracker_ids": [],
+      "last_verified": "2026-11-16",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "M. Category search additions — 16 November 2026",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": true
+      },
+      "probes": [
+        {
+          "probe_key": "da",
+          "observed_at": "2026-11-16",
+          "url": "https://www.da.gov.ph/",
+          "http_status": 200,
+          "content_type": "text/html; charset=UTF-8",
+          "final_url": "https://www.da.gov.ph/",
+          "size_bytes": 379311,
+          "error": null,
+          "outcome": "HTTP_200"
+        }
+      ],
+      "observed_access_state": "OPEN"
+    },
+    {
+      "source_id": "denr_mgb.geohazards",
+      "custodian": "MGB",
+      "title": "MGB geohazard layers",
+      "category": "ENVIRONMENT_AGRI",
+      "urls": [
+        "https://mgb.gov.ph/"
+      ],
+      "evidence_state": "DISCOVERY_ONLY",
+      "access_state": "ACCESS_BLOCKED",
+      "rights_state": "REVIEW_REQUIRED",
+      "coverage_scope": "DISCOVERY_LAYER",
+      "priority": "P2",
+      "next_action": "**P2 / enrichment.** Verify each layer, source date, CRS, spatial coverage and reuse terms.",
+      "tracker_ids": [
+        "AF1-37"
+      ],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "F. Environmental, land and geospatial reference sources",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "`DISCOVERY/CATALOGUE TARGET`. Do not assume all layers have downloadable national coverage or permissive terms."
+    },
+    {
+      "source_id": "deped.ebeis_masterlist",
+      "custodian": "DepEd",
+      "title": "EBEIS Masterlist report",
+      "category": "EDUCATION",
+      "urls": [
+        "https://ebeis.deped.gov.ph/beis/reports_info/masterlist"
+      ],
+      "evidence_state": "PUBLISHED",
+      "access_state": "OPEN",
+      "rights_state": "PUBLICLY_AVAILABLE_VERIFIED",
+      "coverage_scope": "NATIONAL_PARTIAL",
+      "priority": "P1",
+      "next_action": "P1. Obtain an authoritative sector/ownership field or separate DepEd releases before public canonical publication; retain release-level publication for institutional fields only",
+      "tracker_ids": [],
+      "last_verified": "2026-11-15",
+      "publication_state": "INTERNAL_ONLY",
+      "register_section": "A. Primary facility registries and agency directories",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": false
+      },
+      "probes": []
+    },
+    {
+      "source_id": "deped.school_masterlist",
+      "custodian": "DepEd",
+      "title": "Basic education school masterlist and related EBEIS datasets",
+      "category": "EDUCATION",
+      "urls": [
+        "https://www.deped.gov.ph/machine-ready-files/",
+        "https://ebeis.deped.gov.ph/beis/reports_info/masterlist",
+        "https://projectbukas.deped.gov.ph/"
+      ],
+      "evidence_state": "DIRECTORY_CONTENT_VERIFIED",
+      "access_state": "HUMAN_DOWNLOAD_REQUIRED",
+      "rights_state": "REVIEW_REQUIRED",
+      "coverage_scope": "NATIONAL_PARTIAL",
+      "priority": "P0",
+      "next_action": "**P0.** Obtain original official files, inspect exact workbooks/sheets/headers, save the accepted terms and reference period, then automate parsing and any permitted future download.",
+      "tracker_ids": [
+        "AF1-38",
+        "AF1-48",
+        "M1-03",
+        "M1-17"
+      ],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "A. Primary facility registries and agency directories",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "`DIRECTORY CONTENT VERIFIED`. DepEd publishes downloadable data families, but its file acquisition has a human download/terms or feedback flow. Do not assume an official API. Earlier source page listed enrollment through SY2024–25 and several characteristics files at SY2023–24; recheck latest release."
+    },
+    {
+      "source_id": "dhsud.housing_offices",
+      "custodian": "Department of Human Settlements and Urban Development",
+      "title": "DHSUD",
+      "category": "HOUSING_SETTLEMENT",
+      "urls": [
+        "https://dhsud.gov.ph/"
+      ],
+      "evidence_state": "DISCOVERED",
+      "access_state": "ACCESS_BLOCKED",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "UNKNOWN_COVERAGE",
+      "priority": "P1",
+      "next_action": "P1. Request the official office/settlement-service directory",
+      "tracker_ids": [],
+      "last_verified": "2026-11-16",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "M. Category search additions — 16 November 2026",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": true
+      },
+      "probes": [
+        {
+          "probe_key": "dhsud",
+          "observed_at": "2026-11-16",
+          "url": "https://dhsud.gov.ph/",
+          "http_status": 403,
+          "content_type": "text/html; charset=UTF-8",
+          "final_url": "https://dhsud.gov.ph/",
+          "size_bytes": 5523,
+          "error": null,
+          "outcome": "HTTP_403"
+        }
+      ],
+      "observed_access_state": "ACCESS_BLOCKED"
+    },
+    {
+      "source_id": "dilg.barangay_halls",
+      "custodian": "DILG / LGUs / NAMRIA",
+      "title": "Barangay hall locations and LGU asset inventories",
+      "category": "GOV_ADMIN",
+      "urls": [
+        "https://www.foi.gov.ph/agencies/dilg/list-of-barangay-halls/",
+        "https://dilg.gov.ph/page/Masterlist-of-Barangays/77",
+        "https://www.namria.gov.ph/"
+      ],
+      "evidence_state": "FOI_LIMITATION_CONFIRMED",
+      "access_state": "FOI_REQUIRED",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "UNKNOWN_COVERAGE",
+      "priority": "P0",
+      "next_action": "**P0.** Use barangay list only for geography. Acquire halls from LGU asset inventories, NAMRIA if a specific layer exists, or official LGU directories.",
+      "tracker_ids": [
+        "AF1-12",
+        "AF1-35",
+        "AF4-04"
+      ],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "B. Local-government and community-facility sources",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "`FOI LIMITATION CONFIRMED`. The Masterlist of Barangays is a barangay reference, not a hall inventory. No nationwide hall-address/coordinate file was verified."
+    },
+    {
+      "source_id": "dilg.barangay_masterlist",
+      "custodian": "DILG",
+      "title": "DILG Masterlist of Barangays",
+      "category": "GOV_ADMIN",
+      "urls": [
+        "https://dilg.gov.ph/page/Masterlist-of-Barangays/77"
+      ],
+      "evidence_state": "DISCOVERED",
+      "access_state": "UNVERIFIED",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "UNKNOWN_COVERAGE",
+      "priority": null,
+      "next_action": "Does not provide a verified barangay-hall facility address or coordinate inventory. Prefer PSA PSGC as canonical geography",
+      "tracker_ids": [],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "H. Geographic/statistical enrichment (not facility registries)",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": false
+      },
+      "probes": []
+    },
+    {
+      "source_id": "dilg.drrm_pulse",
+      "custodian": "DILG-NCR",
+      "title": "DILG-NCR DRRM-PULSE participating-LGU facility map",
+      "category": "EMERGENCY_DRM",
+      "urls": [
+        "https://drrm.ncr.dilg.gov.ph/",
+        "https://drrm.ncr.dilg.gov.ph/about",
+        "https://drrm.ncr.dilg.gov.ph/map",
+        "https://drrm.ncr.dilg.gov.ph/lgus"
+      ],
+      "evidence_state": "PUBLIC_FEED_INSPECTED_NOT_USABLE",
+      "access_state": "ACCESS_BLOCKED",
+      "rights_state": "REVIEW_REQUIRED",
+      "coverage_scope": "PARTICIPATING_LGUS",
+      "priority": null,
+      "next_action": "**BLOCKED pending broader validated export and written terms.** Ask DILG-NCR for an authorized export/API; do not infer a national inventory or publish operational coordinates without security review. Evidence: `docs/03-SOURCE-REGISTER.md` §6A.",
+      "tracker_ids": [
+        "AF1-02",
+        "AF5-01"
+      ],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "B. Local-government and community-facility sources",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "`PUBLIC FEED INSPECTED — NOT USABLE FOR BULK INGEST`. The map states that only DILG-validated records are shown and the portal lists participating LGUs, but `/api/facilities.geojson` returned exactly one feature (Marikina Rescue 161 / MCDRRMO Command Center, with exact coordinates) regardless of query parameters; `/api/map-layers.geojson` returned an empty collection. Coverage is participating LGUs, not nationwide, and emergency coordinates require security review."
+    },
+    {
+      "source_id": "dilg.evacuation_ncr_foi",
+      "custodian": "DILG-NCR",
+      "title": "DILG-NCR evacuation-centre FOI list",
+      "category": "EMERGENCY_DRM",
+      "urls": [
+        "https://www.foi.gov.ph/agencies/dilg/lists-of-existing-evacuation-centers/"
+      ],
+      "evidence_state": "FOI_ACCESS_CONFIRMED",
+      "access_state": "FOI_REQUIRED",
+      "rights_state": "REVIEW_REQUIRED",
+      "coverage_scope": "REGIONAL",
+      "priority": "P0",
+      "next_action": "**P0.** Obtain the NCR attachment and investigate individual LGU inventories. Record the inconsistent national custodianship; do not claim a national complete register.",
+      "tracker_ids": [
+        "AF1-11",
+        "AF1-34",
+        "AF5-02"
+      ],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "B. Local-government and community-facility sources",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "`FOI ACCESS CONFIRMED`, but only NCR scope. DILG said detailed nationwide information was held by OCD/NDRRMC; subsequent OCD FOI response in Feb 2026 said the requested list was not available at OCD and referred requester to DILG/LGUs. Custodian referrals are inconsistent."
+    },
+    {
+      "source_id": "dilg.public_markets",
+      "custodian": "LGUs",
+      "title": "Public markets held by LGUs",
+      "category": "PUBLIC_COMMERCE",
+      "urls": [
+        "https://www.foi.gov.ph/agencies/dilg/list-of-public-markets-in-the-philippines-dilg-905479402880/",
+        "https://www.foi.gov.ph/agencies/dilg/public-market-list-area-and-population/",
+        "https://lgu201.dilg.gov.ph/"
+      ],
+      "evidence_state": "FOI_LIMITATION_CONFIRMED",
+      "access_state": "FOI_REQUIRED",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "UNKNOWN_COVERAGE",
+      "priority": "P0",
+      "next_action": "**P0.** Build LGU-specific source connectors and requests; do not create a fake central DILG market dataset.",
+      "tracker_ids": [
+        "AF1-12",
+        "AF4-07"
+      ],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "B. Local-government and community-facility sources",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "`FOI LIMITATION CONFIRMED`. DILG says it does not maintain the requested national market list and recommends asking concerned LGUs. LGU201 is a contact/discovery directory, not the market dataset itself."
+    },
+    {
+      "source_id": "dilg.subaybayan_evacuation_projects",
+      "custodian": "DILG",
+      "title": "DILG Subaybayan LIME 20 evacuation-centre project records",
+      "category": "EMERGENCY_DRM",
+      "urls": [
+        "https://subaybayan.dilg.gov.ph/",
+        "https://www.foi.gov.ph/agencies/dilg/updated-list-of-evacuation-center-in-the-philippines/",
+        "https://www.foi.gov.ph/agencies/dilg/updated-master-list-of-evacuation-center-in-the-philippines-dilg-902947380736/"
+      ],
+      "evidence_state": "FOI_ACCESS_CONFIRMED",
+      "access_state": "ACCESS_BLOCKED",
+      "rights_state": "REVIEW_REQUIRED",
+      "coverage_scope": "UNKNOWN_COVERAGE",
+      "priority": "P0",
+      "next_action": "**P0.** Test access in normal browser, inspect actual project rows/fields and download capability. Use only as project/asset evidence, not the sole evacuation-centre register.",
+      "tracker_ids": [
+        "AF1-11",
+        "AF1-34",
+        "AF5-02"
+      ],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "B. Local-government and community-facility sources",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "`FOI ACCESS CONFIRMED` for a project-data route. The response is about evacuation-centre projects, not a complete census of all existing evacuation sites. A separate DILG response says it does not maintain a consolidated master file in the requested format and says coordinates/PSGC are not held at that office. Direct portal fetch returned 403 in this research pass. Do not conflate completed project status with current facility operation."
+    },
+    {
+      "source_id": "dilg.subaybayan_lime20",
+      "custodian": "DILG",
+      "title": "DILG Subaybayan",
+      "category": "EMERGENCY_DRM",
+      "urls": [
+        "https://subaybayan.dilg.gov.ph/"
+      ],
+      "evidence_state": "DISCOVERED",
+      "access_state": "UNVERIFIED",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "DIRECTORY_SUBSET",
+      "priority": "P0",
+      "next_action": "Not a complete inventory of all evacuation centres",
+      "tracker_ids": [],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "G. National government facility/process inventories and project crosswalk sources",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": false
+      },
+      "probes": []
+    },
+    {
+      "source_id": "doe.energy_facilities",
+      "custodian": "Department of Energy",
+      "title": "DOE",
+      "category": "UTILITIES_SANITATION",
+      "urls": [
+        "https://www.doe.gov.ph/"
+      ],
+      "evidence_state": "DISCOVERED",
+      "access_state": "OPEN",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "UNKNOWN_COVERAGE",
+      "priority": "P1",
+      "next_action": "P1. Locate the official energy-facility inventory or dataset; homepage presence is not a dataset",
+      "tracker_ids": [],
+      "last_verified": "2026-11-16",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "M. Category search additions — 16 November 2026",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": true
+      },
+      "probes": [
+        {
+          "probe_key": "doe",
+          "observed_at": "2026-11-16",
+          "url": "https://www.doe.gov.ph/",
+          "http_status": 200,
+          "content_type": "text/html; charset=utf-8",
+          "final_url": "https://doe.gov.ph/",
+          "size_bytes": 120967,
+          "error": null,
+          "outcome": "HTTP_200"
+        }
+      ],
+      "observed_access_state": "OPEN"
+    },
+    {
+      "source_id": "doh.licensed_facilities",
+      "custodian": "DOH/HFSRB",
+      "title": "DOH/HFSRB licensed health facilities",
+      "category": "HEALTH",
+      "urls": [
+        "https://hfsrb.doh.gov.ph/list-of-licensed-health-facilities/"
+      ],
+      "evidence_state": "DISCOVERED",
+      "access_state": "OPEN",
+      "rights_state": "REVIEW_REQUIRED",
+      "coverage_scope": "NATIONAL_PARTIAL",
+      "priority": "P0",
+      "next_action": "**P0/P1.** Inspect current lists and connect only on verified identity.",
+      "tracker_ids": [
+        "AF1-40",
+        "AF2-06"
+      ],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "A. Primary facility registries and agency directories",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "`OFFICIAL DIRECTORY VERIFIED`; exact current downloadable file and schema must be checked per page/release. A license is not the same as operational availability or PhilHealth accreditation."
+    },
+    {
+      "source_id": "doh.nhfr",
+      "custodian": "DOH",
+      "title": "National Health Facility Registry",
+      "category": "HEALTH",
+      "urls": [
+        "https://nhfr.doh.gov.ph/VActivefacilitiesList",
+        "https://hfsrb.doh.gov.ph/list-of-licensed-health-facilities/",
+        "https://doh.gov.ph/"
+      ],
+      "evidence_state": "FOI_ACCESS_CONFIRMED",
+      "access_state": "FOI_REQUIRED",
+      "rights_state": "AGREEMENT_REQUIRED",
+      "coverage_scope": "NATIONAL_PARTIAL",
+      "priority": "P0",
+      "next_action": "**P0.** Recheck permitted browser export; obtain current official file via authorized route/FOI; review exact agreement before public use; preserve coordinate provenance.",
+      "tracker_ids": [
+        "AF1-40",
+        "M1-07",
+        "M1-08"
+      ],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "A. Primary facility registries and agency directories",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "`FOI ACCESS CONFIRMED` and prior `ACCESS_BLOCKED`. DOH FOI disclosures in 2025/2026 describe CSV/Excel and shapefile releases. The public export returned 403 in prior tests. DOH disclosed missing coordinates, barangay centroids, map-derived coordinates, and incomplete registry coverage. Certain releases use a signed Data Release and Use Agreement."
+    },
+    {
+      "source_id": "doj.justice_offices",
+      "custodian": "Department of Justice",
+      "title": "DOJ",
+      "category": "JUSTICE_CORRECTIONS",
+      "urls": [
+        "https://www.doj.gov.ph/"
+      ],
+      "evidence_state": "DISCOVERED",
+      "access_state": "ACCESS_BLOCKED",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "UNKNOWN_COVERAGE",
+      "priority": "P2",
+      "next_action": "P2. Request a public office directory; exclude security-sensitive details",
+      "tracker_ids": [],
+      "last_verified": "2026-11-16",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "M. Category search additions — 16 November 2026",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": true
+      },
+      "probes": [
+        {
+          "probe_key": "doj",
+          "observed_at": "2026-11-16",
+          "url": "https://www.doj.gov.ph/",
+          "http_status": 403,
+          "content_type": "text/html; charset=UTF-8",
+          "final_url": "https://www.doj.gov.ph/",
+          "size_bytes": 5415,
+          "error": null,
+          "outcome": "HTTP_403"
+        }
+      ],
+      "observed_access_state": "ACCESS_BLOCKED"
+    },
+    {
+      "source_id": "dotr.transport_facilities",
+      "custodian": "Department of Transportation",
+      "title": "DOTr",
+      "category": "TRANSPORT",
+      "urls": [
+        "https://www.dotr.gov.ph/"
+      ],
+      "evidence_state": "DISCOVERED",
+      "access_state": "ACCESS_BLOCKED",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "NATIONAL_PARTIAL",
+      "priority": "P1",
+      "next_action": "P1. Request permitted access or use the attached-agency source of record",
+      "tracker_ids": [],
+      "last_verified": "2026-11-16",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "M. Category search additions — 16 November 2026",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": true
+      },
+      "probes": [
+        {
+          "probe_key": "dotr",
+          "observed_at": "2026-11-16",
+          "url": "https://www.dotr.gov.ph/",
+          "http_status": 403,
+          "content_type": "text/html; charset=UTF-8",
+          "final_url": "https://www.dotr.gov.ph/",
+          "size_bytes": 5526,
+          "error": null,
+          "outcome": "HTTP_403"
+        }
+      ],
+      "observed_access_state": "ACCESS_BLOCKED"
+    },
+    {
+      "source_id": "dpwh.infrastructure_projects",
+      "custodian": "DPWH",
+      "title": "DPWH infrastructure and public-building project records",
+      "category": "GOV_ADMIN",
+      "urls": [
+        "https://transparency.dpwh.gov.ph/",
+        "https://www.dpwh.gov.ph/"
+      ],
+      "evidence_state": "OFFICIAL_PORTAL_VERIFIED",
+      "access_state": "OPEN",
+      "rights_state": "REVIEW_REQUIRED",
+      "coverage_scope": "UNKNOWN_COVERAGE",
+      "priority": "P1",
+      "next_action": "**P1.** Inspect current project fields/download access; preserve project-vs-facility distinction.",
+      "tracker_ids": [
+        "AF1-35"
+      ],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "B. Local-government and community-facility sources",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "`OFFICIAL PORTAL VERIFIED`. Project records are not a facility masterlist and do not prove the facility exists/operates today. Use to connect a project to a physical facility only with identity evidence."
+    },
+    {
+      "source_id": "dpwh.ngob_inventory",
+      "custodian": "DPWH / national agencies",
+      "title": "DPWH national government-owned building inventory process",
+      "category": "GOV_ADMIN",
+      "urls": [
+        "https://www.dpwh.gov.ph/dpwh/sites/default/files/issuances/do_247_s2024.pdf"
+      ],
+      "evidence_state": "FILE_DOCUMENT_VERIFIED",
+      "access_state": "HUMAN_DOWNLOAD_REQUIRED",
+      "rights_state": "REVIEW_REQUIRED",
+      "coverage_scope": "UNKNOWN_COVERAGE",
+      "priority": "P0",
+      "next_action": "**P0/P1.** Request the resulting inventory or an authorized/redacted export; identify the actual building-owning agencies.",
+      "tracker_ids": [
+        "AF1-08",
+        "AF1-09",
+        "AF1-35"
+      ],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "B. Local-government and community-facility sources",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "`FILE/DOCUMENT VERIFIED` for the order/forms. It establishes a standardized inventory process but is not proof of a public downloadable nationwide inventory."
+    },
+    {
+      "source_id": "dpwh.transparency_projects",
+      "custodian": "DPWH",
+      "title": "DPWH Transparency Portal",
+      "category": "GOV_ADMIN",
+      "urls": [
+        "https://transparency.dpwh.gov.ph/"
+      ],
+      "evidence_state": "DISCOVERED",
+      "access_state": "UNVERIFIED",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "UNKNOWN_COVERAGE",
+      "priority": "P1",
+      "next_action": "Not proof that a completed contract is still an operational facility",
+      "tracker_ids": [],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "G. National government facility/process inventories and project crosswalk sources",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": false
+      },
+      "probes": []
+    },
+    {
+      "source_id": "drrm.lgu_offices_and_resources",
+      "custodian": "DILG/LGUs",
+      "title": "Local DRRM offices, command centres, and resources",
+      "category": "EMERGENCY_DRM",
+      "urls": [
+        "https://drrm.ncr.dilg.gov.ph/map",
+        "https://dilg.gov.ph/"
+      ],
+      "evidence_state": "DISCOVERED",
+      "access_state": "ACCESS_BLOCKED",
+      "rights_state": "REVIEW_REQUIRED",
+      "coverage_scope": "PARTICIPATING_LGUS",
+      "priority": "P0",
+      "next_action": "**P0/P1.** Import public facility subset; do not expose sensitive equipment/resource details without review.",
+      "tracker_ids": [
+        "AF1-02",
+        "AF5-01",
+        "AF5-06"
+      ],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "C. Emergency, public safety and response facilities",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "Participating-LGU and validated-data limitations apply. Resource inventory is not automatically a public facility record."
+    },
+    {
+      "source_id": "dswd.crcf",
+      "custodian": "DSWD",
+      "title": "DSWD centres, residential care facilities, and Standards Bureau lists",
+      "category": "SOCIAL_WELFARE",
+      "urls": [
+        "https://www.dswd.gov.ph/crcf/",
+        "https://standards.dswd.gov.ph/directories-3/",
+        "https://eodb.dswd.gov.ph/directory/"
+      ],
+      "evidence_state": "DIRECTORY_CONTENT_VERIFIED",
+      "access_state": "OPEN",
+      "rights_state": "PUBLISHED",
+      "coverage_scope": "DIRECTORY_SUBSET",
+      "priority": "P0",
+      "next_action": "**P0/P1.** Acquire dated directories; inspect actual files; do not count private/merely accredited providers as government-owned.",
+      "tracker_ids": [
+        "AF1-03",
+        "AF1-33",
+        "AF1-42",
+        "AF2-01",
+        "AF2-02"
+      ],
+      "last_verified": "2026-11-16",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "A. Primary facility registries and agency directories",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": true
+      },
+      "probes": [
+        {
+          "probe_key": "standards-dswd",
+          "observed_at": "2026-11-16",
+          "url": "https://standards.dswd.gov.ph/directories-3/",
+          "http_status": 0,
+          "content_type": null,
+          "final_url": "https://standards.dswd.gov.ph/directories-3/",
+          "size_bytes": 0,
+          "error": "curl: (35) TLS connect error: error:0A000126:SSL routines::unexpected eof while reading",
+          "outcome": "TRANSPORT_ERROR"
+        }
+      ],
+      "notes": "`DIRECTORY CONTENT VERIFIED`. DSWD Standards Bureau lists dated files, including CRCF and LGU-accredited CRCF directories as of 24 Sep 2026. The public website may be dynamic and not provide a documented API. Separate DSWD-owned/operated, LGU-owned/accredited, and private entities. 76 facilities are `PUBLISHED` with attribution; only institutional name, field office, and postal address are exposed.",
+      "observed_access_state": "ACCESS_BLOCKED"
+    },
+    {
+      "source_id": "dswd.standards_directories",
+      "custodian": "DSWD Standards Bureau",
+      "title": "Standards Bureau directories",
+      "category": "SOCIAL_WELFARE",
+      "urls": [
+        "https://standards.dswd.gov.ph/directories-3/"
+      ],
+      "evidence_state": "DISCOVERED",
+      "access_state": "ACCESS_BLOCKED",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "UNKNOWN_COVERAGE",
+      "priority": "P1",
+      "next_action": "P1. Retry through a supported client and request the dated directory and reuse terms",
+      "tracker_ids": [],
+      "last_verified": "2026-11-16",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "M. Category search additions — 16 November 2026",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": true
+      },
+      "probes": [
+        {
+          "probe_key": "standards-dswd",
+          "observed_at": "2026-11-16",
+          "url": "https://standards.dswd.gov.ph/directories-3/",
+          "http_status": 0,
+          "content_type": null,
+          "final_url": "https://standards.dswd.gov.ph/directories-3/",
+          "size_bytes": 0,
+          "error": "curl: (35) TLS connect error: error:0A000126:SSL routines::unexpected eof while reading",
+          "outcome": "TRANSPORT_ERROR"
+        }
+      ],
+      "observed_access_state": "ACCESS_BLOCKED"
+    },
+    {
+      "source_id": "dti.negosyo_centers",
+      "custodian": "DTI",
+      "title": "DTI Negosyo Center directory",
+      "category": "GOV_ADMIN",
+      "urls": [
+        "https://negosyocenter.dti.gov.ph/negosyo-center-directory",
+        "https://negosyocenter.dti.gov.ph/api/negosyo-centers/regions-overview",
+        "https://negosyocenter.dti.gov.ph/api/negosyo-centers/by-region",
+        "https://negosyocenter.dti.gov.ph/terms-and-conditions"
+      ],
+      "evidence_state": "DIRECTORY_CONTENT_VERIFIED",
+      "access_state": "OPEN",
+      "rights_state": "PUBLISHED",
+      "coverage_scope": "NATIONAL_PARTIAL",
+      "priority": "P1",
+      "next_action": "**DONE (directory subset).** Published with attribution and takedown-on-notice; do not infer coordinates, host ownership, operator or current operation. Verify each center's host/operator only from an additional official source.",
+      "tracker_ids": [
+        "AF1-18",
+        "AF2-12"
+      ],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "D. Public-facing government service offices and institutional sites",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "`DIRECTORY CONTENT VERIFIED`. On 15 November 2026 the endpoints returned 1,427 unique active center records across all 17 regions. The finder does not state ownership, operator, host, hours, public-access conditions or coordinates. Centers are often co-located in city halls, SUCs or partner premises; a center is a government service unit, not proof about the host building. Phone/email are withheld from the public record."
+    },
+    {
+      "source_id": "dti.shared_service_facilities",
+      "custodian": "DTI / Geoportal",
+      "title": "DTI shared service facilities",
+      "category": "OTHER_QUALIFYING",
+      "urls": [
+        "https://geoportal.gov.ph/",
+        "https://www.dti.gov.ph/"
+      ],
+      "evidence_state": "CATALOGUE_CANDIDATE",
+      "access_state": "UNVERIFIED",
+      "rights_state": "REVIEW_REQUIRED",
+      "coverage_scope": "DISCOVERY_LAYER",
+      "priority": "P2",
+      "next_action": "**P2.** Include qualifying public-service facility records regardless of owner/operator when the source establishes the site and public-interest role; funding/ownership/operator must remain separate. A DTI-funded private/cooperative facility is not automatically government-owned.",
+      "tracker_ids": [
+        "AF1-43",
+        "AF6-07"
+      ],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "D. Public-facing government service offices and institutional sites",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "`CATALOGUE CANDIDATE`. Verify whether each is government-owned, DTI-funded, LGU-hosted, cooperative- or privately operated. Funding support alone does not make it government-owned."
+    },
+    {
+      "source_id": "eccd.ncdc_cdc",
+      "custodian": "ECCD Council",
+      "title": "ECCD Council national child development centres and CDC resources",
+      "category": "SOCIAL_WELFARE",
+      "urls": [
+        "https://eccdcouncil.gov.ph/ncdc/",
+        "https://eccdcouncil.gov.ph/resources/",
+        "https://eccdcouncil.gov.ph/wp-content/uploads/2024/10/AR-2023-051024-2_compressed.pdf",
+        "https://eccdcouncil.gov.ph/wp-content/uploads/2025/10/ECCD_AR2025_7.21.pdf"
+      ],
+      "evidence_state": "FILE_DOCUMENT_VERIFIED",
+      "access_state": "ACCESS_BLOCKED",
+      "rights_state": "REVIEW_REQUIRED",
+      "coverage_scope": "DIRECTORY_SUBSET",
+      "priority": "P0",
+      "next_action": "**P0/P1.** Acquire NCDC list first; contact ECCD Council/DSWD/LGUs for permitted CDC registry. Do not interpret 1,057 NCDCs as the total number of all CDCs.",
+      "tracker_ids": [
+        "AF1-15",
+        "AF1-33",
+        "AF2-09"
+      ],
+      "last_verified": "2026-11-16",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "A. Primary facility registries and agency directories",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": true
+      },
+      "probes": [
+        {
+          "probe_key": "eccd",
+          "observed_at": "2026-11-16",
+          "url": "https://eccdcouncil.gov.ph/ncdc/",
+          "http_status": 403,
+          "content_type": "text/html; charset=UTF-8",
+          "final_url": "https://eccdcouncil.gov.ph/ncdc/",
+          "size_bytes": 5434,
+          "error": null,
+          "outcome": "HTTP_403"
+        }
+      ],
+      "notes": "`FILE/DOCUMENT VERIFIED` for the 2023 NCDC list and official forms; `OFFICIAL PORTAL/REPORT VERIFIED` for 2025 NCDC count and a screenshot of the ECCD MIS list interface (Province, City/Municipality, Address, Status). The complete CDC registry is not proven as a public export/API. CDCs can be public, private, LGU, NGO or workplace-based; ownership must be distinguished.",
+      "observed_access_state": "ACCESS_BLOCKED"
+    },
+    {
+      "source_id": "emb.air_quality_stations",
+      "custodian": "DENR Environmental Management Bureau",
+      "title": "DENR-EMB ambient air-quality monitoring stations",
+      "category": "ENVIRONMENT_AGRI",
+      "urls": [
+        "https://air.emb.gov.ph/ambient-air-quality-monitoring/",
+        "https://ncr.emb.gov.ph/realtimeairmonitoring/",
+        "https://r11.emb.gov.ph/air-quality-management-2/"
+      ],
+      "evidence_state": "DIRECTORY_CONTENT_VERIFIED",
+      "access_state": "OPEN",
+      "rights_state": "REVIEW_REQUIRED",
+      "coverage_scope": "REGIONAL",
+      "priority": "P2",
+      "next_action": "**P2.** Collect station metadata and coordinates if officially available; store station as a monitoring/asset subtype; keep sensor observations in a separate related dataset.",
+      "tracker_ids": [
+        "AF1-25",
+        "AF2-19",
+        "AF6-05"
+      ],
+      "last_verified": "2026-11-16",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "F. Environmental, land and geospatial reference sources",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": true
+      },
+      "probes": [
+        {
+          "probe_key": "emb-aq",
+          "observed_at": "2026-11-16",
+          "url": "https://air.emb.gov.ph/ambient-air-quality-monitoring/",
+          "http_status": 200,
+          "content_type": "text/html; charset=UTF-8",
+          "final_url": "https://air.emb.gov.ph/ambient-air-quality-monitoring/",
+          "size_bytes": 0,
+          "error": "curl: (92) Invalid HTTP header field was received: frame type: 1, stream: 1, name: [upgrade], value: [h2,h2c]",
+          "outcome": "HTTP_200"
+        },
+        {
+          "probe_key": "emb-ncr",
+          "observed_at": "2026-11-16",
+          "url": "https://ncr.emb.gov.ph/realtimeairmonitoring/",
+          "http_status": 200,
+          "content_type": "text/html; charset=UTF-8",
+          "final_url": "https://ncr.emb.gov.ph/realtimeairmonitoring/",
+          "size_bytes": 244998,
+          "error": null,
+          "outcome": "HTTP_200"
+        }
+      ],
+      "notes": "`DIRECTORY CONTENT VERIFIED`. Pages are region-specific and some live/download links exist. A complete nationwide station inventory and coordinate export were not verified. A monitoring station is a public/environmental asset, not necessarily a public walk-in facility.",
+      "observed_access_state": "OPEN"
+    },
+    {
+      "source_id": "geoportal.facility_layers",
+      "custodian": "NAMRIA / Philippine Geoportal / originating agencies",
+      "title": "Philippine Geoportal facility layers",
+      "category": "OTHER_QUALIFYING",
+      "urls": [
+        "https://geoportal.gov.ph/",
+        "https://www.geoportal.gov.ph/gpresources/GP_DataInventory.pdf",
+        "https://www.geoportal.gov.ph/gpresources/How%20to%20Download%20data%20from%20Geoportal%20Philippines.pdf",
+        "https://www.namria.gov.ph/Downloads.aspx"
+      ],
+      "evidence_state": "CATALOGUE_CANDIDATE",
+      "access_state": "ACCESS_BLOCKED",
+      "rights_state": "REVIEW_REQUIRED",
+      "coverage_scope": "DISCOVERY_LAYER",
+      "priority": "P0",
+      "next_action": "**P0.** Review the current inventory row by row; create one source entry per selected layer; obtain original metadata, date, owner, geometry, CRS, download permission and redistribution terms. Do not ingest stale/unknown layers as current truth.",
+      "tracker_ids": [
+        "AF1-06",
+        "AF1-07",
+        "AF1-28",
+        "AF3-01"
+      ],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "F. Environmental, land and geospatial reference sources",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "`CATALOGUE CANDIDATE`. Geoportal is a discovery/catalogue/map service. Its guide says only layers enabled in the Download window can be downloaded; otherwise contact the data owner. The inventory identifies layer-specific metadata/restrictions. Several layers are clearly old (e.g. 2003). A visible map layer is not automatically a current data file or reuse licence."
+    },
+    {
+      "source_id": "govph.directory",
+      "custodian": "GOV.PH",
+      "title": "GOV.PH Directory",
+      "category": "GOV_ADMIN",
+      "urls": [
+        "https://www.gov.ph/directory"
+      ],
+      "evidence_state": "DISCOVERED",
+      "access_state": "UNVERIFIED",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "NATIONAL_PARTIAL",
+      "priority": "P2",
+      "next_action": "P2. Use agency-specific official directories; do not reconstruct a national facility list from agency links",
+      "tracker_ids": [],
+      "last_verified": "2026-11-16",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "M. Category search additions — 16 November 2026",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": true
+      },
+      "probes": [
+        {
+          "probe_key": "govph-directory",
+          "observed_at": "2026-11-16",
+          "url": "https://www.gov.ph/directory",
+          "http_status": 404,
+          "content_type": "text/html",
+          "final_url": "https://www.gov.ph/directory/",
+          "size_bytes": 1141,
+          "error": null,
+          "outcome": "HTTP_404"
+        }
+      ],
+      "observed_access_state": "MIXED"
+    },
+    {
+      "source_id": "judiciary.courts",
+      "custodian": "Judiciary",
+      "title": "Supreme Court",
+      "category": "JUSTICE_CORRECTIONS",
+      "urls": [
+        "https://sc.judiciary.gov.ph/"
+      ],
+      "evidence_state": "DISCOVERED",
+      "access_state": "ACCESS_BLOCKED",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "UNKNOWN_COVERAGE",
+      "priority": "P2",
+      "next_action": "P2. Use an official court directory or authorized dataset with valid TLS",
+      "tracker_ids": [],
+      "last_verified": "2026-11-16",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "M. Category search additions — 16 November 2026",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": true
+      },
+      "probes": [
+        {
+          "probe_key": "judiciary",
+          "observed_at": "2026-11-16",
+          "url": "https://sc.judiciary.gov.ph/",
+          "http_status": 0,
+          "content_type": null,
+          "final_url": "https://sc.judiciary.gov.ph/",
+          "size_bytes": 0,
+          "error": "curl: (60) SSL certificate OpenSSL verify result: unable to get local issuer certificate (20)",
+          "outcome": "TRANSPORT_ERROR"
+        }
+      ],
+      "observed_access_state": "ACCESS_BLOCKED"
+    },
+    {
+      "source_id": "lgu.cainta_health_centers",
+      "custodian": "Municipality of Cainta",
+      "title": "Health Centers and Other Services",
+      "category": "HEALTH",
+      "urls": [
+        "https://www.cainta.gov.ph/healthcentersandservices2025",
+        "https://www.cainta.gov.ph/rhu1",
+        "https://www.cainta.gov.ph/rhu2",
+        "https://www.cainta.gov.ph/rhu3",
+        "https://www.cainta.gov.ph/rhu4",
+        "https://www.cainta.gov.ph/rhu5",
+        "https://www.cainta.gov.ph/rhu6"
+      ],
+      "evidence_state": "DIRECTORY_CONTENT_VERIFIED",
+      "access_state": "UNVERIFIED",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "SINGLE_LGU",
+      "priority": null,
+      "next_action": "DONE (single-LGU). Release CAINTA-HEALTH-2026-11-16, SHA-256 532c717f…eab3; 28 parsed, 0 rejected, 28 facilities published (5 RHU, 23 BHS), 28 functions and 56 roles. Extend only through separate LGU releases",
+      "tracker_ids": [],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "B. Local-government and community-facility sources",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": false
+      },
+      "probes": []
+    },
+    {
+      "source_id": "lgu.community_facility_inventory",
+      "custodian": "each LGU",
+      "title": "LGU Section 524 community-facility inventory",
+      "category": "COMMUNITY",
+      "urls": [
+        "https://lawphil.net/statutes/repacts/ra1991/ra_7160_1991.html",
+        "https://lgu201.dilg.gov.ph/"
+      ],
+      "evidence_state": "OFFICIAL_LAW_VERIFIED",
+      "access_state": "FOI_REQUIRED",
+      "rights_state": "REVIEW_REQUIRED",
+      "coverage_scope": "SELECTED_LGUS",
+      "priority": "P0",
+      "next_action": "**P0.** Ask LGUs for their actual existing inventories and previous releases; capture responsible office, format, scope, date and rights.",
+      "tracker_ids": [
+        "AF1-12",
+        "AF1-35",
+        "AF4-01",
+        "AF4-03"
+      ],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "B. Local-government and community-facility sources",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "`OFFICIAL LAW VERIFIED`; `NO CENTRAL DATASET VERIFIED`. The law does not itself create a centralized open database or prove that every LGU has published a digitized inventory."
+    },
+    {
+      "source_id": "lgu.mandaluyong_barangay_directory",
+      "custodian": "City Government of Mandaluyong",
+      "title": "Barangay Directory",
+      "category": "GOV_ADMIN",
+      "urls": [
+        "https://mandaluyong.gov.ph/government/barangays/"
+      ],
+      "evidence_state": "DIRECTORY_CONTENT_VERIFIED",
+      "access_state": "UNVERIFIED",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "SINGLE_LGU",
+      "priority": null,
+      "next_action": "DONE (single-LGU). Release MANDALUYONG-LGU-2026-11-16, SHA-256 65f7d821…334e; 27 parsed, 0 rejected, 27 facilities published, 28 functions and 54 roles. Extend to other LGUs with separate releases; do not infer national coverage",
+      "tracker_ids": [],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "B. Local-government and community-facility sources",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": false
+      },
+      "probes": []
+    },
+    {
+      "source_id": "lgu.market_and_abattoir_directories",
+      "custodian": "individual LGUs",
+      "title": "LGU public-market and slaughterhouse directories",
+      "category": "PUBLIC_COMMERCE",
+      "urls": [
+        "https://quezoncity.gov.ph/departments/market-development-and-administration-department-mdad/"
+      ],
+      "evidence_state": "DIRECTORY_EXAMPLE_VERIFIED",
+      "access_state": "OPEN",
+      "rights_state": "REVIEW_REQUIRED",
+      "coverage_scope": "SELECTED_LGUS",
+      "priority": "P0",
+      "next_action": "**P0.** Use as a connector pattern, not a nationwide dataset. Search LGU domains systematically.",
+      "tracker_ids": [
+        "AF1-12",
+        "AF4-07"
+      ],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "B. Local-government and community-facility sources",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "`DIRECTORY EXAMPLE VERIFIED`; not a national source. DILG FOI says market records are at LGU level."
+    },
+    {
+      "source_id": "lgu.pasay_health_centers",
+      "custodian": "Pasay City Government",
+      "title": "Health Care programme page",
+      "category": "HEALTH",
+      "urls": [
+        "https://pasay.gov.ph/programa/health-care/"
+      ],
+      "evidence_state": "DIRECTORY_CONTENT_VERIFIED",
+      "access_state": "UNVERIFIED",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "SINGLE_LGU",
+      "priority": null,
+      "next_action": "DONE (single-LGU). Release PASAY-HEALTH-2026-11-16, SHA-256 1a16249e…f57a; 14 parsed, 0 rejected, 14 facilities published (13 health centres, 1 clinic), 14 functions and 28 roles. Extend only through separate LGU releases",
+      "tracker_ids": [],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "B. Local-government and community-facility sources",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": false
+      },
+      "probes": []
+    },
+    {
+      "source_id": "lgu.quezon_city_directories",
+      "custodian": "Quezon City Government",
+      "title": "Health Center directory sitemap",
+      "category": "COMMUNITY",
+      "urls": [
+        "https://quezoncity.gov.ph/health_centers-sitemap.xml",
+        "https://quezoncity.gov.ph/brgy-directory-sitemap.xml",
+        "https://quezoncity.gov.ph/qc-barangays/"
+      ],
+      "evidence_state": "DIRECTORY_CONTENT_VERIFIED",
+      "access_state": "UNVERIFIED",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "SINGLE_LGU",
+      "priority": null,
+      "next_action": "DONE (single-LGU pilot). Release QC-LGU-DIRECTORY-2026-11-16, SHA-256 df8543e2…b6fb; 108 facilities published, 0 rejected. Extend to other LGUs with separate source releases; do not infer national coverage",
+      "tracker_ids": [],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "B. Local-government and community-facility sources",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": false
+      },
+      "probes": []
+    },
+    {
+      "source_id": "lgu.quezon_city_places",
+      "custodian": "Quezon City Government",
+      "title": "Places to Visit directory",
+      "category": "PUBLIC_SPACE",
+      "urls": [
+        "https://quezoncity.gov.ph/places/",
+        "https://quezoncity.gov.ph/wp-json/wp/v2/search?subtype=places&per_page=100&page=1"
+      ],
+      "evidence_state": "DIRECTORY_CONTENT_VERIFIED",
+      "access_state": "UNVERIFIED",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "SINGLE_LGU",
+      "priority": null,
+      "next_action": "DONE (single-LGU pilot). Release QC-LGU-PLACES-2026-11-16, SHA-256 bd29eff2…905b0; 65 parsed, 0 rejected, 5 facilities published. Extend only through separate LGU releases; do not infer national coverage",
+      "tracker_ids": [],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "B. Local-government and community-facility sources",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": false
+      },
+      "probes": []
+    },
+    {
+      "source_id": "lrta.stations",
+      "custodian": "Light Rail Transit Authority",
+      "title": "LRTA",
+      "category": "TRANSPORT",
+      "urls": [
+        "https://lrta.gov.ph/",
+        "https://lrta.gov.ph/distance-between-stations/"
+      ],
+      "evidence_state": "DIRECTORY_CONTENT_VERIFIED",
+      "access_state": "OPEN",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "DIRECTORY_SUBSET",
+      "priority": "P1",
+      "next_action": "P1. Verify current station names and dates before any release; do not infer national rail coverage",
+      "tracker_ids": [],
+      "last_verified": "2026-11-16",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "M. Category search additions — 16 November 2026",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": true
+      },
+      "probes": [
+        {
+          "probe_key": "lrta",
+          "observed_at": "2026-11-16",
+          "url": "https://lrta.gov.ph/",
+          "http_status": 200,
+          "content_type": "text/html; charset=UTF-8",
+          "final_url": "https://www.lrta.gov.ph/",
+          "size_bytes": 86235,
+          "error": null,
+          "outcome": "HTTP_200"
+        }
+      ],
+      "observed_access_state": "OPEN"
+    },
+    {
+      "source_id": "lwua.water_districts",
+      "custodian": "Local Water Utilities Administration",
+      "title": "LWUA",
+      "category": "UTILITIES_SANITATION",
+      "urls": [
+        "https://lwua.gov.ph/"
+      ],
+      "evidence_state": "DISCOVERED",
+      "access_state": "ACCESS_BLOCKED",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "UNKNOWN_COVERAGE",
+      "priority": "P2",
+      "next_action": "P2. Request an authorized facility/service-area inventory with critical-infrastructure review",
+      "tracker_ids": [],
+      "last_verified": "2026-11-16",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "M. Category search additions — 16 November 2026",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": true
+      },
+      "probes": [
+        {
+          "probe_key": "lwua",
+          "observed_at": "2026-11-16",
+          "url": "https://lwua.gov.ph/",
+          "http_status": 403,
+          "content_type": "text/html; charset=UTF-8",
+          "final_url": "https://lwua.gov.ph/",
+          "size_bytes": 5522,
+          "error": null,
+          "outcome": "HTTP_403"
+        }
+      ],
+      "observed_access_state": "ACCESS_BLOCKED"
+    },
+    {
+      "source_id": "marina.ports",
+      "custodian": "Maritime Industry Authority",
+      "title": "MARINA",
+      "category": "TRANSPORT",
+      "urls": [
+        "https://marina.gov.ph/",
+        "https://marina.gov.ph/ports/"
+      ],
+      "evidence_state": "DISCOVERED",
+      "access_state": "OPEN",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "UNKNOWN_COVERAGE",
+      "priority": "P1",
+      "next_action": "P1. Locate an official port/terminal registry; do not infer facilities from the homepage",
+      "tracker_ids": [],
+      "last_verified": "2026-11-16",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "M. Category search additions — 16 November 2026",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": true
+      },
+      "probes": [
+        {
+          "probe_key": "marina",
+          "observed_at": "2026-11-16",
+          "url": "https://marina.gov.ph/",
+          "http_status": 200,
+          "content_type": "text/html; charset=UTF-8",
+          "final_url": "https://marina.gov.ph/",
+          "size_bytes": 110530,
+          "error": null,
+          "outcome": "HTTP_200"
+        },
+        {
+          "probe_key": "marina-ports",
+          "observed_at": "2026-11-16",
+          "url": "https://marina.gov.ph/ports/",
+          "http_status": 404,
+          "content_type": "text/html; charset=UTF-8",
+          "final_url": "https://marina.gov.ph/ports/",
+          "size_bytes": 79999,
+          "error": null,
+          "outcome": "HTTP_404"
+        }
+      ],
+      "observed_access_state": "MIXED"
+    },
+    {
+      "source_id": "mwss.water_facilities",
+      "custodian": "Metropolitan Waterworks and Sewerage System",
+      "title": "MWSS",
+      "category": "UTILITIES_SANITATION",
+      "urls": [
+        "https://mwss.gov.ph/"
+      ],
+      "evidence_state": "DISCOVERED",
+      "access_state": "ACCESS_BLOCKED",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "UNKNOWN_COVERAGE",
+      "priority": "P2",
+      "next_action": "P2. Seek a site-level inventory; exclude sensitive operational details before publication",
+      "tracker_ids": [],
+      "last_verified": "2026-11-16",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "M. Category search additions — 16 November 2026",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": true
+      },
+      "probes": [
+        {
+          "probe_key": "mwss",
+          "observed_at": "2026-11-16",
+          "url": "https://mwss.gov.ph/",
+          "http_status": 403,
+          "content_type": "text/html; charset=UTF-8",
+          "final_url": "https://mwss.gov.ph/",
+          "size_bytes": 5522,
+          "error": null,
+          "outcome": "HTTP_403"
+        }
+      ],
+      "observed_access_state": "ACCESS_BLOCKED"
+    },
+    {
+      "source_id": "nationalmuseum.museums",
+      "custodian": "National Museum of the Philippines",
+      "title": "National Museum regional, area, and site museums",
+      "category": "CULTURE_KNOWLEDGE",
+      "urls": [
+        "https://www.nationalmuseum.gov.ph/our-museums/regional-area-and-site-museums/",
+        "https://www.nationalmuseum.gov.ph/"
+      ],
+      "evidence_state": "DIRECTORY_CONTENT_VERIFIED",
+      "access_state": "OPEN",
+      "rights_state": "PUBLISHED",
+      "coverage_scope": "DIRECTORY_SUBSET",
+      "priority": "P1",
+      "next_action": "**P1.** Maintain an official-link-backed directory from individual museum pages; verify address, operator, open/closed status and dates.",
+      "tracker_ids": [
+        "AF1-16",
+        "AF2-10"
+      ],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "A. Primary facility registries and agency directories",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "`DIRECTORY CONTENT VERIFIED`. Current official page exposes the location list and individual museum links. No national bulk API/export verified. Institutional museum fields are published with attribution; this is a directory subset, not all Philippine museums."
+    },
+    {
+      "source_id": "nbi.regional_district_offices",
+      "custodian": "National Bureau of Investigation",
+      "title": "Regional & District Offices",
+      "category": "GOV_ADMIN",
+      "urls": [
+        "https://nbi.gov.ph/regional-district-offices/"
+      ],
+      "evidence_state": "PUBLISHED",
+      "access_state": "OPEN",
+      "rights_state": "PUBLICLY_AVAILABLE_VERIFIED",
+      "coverage_scope": "DIRECTORY_SUBSET",
+      "priority": null,
+      "next_action": "DONE (directory subset). Preserve the dated artifact and map-embed method; seek an official station inventory with verified coordinates before treating the office points as building-level locations",
+      "tracker_ids": [],
+      "last_verified": "2026-11-15",
+      "publication_state": "PUBLISHED",
+      "register_section": "D. Public-facing government service offices and institutional sites",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": false
+      },
+      "probes": []
+    },
+    {
+      "source_id": "ncca.cultural_facilities",
+      "custodian": "National Commission for Culture and the Arts",
+      "title": "NCCA",
+      "category": "CULTURE_KNOWLEDGE",
+      "urls": [
+        "https://ncca.gov.ph/"
+      ],
+      "evidence_state": "DISCOVERED",
+      "access_state": "ACCESS_BLOCKED",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "NATIONAL_PARTIAL",
+      "priority": "P2",
+      "next_action": "P2. Retry later and seek an official cultural-facility directory",
+      "tracker_ids": [],
+      "last_verified": "2026-11-16",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "M. Category search additions — 16 November 2026",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": true
+      },
+      "probes": [
+        {
+          "probe_key": "ncca",
+          "observed_at": "2026-11-16",
+          "url": "https://ncca.gov.ph/",
+          "http_status": 0,
+          "content_type": null,
+          "final_url": "https://ncca.gov.ph/",
+          "size_bytes": 0,
+          "error": "curl: (6) Could not resolve host: ncca.gov.ph",
+          "outcome": "TRANSPORT_ERROR"
+        }
+      ],
+      "observed_access_state": "ACCESS_BLOCKED"
+    },
+    {
+      "source_id": "nea.electric_cooperatives",
+      "custodian": "National Electrification Administration",
+      "title": "NEA",
+      "category": "UTILITIES_SANITATION",
+      "urls": [
+        "https://nea.gov.ph/"
+      ],
+      "evidence_state": "DISCOVERED",
+      "access_state": "ACCESS_BLOCKED",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "NATIONAL_PARTIAL",
+      "priority": "P2",
+      "next_action": "P2. Request the official cooperative/service-office list with reuse terms",
+      "tracker_ids": [],
+      "last_verified": "2026-11-16",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "M. Category search additions — 16 November 2026",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": true
+      },
+      "probes": [
+        {
+          "probe_key": "nea",
+          "observed_at": "2026-11-16",
+          "url": "https://nea.gov.ph/",
+          "http_status": 403,
+          "content_type": "text/html; charset=UTF-8",
+          "final_url": "https://nea.gov.ph/",
+          "size_bytes": 5521,
+          "error": null,
+          "outcome": "HTTP_403"
+        }
+      ],
+      "observed_access_state": "ACCESS_BLOCKED"
+    },
+    {
+      "source_id": "nfa.grain_facilities",
+      "custodian": "National Food Authority",
+      "title": "NFA",
+      "category": "ENVIRONMENT_AGRI",
+      "urls": [
+        "https://www.nfa.gov.ph/"
+      ],
+      "evidence_state": "DISCOVERED",
+      "access_state": "ACCESS_BLOCKED",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "NATIONAL_PARTIAL",
+      "priority": "P1",
+      "next_action": "P1. Request an authorized warehouse/facility list and publication terms",
+      "tracker_ids": [],
+      "last_verified": "2026-11-16",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "M. Category search additions — 16 November 2026",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": true
+      },
+      "probes": [
+        {
+          "probe_key": "nfa",
+          "observed_at": "2026-11-16",
+          "url": "https://www.nfa.gov.ph/",
+          "http_status": 403,
+          "content_type": "text/html; charset=UTF-8",
+          "final_url": "https://www.nfa.gov.ph/",
+          "size_bytes": 5525,
+          "error": null,
+          "outcome": "HTTP_403"
+        }
+      ],
+      "observed_access_state": "ACCESS_BLOCKED"
+    },
+    {
+      "source_id": "nha.maps",
+      "custodian": "National Housing Authority",
+      "title": "NHA MAPS project, landholding, and occupancy layers",
+      "category": "HOUSING_SETTLEMENT",
+      "urls": [
+        "https://maps.nha.gov.ph/"
+      ],
+      "evidence_state": "OFFICIAL_PORTAL_VERIFIED",
+      "access_state": "OPEN",
+      "rights_state": "REVIEW_REQUIRED",
+      "coverage_scope": "DISCOVERY_LAYER",
+      "priority": "P2",
+      "next_action": "**P2.** Use as project/site/context source; do not turn parcels or all NHA project polygons into point facilities without evidence.",
+      "tracker_ids": [
+        "AF1-27"
+      ],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "F. Environmental, land and geospatial reference sources",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "`OFFICIAL PORTAL VERIFIED`. Actual map portal sections were visible. Layer-specific records, downloads and rights still require inspection. Many records are project/land/occupancy sites, not facility identities."
+    },
+    {
+      "source_id": "nha.wfs_health_facilities",
+      "custodian": "National Housing Authority",
+      "title": "NHA WFS DOH health-facility layer",
+      "category": "HOUSING_SETTLEMENT",
+      "urls": [
+        "https://maps.nha.gov.ph/geoserver/NHA_PH/ows?service=WFS&version=1.0.0&request=GetCapabilities"
+      ],
+      "evidence_state": "RECORDS_OBSERVED",
+      "access_state": "OPEN",
+      "rights_state": "REVIEW_REQUIRED",
+      "coverage_scope": "NATIONAL_PARTIAL",
+      "priority": null,
+      "next_action": "Compare identities and ownership/type distributions against the canonical health registry; obtain written rights/derivation evidence before any publish or enrichment decision.",
+      "tracker_ids": [
+        "AF1-27",
+        "AF3-06"
+      ],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": null,
+      "provenance": {
+        "register": false,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "Public WFS GetFeature returned 3 sampled features from a layer reporting 31,016 total features on 15 Nov 2026. Fields include fac_code, fac_name, fac_type, ownershp, region/province/municipality/barangay names and PSGC-style codes, latitude/longitude and prec_latlo. The layer appears derived from DOH data; ownership values, duplicate risk against existing health records, and redistribution rights are not yet established."
+    },
+    {
+      "source_id": "nhcp.heritage_sites",
+      "custodian": "National Historical Commission of the Philippines",
+      "title": "NHCP",
+      "category": "CULTURE_KNOWLEDGE",
+      "urls": [
+        "https://nhcp.gov.ph/"
+      ],
+      "evidence_state": "DISCOVERED",
+      "access_state": "ACCESS_BLOCKED",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "NATIONAL_PARTIAL",
+      "priority": "P2",
+      "next_action": "P2. Seek an official heritage-site register with coordinates and access conditions",
+      "tracker_ids": [],
+      "last_verified": "2026-11-16",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "M. Category search additions — 16 November 2026",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": true
+      },
+      "probes": [
+        {
+          "probe_key": "nhcp",
+          "observed_at": "2026-11-16",
+          "url": "https://nhcp.gov.ph/",
+          "http_status": 403,
+          "content_type": "text/html; charset=UTF-8",
+          "final_url": "https://nhcp.gov.ph/",
+          "size_bytes": 5522,
+          "error": null,
+          "outcome": "HTTP_403"
+        }
+      ],
+      "observed_access_state": "ACCESS_BLOCKED"
+    },
+    {
+      "source_id": "nia.irrigation_facilities",
+      "custodian": "National Irrigation Administration",
+      "title": "NIA",
+      "category": "ENVIRONMENT_AGRI",
+      "urls": [
+        "https://www.nia.gov.ph/"
+      ],
+      "evidence_state": "DISCOVERED",
+      "access_state": "OPEN",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "NATIONAL_PARTIAL",
+      "priority": "P1",
+      "next_action": "P1. Seek the official irrigation-system/asset inventory; distinguish systems from point facilities",
+      "tracker_ids": [],
+      "last_verified": "2026-11-16",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "M. Category search additions — 16 November 2026",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": true
+      },
+      "probes": [
+        {
+          "probe_key": "nia",
+          "observed_at": "2026-11-16",
+          "url": "https://www.nia.gov.ph/",
+          "http_status": 200,
+          "content_type": "text/html; charset=UTF-8",
+          "final_url": "https://nia.gov.ph/",
+          "size_bytes": 183408,
+          "error": null,
+          "outcome": "HTTP_200"
+        }
+      ],
+      "observed_access_state": "OPEN"
+    },
+    {
+      "source_id": "nlp.public_libraries",
+      "custodian": "National Library of the Philippines",
+      "title": "NLP integrated directory of public libraries",
+      "category": "CULTURE_KNOWLEDGE",
+      "urls": [
+        "https://web.nlp.gov.ph/wp-content/uploads/2026/01/OFFICIAL-Integrated-Directory-of-Public-Libraries-as-of-December-2025.pdf",
+        "https://web.nlp.gov.ph/wp-content/uploads/2025/02/Directory-of-Affiliated-Public-Libraries-in-the-Philippines-As-of-January-2025-Rhodora-Valdez.pdf",
+        "https://web.nlp.gov.ph/"
+      ],
+      "evidence_state": "FILE_DOCUMENT_VERIFIED",
+      "access_state": "OPEN",
+      "rights_state": "PUBLISHED",
+      "coverage_scope": "DIRECTORY_SUBSET",
+      "priority": "P0",
+      "next_action": "**P0/P1.** Acquire the latest official PDF, parse tables, compare releases, and keep personal-data minimization in the publication field list.",
+      "tracker_ids": [
+        "AF1-04",
+        "AF2-03",
+        "M1-04"
+      ],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "A. Primary facility registries and agency directories",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "`FILE/DOCUMENT VERIFIED`. January 2025 PDF was directly inspected. December 2025 official PDF is identified at the linked URL. Institution-level fields are published with attribution; librarian names and personal contact details stay private."
+    },
+    {
+      "source_id": "nmis.meat_establishments",
+      "custodian": "NMIS",
+      "title": "NMIS NARIS accredited meat establishments",
+      "category": "PUBLIC_COMMERCE",
+      "urls": [
+        "https://naris.nmis.gov.ph/",
+        "https://www.nmis.gov.ph/images/pdf/accredited_list/2025/sh20251104.pdf"
+      ],
+      "evidence_state": "FILE_DOCUMENT_VERIFIED",
+      "access_state": "PUBLISHED",
+      "rights_state": "PUBLISHED",
+      "coverage_scope": "NATIONAL_PARTIAL",
+      "priority": "P2",
+      "next_action": "**P2 / regulated-provider candidate.** Assess facility-level identity and public-interest use case. Classify qualifying private establishments as `PRIVATE_PUBLIC_SERVICE_PROVIDER`; keep private counts distinct from government facilities.",
+      "tracker_ids": [
+        "AF1-24",
+        "AF2-18"
+      ],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "E. Transport, ports, aviation and fisheries facilities",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "`DIRECTORY CONTENT VERIFIED` and `FILE/DOCUMENT VERIFIED` for the dated slaughterhouse list. This is an accreditation/licensing registry of establishments, many private. Eligible facility-level records may qualify as `PRIVATE_PUBLIC_SERVICE_PROVIDER`; they are not government-owned merely because NMIS licenses them. 357 establishments are `PUBLISHED` with attribution using factual establishment fields only; the page currently returns a WAF/TLS failure, so the verified 15 November 2026 artifact is the release of record."
+    },
+    {
+      "source_id": "nwrb.water_permits",
+      "custodian": "National Water Resources Board",
+      "title": "NWRB",
+      "category": "UTILITIES_SANITATION",
+      "urls": [
+        "https://nwrb.gov.ph/"
+      ],
+      "evidence_state": "DISCOVERED",
+      "access_state": "ACCESS_BLOCKED",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "DISCOVERY_LAYER",
+      "priority": "P2",
+      "next_action": "P2. Confirm whether a public facility-level layer exists before building a connector",
+      "tracker_ids": [],
+      "last_verified": "2026-11-16",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "M. Category search additions — 16 November 2026",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": true
+      },
+      "probes": [
+        {
+          "probe_key": "nwrb",
+          "observed_at": "2026-11-16",
+          "url": "https://nwrb.gov.ph/",
+          "http_status": 403,
+          "content_type": "text/html; charset=UTF-8",
+          "final_url": "https://nwrb.gov.ph/",
+          "size_bytes": 5522,
+          "error": null,
+          "outcome": "HTTP_403"
+        }
+      ],
+      "observed_access_state": "ACCESS_BLOCKED"
+    },
+    {
+      "source_id": "ocd.evacuation_centres",
+      "custodian": "OCD / NDRRMC / LGUs",
+      "title": "OCD/NDRRMC evacuation-centre inventory",
+      "category": "EMERGENCY_DRM",
+      "urls": [
+        "https://ocd.gov.ph/",
+        "https://ndrrmc.gov.ph/",
+        "https://www.foi.gov.ph/agencies/ocd/updated-list-of-evacuation-center-in-the-philippines-ocd-397929143969/",
+        "https://www.foi.gov.ph/agencies/dilg/updated-list-of-evacuation-center-in-the-philippines/"
+      ],
+      "evidence_state": "FOI_LIMITATION_CONFIRMED",
+      "access_state": "FOI_REQUIRED",
+      "rights_state": "REVIEW_REQUIRED",
+      "coverage_scope": "UNKNOWN_COVERAGE",
+      "priority": "P0",
+      "next_action": "**P0.** Combine only independently sourced LGU and DILG project records with clear source type; request current authoritative scope from LGUs.",
+      "tracker_ids": [
+        "AF1-11",
+        "AF1-34",
+        "AF5-02"
+      ],
+      "last_verified": "2026-11-16",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "C. Emergency, public safety and response facilities",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": true
+      },
+      "probes": [
+        {
+          "probe_key": "ocd",
+          "observed_at": "2026-11-16",
+          "url": "https://www.ocd.gov.ph/",
+          "http_status": 403,
+          "content_type": "text/html; charset=UTF-8",
+          "final_url": "https://www.ocd.gov.ph/",
+          "size_bytes": 5504,
+          "error": null,
+          "outcome": "HTTP_403"
+        },
+        {
+          "probe_key": "ndrrmc",
+          "observed_at": "2026-11-16",
+          "url": "https://ndrrmc.gov.ph/",
+          "http_status": 403,
+          "content_type": "text/html; charset=UTF-8",
+          "final_url": "https://ndrrmc.gov.ph/",
+          "size_bytes": 5414,
+          "error": null,
+          "outcome": "HTTP_403"
+        }
+      ],
+      "notes": "`FOI LIMITATION / ROUTING CONFLICT`. OCD's Feb 2026 FOI response said it did not have the requested updated list and referred requester to DILG and LGUs. DILG has project-type evacuation-centre records on Subaybayan and limited NCR lists. No complete nationwide masterlist was verified.",
+      "observed_access_state": "ACCESS_BLOCKED"
+    },
+    {
+      "source_id": "open_data_philippines",
+      "custodian": "Open Data Philippines / DICT",
+      "title": "Open Data Philippines",
+      "category": "OTHER_QUALIFYING",
+      "urls": [
+        "https://data.gov.ph/"
+      ],
+      "evidence_state": "DISCOVERED",
+      "access_state": "ACCESS_BLOCKED",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "DISCOVERY_LAYER",
+      "priority": "P1",
+      "next_action": "Not the original publisher unless the dataset itself is agency-issued; file rights remain source-specific",
+      "tracker_ids": [],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "G. National government facility/process inventories and project crosswalk sources",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": false
+      },
+      "probes": []
+    },
+    {
+      "source_id": "pagasa.aws_stations",
+      "custodian": "PAGASA",
+      "title": "Automated Weather Station page",
+      "category": "ENVIRONMENT_AGRI",
+      "urls": [
+        "https://bagong.pagasa.dost.gov.ph/automated-weather-station"
+      ],
+      "evidence_state": "PUBLISHED",
+      "access_state": "OPEN",
+      "rights_state": "PUBLICLY_AVAILABLE_VERIFIED",
+      "coverage_scope": "DIRECTORY_SUBSET",
+      "priority": "P1",
+      "next_action": "P1 (directory subset). Preserve the dated artifact and checksum; seek a station inventory with coordinates and commissioning metadata from PAGASA before mapping stations or publishing observations",
+      "tracker_ids": [],
+      "last_verified": "2026-11-15",
+      "publication_state": "PUBLISHED",
+      "register_section": "F. Environmental, land and geospatial reference sources",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": false
+      },
+      "probes": []
+    },
+    {
+      "source_id": "pagasa.climate",
+      "custodian": "PAGASA",
+      "title": "PAGASA climate grids",
+      "category": "ENVIRONMENT_AGRI",
+      "urls": [
+        "https://climgridph.pagasa.dost.gov.ph/climapv2/",
+        "https://www.pagasa.dost.gov.ph/"
+      ],
+      "evidence_state": "OFFICIAL_PORTAL_VERIFIED",
+      "access_state": "HUMAN_DOWNLOAD_REQUIRED",
+      "rights_state": "REVIEW_REQUIRED",
+      "coverage_scope": "DISCOVERY_LAYER",
+      "priority": "P2",
+      "next_action": "**P2 / enrichment.** Preserve grid release, resolution, baseline and scenario.",
+      "tracker_ids": [
+        "AF1-37"
+      ],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "F. Environmental, land and geospatial reference sources",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "`OFFICIAL PORTAL VERIFIED` in prior research. Download may require request/affiliation/purpose and acceptance of terms. Not a facility register."
+    },
+    {
+      "source_id": "pca.coconut_facilities",
+      "custodian": "Philippine Coconut Authority",
+      "title": "PCA",
+      "category": "ENVIRONMENT_AGRI",
+      "urls": [
+        "https://www.pca.gov.ph/"
+      ],
+      "evidence_state": "DISCOVERED",
+      "access_state": "ACCESS_BLOCKED",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "UNKNOWN_COVERAGE",
+      "priority": "P2",
+      "next_action": "P2. Verify a facility-level dataset exists before adding a connector",
+      "tracker_ids": [],
+      "last_verified": "2026-11-16",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "M. Category search additions — 16 November 2026",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": true
+      },
+      "probes": [
+        {
+          "probe_key": "pca",
+          "observed_at": "2026-11-16",
+          "url": "https://www.pca.gov.ph/",
+          "http_status": 403,
+          "content_type": "text/html; charset=UTF-8",
+          "final_url": "https://www.pca.gov.ph/",
+          "size_bytes": 5525,
+          "error": null,
+          "outcome": "HTTP_403"
+        }
+      ],
+      "observed_access_state": "ACCESS_BLOCKED"
+    },
+    {
+      "source_id": "pcg.stations",
+      "custodian": "Philippine Coast Guard",
+      "title": "PCG",
+      "category": "TRANSPORT",
+      "urls": [
+        "https://www.pcg.gov.ph/"
+      ],
+      "evidence_state": "DISCOVERED",
+      "access_state": "ACCESS_BLOCKED",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "UNKNOWN_COVERAGE",
+      "priority": "P2",
+      "next_action": "P2. Apply public-safety and critical-infrastructure review before any publication",
+      "tracker_ids": [],
+      "last_verified": "2026-11-16",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "M. Category search additions — 16 November 2026",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": true
+      },
+      "probes": [
+        {
+          "probe_key": "pcg",
+          "observed_at": "2026-11-16",
+          "url": "https://www.pcg.gov.ph/",
+          "http_status": 0,
+          "content_type": null,
+          "final_url": "https://www.pcg.gov.ph/",
+          "size_bytes": 0,
+          "error": "curl: (6) Could not resolve host: www.pcg.gov.ph",
+          "outcome": "TRANSPORT_ERROR"
+        }
+      ],
+      "observed_access_state": "ACCESS_BLOCKED"
+    },
+    {
+      "source_id": "pfda.fish_ports",
+      "custodian": "Philippine Fisheries Development Authority",
+      "title": "PFDA regional and municipal fish ports",
+      "category": "ENVIRONMENT_AGRI",
+      "urls": [
+        "https://www.pfda.gov.ph/",
+        "https://www.pfda.gov.ph/images/ISO_/CO/QMS/PFDA_QMS_2023_09.pdf",
+        "https://fishcore.bfar.da.gov.ph/"
+      ],
+      "evidence_state": "FILE_DOCUMENT_VERIFIED",
+      "access_state": "ACCESS_BLOCKED",
+      "rights_state": "REVIEW_REQUIRED",
+      "coverage_scope": "DIRECTORY_SUBSET",
+      "priority": "P1",
+      "next_action": "**P1/P2.** Request PFDA current inventory with port ID, status, coordinates, owner/operator and turnover date.",
+      "tracker_ids": [
+        "AF1-23",
+        "AF2-17",
+        "AF6-04"
+      ],
+      "last_verified": "2026-11-16",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "E. Transport, ports, aviation and fisheries facilities",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": true
+      },
+      "probes": [
+        {
+          "probe_key": "pfda",
+          "observed_at": "2026-11-16",
+          "url": "https://www.pfda.gov.ph/",
+          "http_status": 403,
+          "content_type": "text/html; charset=UTF-8",
+          "final_url": "https://www.pfda.gov.ph/",
+          "size_bytes": 5526,
+          "error": null,
+          "outcome": "HTTP_403"
+        }
+      ],
+      "notes": "`FILE/DOCUMENT VERIFIED` for source descriptions and named regional fish ports; not a current complete geospatial masterlist. Municipal fish-port status/ownership changes on turnover.",
+      "observed_access_state": "ACCESS_BLOCKED"
+    },
+    {
+      "source_id": "philhealth.accredited_providers",
+      "custodian": "PhilHealth",
+      "title": "PhilHealth accredited healthcare provider directories",
+      "category": "HEALTH",
+      "urls": [
+        "https://www.philhealth.gov.ph/partners/providers/facilities/accredited/",
+        "https://www.philhealth.gov.ph/partners/providers/facilities/status.php"
+      ],
+      "evidence_state": "FILE_DOCUMENT_VERIFIED",
+      "access_state": "OPEN",
+      "rights_state": "PUBLISHED",
+      "coverage_scope": "NATIONAL_PARTIAL",
+      "priority": "P0",
+      "next_action": "**P0/P1.** Reuse existing parser; inspect every category separately; keep personal contact fields out of the public record; match to DOH with evidence and confidence.",
+      "tracker_ids": [
+        "AF1-40",
+        "AF2-06",
+        "M1-10",
+        "M3-06"
+      ],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "A. Primary facility registries and agency directories",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "`FILE/DOCUMENT VERIFIED`. The 30 Sep 2026 hospital PDF was parsed locally in prior project work (75 pages, 1,934 rows). The public site disclaimer permits use/reproduction for educational or informative purposes; 25 provider-category releases are published with attribution. The acquired Antenatal release remains blocked pending a validated re-ingestion. Category accreditation is not real-time service availability."
+    },
+    {
+      "source_id": "philhealth.office_directory",
+      "custodian": "PhilHealth",
+      "title": "Directory of Offices",
+      "category": "HEALTH",
+      "urls": [
+        "https://www.philhealth.gov.ph/about_us/directory/"
+      ],
+      "evidence_state": "DIRECTORY_CONTENT_VERIFIED",
+      "access_state": "UNVERIFIED",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "DIRECTORY_SUBSET",
+      "priority": null,
+      "next_action": "DONE (directory subset). Keep source category/region evidence; do not treat a directory entry as current operating status or walk-in availability. Link Express/service-desk units to host buildings only with explicit evidence",
+      "tracker_ids": [],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "A. Primary facility registries and agency directories",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": false
+      },
+      "probes": []
+    },
+    {
+      "source_id": "phivolcs.hazards",
+      "custodian": "PHIVOLCS",
+      "title": "PHIVOLCS hazard layers",
+      "category": "OTHER_QUALIFYING",
+      "urls": [
+        "https://maps.phivolcs.dost.gov.ph/",
+        "https://www.phivolcs.dost.gov.ph/"
+      ],
+      "evidence_state": "OFFICIAL_PORTAL_VERIFIED",
+      "access_state": "ACCESS_BLOCKED",
+      "rights_state": "REVIEW_REQUIRED",
+      "coverage_scope": "DISCOVERY_LAYER",
+      "priority": "P2",
+      "next_action": "**P2 / enrichment.** Do not put hazard layers into the core facility entity table.",
+      "tracker_ids": [
+        "AF1-37",
+        "AF6-05"
+      ],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "F. Environmental, land and geospatial reference sources",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "`OFFICIAL MAP/PORTAL DISCOVERED`. Source layers, download routes and reuse restrictions must be checked individually. Not a facility register."
+    },
+    {
+      "source_id": "phlpost.post_offices",
+      "custodian": "PHLPost",
+      "title": "PHLPost post offices and service locations",
+      "category": "GOV_ADMIN",
+      "urls": [
+        "https://phlpost.gov.ph/post-office-locator/"
+      ],
+      "evidence_state": "DIRECTORY_CONTENT_VERIFIED",
+      "access_state": "OPEN",
+      "rights_state": "PUBLISHED",
+      "coverage_scope": "DIRECTORY_SUBSET",
+      "priority": "P1",
+      "next_action": "**P1.** Preserve service-location type and host/owner distinction; record the notice and keep expressive page content out of the public record.",
+      "tracker_ids": [
+        "AF1-19",
+        "AF2-13"
+      ],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "D. Public-facing government service offices and institutional sites",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "`DIRECTORY CONTENT VERIFIED`. Public records are visible in page text. No formal public API/bulk download was identified. The page carries a copyright/all-rights-reserved notice; the recorded product decision publishes 1,272 factual locator facilities with attribution and takedown-on-notice. An earlier review-required release is retained internally."
+    },
+    {
+      "source_id": "pnp.police_stations",
+      "custodian": "PNP",
+      "title": "PNP police stations and precincts",
+      "category": "EMERGENCY_DRM",
+      "urls": [
+        "https://pnp.gov.ph/",
+        "https://geoportal.gov.ph/"
+      ],
+      "evidence_state": "CATALOGUE_CANDIDATE",
+      "access_state": "UNVERIFIED",
+      "rights_state": "REVIEW_REQUIRED",
+      "coverage_scope": "UNKNOWN_COVERAGE",
+      "priority": "P1",
+      "next_action": "**P1.** Request the official station list from PNP/DIDM or regional offices; ask for permitted public fields and exclude sensitive operational information.",
+      "tracker_ids": [
+        "AF1-10",
+        "AF5-04"
+      ],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "C. Emergency, public safety and response facilities",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "`CATALOGUE CANDIDATE` only for the Geoportal Police precinct/station layer. A verified nationwide PNP bulk directory/API was not found in this research pass. Third-party police directories are not source-of-record."
+    },
+    {
+      "source_id": "pnr.stations",
+      "custodian": "Philippine National Railways",
+      "title": "PNR",
+      "category": "TRANSPORT",
+      "urls": [
+        "https://pnr.gov.ph/"
+      ],
+      "evidence_state": "DISCOVERED",
+      "access_state": "ACCESS_BLOCKED",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "NATIONAL_PARTIAL",
+      "priority": "P1",
+      "next_action": "P1. Seek a permitted station inventory with current names, coordinates and operating status",
+      "tracker_ids": [],
+      "last_verified": "2026-11-16",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "M. Category search additions — 16 November 2026",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": true
+      },
+      "probes": [
+        {
+          "probe_key": "pnr",
+          "observed_at": "2026-11-16",
+          "url": "https://pnr.gov.ph/",
+          "http_status": 403,
+          "content_type": "text/html; charset=UTF-8",
+          "final_url": "https://pnr.gov.ph/",
+          "size_bytes": 5521,
+          "error": null,
+          "outcome": "HTTP_403"
+        }
+      ],
+      "observed_access_state": "ACCESS_BLOCKED"
+    },
+    {
+      "source_id": "ppa.ports",
+      "custodian": "Philippine Ports Authority",
+      "title": "PPA list of ports covered in PPA statistics",
+      "category": "TRANSPORT",
+      "urls": [
+        "https://ppa.com.ph/sites/default/files/List%20of%20Ports%20covered%20in%20PPA%20Statistics.pdf",
+        "https://ppa.com.ph/",
+        "https://www.ppa.com.ph/sites/default/files/issuances_docs/PPA_MC_No005_2026_03032026.pdf"
+      ],
+      "evidence_state": "FILE_DOCUMENT_VERIFIED",
+      "access_state": "OPEN",
+      "rights_state": "PUBLISHED",
+      "coverage_scope": "DIRECTORY_SUBSET",
+      "priority": "P1",
+      "next_action": "**DONE (directory subset).** Published with attribution; verify coordinates, berth capacity, public access and current operator only from additional official sources. Do not treat the list as a census of every port or landing place.",
+      "tracker_ids": [
+        "AF1-21",
+        "AF2-15",
+        "AF6-01"
+      ],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "E. Transport, ports, aviation and fisheries facilities",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "`FILE/DOCUMENT VERIFIED` and `DIRECTORY CONTENT VERIFIED`. The 22-page PDF was acquired on 15 November 2026 and parsed into 574 rows: 54 base ports, 94 TMO/OTP entries, 155 other government ports and 271 private ports. PPA-managed base ports and TMO/OTP entries are classified as government facilities, other government ports keep an unspecified owner, and private ports are private public-service providers with no inferred owner/operator. Blank RORO/NON-RORO marks remain unknown. The separate MICT note is retained as evidence and not ingested because its hierarchy and ownership are not stated."
+    },
+    {
+      "source_id": "prc.offices_and_service_centers",
+      "custodian": "PRC",
+      "title": "PRC regional offices, satellite offices, and offsite service centres",
+      "category": "GOV_ADMIN",
+      "urls": [
+        "https://www.prc.gov.ph/prc-offices-and-offsite-service-centers-contact-information",
+        "https://www.prc.gov.ph/regional-offices-contact-information",
+        "https://www.prc.gov.ph/InteractiveMap-v2-37.html",
+        "https://info.prc.gov.ph/prc-office-locator/regional-offices"
+      ],
+      "evidence_state": "DIRECTORY_CONTENT_VERIFIED",
+      "access_state": "OPEN",
+      "rights_state": "REVIEW_REQUIRED",
+      "coverage_scope": "DIRECTORY_SUBSET",
+      "priority": "P1",
+      "next_action": "**P1.** Inspect current map/detail pages and data payload; preserve facility-vs-host location distinction and opening-hour freshness.",
+      "tracker_ids": [
+        "AF1-20",
+        "AF2-14"
+      ],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "D. Public-facing government service offices and institutional sites",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "`DIRECTORY CONTENT VERIFIED`. The interactive location map enumerates many service centres, including mall/LGU-hosted points. These are PRC-operated service locations, not necessarily PRC-owned real estate. No public API verified."
+    },
+    {
+      "source_id": "psa.openstat",
+      "custodian": "Philippine Statistics Authority",
+      "title": "PSA OpenSTAT",
+      "category": "OTHER_QUALIFYING",
+      "urls": [
+        "https://openstat.psa.gov.ph/",
+        "https://openstat.psa.gov.ph/API-Documentation"
+      ],
+      "evidence_state": "DISCOVERED",
+      "access_state": "UNVERIFIED",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "UNKNOWN_COVERAGE",
+      "priority": null,
+      "next_action": "Not facility-level data. Use exact table dimensions, reference periods, units and geographic level",
+      "tracker_ids": [],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "H. Geographic/statistical enrichment (not facility registries)",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": false
+      },
+      "probes": []
+    },
+    {
+      "source_id": "psa.psgc",
+      "custodian": "Philippine Statistics Authority",
+      "title": "PSA PSGC releases",
+      "category": "OTHER_QUALIFYING",
+      "urls": [
+        "https://psa.gov.ph/classification/psgc",
+        "https://classification.psa.gov.ph/psgc",
+        "https://psa.gov.ph/content/classification-api-guide"
+      ],
+      "evidence_state": "DISCOVERED",
+      "access_state": "ACCESS_BLOCKED",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "UNKNOWN_COVERAGE",
+      "priority": null,
+      "next_action": "Use official PSA version as geographic source of record. Keep each release. Do not rely on old third-party snapshots",
+      "tracker_ids": [],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "H. Geographic/statistical enrichment (not facility registries)",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": false
+      },
+      "probes": []
+    },
+    {
+      "source_id": "shfc.housing_projects",
+      "custodian": "Social Housing Finance Corporation",
+      "title": "SHFC",
+      "category": "HOUSING_SETTLEMENT",
+      "urls": [
+        "https://shfc.com.ph/"
+      ],
+      "evidence_state": "DISCOVERED",
+      "access_state": "ACCESS_BLOCKED",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "UNKNOWN_COVERAGE",
+      "priority": "P2",
+      "next_action": "P2. Use an authorized project list; distinguish project sites from completed facilities",
+      "tracker_ids": [],
+      "last_verified": "2026-11-16",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "M. Category search additions — 16 November 2026",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": true
+      },
+      "probes": [
+        {
+          "probe_key": "shfc",
+          "observed_at": "2026-11-16",
+          "url": "https://shfc.com.ph/",
+          "http_status": 0,
+          "content_type": null,
+          "final_url": "https://shfc.com.ph/",
+          "size_bytes": 0,
+          "error": "curl: (60) SSL certificate OpenSSL verify result: unable to get local issuer certificate (20)",
+          "outcome": "TRANSPORT_ERROR"
+        }
+      ],
+      "observed_access_state": "ACCESS_BLOCKED"
+    },
+    {
+      "source_id": "sss.branches",
+      "custodian": "Social Security System",
+      "title": "SSS Branch Locator",
+      "category": "GOV_ADMIN",
+      "urls": [
+        "https://www.sss.gov.ph/sss-branch-locator/",
+        "https://member.sss.gov.ph/member/sss/branchloc/get-region-list",
+        "https://member.sss.gov.ph/member/sss/branchloc/get-branch-list",
+        "https://member.sss.gov.ph/member/sss/branchloc/get-branch-details?branchCode=C5"
+      ],
+      "evidence_state": "PUBLISHED",
+      "access_state": "OPEN",
+      "rights_state": "PUBLICLY_AVAILABLE_VERIFIED",
+      "coverage_scope": "DIRECTORY_SUBSET",
+      "priority": null,
+      "next_action": "DONE (directory subset). Publish factual branch name, postal address and region with attribution; do not infer hours, walk-in availability or current operation. Verify each service desk/partner counter from an additional official source if added later",
+      "tracker_ids": [],
+      "last_verified": "2026-11-15",
+      "publication_state": "PUBLISHED",
+      "register_section": "D. Public-facing government service offices and institutional sites",
+      "provenance": {
+        "register": true,
+        "candidates": false,
+        "probe": false
+      },
+      "probes": []
+    },
+    {
+      "source_id": "tesda.providers",
+      "custodian": "TESDA",
+      "title": "TESDA registered TVIs and assessment centres",
+      "category": "EDUCATION",
+      "urls": [
+        "https://www.tesda.gov.ph/TVI",
+        "https://www.tesda.gov.ph/AssessmentCenters",
+        "https://www.tesda.gov.ph/About/TESDA/53",
+        "https://www.tesda.gov.ph/"
+      ],
+      "evidence_state": "DIRECTORY_CONTENT_VERIFIED",
+      "access_state": "ACCESS_BLOCKED",
+      "rights_state": "REVIEW_REQUIRED",
+      "coverage_scope": "UNKNOWN_COVERAGE",
+      "priority": "P1",
+      "next_action": "**P1.** Find permitted provider-level export or request it. Keep statistics as enrichment only.",
+      "tracker_ids": [
+        "AF1-41",
+        "AF2-08",
+        "M8-02"
+      ],
+      "last_verified": "2026-11-15",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": "A. Primary facility registries and agency directories",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "`DIRECTORY CONTENT VERIFIED` for searchable public directory and statistics. National bulk export/public API and exact provider-level schema remain unverified. Aggregate provincial counts are not provider records."
+    }
+  ],
+  "unmatched_probes": []
+}

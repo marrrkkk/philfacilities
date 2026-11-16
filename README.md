@@ -199,6 +199,38 @@ Prerequisites: Docker with Compose, Node.js 22+ (24 tested), pnpm 12+, Python 3.
    curl -s http://127.0.0.1:8010/v1/sources | jq
    ```
 
+## Source research and acquisition tooling
+
+The source registers are working research indexes, not approved datasets. Validate the
+normalized candidates and rebuild the merged inventory with:
+
+```bash
+uv run philfacilities-ingest source-candidates --json
+uv run philfacilities-ingest source-inventory
+```
+
+`source-inventory` writes `expand/data/source-inventory.json` and
+`expand/data/source-inventory.csv`. It merges the Markdown register, the candidate registry and
+the dated probe ledgers, and fails on duplicate IDs, invalid taxonomy/state values or malformed
+URLs. The JSON preserves per-source provenance and every probe outcome, including HTTP 403, DNS
+failures and TLS failures.
+
+For public directory pages, the async crawler provides bounded concurrency, per-host pacing,
+`robots.txt` checks, conditional-fetch-friendly request metadata, retries for transient failures,
+size/page limits, link discovery and HTML table extraction:
+
+```bash
+uv run philfacilities-ingest crawl \
+  --url https://lrta.gov.ph/distance-between-stations/ \
+  --max-pages 1 --max-depth 0 --rps 1 \
+  --output var/crawl/example.jsonl --tables-dir var/crawl/tables
+```
+
+The crawler never solves or bypasses a Cloudflare/WAF challenge, CAPTCHA, login, paywall or
+licence gate. A challenge or HTTP 403 is recorded as `blocked` and left for an authorized
+operator. Live 16 Nov 2026 evidence, including an `robots.txt` refusal, is in
+`docs/operations/evidence/2026-11-16-acquisition-toolkit/`.
+
 ## Scheduled maintenance
 
 `.github/workflows/source-checks.yml` runs due-source checks daily and, weekly or on manual
