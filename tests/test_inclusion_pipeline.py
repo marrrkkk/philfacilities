@@ -1,11 +1,12 @@
 """Ownership-inclusive ingestion invariants.
 
-These tests exercise the pipeline with synthetic, internal-only releases so they
-do not perturb public fixture counts. They cover the rules that cannot be proven
-from parser output alone:
+These tests exercise the pipeline with isolated test-only releases. Publication
+tests use a non-synthetic, rights-cleared release so the API gate cannot take its
+synthetic shortcut. They cover the rules that cannot be proven from parser output
+alone:
 
 * a licence/accreditation never turns a private provider into a government facility;
-* conflicting provider sectors stay unknown and internal;
+* conflicting provider sectors stay unknown and carry the unclassified label;
 * unclassified records in a rights-cleared release are published with the
   explicit unclassified label and remain visible through the public API gate;
 * enrichment-only releases cannot demote an already-classified facility;
@@ -117,14 +118,17 @@ def _spec(token: str, *, suffix: str = "", agency: str | None = None) -> Release
 
 
 def _public_spec(token: str, *, suffix: str = "") -> ReleaseSpec:
-    """A rights-cleared release used to prove publication is not class-gated."""
+    """A non-synthetic release with a reviewed public-rights decision."""
 
     spec = _spec(token, suffix=suffix)
     return replace(
         spec,
         redistribution_status="publicly_available_verified",
         requested_publication_status="published",
-        notes="Synthetic test release approved for public records.",
+        access_method="manual_file",
+        license_identifier=None,
+        is_synthetic=False,
+        notes="Test-only release with a reviewed public-rights decision; not an official dataset.",
     )
 
 
@@ -163,7 +167,7 @@ def _candidate(
         ownership_type=ownership_type,
         inclusion_class=inclusion_class,
         public_access_class="SERVICE_USERS_ONLY",
-        record_status="operational",
+        record_status="unknown",
         location=LocationData(
             latitude=latitude,
             longitude=longitude,
@@ -213,9 +217,13 @@ def test_private_accreditation_never_implies_government_ownership(db_session) ->
     assert facility.publication_status == "internal"
 
 
-def test_conflicting_sector_codes_stay_unknown_and_internal(db_session) -> None:
+def test_conflicting_sector_codes_stay_unclassified(db_session) -> None:
+    """Mixed sector evidence is labelled, not treated as a publication block."""
+
+    from philfacilities_api.services import facility_is_public
+
     token = uuid.uuid4().hex[:10]
-    spec = _spec(token)
+    spec = _public_spec(token)
     entity_id = "mixed-sector-provider"
     candidates = [
         _candidate("mixed-g", "Synthetic Mixed Hospital", entity_id=entity_id, sector_code="G"),
@@ -234,7 +242,8 @@ def test_conflicting_sector_codes_stay_unknown_and_internal(db_session) -> None:
     assert facility.ownership == "unknown"
     assert facility.ownership_type == "UNKNOWN"
     assert facility.inclusion_class == "DISCOVERY_CANDIDATE"
-    assert facility.publication_status == "internal"
+    assert facility.publication_status == "public"
+    assert facility_is_public(db_session, facility)
 
 
 def test_unclassified_record_in_public_release_is_published(db_session) -> None:
@@ -265,6 +274,8 @@ def test_unclassified_record_in_public_release_is_published(db_session) -> None:
     assert facility.ownership_type == "UNKNOWN"
     assert facility.inclusion_class == "DISCOVERY_CANDIDATE"
     assert facility.publication_status == "public"
+    # The facility must not take the synthetic shortcut in the API gate.
+    assert facility.is_synthetic is False
     assert facility_is_public(db_session, facility)
 
 

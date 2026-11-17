@@ -223,8 +223,9 @@ def _apply_sector_ownership(
     PhilHealth's provider directory publishes a ``SEC`` value per accreditation. It
     is source-supplied sector evidence, not an inference from accreditation itself.
     A facility is only classified when every known accreditation agrees; a mixed
-    facility stays ``unknown`` and internal. An explicit ownership value from a
-    stronger source is never overwritten.
+    facility stays ``unknown`` and is labelled ``DISCOVERY_CANDIDATE``. An explicit
+    ownership value from a stronger source is never overwritten, and publication
+    still follows the source rights gate rather than the class label.
     """
 
     if (candidate.ownership or "").strip().lower() != "unknown":

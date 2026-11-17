@@ -9,10 +9,20 @@ whose source has no ownership or sector evidence stay labelled
 ``DISCOVERY_CANDIDATE`` but are now eligible for public release, so the registry
 does not hide already-ingested facility rows merely because ownership is unknown.
 
-This backfill mirrors the API publication gate: the facility must have a source
-link in its dataset's latest published release, and that dataset/release must
-still be rights-cleared. Personal and safety exclusions are enforced earlier in
-ingestion and are not touched here.
+This revision changes policy for the whole unclassified class rather than
+patching named rows:
+
+* The upgrade promotes existing internal ``DISCOVERY_CANDIDATE`` rows that
+  already satisfy the public gate: a source link in the dataset's latest
+  published release, with dataset and release rights cleared. Other internal
+  records are untouched.
+* The downgrade restores the previous policy by returning every public
+  ``DISCOVERY_CANDIDATE`` row to internal. That includes unclassified rows
+  published after the upgrade, because no unclassified record was public before
+  this revision.
+
+Personal and safety exclusions are enforced earlier in ingestion and are not
+touched here.
 """
 
 from __future__ import annotations
@@ -69,10 +79,14 @@ WHERE f.publication_status = 'internal'
 
 
 def upgrade() -> None:
+    # Promote only existing internal rows with current public evidence.
     op.execute(sa.text(_PUBLISHABLE))
 
 
 def downgrade() -> None:
+    # Policy rollback, not a row-level undo: the previous policy exposed no
+    # unclassified record, so every public DISCOVERY_CANDIDATE row returns to
+    # internal, including rows published after the upgrade.
     op.execute(
         sa.text(
             """
