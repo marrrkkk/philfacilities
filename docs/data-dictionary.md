@@ -109,7 +109,7 @@ A project is not an operating facility. A facility unit is not a separate buildi
 | `GOVERNMENT_FACILITY` | Yes | Owned, operated, or mandated as a government facility |
 | `PRIVATE_PUBLIC_SERVICE_PROVIDER` | Yes | Private or non-government provider of a meaningful public service, identified by an authoritative record |
 | `PUBLIC_ACCESS_VENUE` | Yes | Civic, community, cultural, recreation, market, transport, or similar venue with an authoritative public function |
-| `DISCOVERY_CANDIDATE` | No | A candidate that lacks ownership or qualifying evidence; internal only |
+| `DISCOVERY_CANDIDATE` | Yes | A record whose ownership or qualifying class is not established by the source; published as unclassified, never as government-owned or privately owned |
 
 Inclusion class is not a statement that the facility is open, licensed, or government-owned. A government regulator or publisher does not make a private provider a government facility.
 
@@ -405,7 +405,7 @@ Bulk: `GET /v1/downloads/schools.csv`
 
 Boolean school offerings are tri-state: `true`, `false`, or `null` for unknown. Do not treat null as `false`. Enrollment observations remain separate rows so historical years are not overwritten.
 
-Most currently published schools come from the HOT/OSM education extract. They are crowd-sourced map features, not DepEd records: `deped_school_id`, `sector`, `school_management`, and the offering flags are normally null, and enrollment/resources endpoints return an empty list unless a public observation exists. The canonical DepEd EBEIS rows remain `internal`; their source releases are published only for institution-level fields, with school-head names withheld. Do not interpret an OSM school as an official DepEd school.
+Most currently published schools come from the HOT/OSM education extract. They are crowd-sourced map features, not DepEd records: `deped_school_id`, `sector`, `school_management`, and the offering flags are normally null, and enrollment/resources endpoints return an empty list unless a public observation exists. DepEd EBEIS rows are published with institution-level fields, and school-head names are withheld. Do not interpret an OSM school as an official DepEd school.
 
 ## 10. Health domain
 
@@ -516,11 +516,11 @@ Full endpoint and filter reference: [API](api.md).
 
 ## 15. Current coverage caveats
 
-Measured 16 November 2026: 228,291 canonical facilities, 99,352 public, 76,125 public with coordinates, 23,227 without. These counts change as sources are added or reviewed.
+Measured 18 November 2026: 258,349 canonical facilities, all public, 155,228 public with coordinates, 103,121 without. These counts change as sources are added or reviewed.
 
 - Coverage counts describe processed source records, not the real-world facility universe. None of these counts establishes nationwide completeness.
 - OSM/HOT facilities are crowd-sourced map features, not official DepEd, DOH, DILG, or LGU registries. Their coordinates are often bounding-box centres (`map_geocoded`) and their operational status is unknown.
-- DepEd EBEIS canonical rows remain `internal`/`DISCOVERY_CANDIDATE` pending field-level mapping and privacy review. Their release is published only for institution-level fields.
+- DepEd EBEIS canonical rows are published as `DISCOVERY_CANDIDATE`/unclassified because the result set has no reliable per-row sector field. Only institution-level fields are published; school-head names stay in the private source store.
 - The BetterGov PSGC Q2 2024 snapshot is supplementary and not the latest official PSA release. PSA 2024 Census values come from saved BetterGov/OpenSTAT snapshots, not live PSA data.
 - The NHA GeoServer DOH layer and PhilHealth accreditations are partial alternates for blocked official DOH sources, not replacements or completeness claims.
 - LGU directories cover only the named city or municipality. Absence from them is not evidence that a facility does not exist.

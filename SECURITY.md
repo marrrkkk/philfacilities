@@ -1,6 +1,6 @@
 # Security policy
 
-PhilFacilities is a real-data public read service in active development. It is not certified for production use, and no external penetration test or formal legal/privacy review has been completed. The working database contains public records from sources with a recorded publication decision, alongside internal-only records that are excluded from public responses.
+PhilFacilities is a real-data public read service in active development. It is not certified for production use, and no external penetration test or formal legal/privacy review has been completed. The working database contains public records from sources with a recorded publication decision; no internal-only canonical records remain, and any restricted evidence stays excluded from public responses.
 
 ## Supported versions
 
@@ -32,7 +32,7 @@ The internal review in [`docs/operations/security-review.md`](docs/operations/se
 - Bulk exports and the per-facility CSV export neutralize spreadsheet-formula prefixes.
 - CI runs `pip-audit` and `pnpm audit`.
 - No production TLS/HSTS, WAF, managed secret store, external penetration test, or on-call monitoring exists in this repository. Rate limiting is per API process; a reverse proxy needs documented trusted-proxy handling.
-- Backups and raw source objects contain internal-only records and must follow the same rights restrictions as the database.
+- Backups contain public facility data plus private raw source rows and must follow the same rights and access restrictions as the source systems.
 
 Do not treat the current checkout as approved for sensitive data or for a production launch.
 

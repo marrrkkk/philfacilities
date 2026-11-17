@@ -15,7 +15,7 @@ import {
   type AdministrativeUnitOut,
   type DatasetOut,
 } from "@/lib/api";
-import { formatNumber, titleCase } from "@/lib/format";
+import { formatNumber, INCLUSION_CLASS_LABELS, titleCase } from "@/lib/format";
 import { queryString } from "@/lib/query";
 import { cn } from "@/lib/utils";
 
@@ -37,11 +37,9 @@ const PRECISIONS = [
   ["unknown", "Unknown"],
 ];
 
-const INCLUSION_CLASSES = [
+const INCLUSION_CLASSES: [string, string][] = [
   ["", "Any inclusion class"],
-  ["GOVERNMENT_FACILITY", "Government facility"],
-  ["PRIVATE_PUBLIC_SERVICE_PROVIDER", "Private public-service provider"],
-  ["PUBLIC_ACCESS_VENUE", "Public-access venue"],
+  ...Object.entries(INCLUSION_CLASS_LABELS),
 ];
 
 const OWNERSHIP_TYPES = [
@@ -191,9 +189,7 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Se
     type ? { label: CATEGORY_LABELS[type] ?? titleCase(type) } : null,
     inclusion
       ? {
-          label: `Inclusion: ${
-            INCLUSION_CLASSES.find(([value]) => value === inclusion)?.[1] ?? titleCase(inclusion)
-          }`,
+          label: `Inclusion: ${INCLUSION_CLASS_LABELS[inclusion] ?? titleCase(inclusion)}`,
         }
       : null,
     ownership ? { label: `Ownership: ${titleCase(ownership)}` } : null,

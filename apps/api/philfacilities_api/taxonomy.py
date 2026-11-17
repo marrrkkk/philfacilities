@@ -44,7 +44,7 @@ INCLUSION_CLASS_LABELS: Final[dict[str, str]] = {
     GOVERNMENT_FACILITY: "Government facility",
     PRIVATE_PUBLIC_SERVICE_PROVIDER: "Private public-service provider",
     PUBLIC_ACCESS_VENUE: "Public-access venue",
-    DISCOVERY_CANDIDATE: "Discovery candidate (internal only)",
+    DISCOVERY_CANDIDATE: "Unclassified record",
 }
 
 # ---------------------------------------------------------------------------
@@ -603,8 +603,8 @@ VENUE_CATEGORIES: Final = frozenset({PUBLIC_SPACE, CULTURAL_FACILITY, LIBRARY, M
 def derive_inclusion_class(ownership: str | None) -> str:
     """Return the conservative inclusion class for a legacy ownership value.
 
-    Unknown ownership is never guessed. It becomes an internal discovery
-    candidate until a source establishes the ownership class.
+    Unknown ownership is never guessed. It becomes an unclassified record that
+    is published without asserting an owner the source never supplied.
     """
 
     value = (ownership or "").strip().lower()

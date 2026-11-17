@@ -738,9 +738,9 @@ def statistics(request: Request, db: Annotated[Session, Depends(get_db)]):
                 "national facility universe."
             ),
             (
-                "Government, private public-service and public-access venue counts are "
-                "reported separately; the combined total is never a government-facility "
-                "count."
+                "Government, private public-service, public-access venue and unclassified "
+                "records are counted separately; the combined total is never a "
+                "government-facility count."
             ),
             (
                 "Synthetic demonstration records are included in these counts and are "
@@ -751,8 +751,8 @@ def statistics(request: Request, db: Annotated[Session, Depends(get_db)]):
         else [
             "Statistics describe published PhilFacilities records only.",
             (
-                "Government, private public-service and public-access venue counts are "
-                "reported separately."
+                "Government, private public-service, public-access venue and unclassified "
+                "records are counted separately."
             ),
         ],
     )
@@ -948,8 +948,9 @@ def coverage(request: Request, db: Annotated[Session, Depends(get_db)]):
         stale_source_count=sum(1 for row in source_rows if row.is_stale),
         caveats=[
             (
-                "Registry totals include internal discovery candidates, but their records "
-                "are not exposed. Published counts include only rights-cleared sources."
+                "Registry totals include records from sources that are not rights-cleared; "
+                "those records are not exposed. Published counts include every public "
+                "record, including unclassified records."
             ),
             (
                 "Source coverage scope describes the source, not proof of national "

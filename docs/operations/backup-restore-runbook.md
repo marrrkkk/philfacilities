@@ -9,7 +9,7 @@ Related: [Operations](../operations.md).
 | Item | Current state |
 |---|---|
 | Database | PostgreSQL 17.5 with PostGIS 3.5, custom-format `pg_dump` |
-| Backup contents | All application schemas (`source`, `core`, `geo`, `school`, `health`, `stats`, `quality`, `history`), data, indexes, constraints, and PostGIS extension objects. Includes 92,422 canonical facilities (61,806 public, 30,616 non-public), non-public DepEd EBEIS rows, and retained source provenance |
+| Backup contents | All application schemas (`source`, `core`, `geo`, `school`, `health`, `stats`, `quality`, `history`), data, indexes, constraints, and PostGIS extension objects. Includes 258,349 canonical facilities (all published), private source rows such as DepEd EBEIS school-head names, and retained source provenance |
 | Backup tooling | `scripts/db_backup.sh` through the Compose `db` service |
 | Restore verification | `scripts/db_restore_verify.sh` restores into a throwaway `*_test` database and compares against a source manifest |
 | Tested restore | 15 checks passed on 15 November 2026 at real-data scale (see [evidence](evidence/2026-11-15-backup-restore/real-scale/philfacilities-20261115T083554Z.dump.restore-report.txt)); the earlier demo-scale run is retained in [2026-11-14 evidence](evidence/2026-11-14-backup-restore/restore-report.txt) |
@@ -200,8 +200,8 @@ These are requirements to implement, not current automation:
 - The scratch restore runs on the same database server, so it does not test host or volume loss.
 - The scripts target the Compose service. A managed PostgreSQL provider needs equivalent `pg_dump`/`pg_restore` commands, provider backup verification, and network/TLS configuration.
 - The manifest checks row counts and spatial metadata, not full row-level equality. A production acceptance test should add application-level checks and, where feasible, row-level checksums.
-- Backups contain real public data and internal-only DepEd EBEIS records. Backups and raw source objects must follow the same rights and access restrictions as the source systems; they are not public artifacts.
-- The restore exercise used the 15 November 2026 snapshot. Dump size, restore time, and disk requirements for the current 92,422-facility database still need re-measurement.
+- Backups contain public facility data plus private raw source rows, including DepEd EBEIS school-head names. Backups and raw source objects must follow the same rights and access restrictions as the source systems; they are not public artifacts.
+- The restore exercise used the 15 November 2026 snapshot. Dump size, restore time, and disk requirements for the current 258,349-facility database still need re-measurement.
 - Restore time and storage growth have not been measured at production scale.
 
 ## 9. Troubleshooting
