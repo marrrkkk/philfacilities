@@ -10,7 +10,7 @@ from ..errors import ApiError
 from ..models import Facility
 from ..pagination import decode_cursor, encode_cursor
 from ..schemas import FacilityListResponse
-from ..services import build_summaries
+from ..services import build_summaries, facility_is_public
 
 
 def get_public_facility(db: Session, identifier: str) -> Facility:
@@ -19,7 +19,7 @@ def get_public_facility(db: Session, identifier: str) -> Facility:
         facility = db.get(Facility, uuid.UUID(identifier))
     if facility is None:
         facility = db.scalars(select(Facility).where(Facility.slug == identifier)).first()
-    if facility is None or facility.publication_status != "public":
+    if facility is None or not facility_is_public(db, facility):
         raise ApiError(404, "facility_not_found", "No published facility exists with that ID.")
     return facility
 

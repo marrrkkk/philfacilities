@@ -17,7 +17,7 @@ from ..schemas import (
     ResourceObservationOut,
     SchoolDetailResponse,
 )
-from ..services import build_facility_detail
+from ..services import build_facility_detail, public_source_record_condition
 from .common import get_public_facility, paginated_facilities
 from .query import facility_conditions
 
@@ -74,12 +74,18 @@ def get_school(facility_id: str, db: Annotated[Session, Depends(get_db)]):
     detail = build_facility_detail(db, facility)
     rows = db.scalars(
         select(EnrollmentObservation)
-        .where(EnrollmentObservation.facility_id == facility.id)
+        .where(
+            EnrollmentObservation.facility_id == facility.id,
+            public_source_record_condition(EnrollmentObservation.source_record_id),
+        )
         .order_by(EnrollmentObservation.school_year.desc(), EnrollmentObservation.grade_level)
     ).all()
     resources = db.scalars(
         select(ResourceObservation)
-        .where(ResourceObservation.facility_id == facility.id)
+        .where(
+            ResourceObservation.facility_id == facility.id,
+            public_source_record_condition(ResourceObservation.source_record_id),
+        )
         .order_by(ResourceObservation.school_year.desc(), ResourceObservation.resource_code)
     ).all()
     return SchoolDetailResponse(
@@ -122,7 +128,10 @@ def get_school_enrollment(
     school_year: str | None = None,
 ):
     facility = get_public_facility(db, facility_id)
-    query = select(EnrollmentObservation).where(EnrollmentObservation.facility_id == facility.id)
+    query = select(EnrollmentObservation).where(
+        EnrollmentObservation.facility_id == facility.id,
+        public_source_record_condition(EnrollmentObservation.source_record_id),
+    )
     if school_year:
         query = query.where(EnrollmentObservation.school_year == school_year)
     rows = db.scalars(
@@ -152,7 +161,10 @@ def get_school_resources(
     school_year: str | None = None,
 ):
     facility = get_public_facility(db, facility_id)
-    query = select(ResourceObservation).where(ResourceObservation.facility_id == facility.id)
+    query = select(ResourceObservation).where(
+        ResourceObservation.facility_id == facility.id,
+        public_source_record_condition(ResourceObservation.source_record_id),
+    )
     if school_year:
         query = query.where(ResourceObservation.school_year == school_year)
     rows = db.scalars(

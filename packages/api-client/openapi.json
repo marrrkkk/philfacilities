@@ -3852,6 +3852,28 @@
         }
       }
     },
+    "/v1/taxonomy": {
+      "get": {
+        "tags": [
+          "taxonomy"
+        ],
+        "summary": "Controlled vocabularies and display labels",
+        "description": "Return the controlled codes, labels, and category-to-subtype mapping.\n\nClients should use this reference instead of hardcoding a private copy of\nthe vocabulary. It is static for a given API release and safe to cache.",
+        "operationId": "get_taxonomy_v1_taxonomy_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaxonomyResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/healthz": {
       "get": {
         "tags": [
@@ -3998,6 +4020,50 @@
               }
             ],
             "title": "Source As Of"
+          },
+          "telephone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Telephone"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "street_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Street Address"
+          },
+          "municipality": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Municipality"
           },
           "page_reference": {
             "anyOf": [
@@ -4219,6 +4285,50 @@
               }
             ],
             "title": "Source As Of"
+          },
+          "telephone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Telephone"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "street_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Street Address"
+          },
+          "municipality": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Municipality"
           },
           "page_reference": {
             "anyOf": [
@@ -4581,6 +4691,100 @@
           "items"
         ],
         "title": "ChangeListResponse"
+      },
+      "ContactOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "contact_type": {
+            "type": "string",
+            "enum": [
+              "phone",
+              "email",
+              "website",
+              "opening_hours",
+              "other"
+            ],
+            "title": "Contact Type"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "source_field": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Field"
+          },
+          "source_record_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Record Id"
+          },
+          "valid_from": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid From"
+          },
+          "valid_to": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid To"
+          },
+          "review_status": {
+            "type": "string",
+            "title": "Review Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "contact_type",
+          "value",
+          "review_status"
+        ],
+        "title": "ContactOut"
       },
       "CoverageOut": {
         "properties": {
@@ -5285,6 +5489,13 @@
             },
             "type": "array",
             "title": "Accreditations"
+          },
+          "contacts": {
+            "items": {
+              "$ref": "#/components/schemas/ContactOut"
+            },
+            "type": "array",
+            "title": "Contacts"
           },
           "function_details": {
             "items": {
@@ -6618,6 +6829,17 @@
               }
             ],
             "title": "Address Text"
+          },
+          "postal_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Postal Code"
           },
           "psgc_code": {
             "anyOf": [
@@ -8269,6 +8491,62 @@
             ],
             "title": "Latest Release Rows"
           },
+          "latest_run_acceptance_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Run Acceptance Rate"
+          },
+          "latest_run_rejection_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Run Rejection Rate"
+          },
+          "latest_run_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Run Status"
+          },
+          "latest_run_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Run At"
+          },
+          "latest_run_duration_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Run Duration Ms"
+          },
           "next_check_at": {
             "anyOf": [
               {
@@ -8406,6 +8684,126 @@
         ],
         "title": "StatisticsOut"
       },
+      "TaxonomyCategoryOut": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "subtypes": {
+            "items": {
+              "$ref": "#/components/schemas/TaxonomyTermOut"
+            },
+            "type": "array",
+            "title": "Subtypes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "label"
+        ],
+        "title": "TaxonomyCategoryOut"
+      },
+      "TaxonomyResponse": {
+        "properties": {
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "categories": {
+            "items": {
+              "$ref": "#/components/schemas/TaxonomyCategoryOut"
+            },
+            "type": "array",
+            "title": "Categories"
+          },
+          "facility_kinds": {
+            "items": {
+              "$ref": "#/components/schemas/TaxonomyTermOut"
+            },
+            "type": "array",
+            "title": "Facility Kinds"
+          },
+          "inclusion_classes": {
+            "items": {
+              "$ref": "#/components/schemas/TaxonomyTermOut"
+            },
+            "type": "array",
+            "title": "Inclusion Classes"
+          },
+          "ownership_types": {
+            "items": {
+              "$ref": "#/components/schemas/TaxonomyTermOut"
+            },
+            "type": "array",
+            "title": "Ownership Types"
+          },
+          "operator_types": {
+            "items": {
+              "$ref": "#/components/schemas/TaxonomyTermOut"
+            },
+            "type": "array",
+            "title": "Operator Types"
+          },
+          "access_classes": {
+            "items": {
+              "$ref": "#/components/schemas/TaxonomyTermOut"
+            },
+            "type": "array",
+            "title": "Access Classes"
+          },
+          "record_statuses": {
+            "items": {
+              "$ref": "#/components/schemas/TaxonomyTermOut"
+            },
+            "type": "array",
+            "title": "Record Statuses"
+          },
+          "contact_types": {
+            "items": {
+              "$ref": "#/components/schemas/TaxonomyTermOut"
+            },
+            "type": "array",
+            "title": "Contact Types"
+          }
+        },
+        "type": "object",
+        "required": [
+          "version",
+          "categories",
+          "facility_kinds",
+          "inclusion_classes",
+          "ownership_types",
+          "operator_types",
+          "access_classes",
+          "record_statuses",
+          "contact_types"
+        ],
+        "title": "TaxonomyResponse"
+      },
+      "TaxonomyTermOut": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "label"
+        ],
+        "title": "TaxonomyTermOut"
+      },
       "ValidationError": {
         "properties": {
           "loc": {
@@ -8468,6 +8866,10 @@
     {
       "name": "sources",
       "description": "Datasets, releases, quality, changes, and downloads."
+    },
+    {
+      "name": "taxonomy",
+      "description": "Controlled facility vocabularies and display labels."
     },
     {
       "name": "system",

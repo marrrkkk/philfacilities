@@ -26,7 +26,13 @@ from .models import (
     Release,
     SourceRecord,
 )
-from .rights import PUBLIC_RIGHTS
+from .publication import (
+    latest_published_release_id as _latest_published_release_id,
+)
+from .publication import (
+    public_dataset_release_condition,
+    public_source_record_condition,
+)
 from .schemas import (
     AttributeAssertionOut,
     FacilityFunctionOut,
@@ -47,7 +53,7 @@ def decimal_to_float(value: Decimal | None) -> float | None:
 
 
 def public_source_condition():
-    """True when a facility has at least one rights-cleared, published source link."""
+    """True when a facility has a rights-cleared link in its current release."""
 
     return exists(
         select(1)
@@ -57,9 +63,10 @@ def public_source_condition():
         .join(Dataset, Release.dataset_id == Dataset.id)
         .where(
             FacilitySourceLink.facility_id == Facility.id,
-            Dataset.redistribution_status.in_(tuple(PUBLIC_RIGHTS)),
-            Dataset.publication_status.in_(("approved", "published")),
-            Release.publication_status.in_(("approved", "published")),
+            public_dataset_release_condition(),
+            # A facility is current only while the newest published release of
+            # that dataset still contains it.
+            Release.id == _latest_published_release_id(Dataset.id),
         )
         .correlate(Facility)
     )
@@ -75,6 +82,30 @@ def public_facility_filter() -> list:
     ]
 
 
+def facility_is_public(session: Session, facility: Facility) -> bool:
+    """True when the stored public flag still has current public evidence.
+
+    Detail endpoints receive a facility object loaded by id or slug, so they
+    cannot rely on the list query's filter. A facility whose dataset rights were
+    withdrawn, or whose newest published release no longer contains it, must
+    return the same not-found response as a hidden search result.
+    """
+
+    if facility.publication_status != "public":
+        return False
+    if facility.is_synthetic:
+        return True
+    return (
+        session.scalar(
+            select(Facility.id).where(
+                Facility.id == facility.id,
+                public_source_condition(),
+            )
+        )
+        is not None
+    )
+
+
 def load_current_locations(
     session: Session, facility_ids: list[uuid.UUID]
 ) -> dict[uuid.UUID, FacilityLocation]:
@@ -87,6 +118,9 @@ def load_current_locations(
             .where(
                 FacilityLocation.facility_id.in_(chunk),
                 FacilityLocation.is_current.is_(True),
+                # An internal-only release must not surface its coordinates even
+                # if it was the last writer of the current location.
+                public_source_record_condition(FacilityLocation.source_record_id),
             )
             .order_by(FacilityLocation.created_at.desc())
         ).all()
@@ -123,17 +157,13 @@ def load_source_evidence(
             .join(Agency, Dataset.agency_id == Agency.id)
             .where(
                 FacilitySourceLink.facility_id.in_(chunk),
+                # Current membership, not any release that once contained the
+                # facility.
+                Release.id == _latest_published_release_id(Dataset.id),
                 # Restricted/internal evidence must not leak through a public facility
                 # page even when the canonical facility is public because of another
                 # approved source. Synthetic fixtures retain their demo behaviour.
-                or_(
-                    Dataset.is_synthetic.is_(True),
-                    and_(
-                        Dataset.redistribution_status.in_(tuple(PUBLIC_RIGHTS)),
-                        Dataset.publication_status.in_(("approved", "published")),
-                        Release.publication_status.in_(("approved", "published")),
-                    ),
-                ),
+                public_dataset_release_condition(),
             )
             .order_by(Release.retrieved_at.desc())
         ).all()
@@ -184,14 +214,10 @@ def load_attribute_assertions(
 
     conditions = [
         AttributeAssertion.facility_id == facility_id,
-        or_(
-            Dataset.is_synthetic.is_(True),
-            and_(
-                Dataset.redistribution_status.in_(tuple(PUBLIC_RIGHTS)),
-                Dataset.publication_status.in_(("approved", "published")),
-                Release.publication_status.in_(("approved", "published")),
-            ),
-        ),
+        # An assertion from a release that the dataset has since replaced is
+        # history, not current field provenance.
+        Release.id == _latest_published_release_id(Dataset.id),
+        public_dataset_release_condition(),
     ]
     if attribute:
         conditions.append(AttributeAssertion.attribute_name == attribute)
@@ -270,7 +296,10 @@ def load_functions(
     for chunk in _chunked(facility_ids):
         rows = session.scalars(
             select(FacilityFunction)
-            .where(FacilityFunction.facility_id.in_(chunk))
+            .where(
+                FacilityFunction.facility_id.in_(chunk),
+                public_source_record_condition(FacilityFunction.source_record_id),
+            )
             .order_by(FacilityFunction.function_code)
         ).all()
         for row in rows:
@@ -287,7 +316,10 @@ def load_roles(
     for chunk in _chunked(facility_ids):
         rows = session.scalars(
             select(FacilityRole)
-            .where(FacilityRole.facility_id.in_(chunk))
+            .where(
+                FacilityRole.facility_id.in_(chunk),
+                public_source_record_condition(FacilityRole.source_record_id),
+            )
             .order_by(FacilityRole.role_type, FacilityRole.entity_name)
         ).all()
         for row in rows:
@@ -304,7 +336,10 @@ def load_services(
     for chunk in _chunked(facility_ids):
         rows = session.scalars(
             select(FacilityService)
-            .where(FacilityService.facility_id.in_(chunk))
+            .where(
+                FacilityService.facility_id.in_(chunk),
+                public_source_record_condition(FacilityService.source_record_id),
+            )
             .order_by(FacilityService.service_code)
         ).all()
         for row in rows:
@@ -490,6 +525,7 @@ def build_summaries(
                     precision=location.precision if location else "unknown",  # type: ignore[arg-type]
                     method=location.method if location else None,
                     address_text=location.address_text if location else None,
+                    postal_code=location.postal_code if location else None,
                     psgc_code=location.psgc_code if location else None,
                     review_status=location.review_status if location else None,
                 ),
@@ -510,11 +546,18 @@ def build_facility_detail(
 
     from .models import (
         EnrollmentObservation,
+        FacilityContact,
         HealthAccreditation,
         HealthProfile,
         SchoolProfile,
     )
-    from .schemas import AccreditationOut, FacilityDetail, HealthProfileOut, SchoolProfileOut
+    from .schemas import (
+        AccreditationOut,
+        ContactOut,
+        FacilityDetail,
+        HealthProfileOut,
+        SchoolProfileOut,
+    )
 
     summary = build_summaries(session, [facility], geography_release)[0]
     sources = load_source_evidence(session, [facility.id]).get(facility.id, [])
@@ -525,13 +568,17 @@ def build_facility_detail(
     if facility.facility_type == "school":
         profile = session.scalars(
             select(SchoolProfile)
-            .where(SchoolProfile.facility_id == facility.id)
+            .where(
+                SchoolProfile.facility_id == facility.id,
+                public_source_record_condition(SchoolProfile.source_record_id),
+            )
             .order_by(SchoolProfile.valid_from.desc().nullslast())
         ).first()
         if profile:
             latest_year = session.scalar(
                 select(func.max(EnrollmentObservation.school_year)).where(
-                    EnrollmentObservation.facility_id == facility.id
+                    EnrollmentObservation.facility_id == facility.id,
+                    public_source_record_condition(EnrollmentObservation.source_record_id),
                 )
             )
             total = None
@@ -540,6 +587,7 @@ def build_facility_detail(
                     select(EnrollmentObservation).where(
                         EnrollmentObservation.facility_id == facility.id,
                         EnrollmentObservation.school_year == latest_year,
+                        public_source_record_condition(EnrollmentObservation.source_record_id),
                     )
                 ).all()
                 if any(row.grade_level == "total" and row.sex == "all" for row in rows):
@@ -565,7 +613,10 @@ def build_facility_detail(
     elif facility.facility_type == "health_facility":
         profile = session.scalars(
             select(HealthProfile)
-            .where(HealthProfile.facility_id == facility.id)
+            .where(
+                HealthProfile.facility_id == facility.id,
+                public_source_record_condition(HealthProfile.source_record_id),
+            )
             .order_by(HealthProfile.valid_from.desc().nullslast())
         ).first()
         if profile:
@@ -578,7 +629,10 @@ def build_facility_detail(
             )
         for row in session.scalars(
             select(HealthAccreditation)
-            .where(HealthAccreditation.facility_id == facility.id)
+            .where(
+                HealthAccreditation.facility_id == facility.id,
+                public_source_record_condition(HealthAccreditation.source_record_id),
+            )
             .order_by(HealthAccreditation.valid_until.desc().nullslast())
         ).all():
             accreditations.append(
@@ -594,10 +648,36 @@ def build_facility_detail(
                     valid_from=row.valid_from,
                     valid_until=row.valid_until,
                     source_as_of=row.source_as_of,
+                    telephone=row.telephone,
+                    email=row.email,
+                    street_address=row.street_address,
+                    municipality=row.municipality,
                     page_reference=row.page_reference,
                     source_record_id=row.source_record_id,
                 )
             )
+
+    contacts = [
+        ContactOut(
+            id=row.id,
+            contact_type=row.contact_type,  # type: ignore[arg-type]
+            value=row.value,
+            label=row.label,
+            source_field=row.source_field,
+            source_record_id=row.source_record_id,
+            valid_from=row.valid_from,
+            valid_to=row.valid_to,
+            review_status=row.review_status,
+        )
+        for row in session.scalars(
+            select(FacilityContact)
+            .where(
+                FacilityContact.facility_id == facility.id,
+                public_source_record_condition(FacilityContact.source_record_id),
+            )
+            .order_by(FacilityContact.contact_type, FacilityContact.value)
+        ).all()
+    ]
 
     function_rows = load_functions(session, [facility.id]).get(facility.id, [])
     service_rows = load_services(session, [facility.id]).get(facility.id, [])
@@ -607,7 +687,8 @@ def build_facility_detail(
             or_(
                 FacilityRelationship.subject_facility_id == facility.id,
                 FacilityRelationship.object_facility_id == facility.id,
-            )
+            ),
+            public_source_record_condition(FacilityRelationship.source_record_id),
         )
     ).all()
     relationships: list[FacilityRelationshipOut] = []
@@ -618,6 +699,10 @@ def build_facility_detail(
             else relationship.subject_facility_id
         )
         related = session.get(Facility, related_id)
+        if related is not None and related.publication_status != "public":
+            # A public relationship must not expose the name of an internal
+            # facility that the caller cannot otherwise see.
+            continue
         relationships.append(
             FacilityRelationshipOut(
                 relationship_type=relationship.relationship_type,
@@ -635,6 +720,7 @@ def build_facility_detail(
         school=school,
         health=health,
         accreditations=accreditations,
+        contacts=contacts,
         function_details=[
             FacilityFunctionOut(
                 function_code=row.function_code,

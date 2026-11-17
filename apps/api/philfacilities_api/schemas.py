@@ -6,60 +6,22 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-FacilityType = Literal[
-    "school",
-    "health_facility",
-    "government_office",
-    "community_facility",
-    "emergency_facility",
-    "library",
-    "museum",
-    "social_welfare_facility",
-    "public_market",
-    "transport_facility",
-    "utility_facility",
-    "environmental_monitoring",
-    "public_space",
-    "cultural_facility",
-    "agricultural_facility",
-    "justice_facility",
-    "housing_service",
-    "other_qualifying_facility",
-]
-InclusionClass = Literal[
-    "GOVERNMENT_FACILITY",
-    "PRIVATE_PUBLIC_SERVICE_PROVIDER",
-    "PUBLIC_ACCESS_VENUE",
-    "DISCOVERY_CANDIDATE",
-]
-Ownership = Literal["government", "private", "unknown"]
-OwnershipType = Literal[
-    "NATIONAL_GOVERNMENT",
-    "LOCAL_GOVERNMENT",
-    "GOCC",
-    "PUBLIC_EDUCATIONAL_INSTITUTION",
-    "OTHER_PUBLIC_BODY",
-    "GOVERNMENT_UNSPECIFIED",
-    "PRIVATE_CORPORATE",
-    "PRIVATE_INDIVIDUAL_OR_PARTNERSHIP",
-    "NGO_NON_PROFIT",
-    "COOPERATIVE",
-    "RELIGIOUS_FAITH_BASED",
-    "PUBLIC_PRIVATE_JOINT",
-    "PRIVATE_UNSPECIFIED",
-    "UNKNOWN",
-]
+from philfacilities_api.taxonomy import (
+    ACCESS_CLASSES,
+    CONTACT_TYPES,
+    FACILITY_CATEGORIES,
+    INCLUSION_CLASSES,
+    OWNERSHIP_TYPES,
+    OWNERSHIP_VALUES,
+    RECORD_STATUSES,
+)
+
+FacilityType = Literal[*FACILITY_CATEGORIES]
+InclusionClass = Literal[*INCLUSION_CLASSES]
+Ownership = Literal[*OWNERSHIP_VALUES]
+OwnershipType = Literal[*OWNERSHIP_TYPES]
 OperatorType = OwnershipType
-AccessClass = Literal[
-    "PUBLIC_FREE",
-    "PUBLIC_PAID_OR_CONDITIONAL",
-    "SERVICE_USERS_ONLY",
-    "APPOINTMENT_ONLY",
-    "MEMBERS_STUDENTS_ONLY",
-    "STAFF_ONLY",
-    "RESTRICTED",
-    "UNKNOWN",
-]
+AccessClass = Literal[*ACCESS_CLASSES]
 FacilityKind = Literal[
     "facility",
     "site",
@@ -79,9 +41,8 @@ CoverageScope = Literal[
     "DISCOVERY_LAYER",
     "UNKNOWN_COVERAGE",
 ]
-RecordStatus = Literal[
-    "active_in_registry", "inactive_in_registry", "unknown", "under_review", "merged"
-]
+RecordStatus = Literal[*RECORD_STATUSES]
+ContactType = Literal[*CONTACT_TYPES]
 LocationPrecision = Literal[
     "gps_verified",
     "field_verified",
@@ -102,6 +63,7 @@ class LocationOut(BaseModel):
     precision: LocationPrecision = "unknown"
     method: str | None = None
     address_text: str | None = None
+    postal_code: str | None = None
     psgc_code: str | None = None
     review_status: str | None = None
 
@@ -236,6 +198,10 @@ class AccreditationOut(BaseModel):
     valid_from: date | None = None
     valid_until: date | None = None
     source_as_of: date | None = None
+    telephone: str | None = None
+    email: str | None = None
+    street_address: str | None = None
+    municipality: str | None = None
     page_reference: str | None = None
     source_record_id: uuid.UUID | None = None
 
@@ -292,6 +258,18 @@ class FacilityRelationshipOut(BaseModel):
     related_facility_slug: str | None = None
 
 
+class ContactOut(BaseModel):
+    id: uuid.UUID
+    contact_type: ContactType
+    value: str
+    label: str | None = None
+    source_field: str | None = None
+    source_record_id: uuid.UUID | None = None
+    valid_from: date | None = None
+    valid_to: date | None = None
+    review_status: str
+
+
 class FacilitySummary(BaseModel):
     id: uuid.UUID
     slug: str | None = None
@@ -320,6 +298,7 @@ class FacilityDetail(FacilitySummary):
     school: SchoolProfileOut | None = None
     health: HealthProfileOut | None = None
     accreditations: list[AccreditationOut] = Field(default_factory=list)
+    contacts: list[ContactOut] = Field(default_factory=list)
     function_details: list[FacilityFunctionOut] = Field(default_factory=list)
     services: list[FacilityServiceOut] = Field(default_factory=list)
     roles: list[FacilityRoleOut] = Field(default_factory=list)
@@ -508,6 +487,11 @@ class SourceMonitoringOut(BaseModel):
     latest_release_label: str | None = None
     latest_release_at: datetime | None = None
     latest_release_rows: int | None = None
+    latest_run_acceptance_rate: float | None = None
+    latest_run_rejection_rate: float | None = None
+    latest_run_status: str | None = None
+    latest_run_at: datetime | None = None
+    latest_run_duration_ms: float | None = None
     next_check_at: datetime | None = None
     warning: str | None = None
 
@@ -688,6 +672,27 @@ class PopulationListResponse(BaseModel):
     limit: int
     offset: int
     caveats: list[str] = Field(default_factory=list)
+
+
+class TaxonomyTermOut(BaseModel):
+    code: str
+    label: str
+
+
+class TaxonomyCategoryOut(TaxonomyTermOut):
+    subtypes: list[TaxonomyTermOut] = Field(default_factory=list)
+
+
+class TaxonomyResponse(BaseModel):
+    version: str
+    categories: list[TaxonomyCategoryOut]
+    facility_kinds: list[TaxonomyTermOut]
+    inclusion_classes: list[TaxonomyTermOut]
+    ownership_types: list[TaxonomyTermOut]
+    operator_types: list[TaxonomyTermOut]
+    access_classes: list[TaxonomyTermOut]
+    record_statuses: list[TaxonomyTermOut]
+    contact_types: list[TaxonomyTermOut]
 
 
 class ErrorBody(BaseModel):

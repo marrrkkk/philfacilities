@@ -55,6 +55,7 @@ app = FastAPI(
         },
         {"name": "geography", "description": "Versioned PSA PSGC geography."},
         {"name": "sources", "description": "Datasets, releases, quality, changes, and downloads."},
+        {"name": "taxonomy", "description": "Controlled facility vocabularies and display labels."},
         {"name": "system", "description": "Service health."},
     ],
     contact={"name": "PhilFacilities", "url": "https://github.com/philfacilities"},
@@ -111,6 +112,7 @@ def api_index():
             "sources": "/v1/sources",
             "quality": "/v1/quality/summary",
             "statistics": "/v1/statistics",
+            "taxonomy": "/v1/taxonomy",
             "downloads": "/v1/downloads/facilities.csv",
         },
         "notice": (

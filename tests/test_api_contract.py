@@ -42,6 +42,7 @@ REQUIRED_PATHS = {
     "/v1/changes",
     "/v1/statistics",
     "/v1/coverage",
+    "/v1/taxonomy",
     "/v1/downloads/facilities.csv",
     "/v1/downloads/facilities.parquet",
     "/v1/downloads/schools.csv",
@@ -67,6 +68,8 @@ def test_openapi_contains_the_public_read_contract(openapi_client):
     assert {
         "FacilitySummary",
         "FacilityDetail",
+        "ContactOut",
+        "TaxonomyResponse",
         "FacilityListResponse",
         "SourceEvidence",
         "AttributeAssertionOut",

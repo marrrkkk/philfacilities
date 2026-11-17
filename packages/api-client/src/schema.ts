@@ -667,6 +667,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/taxonomy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Controlled vocabularies and display labels
+         * @description Return the controlled codes, labels, and category-to-subtype mapping.
+         *
+         *     Clients should use this reference instead of hardcoding a private copy of
+         *     the vocabulary. It is static for a given API release and safe to cache.
+         */
+        get: operations["get_taxonomy_v1_taxonomy_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/healthz": {
         parameters: {
             query?: never;
@@ -732,6 +755,14 @@ export interface components {
             valid_until?: string | null;
             /** Source As Of */
             source_as_of?: string | null;
+            /** Telephone */
+            telephone?: string | null;
+            /** Email */
+            email?: string | null;
+            /** Street Address */
+            street_address?: string | null;
+            /** Municipality */
+            municipality?: string | null;
             /** Page Reference */
             page_reference?: string | null;
             /** Source Record Id */
@@ -794,6 +825,14 @@ export interface components {
             valid_until?: string | null;
             /** Source As Of */
             source_as_of?: string | null;
+            /** Telephone */
+            telephone?: string | null;
+            /** Email */
+            email?: string | null;
+            /** Street Address */
+            street_address?: string | null;
+            /** Municipality */
+            municipality?: string | null;
             /** Page Reference */
             page_reference?: string | null;
             /** Source Record Id */
@@ -906,6 +945,33 @@ export interface components {
              * @default false
              */
             has_more: boolean;
+        };
+        /** ContactOut */
+        ContactOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Contact Type
+             * @enum {string}
+             */
+            contact_type: "phone" | "email" | "website" | "opening_hours" | "other";
+            /** Value */
+            value: string;
+            /** Label */
+            label?: string | null;
+            /** Source Field */
+            source_field?: string | null;
+            /** Source Record Id */
+            source_record_id?: string | null;
+            /** Valid From */
+            valid_from?: string | null;
+            /** Valid To */
+            valid_to?: string | null;
+            /** Review Status */
+            review_status: string;
         };
         /** CoverageOut */
         CoverageOut: {
@@ -1140,6 +1206,8 @@ export interface components {
             health?: components["schemas"]["HealthProfileOut"] | null;
             /** Accreditations */
             accreditations?: components["schemas"]["AccreditationOut"][];
+            /** Contacts */
+            contacts?: components["schemas"]["ContactOut"][];
             /** Function Details */
             function_details?: components["schemas"]["FacilityFunctionOut"][];
             /** Services */
@@ -1545,6 +1613,8 @@ export interface components {
             method?: string | null;
             /** Address Text */
             address_text?: string | null;
+            /** Postal Code */
+            postal_code?: string | null;
             /** Psgc Code */
             psgc_code?: string | null;
             /** Review Status */
@@ -2067,6 +2137,16 @@ export interface components {
             latest_release_at?: string | null;
             /** Latest Release Rows */
             latest_release_rows?: number | null;
+            /** Latest Run Acceptance Rate */
+            latest_run_acceptance_rate?: number | null;
+            /** Latest Run Rejection Rate */
+            latest_run_rejection_rate?: number | null;
+            /** Latest Run Status */
+            latest_run_status?: string | null;
+            /** Latest Run At */
+            latest_run_at?: string | null;
+            /** Latest Run Duration Ms */
+            latest_run_duration_ms?: number | null;
             /** Next Check At */
             next_check_at?: string | null;
             /** Warning */
@@ -2119,6 +2199,43 @@ export interface components {
             source_releases: number;
             /** Caveats */
             caveats?: string[];
+        };
+        /** TaxonomyCategoryOut */
+        TaxonomyCategoryOut: {
+            /** Code */
+            code: string;
+            /** Label */
+            label: string;
+            /** Subtypes */
+            subtypes?: components["schemas"]["TaxonomyTermOut"][];
+        };
+        /** TaxonomyResponse */
+        TaxonomyResponse: {
+            /** Version */
+            version: string;
+            /** Categories */
+            categories: components["schemas"]["TaxonomyCategoryOut"][];
+            /** Facility Kinds */
+            facility_kinds: components["schemas"]["TaxonomyTermOut"][];
+            /** Inclusion Classes */
+            inclusion_classes: components["schemas"]["TaxonomyTermOut"][];
+            /** Ownership Types */
+            ownership_types: components["schemas"]["TaxonomyTermOut"][];
+            /** Operator Types */
+            operator_types: components["schemas"]["TaxonomyTermOut"][];
+            /** Access Classes */
+            access_classes: components["schemas"]["TaxonomyTermOut"][];
+            /** Record Statuses */
+            record_statuses: components["schemas"]["TaxonomyTermOut"][];
+            /** Contact Types */
+            contact_types: components["schemas"]["TaxonomyTermOut"][];
+        };
+        /** TaxonomyTermOut */
+        TaxonomyTermOut: {
+            /** Code */
+            code: string;
+            /** Label */
+            label: string;
         };
         /** ValidationError */
         ValidationError: {
@@ -3382,6 +3499,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_taxonomy_v1_taxonomy_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaxonomyResponse"];
                 };
             };
         };
