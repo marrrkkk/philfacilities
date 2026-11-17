@@ -93,3 +93,36 @@ def dataset_is_publishable(
     if is_synthetic:
         return True
     return rights_allow_public(redistribution_status) and gate_is_public(gate_status)
+
+
+def publication_decision_rule(
+    *,
+    redistribution_status: str | None,
+    gate_status: str | None,
+    is_synthetic: bool = False,
+    publication_status: str | None = None,
+) -> dict[str, object]:
+    """Return the automated publication decision and its stable rule id.
+
+    This is presentation/reporting metadata for the same decision enforced by
+    :func:`dataset_is_publishable`; it does not introduce a second rights state.
+    """
+
+    if is_synthetic:
+        return {"public": True, "rule": "SYNTHETIC_DEMO"}
+    if dataset_is_publishable(
+        redistribution_status=redistribution_status,
+        gate_status=gate_status,
+        is_synthetic=is_synthetic,
+        publication_status=publication_status,
+    ):
+        if normalize_rights(redistribution_status) == RIGHTS_PUBLICLY_AVAILABLE_VERIFIED:
+            return {"public": True, "rule": "AUTOMATED_PUBLICLY_AVAILABLE_VERIFIED"}
+        return {"public": True, "rule": "AUTOMATED_APPROVED_ATTRIBUTION"}
+    if normalize_rights(redistribution_status) in {
+        RIGHTS_RESTRICTED,
+        RIGHTS_DENIED,
+        RIGHTS_EXPIRED,
+    }:
+        return {"public": False, "rule": "AUTOMATED_EXPLICIT_RESTRICTION"}
+    return {"public": False, "rule": "AUTOMATED_INTERNAL_ONLY"}

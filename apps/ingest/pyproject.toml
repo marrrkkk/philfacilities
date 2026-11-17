@@ -6,6 +6,7 @@ requires-python = ">=3.12"
 dependencies = [
   "boto3>=1.35",
   "openpyxl>=3.1",
+  "osmium>=4.0",
   "pdfplumber>=0.11",
   "philfacilities-api",
   "polars>=1.20",

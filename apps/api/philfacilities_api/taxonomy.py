@@ -19,6 +19,8 @@ from __future__ import annotations
 
 from typing import Final
 
+TAXONOMY_VERSION: Final = "3.0"
+
 # ---------------------------------------------------------------------------
 # Inclusion classes
 # ---------------------------------------------------------------------------
@@ -34,6 +36,9 @@ PUBLIC_INCLUSION_CLASSES: Final = (
     PUBLIC_ACCESS_VENUE,
 )
 INCLUSION_CLASSES: Final = (*PUBLIC_INCLUSION_CLASSES, DISCOVERY_CANDIDATE)
+
+# Legacy coarse ownership value. ``ownership_type`` carries the granular class.
+OWNERSHIP_VALUES: Final = ("government", "private", "unknown")
 
 INCLUSION_CLASS_LABELS: Final[dict[str, str]] = {
     GOVERNMENT_FACILITY: "Government facility",
@@ -54,6 +59,15 @@ INFRASTRUCTURE_ASSET: Final = "infrastructure_asset"
 PROJECT: Final = "project"
 
 FACILITY_KINDS: Final = (FACILITY, SITE, BUILDING, FACILITY_UNIT, INFRASTRUCTURE_ASSET, PROJECT)
+
+FACILITY_KIND_LABELS: Final[dict[str, str]] = {
+    FACILITY: "Facility",
+    SITE: "Site or campus",
+    BUILDING: "Building",
+    FACILITY_UNIT: "Facility unit or service counter",
+    INFRASTRUCTURE_ASSET: "Infrastructure asset",
+    PROJECT: "Project",
+}
 
 # ---------------------------------------------------------------------------
 # Ownership / operator granularity
@@ -115,6 +129,23 @@ PRIVATE_OWNERSHIP_TYPES: Final = frozenset(
 
 OPERATOR_TYPES: Final = OWNERSHIP_TYPES
 
+OWNERSHIP_TYPE_LABELS: Final[dict[str, str]] = {
+    NATIONAL_GOVERNMENT: "National government",
+    LOCAL_GOVERNMENT: "Local government",
+    GOCC: "Government-owned or controlled corporation",
+    PUBLIC_EDUCATIONAL_INSTITUTION: "Public educational institution",
+    OTHER_PUBLIC_BODY: "Other public body",
+    GOVERNMENT_UNSPECIFIED: "Government (unspecified)",
+    PRIVATE_CORPORATE: "Private corporation",
+    PRIVATE_INDIVIDUAL_OR_PARTNERSHIP: "Private individual or partnership",
+    NGO_NON_PROFIT: "Non-government or non-profit organization",
+    COOPERATIVE: "Cooperative",
+    RELIGIOUS_FAITH_BASED: "Religious or faith-based organization",
+    PUBLIC_PRIVATE_JOINT: "Public-private joint",
+    PRIVATE_UNSPECIFIED: "Private (unspecified)",
+    UNKNOWN: "Unknown",
+}
+
 # ---------------------------------------------------------------------------
 # Public access
 # ---------------------------------------------------------------------------
@@ -137,6 +168,73 @@ ACCESS_CLASSES: Final = (
     STAFF_ONLY,
     RESTRICTED,
     ACCESS_UNKNOWN,
+)
+
+ACCESS_CLASS_LABELS: Final[dict[str, str]] = {
+    PUBLIC_FREE: "Public, free",
+    PUBLIC_PAID_OR_CONDITIONAL: "Public, paid or conditional",
+    SERVICE_USERS_ONLY: "Service users only",
+    APPOINTMENT_ONLY: "Appointment only",
+    MEMBERS_STUDENTS_ONLY: "Members or students only",
+    STAFF_ONLY: "Staff only",
+    RESTRICTED: "Restricted",
+    ACCESS_UNKNOWN: "Unknown",
+}
+
+# ---------------------------------------------------------------------------
+# Record lifecycle
+# ---------------------------------------------------------------------------
+
+RECORD_STATUSES: Final = (
+    "active_in_registry",
+    "inactive_in_registry",
+    "unknown",
+    "under_review",
+    "merged",
+)
+
+RECORD_STATUS_LABELS: Final[dict[str, str]] = {
+    "active_in_registry": "Active in registry",
+    "inactive_in_registry": "Inactive in registry",
+    "unknown": "Unknown",
+    "under_review": "Under review",
+    "merged": "Merged",
+}
+
+# ---------------------------------------------------------------------------
+# Contact channels
+# ---------------------------------------------------------------------------
+
+PHONE: Final = "phone"
+EMAIL: Final = "email"
+WEBSITE: Final = "website"
+OPENING_HOURS: Final = "opening_hours"
+OTHER_CONTACT: Final = "other"
+
+CONTACT_TYPES: Final = (PHONE, EMAIL, WEBSITE, OPENING_HOURS, OTHER_CONTACT)
+
+CONTACT_TYPE_LABELS: Final[dict[str, str]] = {
+    PHONE: "Telephone",
+    EMAIL: "Email",
+    WEBSITE: "Website",
+    OPENING_HOURS: "Opening hours",
+    OTHER_CONTACT: "Other contact",
+}
+
+# ---------------------------------------------------------------------------
+# Source authority (provenance metadata, not a facility claim)
+# ---------------------------------------------------------------------------
+
+SOURCE_AUTHORITY_OFFICIAL: Final = "official"
+SOURCE_AUTHORITY_COMMUNITY: Final = "community"
+SOURCE_AUTHORITY_SYNTHETIC: Final = "synthetic"
+SOURCE_AUTHORITY_UNKNOWN: Final = "unknown"
+
+SOURCE_AUTHORITY_LEVELS: Final = (
+    SOURCE_AUTHORITY_OFFICIAL,
+    SOURCE_AUTHORITY_COMMUNITY,
+    SOURCE_AUTHORITY_SYNTHETIC,
+    SOURCE_AUTHORITY_UNKNOWN,
 )
 
 # ---------------------------------------------------------------------------
@@ -417,6 +515,25 @@ CATEGORY_SUBTYPES: Final[dict[str, tuple[str, ...]]] = {
         "OTHER_HOUSING_FACILITY",
     ),
     OTHER_QUALIFYING_FACILITY: ("OTHER_QUALIFYING_FACILITY",),
+}
+
+# Flattened view for validating a source claim without first knowing its category.
+FACILITY_SUBTYPES: Final = tuple(
+    dict.fromkeys(subtype for subtypes in CATEGORY_SUBTYPES.values() for subtype in subtypes)
+)
+
+# Human-readable labels for clients that do not want to reproduce the taxonomy.
+# Most codes read naturally when underscored words are lowercased; only acronyms
+# and established programme names need an override.
+_SUBTYPE_LABEL_OVERRIDES: Final[dict[str, str]] = {
+    "CRCF": "Centers and residential care facilities",
+    "NCDC": "NCDC",
+    "DRRM_CENTER": "DRRM center",
+}
+
+SUBTYPE_LABELS: Final[dict[str, str]] = {
+    subtype: _SUBTYPE_LABEL_OVERRIDES.get(subtype, subtype.replace("_", " ").capitalize())
+    for subtype in FACILITY_SUBTYPES
 }
 
 # ---------------------------------------------------------------------------

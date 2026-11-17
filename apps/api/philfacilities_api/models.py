@@ -78,6 +78,10 @@ class Dataset(Base):
     __tablename__ = "datasets"
     __table_args__ = (
         UniqueConstraint("agency_id", "slug", name="uq_datasets_agency_slug"),
+        CheckConstraint(
+            "authority_level IN ('official', 'community', 'synthetic', 'unknown')",
+            name="authority_level_allowed",
+        ),
         {"schema": "source"},
     )
 
@@ -99,6 +103,9 @@ class Dataset(Base):
     attribution_text: Mapped[str | None] = mapped_column(Text)
     personal_data_status: Mapped[str | None] = mapped_column(String(60))
     publication_status: Mapped[str] = mapped_column(String(40), nullable=False, default="blocked")
+    authority_level: Mapped[str] = mapped_column(
+        String(30), nullable=False, default="unknown", server_default="unknown"
+    )
     coverage_scope: Mapped[str | None] = mapped_column(String(40))
     coverage_note: Mapped[str | None] = mapped_column(Text)
     update_pattern: Mapped[str | None] = mapped_column(String(80))
@@ -131,6 +138,7 @@ class Release(Base):
     terms_review_status: Mapped[str] = mapped_column(String(40), nullable=False, default="unknown")
     publication_status: Mapped[str] = mapped_column(String(40), nullable=False, default="blocked")
     parser_version: Mapped[str | None] = mapped_column(String(40))
+    schema_version: Mapped[str | None] = mapped_column(String(60))
     notes: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = created_at()
 
@@ -291,6 +299,51 @@ class FacilityFunction(Base):
     created_at: Mapped[datetime] = created_at()
 
 
+class FacilityContact(Base):
+    """A source-linked contact channel for a facility.
+
+    Contacts are separate rows so several sources can each publish a phone,
+    email, website, or opening-hours claim without one silently overwriting
+    another. Only institutional channels are stored; personal contact names and
+    private numbers do not belong in this table.
+    """
+
+    __tablename__ = "facility_contacts"
+    __table_args__ = (
+        UniqueConstraint(
+            "facility_id",
+            "contact_type",
+            "value",
+            "source_record_id",
+            name="uq_facility_contact_source",
+        ),
+        CheckConstraint(
+            "contact_type IN ('phone', 'email', 'website', 'opening_hours', 'other')",
+            name="facility_contact_type_allowed",
+        ),
+        Index("ix_core_facility_contacts_facility_type", "facility_id", "contact_type"),
+        {"schema": "core"},
+    )
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    facility_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("core.facilities.id", ondelete="CASCADE"), nullable=False
+    )
+    contact_type: Mapped[str] = mapped_column(String(30), nullable=False)
+    value: Mapped[str] = mapped_column(String(500), nullable=False)
+    label: Mapped[str | None] = mapped_column(String(120))
+    source_record_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("source.records.id", ondelete="SET NULL")
+    )
+    source_field: Mapped[str | None] = mapped_column(String(160))
+    valid_from: Mapped[date | None] = mapped_column(Date)
+    valid_to: Mapped[date | None] = mapped_column(Date)
+    review_status: Mapped[str] = mapped_column(
+        String(40), nullable=False, default="source_supplied"
+    )
+    created_at: Mapped[datetime] = created_at()
+
+
 class FacilityService(Base):
     """A service delivered at a facility, only where an authoritative record says so."""
 
@@ -406,6 +459,7 @@ class FacilitySourceLink(Base):
     __table_args__ = (
         UniqueConstraint("facility_id", "source_record_id", name="uq_links_facility_source_record"),
         Index("ix_links_source_record", "source_record_id"),
+        Index("ix_links_source_entity", "source_entity_id"),
         {"schema": "source"},
     )
 
@@ -596,6 +650,7 @@ class FacilityLocation(Base):
     precision: Mapped[str] = mapped_column(String(40), nullable=False, default="unknown")
     method: Mapped[str | None] = mapped_column(String(80))
     address_text: Mapped[str | None] = mapped_column(Text)
+    postal_code: Mapped[str | None] = mapped_column(String(20))
     psgc_code: Mapped[str | None] = mapped_column(String(12))
     valid_from: Mapped[date | None] = mapped_column(Date)
     valid_to: Mapped[date | None] = mapped_column(Date)
@@ -610,6 +665,7 @@ class AttributeAssertion(Base):
     __tablename__ = "attribute_assertions"
     __table_args__ = (
         Index("ix_core_assertions_facility_attr", "facility_id", "attribute_name"),
+        Index("ix_core_assertions_facility_record", "facility_id", "source_record_id"),
         {"schema": "core"},
     )
 
@@ -643,6 +699,14 @@ class FacilityAttributeFusion(Base):
     __tablename__ = "facility_attribute_fusions"
     __table_args__ = (
         UniqueConstraint("facility_id", "attribute_name", name="uq_facility_attribute_fusion"),
+        CheckConstraint(
+            "status IN ('single_source', 'agreed', 'conflict')",
+            name="fusion_status_allowed",
+        ),
+        CheckConstraint(
+            "confidence >= 0 AND confidence <= 1",
+            name="fusion_confidence_range",
+        ),
         Index("ix_core_attribute_fusions_status", "status"),
         {"schema": "core"},
     )
@@ -672,6 +736,7 @@ class FacilityAttributeFusion(Base):
 class SchoolProfile(Base):
     __tablename__ = "profiles"
     __table_args__ = (
+        UniqueConstraint("facility_id", "deped_school_id", name="uq_school_profile_facility_deped"),
         Index("ix_school_profiles_facility", "facility_id"),
         {"schema": "school"},
     )
@@ -726,6 +791,13 @@ class EnrollmentObservation(Base):
 class ResourceObservation(Base):
     __tablename__ = "resource_observations"
     __table_args__ = (
+        UniqueConstraint(
+            "facility_id",
+            "school_year",
+            "resource_code",
+            "source_record_id",
+            name="uq_resource_observation",
+        ),
         Index("ix_school_resource_facility_year", "facility_id", "school_year"),
         {"schema": "school"},
     )
@@ -771,6 +843,9 @@ class HealthProfile(Base):
 class HealthLicense(Base):
     __tablename__ = "licenses"
     __table_args__ = (
+        UniqueConstraint(
+            "facility_id", "license_number", "source_record_id", name="uq_health_license_source"
+        ),
         Index("ix_health_licenses_facility", "facility_id"),
         {"schema": "health"},
     )
@@ -793,6 +868,14 @@ class HealthLicense(Base):
 class HealthAccreditation(Base):
     __tablename__ = "accreditations"
     __table_args__ = (
+        UniqueConstraint(
+            "facility_id",
+            "provider_category",
+            "accreditation_category",
+            "valid_until",
+            "source_record_id",
+            name="uq_health_accreditation_source",
+        ),
         Index("ix_health_accreditations_facility", "facility_id"),
         {"schema": "health"},
     )
@@ -868,6 +951,7 @@ class QualityIssue(Base):
     __tablename__ = "issues"
     __table_args__ = (
         Index("ix_quality_issues_status_severity", "status", "severity"),
+        Index("ix_quality_issues_release_code_status", "release_id", "issue_code", "status"),
         {"schema": "quality"},
     )
 
