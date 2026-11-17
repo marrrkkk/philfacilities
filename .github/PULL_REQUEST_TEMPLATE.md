@@ -2,9 +2,9 @@
 
 <!-- What changed, and why? Keep this focused on one vertical slice. -->
 
-## Tracker / issue
+## Related issue
 
-<!-- Reference tracker IDs, e.g. M5-03, and any issue links. -->
+<!-- Link the issue this closes or advances. Write "None" if there is no issue. -->
 
 ## Changes
 
@@ -35,9 +35,9 @@ pnpm build
 
 ## Checklist
 
-- [ ] The change is scoped and matches the tracker's acceptance criteria.
+- [ ] The change is scoped and states the problem it solves.
 - [ ] Tests cover the changed behavior, including schema-drift/idempotency where relevant.
-- [ ] Documentation and tracker evidence are updated.
+- [ ] Documentation is updated in `docs/`; source-state changes update `docs/sources.md`.
 - [ ] No secrets, personal data, restricted raw files, or signed agreements are included.
 - [ ] Synthetic fixtures remain labelled and no official data is presented as published without a rights decision.
 - [ ] The OpenAPI contract/client is regenerated if the API changed.

@@ -8,7 +8,7 @@ legal opinion.
 
 Usage:
     uv run python scripts/generate_data_reports.py
-    uv run python scripts/generate_data_reports.py --output-dir docs/reports
+    uv run python scripts/generate_data_reports.py --output-dir var/reports
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ from philfacilities_ingest.config import get_settings
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Connection
 
-DEFAULT_OUTPUT_DIR = Path("docs/reports")
+DEFAULT_OUTPUT_DIR = Path("var/reports")
 
 
 def format_value(value: Any) -> str:
@@ -368,8 +368,7 @@ def build_source_directory(connection: Connection, generated_at: str) -> str:
         "**Snapshot note:** this report is generated from the configured database. "
         "Publication decisions, source releases, and canonical facility flags can move at "
         "different times. The governing policy is\n"
-        "[docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md]"
-        "(../14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md); where this snapshot conflicts "
+        "[docs/data-policy.md](../../docs/data-policy.md); where this snapshot conflicts "
         "with the current database or registry, the database and registry control.\n\n"
         "## Registered sources\n\n"
         f"{table}\n\n"
@@ -400,7 +399,7 @@ def build_source_directory(connection: Connection, generated_at: str) -> str:
         "do not by themselves establish a rights decision.\n"
         "- Original field names, types, and missing-value statistics are in report 03. "
         "Per-source coverage, acquisition procedure, and evidence notes are in "
-        "`docs/03-SOURCE-REGISTER.md`.\n"
+        "`docs/sources.md`.\n"
         "- The `Update` column is the recorded expected cadence, not evidence that a "
         "hosted scheduled run exists.\n"
     )
@@ -524,7 +523,7 @@ def build_acquisition_report(connection: Connection, generated_at: str) -> str:
         "This report records actual acquired releases and their immutable file identity. "
         "A release is retained even when its ingestion failed or its publication is "
         "blocked. Per-source access procedures, success evidence, and recovery steps are "
-        "in report 06 and `docs/03-SOURCE-REGISTER.md`.\n\n"
+        "in report 06 and `docs/sources.md`.\n\n"
         "## Acquired releases\n\n"
         f"{table}\n\n"
         "## Latest ingestion run per release\n\n"
@@ -1347,7 +1346,7 @@ def build_rights_report(connection: Connection, generated_at: str) -> str:
         "**This is an evidence register, not a legal opinion.** No source has a completed "
         "formal legal review. Rights states record the terms and source evidence collected "
         "and the technical gate applied by the platform. Publication decisions follow "
-        "`docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`.\n\n"
+        "`docs/data-policy.md`.\n\n"
         "**Snapshot note:** this report is generated from the configured database. A source "
         "registry or release decision and the canonical facility publication flag can move "
         "at different times; a re-ingestion or field-level review is required before every "

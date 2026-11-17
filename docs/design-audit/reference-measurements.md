@@ -6,7 +6,7 @@
 **Purpose:** extract the *visual system* (fonts, colours, geometry, states), not the Fellowship layout or content.
 
 > The PhilFacilities application uses these values as its design language. It does **not** copy the Fellowship
-> page structure, campaign sections, copy, logo, or information architecture. See `docs/08-REFERENCE-DESIGN-SYSTEM.md`.
+> page structure, campaign sections, copy, logo, or information architecture. See `docs/design-system.md`.
 
 ## 1. Font loading and evidence
 

@@ -36,7 +36,7 @@ maximum zoom.
   configuration change.
 - The demo's OSM dependency is explicit and must not be presented as a production
   commitment.
-- M6-01 remains open until the provider and licence decision is recorded.
+- The production provider and licence decision remains open.
 
 ## Evidence
 

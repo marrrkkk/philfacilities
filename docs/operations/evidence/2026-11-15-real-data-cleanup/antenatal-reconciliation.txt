@@ -92,12 +92,12 @@ API verification:
   EMCB-ANTE event is gone.
 
 Reports regenerated from the reconciled database:
-  docs/reports/01-source-directory.md
-  docs/reports/02-acquisition-report.md
-  docs/reports/03-schema-report.md
-  docs/reports/04-data-quality-report.md
-  docs/reports/05-source-rights-report.md
-  docs/reports/07-real-api-examples.md
+  var/reports/01-source-directory.md
+  var/reports/02-acquisition-report.md
+  var/reports/03-schema-report.md
+  var/reports/04-data-quality-report.md
+  var/reports/05-source-rights-report.md
+  var/reports/api-examples.md
 
 Residual artifacts found after the metadata reconciliation
 ----------------------------------------------------------

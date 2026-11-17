@@ -32,6 +32,6 @@ and some releases are restricted or unpublished.
 
 ## Evidence
 
-`DATA-LICENSES.md`, `docs/03-SOURCE-REGISTER.md`,
-`docs/09-OPEN-SOURCE-GOVERNANCE.md`, and the publication-gate tests in
+`DATA-LICENSES.md`, `docs/sources.md`,
+`docs/data-policy.md`, and the publication-gate tests in
 `tests/test_data_quality.py`.

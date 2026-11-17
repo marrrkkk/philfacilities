@@ -53,10 +53,10 @@ body:
       required: true
 
   - type: input
-    id: tracker
+    id: related
     attributes:
-      label: Tracker ID or related issue
-      description: e.g. M5-03, M6-02, or a link to an existing issue.
+      label: Related issue
+      description: A link to an existing issue, if this duplicates or extends one.
     validations:
       required: false
 

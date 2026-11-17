@@ -1,0 +1,39 @@
+{
+  "database": "philfacilities_update_path_bench",
+  "note": "The stale 2026-11-15 page duplicates the current 2026-11-16 NCR facilities, so it exercises the update path for every row.",
+  "files": [
+    {
+      "label": "current",
+      "filename": "02aeeced9cbdc046-deped-ebeis-masterlist-ncr-2026-11-16.html",
+      "status": "published",
+      "wall_ms": 30431.081,
+      "sql_statements": 109,
+      "sql_time_ms": 14129.906,
+      "parsed_rows": 5055,
+      "facilities_created": 5055,
+      "facilities_updated": 0
+    },
+    {
+      "label": "stale_duplicate",
+      "filename": "29383079e7ffdc00-deped-ebeis-masterlist-ncr-2026-11-15.html",
+      "status": "published",
+      "wall_ms": 35792.806,
+      "sql_statements": 277,
+      "sql_time_ms": 16721.592,
+      "parsed_rows": 5055,
+      "facilities_created": 0,
+      "facilities_updated": 0
+    }
+  ],
+  "generated_at": "2026-11-16T15:37:27.612806+00:00",
+  "before": {
+    "source": "after-ebeis-full-write.json (pre-fix run, stale NCR duplicate)",
+    "sql_statements": 86025,
+    "rows": 5055,
+    "sql_per_row": 17.02
+  },
+  "comparison": {
+    "sql_reduction": 310.6,
+    "sql_per_row_after": 0.055
+  }
+}

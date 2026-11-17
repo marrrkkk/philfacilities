@@ -33,5 +33,5 @@ incorrect merge silently corrupts provenance and public answers.
 
 ## Evidence
 
-`docs/04-DATA-MODEL.md`, `apps/ingest/philfacilities_ingest/matching.py`,
+`docs/data-model.md`, `apps/ingest/philfacilities_ingest/matching.py`,
 `tests/test_identity_matching.py`, and `tests/test_api_integration.py`.

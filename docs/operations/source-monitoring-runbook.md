@@ -11,7 +11,7 @@ Scheduling is deliberately thin:
 
 | Job | Command | Frequency in `.github/workflows/source-checks.yml` | Effect |
 |---|---|---|---|
-| Due-source checks | `philfacilities-ingest check-due-sources` | Daily at 03:17 UTC | Appends `source.source_checks`; no data is downloaded or published. |
+| Due-source checks | `philfacilities-ingest source check --due` | Daily at 03:17 UTC | Appends `source.source_checks`; no data is downloaded or published. |
 | Approved refresh | `scripts/refresh_approved_sources.sh` | Weekly on Sunday at 04:17 UTC, or manual dispatch | Re-runs only rights-cleared loaders; unchanged checksums are skipped. |
 
 The check schedule is data-driven. Each check writes a `next_check_at` derived from the
@@ -30,7 +30,7 @@ Blocked or internal-only sources are **not** refreshed automatically:
 An operator must not enable an approved-refresh job for a source until its rights and
 publication state permit it. A verified, publicly available source with no explicit
 prohibition may qualify under `publicly_available_verified`; see
-[`docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`](../14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md).
+[`docs/data-policy.md`](../data-policy.md).
 Never bypass a CAPTCHA, Cloudflare challenge, login, or agreement, and never accept an
 agreement on another person's behalf.
 
@@ -55,13 +55,13 @@ does not silently use a demo or local database.
 
 ```bash
 # Probe every registered source and append evidence.
-uv run philfacilities-ingest check-sources
+uv run philfacilities-ingest source check
 
 # Run only checks whose next_check_at is due.
-uv run philfacilities-ingest check-due-sources
+uv run philfacilities-ingest source check --due
 
 # Force a check for selected sources while diagnosing.
-uv run philfacilities-ingest check-due-sources --source psa-psgc --source doh-nhfr --force
+uv run philfacilities-ingest source check --due --source psa-psgc --source doh-nhfr --force
 
 # Inspect the latest check per dataset.
 uv run philfacilities-ingest monitoring
@@ -73,7 +73,7 @@ scripts/refresh_approved_sources.sh
 uv run philfacilities-ingest status
 ```
 
-`check-due-sources` exits `2` when a result needs operator action:
+`source check --due` exits `2` when a result needs operator action:
 `request_failed`, `check_failed`, `schema_changed`, `source_error`, or `http_error`.
 Access blocks (`access_blocked`, `not_found`) and `not_modified` remain recorded without
 causing a per-run incident.
@@ -85,7 +85,7 @@ access.
 
 ```cron
 # Daily due checks.
-17 3 * * * cd /srv/philfacilities && /usr/bin/uv run philfacilities-ingest check-due-sources >> /var/log/philfacilities/checks.log 2>&1
+17 3 * * * cd /srv/philfacilities && /usr/bin/uv run philfacilities-ingest source check --due >> /var/log/philfacilities/checks.log 2>&1
 
 # Weekly rights-cleared refresh.
 17 4 * * 0 cd /srv/philfacilities && scripts/refresh_approved_sources.sh >> /var/log/philfacilities/refresh.log 2>&1

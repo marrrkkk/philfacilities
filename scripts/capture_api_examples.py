@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Capture real, live API examples for the required report 07.
+"""Capture real, live API examples from the running API.
 
 The script never synthesizes a response. It reads the running local API, records
 the actual HTTP status and selected payloads, and labels the output as a snapshot.
@@ -23,7 +23,7 @@ from typing import Any
 import httpx
 
 DEFAULT_API_URL = "http://127.0.0.1:8010"
-DEFAULT_OUTPUT = Path("docs/reports/07-real-api-examples.md")
+DEFAULT_OUTPUT = Path("var/reports/api-examples.md")
 
 
 def _truncate(value: Any, *, width: int = 5000) -> str:
@@ -74,7 +74,7 @@ def _example(
 def build_report(base_url: str, *, timeout: float = 30.0) -> str:
     generated_at = datetime.now(UTC).isoformat()
     lines = [
-        "# 07 — Real API Examples",
+        "# Real API examples",
         "",
         f"**Captured:** {generated_at}  ",
         f"**API:** `{base_url}`  ",

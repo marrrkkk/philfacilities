@@ -1,0 +1,16 @@
+{
+  "releases": [
+    {
+      "source": "deped-ebeis",
+      "release_id": "00000000-0000-0000-0000-000000000001",
+      "filename": "deped-ebeis-masterlist-2026-01-15.xlsx"
+    },
+    {
+      "source": "nlp",
+      "raw_object_uri": "/srv/philfacilities/raw/nlp/public-libraries/0123456789abcdef-nlp-public-libraries-2025-12.pdf",
+      "release_label": "NLP-PUBLIC-LIBRARIES-2025-12",
+      "filename": "nlp-public-libraries-2025-12.pdf",
+      "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+    }
+  ]
+}

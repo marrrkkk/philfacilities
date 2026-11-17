@@ -2,9 +2,9 @@
 
 **Review date:** 14 November 2026; real-data posture and CSP verification updated 15 November 2026.  
 **Scope:** API, web frontend, public exports, dependency manifests, local deployment configuration.  
-**Status:** Internal review completed; production security controls and an external penetration test are **not** complete. Tracker item `M7-06` remains `REVIEW`.
+**Status:** Internal review completed; production security controls and an external penetration test are **not** complete. Production launch gates remain open.
 
-This is a source and configuration review, not a certification, penetration test, or production readiness sign-off. The working database contains real records: **61,806 public facilities** from sources with a recorded publication decision and **30,616 non-public records**, including 5,055 DepEd EBEIS rows pending field-level review. The public boundary is enforced in code, but no formal legal, privacy, or external security review has been completed.
+This is a source and configuration review, not a certification, penetration test, or production readiness sign-off. The working database contains real records: **99,352 public facilities** from sources with a recorded publication decision and **128,939 non-public records**, including 83,218 DepEd EBEIS rows pending field-level review. The public boundary is enforced in code, but no formal legal, privacy, or external security review has been completed.
 
 ## 1. Assets and trust boundaries
 
@@ -79,8 +79,8 @@ Before any public production launch:
 2. Verify the nonce CSP against the deployed API and tile origins. Nonces require dynamic rendering, so the current web configuration deliberately disables static generation; confirm that trade-off against the hosting/CDN plan and keep `src/proxy.ts` paired with the root-layout `connection()` call.
 3. Move database, object-store, and ingestion secrets into a managed secret store with rotation ownership.
 4. Run an external penetration test and a dependency/SBOM review against the release candidate.
-5. Complete the source-rights and personal-data review. Real data is published under recorded terms or the verified-public-availability policy in `docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`; DepEd EBEIS school-head names remain private, and canonical DepEd rows remain internal pending field-level mapping and privacy review. No formal legal or privacy review has been completed.
-6. Implement production monitoring and the incident runbook (`M7-07`).
+5. Complete the source-rights and personal-data review. Real data is published under recorded terms or the verified-public-availability policy in `docs/data-policy.md`; DepEd EBEIS school-head names remain private, and canonical DepEd rows remain internal pending field-level mapping and privacy review. No formal legal or privacy review has been completed.
+6. Implement production monitoring and the incident runbook.
 7. Re-run audits and record results in the release checklist.
 
 Until these are complete, this review supports the current local/real-data deployment only. It does not establish production security acceptance or legal permission to publish any source.

@@ -26,7 +26,7 @@ Measured from the configured PostgreSQL/PostGIS database on 16 November 2026:
 | Public facilities with coordinates | **76,125**, all `map_geocoded` or source-supplied |
 | Public facilities without coordinates | **23,227** (kept in text search; never given invented coordinates) |
 
-These counts describe processed source records, not the complete national facility universe. OSM/HOT records are crowd-sourced map features, not official DOH or DepEd registries. The DepEd EBEIS extract contains school-head names; the current source releases are approved for institution-level publication with those names withheld, while the canonical DepEd facility records remain `internal`/`DISCOVERY_CANDIDATE` pending field-level mapping and privacy review. See [`docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`](docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md).
+These counts describe processed source records, not the complete national facility universe. OSM/HOT records are crowd-sourced map features, not official DOH or DepEd registries. The DepEd EBEIS extract contains school-head names; the current source releases are approved for institution-level publication with those names withheld, while the canonical DepEd facility records remain `internal`/`DISCOVERY_CANDIDATE` pending field-level mapping and privacy review. See [`docs/data-policy.md`](docs/data-policy.md).
 
 ### Published sources
 
@@ -73,7 +73,7 @@ These counts describe processed source records, not the complete national facili
 | TESDA TVI | `review_required` / `blocked` | Directory page reachable, but the monitor classifies the response as an access challenge; no verified provider-level bulk release. |
 | Hazard and additional agency sources | `unknown` / `blocked` | Discovery only; no verified layer or facility release acquired. |
 
-No formal legal review has been completed for any source. Rights states record the collected terms/source evidence and the enforced technical gate; they are not legal advice. The governing policy is [`docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`](docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md). The exact probe results are in [`docs/operations/evidence/2026-11-15-source-access/source-probes-2026-11-15.txt`](docs/operations/evidence/2026-11-15-source-access/source-probes-2026-11-15.txt).
+No formal legal review has been completed for any source. Rights states record the collected terms/source evidence and the enforced technical gate; they are not legal advice. The governing policy is [`docs/data-policy.md`](docs/data-policy.md). The exact probe results are in [`docs/operations/evidence/2026-11-15-source-access/source-probes-2026-11-15.txt`](docs/operations/evidence/2026-11-15-source-access/source-probes-2026-11-15.txt).
 
 ## Architecture
 
@@ -134,7 +134,7 @@ GET /v1/downloads/health-facilities.csv
 
 Every public response applies the same publication gate: a facility is exposed only when its canonical flag is public **and** it links to a source release whose dataset rights and publication states permit redistribution. Restricted, internal-only, quarantined, and blocked source records are excluded from detail pages, source evidence, statistics, and bulk exports.
 
-Live examples captured from the running API are in [`docs/reports/07-real-api-examples.md`](docs/reports/07-real-api-examples.md). The contract is [`packages/api-client/openapi.json`](packages/api-client/openapi.json), with generated types in [`packages/api-client/src/schema.ts`](packages/api-client/src/schema.ts).
+Live examples captured from the running API can be regenerated with `scripts/capture_api_examples.py`; the generated report is written under `var/reports/` and is not source-controlled. The contract is [`packages/api-client/openapi.json`](packages/api-client/openapi.json), with generated types in [`packages/api-client/src/schema.ts`](packages/api-client/src/schema.ts). See [`docs/api.md`](docs/api.md) for the endpoint reference.
 
 ## Data-integrity rules
 
@@ -170,24 +170,24 @@ Prerequisites: Docker with Compose, Node.js 22+ (24 tested), pnpm 12+, Python 3.
 3. Load the real sources that have recorded publication decisions. This purges any synthetic demo records, records source checks, and loads BetterGov PSGC, PSA 2024 Census population, PhilHealth PDFs, OSM health, education and public-service extracts, and the additional published directories.
 
    ```bash
-   uv run philfacilities-ingest load-real --skip-deped
+   uv run philfacilities-ingest source run --group approved
    uv run philfacilities-ingest status
    ```
 
    The OSM education file is large. To load sources selectively:
 
    ```bash
-   uv run philfacilities-ingest load-psgc-bettergov
-   uv run philfacilities-ingest load-population
-   uv run philfacilities-ingest load-philhealth
-   uv run philfacilities-ingest load-osm --domain health
-   uv run philfacilities-ingest load-osm --domain education
+   uv run philfacilities-ingest source run bettergov-psgc
+   uv run philfacilities-ingest source run bettergov-population
+   uv run philfacilities-ingest source run philhealth
+   uv run philfacilities-ingest source run osm-health
+   uv run philfacilities-ingest source run osm-education
    ```
 
    DepEd EBEIS is deliberately separate. Its current source release is approved for institution-level publication with personal fields withheld, while the canonical rows remain `internal` pending field-level mapping and privacy review:
 
    ```bash
-   uv run philfacilities-ingest load-deped-ebeis --region ncr
+   uv run philfacilities-ingest source run deped-ebeis --region ncr
    ```
 
 4. Start the API and web app in separate terminals.
@@ -221,11 +221,35 @@ uv run philfacilities-ingest source-candidates --json
 uv run philfacilities-ingest source-inventory
 ```
 
-`source-inventory` writes `expand/data/source-inventory.json` and
-`expand/data/source-inventory.csv`. It merges the Markdown register, the candidate registry and
+`source-inventory` writes `var/reports/source-inventory.json` and
+`var/reports/source-inventory.csv`. It merges the Markdown register, the candidate registry and
 the dated probe ledgers, and fails on duplicate IDs, invalid taxonomy/state values or malformed
 URLs. The JSON preserves per-source provenance and every probe outcome, including HTTP 403, DNS
-failures and TLS failures.
+failures and TLS failures. Core rows use the data.md 25-field schema; the original register access
+state is preserved as `access_state_raw`, while the core `access_state` is `OPEN` or `SKIPPED`.
+Skipped rows carry `skip_reason`, `skip_detail`, `alternate_route` and `next_retry_at`.
+
+For the full rebuild evidence pack:
+
+```bash
+uv run philfacilities-ingest probe-sources
+uv run philfacilities-ingest source-inventory \
+  --json-output var/reports/rebuild/source-inventory.json \
+  --csv-output var/reports/rebuild/source-inventory.csv
+uv run philfacilities-ingest source-report --output-dir var/reports/rebuild
+uv run philfacilities-ingest source run --group approved
+uv run philfacilities-ingest fuse-attributes --apply
+uv run philfacilities-ingest match-candidates-generate
+uv run philfacilities-ingest fill-locations-from-osm --apply \
+  --report var/reports/rebuild/osm-location-fills.json
+uv run philfacilities-ingest rebuild-report
+```
+
+`probe-sources` performs one unauthenticated GET per registered/candidate URL with a truthful user
+agent and per-host delay, caps the response body, and records failures without retrying or bypassing
+access controls. `rebuild-report` writes every file in data.md section 11.1 under
+`var/reports/rebuild/`. OSM coordinates are a labelled `map_geocoded` community fallback, never an
+official coordinate.
 
 For public directory pages, the async crawler provides bounded concurrency, per-host pacing,
 `robots.txt` checks, conditional-fetch-friendly request metadata, retries for transient failures,
@@ -261,6 +285,7 @@ cleanly when it is absent. A cron/systemd alternative, failure semantics, and tr
 ```bash
 uv run ruff check .
 uv run ruff format --check .
+uv run mypy
 uv run pytest
 
 pnpm lint
@@ -279,48 +304,38 @@ docker compose -f infra/compose.yaml --profile test up -d test-db
 
 The default test URL is `postgresql+psycopg://philfacilities:philfacilities@localhost:54330/philfacilities_test`. The database name must end in `_test` because fixtures reset the schema. The test suite uses deterministic synthetic fixtures; that does not make the working database synthetic.
 
-Regenerate the measured reports after a material data change:
+## Documentation
+
+Start with [`docs/README.md`](docs/README.md), or jump directly to:
+
+1. [Getting started](docs/getting-started.md)
+2. [Architecture](docs/architecture.md)
+3. [Data model](docs/data-model.md)
+4. [Data dictionary](docs/data-dictionary.md)
+5. [Ingestion](docs/ingestion.md)
+6. [Adding a source](docs/adding-a-source.md)
+7. [Sources](docs/sources.md)
+8. [Public API](docs/api.md)
+9. [Web app](docs/web.md)
+10. [Design system](docs/design-system.md)
+11. [Data policy](docs/data-policy.md)
+12. [Testing](docs/testing.md)
+13. [Operations](docs/operations.md)
+14. [Contributing](docs/contributing.md)
+
+Generated reports are written to `var/reports/` and are not source-controlled. Regenerate them with:
 
 ```bash
 uv run python scripts/generate_data_reports.py
 PHILFACILITIES_API_URL=http://127.0.0.1:8010 uv run python scripts/capture_api_examples.py
 ```
 
-## Documentation
-
-Start with:
-
-1. [Project charter](docs/01-PROJECT-CHARTER.md)
-2. [Architecture](docs/02-ARCHITECTURE.md)
-3. [Source register](docs/03-SOURCE-REGISTER.md)
-4. [Data model](docs/04-DATA-MODEL.md)
-5. [Ingestion and ETL](docs/05-INGESTION-ETL.md)
-6. [Public API](docs/06-PUBLIC-API.md)
-7. [Data dictionary](docs/DATA-DICTIONARY.md)
-8. [Web product and UX](docs/07-WEB-PRODUCT-UX.md)
-9. [Quality and testing](docs/10-QUALITY-TESTING.md)
-10. [Deployment and operations](docs/11-DEPLOYMENT-OPERATIONS.md)
-11. [Source monitoring runbook](docs/operations/source-monitoring-runbook.md)
-12. [Data inclusion and publication policy](docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md)
-13. [Tracker](planning/TRACKER.md)
-
-Required data reports are under [`docs/reports/`](docs/reports/):
-
-- `01-source-directory.md`
-- `02-acquisition-report.md`
-- `03-schema-report.md`
-- `04-data-quality-report.md`
-- `05-source-rights-report.md`
-- `06-ingestion-runbook.md`
-- `07-real-api-examples.md`
-- `08-release-manifest.json`
-
 ## Known limitations
 
 - Coverage is partial. CHED HEIDA institution records are published under `publicly_available_verified`, but there is no complete official DepEd, DOH, PSA PSGC, or TESDA dataset in the public release; CHED coverage is `NATIONAL_PARTIAL` and not campus-level.
 - No official PSA PSGC workbook has been acquired; the BetterGov Q2 2024 mirror is a labelled supplement, not a substitute for the latest official release.
-- Public coordinates are `map_geocoded` (44,663) or `geocoded` (88); there are no GPS-verified or field-verified public coordinates.
-- 21,644 public facilities have no current coordinates and remain searchable without map placement.
+- Public coordinates are `map_geocoded` or source-supplied; there are no GPS-verified or field-verified public coordinates.
+- 23,227 public facilities have no current coordinates and remain searchable without map placement.
 - 5,036 located public facilities lack a PSGC assignment; no geography was guessed.
 - OSM duplicate identifiers and missing names are reported as open quality issues rather than silently merged or dropped.
 - The Antenatal PhilHealth PDF was re-ingested with the corrected parser. Its first parse had recorded 6,562 rows because the two-up PDF's expiry/sector annex (pages 121–240) was counted as provider rows; that release was withdrawn and its derived records removed. The corrected `philhealth-pdf-1.2.0` parser reads 3,221 provider rows, stops at page 120, and produced 3,221 accreditations for 3,178 existing facilities. Evidence: `docs/operations/evidence/2026-11-16-philhealth-antenatal-reingestion/`. The linked Birthing Homes PDF still returns HTTP 404 and is not replaced with invented data.
@@ -328,4 +343,4 @@ Required data reports are under [`docs/reports/`](docs/reports/):
 
 ## License
 
-Application code is Apache-2.0. Data rights vary by source and are recorded in [`DATA-LICENSES.md`](DATA-LICENSES.md); the code licence does not license source data. The data-inclusion policy is in [`docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`](docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md), and the code/data separation is restated in [`NOTICE`](NOTICE).
+Application code is Apache-2.0. Data rights vary by source and are recorded in [`DATA-LICENSES.md`](DATA-LICENSES.md); the code licence does not license source data. The data-inclusion policy is in [`docs/data-policy.md`](docs/data-policy.md), and the code/data separation is restated in [`NOTICE`](NOTICE).

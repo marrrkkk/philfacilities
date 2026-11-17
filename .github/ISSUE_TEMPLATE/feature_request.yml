@@ -5,8 +5,9 @@ body:
   - type: markdown
     attributes:
       value: |
-        Read `README.md`, `AGENTS.md`, and `planning/TRACKER.md` first. The tracker is the single
-        execution checklist. Do not include secrets, personal data, or restricted source material.
+        Read `README.md`, `AGENTS.md`, and `docs/README.md` first. Use the focused development
+        guides for the area you are changing. Do not include secrets, personal data, or restricted
+        source material.
 
   - type: dropdown
     id: area
@@ -67,7 +68,7 @@ body:
     id: dependencies
     attributes:
       label: Dependencies and blockers
-      description: Tracker IDs, source access, legal review, design audit, or deployment prerequisites.
+      description: Related issues, source access, legal review, design audit, or deployment prerequisites.
     validations:
       required: false
 
@@ -76,7 +77,7 @@ body:
     attributes:
       label: Confirmation
       options:
-        - label: I checked the tracker and this is not already covered.
+        - label: I checked open issues and this is not already covered.
           required: true
         - label: I have not invented source endpoints, fields, terms, or data.
           required: true
