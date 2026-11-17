@@ -1,5 +1,14 @@
 # Planning Bundle Changelog
 
+## 3.3 — 16 November 2026
+
+- Added the async public-source acquisition toolkit (`philfacilities-ingest crawl`): bounded global/per-host concurrency, per-host pacing, `robots.txt` checks, transient-failure retries, response-size/page/depth limits, link discovery, HTML table extraction to CSV, checksums and a JSONL page ledger.
+- Added explicit WAF/challenge detection. HTTP 403, Cloudflare/CAPTCHA interstitials, DNS failures, TLS failures and `robots.txt` refusals are recorded as blocked; the toolkit does not solve or bypass access controls.
+- Added the merged source inventory (`philfacilities-ingest source-inventory`) and `expand/data/source-inventory.{json,csv}`: 84 candidates merged from 83 register rows, 42 normalized candidates and 35 live probes, with taxonomy category, evidence/access/rights/coverage states, per-source provenance and probe outcomes.
+- Added 24 category-search source entries for transport (MARINA, DOTr, PNR, LRTA), utilities (LWUA, MWSS, NWRB, DOE, NEA), agriculture/fisheries (DA, BFAR, NFA, PCA, NIA, BAI), environment/justice/culture/housing and GOV.PH/DSWD Standards sources, each classified from live 16 Nov 2026 evidence.
+- Recorded the 35-probe live ledger: 8 reached HTTP 200 (one also reported an HTTP/2 transport warning), 17 returned HTTP 403, 2 returned HTTP 404, and 8 failed DNS/TLS. EMB-NCR is `robots.txt`-disallowed during crawling and is recorded rather than fetched.
+- Added tests for register parsing, candidate/probe merge precedence, multiline transport-error parsing, state validation, JSON/CSV round-tripping and the real merged inventory.
+
 ## 3.2 — 16 November 2026
 
 - Added the PhilHealth Directory of Offices release `PHILHEALTH-OFFICES-2026-11-15`: 293 offices (185 facility, 108 facility unit) across 19 regional groups published with name, source category, region grouping and postal address; telephone, e-mail and schedule fields withheld.

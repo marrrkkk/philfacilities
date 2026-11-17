@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 import uuid
@@ -64,10 +65,17 @@ from .pipeline import (
     session_factory,
 )
 from .release_rollback import ReleaseRollbackError, rollback_release
+from .scraper import CrawlPolicy, crawl, summary_json
 from .source_candidates import (
     load_source_candidates,
     summarize_source_candidates,
     validate_source_candidates,
+)
+from .source_inventory import (
+    build_source_inventory,
+    summarize_source_inventory,
+    validate_source_inventory,
+    write_source_inventory,
 )
 from .sources.bettergov import OSMParquetAdapter, load_psgc_release_payload
 from .sources.bettergov_stats import (
@@ -539,6 +547,92 @@ def source_candidates_command(
         typer.echo(f"access: {summary['by_access_state']}")
         typer.echo(f"rights: {summary['by_rights_state']}")
         typer.echo(f"coverage: {summary['by_coverage_scope']}")
+        if errors:
+            for error in errors:
+                typer.echo(f"ERROR: {error}", err=True)
+        else:
+            typer.echo("validation: ok")
+    if errors:
+        raise typer.Exit(code=1)
+
+
+@app.command("source-inventory")
+def source_inventory_command(
+    register: Annotated[
+        Path | None,
+        typer.Option(
+            "--register",
+            help="Source register Markdown. Defaults to expand/docs/03-SOURCE-REGISTER.md.",
+        ),
+    ] = None,
+    candidates: Annotated[
+        Path | None,
+        typer.Option(
+            "--candidates",
+            help="Candidate registry JSON. Defaults to expand/source-candidates.json.",
+        ),
+    ] = None,
+    probes: Annotated[
+        Path | None,
+        typer.Option(
+            "--probes",
+            help="Probe ledger. Defaults to the 16 Nov 2026 category-search ledger.",
+        ),
+    ] = None,
+    json_output: Annotated[
+        Path | None,
+        typer.Option("--json-output", help="Merged inventory JSON output path."),
+    ] = None,
+    csv_output: Annotated[
+        Path | None,
+        typer.Option("--csv-output", help="Merged inventory CSV output path."),
+    ] = None,
+    check: Annotated[
+        bool,
+        typer.Option("--check", help="Validate only; do not write the JSON/CSV inventory."),
+    ] = False,
+    as_json: Annotated[
+        bool, typer.Option("--json", help="Print the validation summary as JSON.")
+    ] = False,
+) -> None:
+    """Merge the register, candidate registry and probe ledgers into one inventory.
+
+    An inventory row is still a candidate. This command does not acquire a
+    source, approve rights, create a release, or publish records. Probe results
+    are preserved, including HTTP 403, DNS and TLS failures.
+    """
+
+    payload = build_source_inventory(register, candidates, probes)
+    errors = validate_source_inventory(payload)
+    summary = summarize_source_inventory(payload)
+    written: tuple[Path, Path] | None = None
+    if not errors and not check:
+        written = write_source_inventory(payload, json_output, csv_output)
+    if as_json:
+        typer.echo(
+            json.dumps(
+                {
+                    "summary": summary,
+                    "errors": errors,
+                    "written": [str(path) for path in written or ()],
+                },
+                indent=2,
+            )
+        )
+    else:
+        typer.echo(f"source inventory: {summary['total']} candidates")
+        typer.echo(
+            f"register={summary['from_register']} candidates={summary['from_candidates']} "
+            f"probed={summary['probed']} unmatched_probes={summary['unmatched_probes']}"
+        )
+        typer.echo(f"published={summary['published']} internal_only={summary['internal_only']}")
+        typer.echo(f"category: {summary['by_category']}")
+        typer.echo(f"access: {summary['by_access_state']}")
+        typer.echo(f"evidence: {summary['by_evidence_state']}")
+        typer.echo(f"coverage: {summary['by_coverage_scope']}")
+        if written:
+            typer.echo(f"wrote: {written[0]}")
+            typer.echo(f"wrote: {written[1]}")
         if errors:
             for error in errors:
                 typer.echo(f"ERROR: {error}", err=True)
@@ -1034,6 +1128,86 @@ def release_rollback_command(
             f"restored={result['restored']} deleted={result['deleted']} "
             f"skipped={result['skipped']}"
         )
+
+
+@app.command("crawl")
+def crawl_public_sources(
+    urls: Annotated[
+        list[str],
+        typer.Option("--url", help="Absolute public seed URL; repeatable."),
+    ],
+    output: Annotated[
+        Path,
+        typer.Option("--output", help="JSONL destination for the page ledger."),
+    ] = Path("var/crawl/latest.jsonl"),
+    tables_dir: Annotated[
+        Path | None,
+        typer.Option("--tables-dir", help="Write extracted HTML tables as CSV files here."),
+    ] = None,
+    max_pages: Annotated[
+        int, typer.Option("--max-pages", min=1, help="Hard page-request limit.")
+    ] = 100,
+    max_depth: Annotated[
+        int, typer.Option("--max-depth", min=0, help="Maximum link-follow depth.")
+    ] = 2,
+    concurrency: Annotated[
+        int, typer.Option("--concurrency", min=1, help="Global concurrent request limit.")
+    ] = 8,
+    per_host: Annotated[
+        int, typer.Option("--per-host", min=1, help="Concurrent request limit per host.")
+    ] = 2,
+    rps: Annotated[
+        float, typer.Option("--rps", min=0, help="Requests per second per host (0 disables).")
+    ] = 1.5,
+    max_bytes: Annotated[
+        int, typer.Option("--max-bytes", min=1, help="Maximum response size per page.")
+    ] = 10 * 1024 * 1024,
+    include: Annotated[
+        str | None, typer.Option("--include", help="Only follow URLs matching this regex.")
+    ] = None,
+    exclude: Annotated[
+        str | None, typer.Option("--exclude", help="Skip URLs matching this regex.")
+    ] = None,
+    same_host: Annotated[
+        bool,
+        typer.Option("--same-host/--any-host", help="Restrict links to the current host."),
+    ] = True,
+    robots: Annotated[
+        bool,
+        typer.Option("--robots/--no-robots", help="Check robots.txt before fetching."),
+    ] = True,
+    json_output: Annotated[
+        bool, typer.Option("--json", help="Emit the crawl summary as JSON.")
+    ] = False,
+) -> None:
+    """Crawl public pages politely. Challenge/WAF pages are recorded, never bypassed."""
+
+    policy = CrawlPolicy(
+        max_concurrency=concurrency,
+        per_host_concurrency=per_host,
+        requests_per_second_per_host=rps,
+        max_pages=max_pages,
+        max_depth=max_depth,
+        max_bytes=max_bytes,
+        same_host=same_host,
+        respect_robots=robots,
+        include_pattern=include,
+        exclude_pattern=exclude,
+    )
+    summary = asyncio.run(crawl(urls, policy=policy, output_path=output, tables_dir=tables_dir))
+    payload = summary_json(summary)
+    if json_output:
+        typer.echo(payload)
+        return
+    typer.echo(
+        f"requested={summary.pages_requested} fetched={summary.pages_fetched} "
+        f"blocked={summary.pages_blocked} failed={summary.pages_failed} "
+        f"links={summary.links_discovered} tables={summary.tables_written}"
+    )
+    for page in summary.pages:
+        state = "BLOCKED" if page.blocked else page.status_code
+        typer.echo(f"{state} d={page.depth} {page.final_url} ({page.size_bytes} bytes)")
+    typer.echo(f"ledger={summary.output_path}")
 
 
 @app.command("discover-sources")

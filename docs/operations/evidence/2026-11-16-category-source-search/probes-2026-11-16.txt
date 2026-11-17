@@ -1,0 +1,54 @@
+caap	https://www.caap.gov.ph/area-centers/	403	text/html	https://www.caap.gov.ph/area-centers/	876
+pfda	https://www.pfda.gov.ph/	403	text/html; charset=UTF-8	https://www.pfda.gov.ph/	5526
+marina	https://marina.gov.ph/	200	text/html; charset=UTF-8	https://marina.gov.ph/	110530
+dotr	https://www.dotr.gov.ph/	403	text/html; charset=UTF-8	https://www.dotr.gov.ph/	5526
+pnr	https://pnr.gov.ph/	403	text/html; charset=UTF-8	https://pnr.gov.ph/	5521
+lrta	https://lrta.gov.ph/	200	text/html; charset=UTF-8	https://www.lrta.gov.ph/	86235
+lwua	https://lwua.gov.ph/	403	text/html; charset=UTF-8	https://lwua.gov.ph/	5522
+mwss	https://mwss.gov.ph/	403	text/html; charset=UTF-8	https://mwss.gov.ph/	5522
+nwrb	https://nwrb.gov.ph/	403	text/html; charset=UTF-8	https://nwrb.gov.ph/	5522
+doe	https://www.doe.gov.ph/	200	text/html; charset=utf-8	https://doe.gov.ph/	120967
+nea	https://nea.gov.ph/	403	text/html; charset=UTF-8	https://nea.gov.ph/	5521
+emb-aq	https://air.emb.gov.ph/ambient-air-quality-monitoring/	curl: (92) Invalid HTTP header field was received: frame type: 1, stream: 1, name: [upgrade], value: [h2,h2c]
+200	text/html; charset=UTF-8	https://air.emb.gov.ph/ambient-air-quality-monitoring/	0
+emb-ncr	https://ncr.emb.gov.ph/realtimeairmonitoring/	200	text/html; charset=UTF-8	https://ncr.emb.gov.ph/realtimeairmonitoring/	244998
+pais	https://pais.bmb.gov.ph/index.php	curl: (35) TLS connect error: error:0A000126:SSL routines::unexpected eof while reading
+000		https://pais.bmb.gov.ph/index.php	0
+da	https://www.da.gov.ph/	200	text/html; charset=UTF-8	https://www.da.gov.ph/	379311
+bfar	https://www.bfar.da.gov.ph/	curl: (6) Could not resolve host: www.bfar.da.gov.ph
+000		https://www.bfar.da.gov.ph/	0
+nfa	https://www.nfa.gov.ph/	403	text/html; charset=UTF-8	https://www.nfa.gov.ph/	5525
+pca	https://www.pca.gov.ph/	403	text/html; charset=UTF-8	https://www.pca.gov.ph/	5525
+nia	https://www.nia.gov.ph/	200	text/html; charset=UTF-8	https://nia.gov.ph/	183408
+bai	https://www.bai.da.gov.ph/	curl: (6) Could not resolve host: www.bai.da.gov.ph
+000		https://www.bai.da.gov.ph/	0
+doj	https://www.doj.gov.ph/	403	text/html; charset=UTF-8	https://www.doj.gov.ph/	5415
+bucor	https://bucor.gov.ph/	200	text/html; charset=UTF-8	https://bucor.gov.ph/	141514
+bjmp	https://bjmp.gov.ph/	403	text/html; charset=UTF-8	https://bjmp.gov.ph/	5522
+judiciary	https://sc.judiciary.gov.ph/	curl: (60) SSL certificate OpenSSL verify result: unable to get local issuer certificate (20)
+More details here: https://curl.se/docs/sslcerts.html
+
+curl failed to verify the legitimacy of the server and therefore could not
+establish a secure connection to it. To learn more about this situation and
+how to fix it, please visit the webpage mentioned above.
+000		https://sc.judiciary.gov.ph/	0
+ocd	https://www.ocd.gov.ph/	403	text/html; charset=UTF-8	https://www.ocd.gov.ph/	5504
+ndrrmc	https://ndrrmc.gov.ph/	403	text/html; charset=UTF-8	https://ndrrmc.gov.ph/	5414
+pcg	https://www.pcg.gov.ph/	curl: (6) Could not resolve host: www.pcg.gov.ph
+000		https://www.pcg.gov.ph/	0
+ncca	https://ncca.gov.ph/	curl: (6) Could not resolve host: ncca.gov.ph
+000		https://ncca.gov.ph/	0
+nhcp	https://nhcp.gov.ph/	403	text/html; charset=UTF-8	https://nhcp.gov.ph/	5522
+shfc	https://shfc.com.ph/	curl: (60) SSL certificate OpenSSL verify result: unable to get local issuer certificate (20)
+More details here: https://curl.se/docs/sslcerts.html
+
+curl failed to verify the legitimacy of the server and therefore could not
+establish a secure connection to it. To learn more about this situation and
+how to fix it, please visit the webpage mentioned above.
+000		https://shfc.com.ph/	0
+dhsud	https://dhsud.gov.ph/	403	text/html; charset=UTF-8	https://dhsud.gov.ph/	5523
+govph-directory	https://www.gov.ph/directory	404	text/html	https://www.gov.ph/directory/	1141
+standards-dswd	https://standards.dswd.gov.ph/directories-3/	curl: (35) TLS connect error: error:0A000126:SSL routines::unexpected eof while reading
+000		https://standards.dswd.gov.ph/directories-3/	0
+eccd	https://eccdcouncil.gov.ph/ncdc/	403	text/html; charset=UTF-8	https://eccdcouncil.gov.ph/ncdc/	5434
+marina-ports	https://marina.gov.ph/ports/	404	text/html; charset=UTF-8	https://marina.gov.ph/ports/	79999
