@@ -11,7 +11,15 @@ import {
 } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 
-export function FacilityCard({ facility }: { facility: FacilitySummary }) {
+export function FacilityCard({
+  facility,
+  categoryLabel: suppliedCategoryLabel,
+  subtypeLabel,
+}: {
+  facility: FacilitySummary;
+  categoryLabel?: string;
+  subtypeLabel?: string;
+}) {
   const place =
     facility.geography.barangay_name ??
     facility.geography.municipality_name ??
@@ -20,12 +28,7 @@ export function FacilityCard({ facility }: { facility: FacilitySummary }) {
 
   const latitude = facility.location.latitude;
   const longitude = facility.location.longitude;
-  const categoryLabel =
-    facility.facility_type === "school"
-      ? "School"
-      : facility.facility_type === "health_facility"
-        ? "Health facility"
-        : titleCase(facility.facility_type);
+  const categoryLabel = suppliedCategoryLabel ?? titleCase(facility.facility_type);
   const inclusionLabel =
     INCLUSION_CLASS_LABELS[facility.inclusion_class] ?? titleCase(facility.inclusion_class);
   const accessLabel = ACCESS_LABELS[facility.public_access_class];
@@ -39,7 +42,7 @@ export function FacilityCard({ facility }: { facility: FacilitySummary }) {
               {categoryLabel}
             </Badge>
             {facility.facility_subtype ? (
-              <Badge tone="muted">{facility.facility_subtype}</Badge>
+              <Badge tone="muted">{subtypeLabel ?? facility.facility_subtype}</Badge>
             ) : null}
             <Badge tone={facility.inclusion_class === "GOVERNMENT_FACILITY" ? "default" : "outline"}>
               {inclusionLabel}

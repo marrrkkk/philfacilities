@@ -11,7 +11,7 @@ import {
   getQualitySummary,
   listSources,
 } from "@/lib/api";
-import { formatDateTime, formatNumber, titleCase } from "@/lib/format";
+import { formatDateTime, formatNumber, titleCase, coverageScopeLabel } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -121,6 +121,7 @@ export default async function DataPage() {
                 <th className="border-b border-[#d1d8e6] p-3">Dataset</th>
                 <th className="border-b border-[#d1d8e6] p-3">Agency</th>
                 <th className="border-b border-[#d1d8e6] p-3">Latest release</th>
+                <th className="border-b border-[#d1d8e6] p-3">Coverage</th>
                 <th className="border-b border-[#d1d8e6] p-3">Reference period</th>
                 <th className="border-b border-[#d1d8e6] p-3">Rows parsed</th>
                 <th className="border-b border-[#d1d8e6] p-3">Rights status</th>
@@ -162,6 +163,14 @@ export default async function DataPage() {
                           ? "Published (geography ledger)"
                           : "Unknown status"}
                     </span>
+                  </td>
+                  <td className="border-b border-[#d1d8e6] p-3 text-xs">
+                    {coverageScopeLabel(source.coverage_scope)}
+                    {source.coverage_note ? (
+                      <span className="mt-1 block max-w-[18rem] text-[#5a5a58]">
+                        {source.coverage_note}
+                      </span>
+                    ) : null}
                   </td>
                   <td className="border-b border-[#d1d8e6] p-3 text-xs">
                     {source.latest_release?.reference_period_start ??

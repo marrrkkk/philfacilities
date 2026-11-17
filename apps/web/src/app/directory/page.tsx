@@ -9,14 +9,22 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
 import {
+  getTaxonomy,
+  listAllGeographies,
   listFacilities,
-  listGeographies,
   listSources,
   type AdministrativeUnitOut,
   type DatasetOut,
+  type TaxonomyResponse,
 } from "@/lib/api";
-import { formatNumber, titleCase } from "@/lib/format";
+import { formatNumber, PRECISION_OPTIONS, titleCase } from "@/lib/format";
 import { queryString } from "@/lib/query";
+import {
+  labelFor,
+  subtypeOptions,
+  termLabels,
+  type TermLabels,
+} from "@/lib/taxonomy";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -27,85 +35,17 @@ function first(value: string | string[] | undefined): string {
   return Array.isArray(value) ? (value[0] ?? "") : (value ?? "");
 }
 
-const PRECISIONS = [
-  ["", "Any precision"],
-  ["source_gps", "Source GPS"],
-  ["gps_verified", "GPS verified"],
-  ["field_verified", "Field verified"],
-  ["map_geocoded", "Map geocoded"],
-  ["barangay_centroid", "Barangay centroid"],
-  ["unknown", "Unknown"],
-];
-
-const INCLUSION_CLASSES = [
-  ["", "Any inclusion class"],
-  ["GOVERNMENT_FACILITY", "Government facility"],
-  ["PRIVATE_PUBLIC_SERVICE_PROVIDER", "Private public-service provider"],
-  ["PUBLIC_ACCESS_VENUE", "Public-access venue"],
-];
-
-const OWNERSHIP_TYPES = [
-  ["", "Any ownership type"],
-  ["NATIONAL_GOVERNMENT", "National government"],
-  ["LOCAL_GOVERNMENT", "Local government"],
-  ["GOCC", "Government-owned or controlled corporation"],
-  ["PUBLIC_EDUCATIONAL_INSTITUTION", "Public educational institution"],
-  ["OTHER_PUBLIC_BODY", "Other public body"],
-  ["GOVERNMENT_UNSPECIFIED", "Government, unspecified"],
-  ["PRIVATE_CORPORATE", "Private corporate"],
-  ["NGO_NON_PROFIT", "NGO or non-profit"],
-  ["COOPERATIVE", "Cooperative"],
-  ["RELIGIOUS_FAITH_BASED", "Religious or faith-based"],
-  ["PRIVATE_UNSPECIFIED", "Private, unspecified"],
-  ["UNKNOWN", "Unknown"],
-];
-
-const FACILITY_KINDS = [
-  ["", "Any facility kind"],
-  ["facility", "Facility"],
-  ["site", "Site or compound"],
-  ["building", "Building"],
-  ["facility_unit", "Facility unit or service point"],
-  ["infrastructure_asset", "Infrastructure asset"],
-  ["project", "Project"],
-];
-
-const ACCESS_CLASSES = [
-  ["", "Any access state"],
-  ["PUBLIC_FREE", "Public, free"],
-  ["PUBLIC_PAID_OR_CONDITIONAL", "Public, paid or conditional"],
-  ["SERVICE_USERS_ONLY", "Service users only"],
-  ["APPOINTMENT_ONLY", "Appointment only"],
-  ["MEMBERS_STUDENTS_ONLY", "Members or students only"],
-  ["STAFF_ONLY", "Staff only"],
-  ["RESTRICTED", "Restricted"],
-  ["UNKNOWN", "Unknown"],
-];
-
-const CATEGORY_LABELS: Record<string, string> = {
-  school: "School",
-  health_facility: "Health facility",
-  library: "Library",
-  museum: "Museum",
-  government_office: "Government office",
-  community_facility: "Community facility",
-  emergency_facility: "Emergency facility",
-  public_market: "Public market",
-  transport_facility: "Transport facility",
-  cultural_facility: "Cultural facility",
-  public_space: "Public space",
-  social_welfare_facility: "Social welfare facility",
-  utility_facility: "Utility facility",
-  other_qualifying_facility: "Other qualifying facility",
-};
+const PRECISIONS: Array<[string, string]> = [["", "Any precision"], ...PRECISION_OPTIONS];
 
 export default async function DirectoryPage({ searchParams }: { searchParams: SearchParams }) {
   const raw = await searchParams;
   const q = first(raw.q).trim();
   const type = first(raw.type);
+  const subtype = first(raw.subtype);
   const inclusion = first(raw.inclusion_class);
   const ownership = first(raw.ownership);
   const ownershipType = first(raw.ownership_type);
+  const operatorType = first(raw.operator_type);
   const facilityKind = first(raw.facility_kind);
   const publicAccess = first(raw.public_access_class);
   const region = first(raw.region_code);
@@ -123,9 +63,11 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Se
   const query = {
     q: q || undefined,
     type: type || undefined,
+    subtype: subtype || undefined,
     inclusion_class: inclusion || undefined,
     ownership: ownership || undefined,
     ownership_type: ownershipType || undefined,
+    operator_type: operatorType || undefined,
     facility_kind: facilityKind || undefined,
     public_access_class: publicAccess || undefined,
     region_code: region || undefined,
@@ -143,32 +85,55 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Se
   };
 
   let result = null;
-  let units: AdministrativeUnitOut[] = [];
+  let taxonomy: TaxonomyResponse | null = null;
+  let regions: AdministrativeUnitOut[] = [];
+  let provinces: AdministrativeUnitOut[] = [];
+  let municipalities: AdministrativeUnitOut[] = [];
+  let barangays: AdministrativeUnitOut[] = [];
   let sources: DatasetOut[] = [];
   let error: string | null = null;
 
   try {
-    [result, units, sources] = await Promise.all([
+    [result, taxonomy, regions, provinces, municipalities, sources] = await Promise.all([
       listFacilities(query),
-      listGeographies({ limit: 500 }).catch(() => []),
+      getTaxonomy().catch(() => null),
+      listAllGeographies({ level: "region" }).catch(() => []),
+      listAllGeographies({ level: "province" }).catch(() => []),
+      listAllGeographies({ level: "municipality" }).catch(() => []),
       listSources().catch(() => []),
     ]);
+    if (municipality) {
+      barangays = await listAllGeographies({
+        level: "barangay",
+        parent: municipality,
+      }).catch(() => []);
+    }
   } catch (caught) {
     error = caught instanceof Error ? caught.message : "The directory could not be loaded.";
   }
 
   const agencies = [...new Map(sources.map((item) => [item.agency_code, item.agency])).entries()];
+  const categories = taxonomy?.categories ?? [];
+  const categoryLabelMap = termLabels(taxonomy?.categories);
+  const inclusionLabels: TermLabels = termLabels(taxonomy?.inclusion_classes);
+  const ownershipTypeLabels: TermLabels = termLabels(taxonomy?.ownership_types);
+  const operatorTypeLabels: TermLabels = termLabels(taxonomy?.operator_types);
+  const kindLabels: TermLabels = termLabels(taxonomy?.facility_kinds);
+  const accessLabels: TermLabels = termLabels(taxonomy?.access_classes);
+  const subtypes = subtypeOptions(taxonomy);
+  const subtypeByCategory = new Map<string, typeof subtypes>();
+  for (const option of subtypes) {
+    const list = subtypeByCategory.get(option.categoryCode) ?? [];
+    list.push(option);
+    subtypeByCategory.set(option.categoryCode, list);
+  }
+  const selectedSubtype = subtypes.find((item) => item.code === subtype);
 
   const unitName = (code: string) =>
-    units.find((item) => item.psgc_code === code)?.name ?? code;
-  const regions = units.filter((item) => item.geographic_level === "region");
-  const provinces = units.filter((item) => item.geographic_level === "province");
+    [...regions, ...provinces, ...municipalities, ...barangays].find(
+      (item) => item.psgc_code === code,
+    )?.name ?? code;
   const provinceParents = new Map(provinces.map((item) => [item.psgc_code, item.parent_psgc_code]));
-  const municipalities = units.filter((item) => item.geographic_level === "municipality");
-  const municipalityParents = new Map(
-    municipalities.map((item) => [item.psgc_code, item.parent_psgc_code]),
-  );
-  const barangays = units.filter((item) => item.geographic_level === "barangay");
   const provinceOptions = provinces.filter(
     (item) => !region || item.parent_psgc_code === region,
   );
@@ -177,29 +142,24 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Se
       (!province || item.parent_psgc_code === province) &&
       (!region || provinceParents.get(item.parent_psgc_code ?? "") === region),
   );
-  const barangayOptions = barangays.filter((item) => {
-    const parentProvince = municipalityParents.get(item.parent_psgc_code ?? "");
-    return (
-      (!municipality || item.parent_psgc_code === municipality) &&
-      (!province || parentProvince === province) &&
-      (!region || provinceParents.get(parentProvince ?? "") === region)
-    );
-  });
+  const barangayOptions = barangays;
 
   const activeFilters = [
     q ? { label: `Search: ${q}` } : null,
-    type ? { label: CATEGORY_LABELS[type] ?? titleCase(type) } : null,
-    inclusion
-      ? {
-          label: `Inclusion: ${
-            INCLUSION_CLASSES.find(([value]) => value === inclusion)?.[1] ?? titleCase(inclusion)
-          }`,
-        }
+    type ? { label: labelFor(categoryLabelMap, type) } : null,
+    subtype
+      ? { label: `Subtype: ${selectedSubtype?.label ?? titleCase(subtype)}` }
       : null,
+    inclusion ? { label: `Inclusion: ${labelFor(inclusionLabels, inclusion)}` } : null,
     ownership ? { label: `Ownership: ${titleCase(ownership)}` } : null,
-    ownershipType ? { label: `Ownership type: ${titleCase(ownershipType)}` } : null,
-    facilityKind ? { label: `Facility kind: ${titleCase(facilityKind)}` } : null,
-    publicAccess ? { label: `Access: ${titleCase(publicAccess)}` } : null,
+    ownershipType
+      ? { label: `Ownership type: ${labelFor(ownershipTypeLabels, ownershipType)}` }
+      : null,
+    operatorType
+      ? { label: `Operator type: ${labelFor(operatorTypeLabels, operatorType)}` }
+      : null,
+    facilityKind ? { label: `Facility kind: ${labelFor(kindLabels, facilityKind)}` } : null,
+    publicAccess ? { label: `Access: ${labelFor(accessLabels, publicAccess)}` } : null,
     region ? { label: `Region: ${unitName(region)}` } : null,
     province ? { label: `Province: ${unitName(province)}` } : null,
     municipality ? { label: `City / municipality: ${unitName(municipality)}` } : null,
@@ -224,9 +184,11 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Se
   const paginationParams = {
     q: q || undefined,
     type: type || undefined,
+    subtype: subtype || undefined,
     inclusion_class: inclusion || undefined,
     ownership: ownership || undefined,
     ownership_type: ownershipType || undefined,
+    operator_type: operatorType || undefined,
     facility_kind: facilityKind || undefined,
     public_access_class: publicAccess || undefined,
     region_code: region || undefined,
@@ -272,19 +234,38 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Se
                 <Label htmlFor="filter-type">Facility category</Label>
                 <Select id="filter-type" name="type" defaultValue={type}>
                   <option value="">All categories</option>
-                  {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
+                  {categories.map((category) => (
+                    <option key={category.code} value={category.code}>
+                      {category.label}
                     </option>
+                  ))}
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="filter-subtype">Subtype</Label>
+                <Select id="filter-subtype" name="subtype" defaultValue={subtype}>
+                  <option value="">Any subtype</option>
+                  {[...subtypeByCategory.entries()].map(([categoryCode, options]) => (
+                    <optgroup
+                      key={categoryCode}
+                      label={categoryLabelMap[categoryCode] ?? titleCase(categoryCode)}
+                    >
+                      {options.map((option) => (
+                        <option key={option.code} value={option.code}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </optgroup>
                   ))}
                 </Select>
               </div>
               <div>
                 <Label htmlFor="filter-inclusion">Inclusion class</Label>
                 <Select id="filter-inclusion" name="inclusion_class" defaultValue={inclusion}>
-                  {INCLUSION_CLASSES.map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
+                  <option value="">Any inclusion class</option>
+                  {(taxonomy?.inclusion_classes ?? []).map((term) => (
+                    <option key={term.code} value={term.code}>
+                      {term.label}
                     </option>
                   ))}
                 </Select>
@@ -301,9 +282,25 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Se
               <div>
                 <Label htmlFor="filter-ownership-type">Ownership type</Label>
                 <Select id="filter-ownership-type" name="ownership_type" defaultValue={ownershipType}>
-                  {OWNERSHIP_TYPES.map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
+                  <option value="">Any ownership type</option>
+                  {(taxonomy?.ownership_types ?? []).map((term) => (
+                    <option key={term.code} value={term.code}>
+                      {term.label}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="filter-operator-type">Operator type</Label>
+                <Select
+                  id="filter-operator-type"
+                  name="operator_type"
+                  defaultValue={operatorType}
+                >
+                  <option value="">Any operator type</option>
+                  {(taxonomy?.operator_types ?? []).map((term) => (
+                    <option key={term.code} value={term.code}>
+                      {term.label}
                     </option>
                   ))}
                 </Select>
@@ -311,9 +308,10 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Se
               <div>
                 <Label htmlFor="filter-kind">Facility kind</Label>
                 <Select id="filter-kind" name="facility_kind" defaultValue={facilityKind}>
-                  {FACILITY_KINDS.map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
+                  <option value="">Any facility kind</option>
+                  {(taxonomy?.facility_kinds ?? []).map((term) => (
+                    <option key={term.code} value={term.code}>
+                      {term.label}
                     </option>
                   ))}
                 </Select>
@@ -321,9 +319,10 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Se
               <div>
                 <Label htmlFor="filter-access">Public access</Label>
                 <Select id="filter-access" name="public_access_class" defaultValue={publicAccess}>
-                  {ACCESS_CLASSES.map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
+                  <option value="">Any access state</option>
+                  {(taxonomy?.access_classes ?? []).map((term) => (
+                    <option key={term.code} value={term.code}>
+                      {term.label}
                     </option>
                   ))}
                 </Select>
@@ -378,14 +377,24 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Se
               </div>
               <div>
                 <Label htmlFor="filter-barangay">Barangay</Label>
-                <Select id="filter-barangay" name="barangay_code" defaultValue={barangay}>
-                  <option value="">All barangays</option>
+                <Select
+                  id="filter-barangay"
+                  name="barangay_code"
+                  defaultValue={barangay}
+                  disabled={!municipality}
+                >
+                  <option value="">
+                    {municipality ? "All barangays" : "Choose a city or municipality first"}
+                  </option>
                   {barangayOptions.map((item) => (
                     <option key={item.psgc_code} value={item.psgc_code}>
                       {item.name}
                     </option>
                   ))}
                 </Select>
+                <p className="mt-1 font-sans text-xs text-[#5a5a58]">
+                  Barangay choices are loaded for the selected city or municipality.
+                </p>
               </div>
               <div>
                 <Label htmlFor="filter-coordinates">Coordinates</Label>
@@ -476,10 +485,13 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Se
               defaultQuery={q}
               defaultType={type}
               compact
+              categories={categories}
               preserve={{
+                subtype,
                 inclusion_class: inclusion,
                 ownership,
                 ownership_type: ownershipType,
+                operator_type: operatorType,
                 facility_kind: facilityKind,
                 public_access_class: publicAccess,
                 region_code: region,
@@ -522,7 +534,14 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Se
               <>
                 <div className="border-t border-[#d1d8e6]">
                   {result.items.map((facility) => (
-                    <FacilityCard key={facility.id} facility={facility} />
+                    <FacilityCard
+                      key={facility.id}
+                      facility={facility}
+                      categoryLabel={labelFor(categoryLabelMap, facility.facility_type)}
+                      subtypeLabel={
+                        subtypes.find((item) => item.code === facility.facility_subtype)?.label
+                      }
+                    />
                   ))}
                 </div>
                 <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

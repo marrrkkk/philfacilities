@@ -15,22 +15,22 @@ import {
   getFacilityChanges,
   getHealthDetail,
   getSchoolDetail,
+  getTaxonomy,
   type AttributeAssertionOut,
   type FacilityDetail,
   type HealthDetailResponse,
   type SchoolDetailResponse,
 } from "@/lib/api";
 import {
-  ACCESS_LABELS,
   formatDate,
   formatDateTime,
   formatNumber,
-  INCLUSION_CLASS_LABELS,
   isPreciseLocation,
   PRECISION_DESCRIPTIONS,
   PRECISION_LABELS,
   titleCase,
 } from "@/lib/format";
+import { labelFor, subtypeOptions, termLabels } from "@/lib/taxonomy";
 import { cn } from "@/lib/utils";
 
 type Params = Promise<{ id: string }>;
@@ -105,16 +105,40 @@ export default async function FacilityPage({ params }: { params: Params }) {
     throw error;
   }
 
-  const [typed, changes, assertions] = await Promise.all([
+  const [typed, changes, assertions, taxonomy] = await Promise.all([
     facility.facility_type === "school"
       ? getSchoolDetail(id).catch(() => null)
       : getHealthDetail(id).catch(() => null),
     getFacilityChanges(id).catch(() => null),
     getFacilityAssertions(id).catch(() => [] as AttributeAssertionOut[]),
+    getTaxonomy().catch(() => null),
   ]);
 
   const school = typed && "enrollment" in typed ? (typed as SchoolDetailResponse) : null;
   const health = typed && "licenses" in typed ? (typed as HealthDetailResponse) : null;
+  const categoryLabels = termLabels(taxonomy?.categories);
+  const subtypeLabels = new Map(subtypeOptions(taxonomy).map((item) => [item.code, item.label]));
+  const inclusionLabels = termLabels(taxonomy?.inclusion_classes);
+  const ownershipLabels = termLabels(taxonomy?.ownership_types);
+  const operatorLabels = termLabels(taxonomy?.operator_types);
+  const accessLabels = termLabels(taxonomy?.access_classes);
+  const kindLabels = termLabels(taxonomy?.facility_kinds);
+  const recordStatusLabels = termLabels(taxonomy?.record_statuses);
+  const contactLabels = termLabels(taxonomy?.contact_types);
+  const categoryLabel = labelFor(categoryLabels, facility.facility_type);
+  const subtypeLabel = facility.facility_subtype
+    ? (subtypeLabels.get(facility.facility_subtype) ?? titleCase(facility.facility_subtype))
+    : null;
+  const inclusionLabel = labelFor(inclusionLabels, facility.inclusion_class);
+  const ownershipLabel = labelFor(ownershipLabels, facility.ownership_type);
+  const operatorLabel = labelFor(operatorLabels, facility.operator_type);
+  const accessLabel = labelFor(accessLabels, facility.public_access_class);
+  const kindLabel = labelFor(kindLabels, facility.facility_kind);
+  const recordStatusLabel = labelFor(recordStatusLabels, facility.record_status);
+  const contacts = facility.contacts ?? [];
+  const functionDetails = facility.function_details ?? [];
+  const relationships = facility.relationships ?? [];
+  const accreditations = facility.accreditations ?? [];
   const geography = facility.geography;
   const place = [geography.barangay_name, geography.municipality_name, geography.province_name, geography.region_name]
     .filter(Boolean)
@@ -140,25 +164,31 @@ export default async function FacilityPage({ params }: { params: Params }) {
       <header className="border-b border-[#d1d8e6] pb-8">
         <div className="flex flex-wrap gap-1.5">
           <Badge tone={facility.facility_type === "school" ? "default" : "outline"}>
-            {titleCase(facility.facility_type)}
+            {categoryLabel}
           </Badge>
-          {facility.facility_subtype ? <Badge tone="muted">{facility.facility_subtype}</Badge> : null}
+          {subtypeLabel ? <Badge tone="muted">{subtypeLabel}</Badge> : null}
           <Badge tone={facility.inclusion_class === "GOVERNMENT_FACILITY" ? "default" : "outline"}>
-            {INCLUSION_CLASS_LABELS[facility.inclusion_class] ?? titleCase(facility.inclusion_class)}
+            {inclusionLabel}
           </Badge>
-          <Badge tone="muted">{titleCase(facility.ownership_type)}</Badge>
-          {ACCESS_LABELS[facility.public_access_class] ? (
-            <Badge tone="outline">{ACCESS_LABELS[facility.public_access_class]}</Badge>
+          <Badge tone="muted">{ownershipLabel}</Badge>
+          {facility.public_access_class !== "UNKNOWN" ? (
+            <Badge tone="outline">{accessLabel}</Badge>
           ) : null}
           {facility.is_synthetic ? <Badge tone="sun">Synthetic demo record</Badge> : null}
         </div>
         <h1 className="mt-3 max-w-4xl font-display text-4xl font-extrabold leading-[1.02] tracking-tight sm:text-5xl">
           {facility.display_name}
         </h1>
+        {facility.official_name && facility.official_name !== facility.display_name ? (
+          <p className="mt-2 font-sans text-base text-[#5a5a58]">
+            Official name: <span className="text-[#0a0a0a]">{facility.official_name}</span>
+          </p>
+        ) : null}
         <p className="mt-3 flex items-start gap-2 font-sans text-base text-[#5a5a58]">
           <MapPin aria-hidden="true" className="mt-1 size-4 shrink-0 text-[#0038a8]" />
           <span>
-            {facility.location.address_text ?? "Address not supplied"} ·{" "}
+            {facility.location.address_text ?? "Address not supplied"}
+            {facility.location.postal_code ? `, ${facility.location.postal_code}` : ""} ·{" "}
             {place || "Administrative geography not linked"}
           </span>
         </p>
@@ -186,21 +216,17 @@ export default async function FacilityPage({ params }: { params: Params }) {
             description="Inclusion class, ownership and access are separate facts. A licence, accreditation or public funding does not make a private provider government-owned."
           >
             <dl>
-              <DataRow label="Category">{titleCase(facility.facility_type)}</DataRow>
-              <DataRow label="Subtype">
-                {facility.facility_subtype ? titleCase(facility.facility_subtype) : "Not supplied"}
-              </DataRow>
-              <DataRow label="Facility kind">{titleCase(facility.facility_kind)}</DataRow>
-              <DataRow label="Inclusion class">
-                {INCLUSION_CLASS_LABELS[facility.inclusion_class] ?? titleCase(facility.inclusion_class)}
-              </DataRow>
+              <DataRow label="Category">{categoryLabel}</DataRow>
+              <DataRow label="Subtype">{subtypeLabel ?? "Not supplied"}</DataRow>
+              <DataRow label="Facility kind">{kindLabel}</DataRow>
+              <DataRow label="Inclusion class">{inclusionLabel}</DataRow>
               <DataRow label="Ownership">
                 {titleCase(facility.ownership)}
-                <span className="ml-2 text-[#5a5a58]">({titleCase(facility.ownership_type)})</span>
+                <span className="ml-2 text-[#5a5a58]">({ownershipLabel})</span>
               </DataRow>
-              <DataRow label="Operator type">{titleCase(facility.operator_type)}</DataRow>
+              <DataRow label="Operator type">{operatorLabel}</DataRow>
               <DataRow label="Public access">
-                {ACCESS_LABELS[facility.public_access_class] ?? titleCase(facility.public_access_class)}
+                {accessLabel}
                 {facility.access_conditions ? (
                   <p className="mt-1 text-[#5a5a58]">{facility.access_conditions}</p>
                 ) : null}
@@ -211,10 +237,213 @@ export default async function FacilityPage({ params }: { params: Params }) {
                   : "No function recorded"}
               </DataRow>
               <DataRow label="Registry status">
-                {titleCase(facility.record_status)} · {titleCase(facility.publication_status)}
+                {recordStatusLabel} · {titleCase(facility.publication_status)}
               </DataRow>
             </dl>
           </Section>
+
+          {functionDetails.length > 0 ? (
+            <Section
+              title="Functions recorded by sources"
+              description="A function describes what a place is for. It is recorded per source claim with its own validity period and designation status; it is not a live service guarantee."
+            >
+              <div
+                className="table-scroll border border-[#d1d8e6]"
+                role="region"
+                aria-label="Source-recorded functions"
+                tabIndex={0}
+              >
+                <table className="w-full min-w-[40rem] border-collapse text-left font-sans text-sm">
+                  <thead className="bg-[#f4f7fc] font-ui text-xs uppercase tracking-wide text-[#5a5a58]">
+                    <tr>
+                      <th className="border-b border-[#d1d8e6] p-3">Function</th>
+                      <th className="border-b border-[#d1d8e6] p-3">Source value</th>
+                      <th className="border-b border-[#d1d8e6] p-3">Designation</th>
+                      <th className="border-b border-[#d1d8e6] p-3">Capacity</th>
+                      <th className="border-b border-[#d1d8e6] p-3">Valid from</th>
+                      <th className="border-b border-[#d1d8e6] p-3">Valid to</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {functionDetails.map((actor, index) => (
+                      <tr key={`${actor.function_code}-${actor.source_record_id ?? index}`}>
+                        <td className="border-b border-[#d1d8e6] p-3 font-ui text-sm font-bold">
+                          {titleCase(actor.function_code)}
+                        </td>
+                        <td className="border-b border-[#d1d8e6] p-3">
+                          {actor.source_value ?? "—"}
+                        </td>
+                        <td className="border-b border-[#d1d8e6] p-3">
+                          {actor.designation_status
+                            ? titleCase(actor.designation_status)
+                            : "Not stated"}
+                        </td>
+                        <td className="border-b border-[#d1d8e6] p-3">
+                          {actor.capacity_value !== null && actor.capacity_value !== undefined
+                            ? `${formatNumber(actor.capacity_value)} ${actor.capacity_unit ?? ""}`.trim()
+                            : "—"}
+                        </td>
+                        <td className="border-b border-[#d1d8e6] p-3 text-xs">
+                          {formatDate(actor.valid_from)}
+                        </td>
+                        <td className="border-b border-[#d1d8e6] p-3 text-xs">
+                          {formatDate(actor.valid_to)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Section>
+          ) : null}
+
+          {contacts.length > 0 ? (
+            <Section
+              title="Contacts and visiting information"
+              description="Contact values are source-supplied and may be stale. Missing contact types are not inferred. Opening hours describe the source publication, not live availability."
+            >
+              <dl>
+                {contacts.map((contact, index) => {
+                  const typeLabel = labelFor(contactLabels, contact.contact_type);
+                  const isEmail = contact.contact_type === "email";
+                  const isWebsite = contact.contact_type === "website";
+                  const isPhone = contact.contact_type === "phone";
+                  const href = isEmail
+                    ? `mailto:${contact.value}`
+                    : isWebsite
+                      ? /^https?:\/\//i.test(contact.value)
+                        ? contact.value
+                        : `https://${contact.value}`
+                      : isPhone
+                        ? `tel:${contact.value.replace(/[^\d+]/g, "")}`
+                        : null;
+                  return (
+                    <DataRow
+                      key={`${contact.contact_type}-${contact.value}-${index}`}
+                      label={contact.label ? `${typeLabel} · ${contact.label}` : typeLabel}
+                    >
+                      {href ? (
+                        <a
+                          href={href}
+                          className="text-[#0038a8] underline"
+                          rel={isWebsite ? "noreferrer" : undefined}
+                          target={isWebsite ? "_blank" : undefined}
+                        >
+                          {contact.value}
+                        </a>
+                      ) : (
+                        contact.value
+                      )}
+                      {contact.valid_from || contact.valid_to ? (
+                        <p className="mt-1 text-xs text-[#5a5a58]">
+                          Valid {formatDate(contact.valid_from)} – {formatDate(contact.valid_to)}
+                        </p>
+                      ) : null}
+                      {contact.source_field ? (
+                        <p className="mt-1 font-mono text-xs text-[#5a5a58]">
+                          Source field: {contact.source_field}
+                        </p>
+                      ) : null}
+                      {contact.review_status && contact.review_status !== "accepted" ? (
+                        <p className="mt-1 text-xs text-[#5a5a58]">
+                          Review status: {titleCase(contact.review_status)}
+                        </p>
+                      ) : null}
+                    </DataRow>
+                  );
+                })}
+              </dl>
+            </Section>
+          ) : null}
+
+          {accreditations.length > 0 ? (
+            <Section
+              title="Accreditations"
+              description="Accreditation is a dated, authority-specific record. A licence or accreditation does not make a private provider government-owned, and it is not proof of current operating availability."
+            >
+              <div
+                className="table-scroll border border-[#d1d8e6]"
+                role="region"
+                aria-label="Accreditations"
+                tabIndex={0}
+              >
+                <table className="w-full min-w-[48rem] border-collapse text-left font-sans text-sm">
+                  <thead className="bg-[#f4f7fc] font-ui text-xs uppercase tracking-wide text-[#5a5a58]">
+                    <tr>
+                      <th className="border-b border-[#d1d8e6] p-3">Authority</th>
+                      <th className="border-b border-[#d1d8e6] p-3">Category</th>
+                      <th className="border-b border-[#d1d8e6] p-3">Benefit package</th>
+                      <th className="border-b border-[#d1d8e6] p-3">Beds</th>
+                      <th className="border-b border-[#d1d8e6] p-3">Source status</th>
+                      <th className="border-b border-[#d1d8e6] p-3">Source as of</th>
+                      <th className="border-b border-[#d1d8e6] p-3">Valid until</th>
+                      <th className="border-b border-[#d1d8e6] p-3">Reference</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {accreditations.map((row) => (
+                      <tr key={row.id}>
+                        <td className="border-b border-[#d1d8e6] p-3 font-ui text-sm font-bold">
+                          {row.authority}
+                        </td>
+                        <td className="border-b border-[#d1d8e6] p-3">
+                          {row.accreditation_category ?? row.provider_category}
+                        </td>
+                        <td className="border-b border-[#d1d8e6] p-3">
+                          {row.benefit_package ?? "—"}
+                        </td>
+                        <td className="border-b border-[#d1d8e6] p-3">
+                          {row.bed_count !== null && row.bed_count !== undefined
+                            ? formatNumber(row.bed_count)
+                            : "Unknown"}
+                        </td>
+                        <td className="border-b border-[#d1d8e6] p-3">
+                          {row.source_status ?? "Unknown"}
+                        </td>
+                        <td className="border-b border-[#d1d8e6] p-3 text-xs">
+                          {formatDate(row.source_as_of)}
+                        </td>
+                        <td className="border-b border-[#d1d8e6] p-3 text-xs">
+                          {formatDate(row.valid_until)}
+                        </td>
+                        <td className="border-b border-[#d1d8e6] p-3 font-mono text-xs">
+                          {row.page_reference ?? "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Section>
+          ) : null}
+
+          {relationships.length > 0 ? (
+            <Section
+              title="Related facilities"
+              description="Relationships are explicit source or registry links between records. They are not merged identities, and each linked record remains separately sourced."
+            >
+              <ul className="space-y-2">
+                {relationships.map((relationship, index) => (
+                  <li
+                    key={`${relationship.relationship_type}-${relationship.related_facility_id}-${index}`}
+                    className="border border-[#d1d8e6] bg-white p-4"
+                  >
+                    <p className="font-ui text-xs font-bold uppercase tracking-wide text-[#5a5a58]">
+                      {titleCase(relationship.relationship_type)}
+                    </p>
+                    <Link
+                      href={`/facilities/${
+                        relationship.related_facility_slug ?? relationship.related_facility_id
+                      }`}
+                      className="mt-1 inline-block font-display text-lg font-bold text-[#0038a8] underline"
+                    >
+                      {relationship.related_facility_name ?? relationship.related_facility_id}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </Section>
+          ) : null}
 
           {(facility.roles ?? []).length > 0 || (facility.services ?? []).length > 0 ? (
             <Section
@@ -277,6 +506,9 @@ export default async function FacilityPage({ params }: { params: Params }) {
               <DataRow label="Address (source text)">
                 {facility.location.address_text ?? "Not supplied"}
               </DataRow>
+              <DataRow label="Postal code">
+                {facility.location.postal_code ?? "Not supplied"}
+              </DataRow>
               <DataRow label="Barangay">
                 {geography.barangay_name ?? "Unknown"}
                 {geography.barangay_code ? (
@@ -290,6 +522,13 @@ export default async function FacilityPage({ params }: { params: Params }) {
               </DataRow>
               <DataRow label="Province">{geography.province_name ?? "Unknown / not applicable"}</DataRow>
               <DataRow label="Region">{geography.region_name ?? "Unknown"}</DataRow>
+              <DataRow label="PSGC code">
+                {geography.barangay_code ? (
+                  <span className="font-mono text-xs">{geography.barangay_code}</span>
+                ) : (
+                  "Not linked"
+                )}
+              </DataRow>
               <DataRow label="PSGC release">{geography.psgc_release ?? "No linked release"}</DataRow>
               <DataRow label="Location precision">
                 <span className="font-ui text-sm font-bold">
@@ -496,48 +735,6 @@ export default async function FacilityPage({ params }: { params: Params }) {
                 ) : (
                   <p className="font-sans text-sm text-[#5a5a58]">
                     No license records are published for this facility.
-                  </p>
-                )}
-              </Section>
-
-              <Section
-                title="PhilHealth accreditation"
-                description="Accreditation is a dated, authority-specific record. It is not the same claim as a DOH license or current operating availability."
-              >
-                {health.accreditations.length > 0 ? (
-                  <div className="table-scroll border border-[#d1d8e6]" role="region" aria-label="PhilHealth accreditation" tabIndex={0}>
-                    <table className="w-full min-w-[44rem] border-collapse text-left font-sans text-sm">
-                      <thead className="bg-[#f4f7fc] font-ui text-xs uppercase tracking-wide text-[#5a5a58]">
-                        <tr>
-                          <th className="border-b border-[#d1d8e6] p-3">Authority</th>
-                          <th className="border-b border-[#d1d8e6] p-3">Category</th>
-                          <th className="border-b border-[#d1d8e6] p-3">Beds</th>
-                          <th className="border-b border-[#d1d8e6] p-3">Source as of</th>
-                          <th className="border-b border-[#d1d8e6] p-3">Valid until</th>
-                          <th className="border-b border-[#d1d8e6] p-3">PDF reference</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {health.accreditations.map((row) => (
-                          <tr key={row.id}>
-                            <td className="border-b border-[#d1d8e6] p-3">{row.authority}</td>
-                            <td className="border-b border-[#d1d8e6] p-3">
-                              {row.accreditation_category ?? row.provider_category}
-                            </td>
-                            <td className="border-b border-[#d1d8e6] p-3">
-                              {row.bed_count !== null ? formatNumber(row.bed_count) : "Unknown"}
-                            </td>
-                            <td className="border-b border-[#d1d8e6] p-3">{formatDate(row.source_as_of)}</td>
-                            <td className="border-b border-[#d1d8e6] p-3">{formatDate(row.valid_until)}</td>
-                            <td className="border-b border-[#d1d8e6] p-3 font-mono text-xs">{row.page_reference ?? "—"}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <p className="font-sans text-sm text-[#5a5a58]">
-                    No PhilHealth accreditation record is linked to this facility.
                   </p>
                 )}
               </Section>
@@ -754,16 +951,17 @@ export default async function FacilityPage({ params }: { params: Params }) {
             <CardContent>
               <dl>
                 <DataRow label="Source-reported status" stacked>
-                  {titleCase(facility.record_status)}
+                  {recordStatusLabel}
                   <p className="mt-1 text-xs text-[#5a5a58]">
                     Registry presence does not establish operational availability.
                   </p>
                 </DataRow>
-                <DataRow label="Ownership" stacked>{titleCase(facility.ownership)}</DataRow>
+                <DataRow label="Ownership" stacked>{ownershipLabel}</DataRow>
                 <DataRow label="Location precision" stacked>
                   {PRECISION_LABELS[facility.location.precision] ?? facility.location.precision}
                 </DataRow>
                 <DataRow label="Linked sources" stacked>{facility.source_count}</DataRow>
+                <DataRow label="Published contacts" stacked>{contacts.length}</DataRow>
                 <DataRow label="PSGC release" stacked>{geography.psgc_release ?? "Not linked"}</DataRow>
               </dl>
             </CardContent>

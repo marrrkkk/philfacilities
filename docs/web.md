@@ -30,10 +30,11 @@ Route files live in `apps/web/src/app/`; reusable components in `apps/web/src/co
 - Server components fetch from the API in `apps/web/src/lib/api.ts`.
 - `API_BASE_URL` is used server-side. `NEXT_PUBLIC_API_URL` is used by browser components and inlined at build time.
 - Live data pages use `export const dynamic = "force-dynamic"` so counts, status, and provenance are not frozen at build time.
-- Reference and detail data may use short `revalidate` windows (30–300 seconds). Do not cache facility or status data indefinitely.
+- Reference and detail data may use short `revalidate` windows (30–300 seconds). Do not cache facility or status data indefinitely. Monitoring is fetched without a cache because it reports the latest run.
 - A 404 from a detail endpoint maps to `notFound()`. Other API failures surface an error state; they do not render invented fallback data.
 - The browser map calls `/v1/facilities/within` directly with `NEXT_PUBLIC_API_URL`; server components use the internal API origin.
 - All API types come from `@philfacilities/api-client/schema`. Do not redeclare response shapes by hand.
+- Category, subtype, inclusion, ownership, operator, facility-kind, access, and contact labels come from `GET /v1/taxonomy`. `apps/web/src/lib/taxonomy.ts` maps codes to labels; do not add a second hardcoded vocabulary.
 
 ```text
 browser → Next.js server component → lib/api.ts → FastAPI /v1
@@ -49,6 +50,8 @@ browser → MapLibre → /v1/facilities/within → FastAPI /v1
 - A missing coordinate record still appears in text search; it is labelled rather than hidden.
 - Filter controls are plain form elements with labels; the mobile filter panel must remain keyboard-operable.
 - Search is also available from the header and landing page through `SearchForm`, which submits a GET request to `/directory`.
+- Geography options come from `/v1/geographies`, paginated to completion. Barangays are loaded only for the selected city or municipality; do not issue a national barangay query.
+- Subtype options are grouped under their taxonomy category. Selecting a category must not silently keep an incompatible subtype.
 
 When adding a filter:
 
@@ -64,6 +67,8 @@ When adding a filter:
 - The basemap is configured in `apps/web/src/lib/map-style.ts`.
 - MapLibre's worker is copied to `public/vendor/maplibre-gl` by `scripts/copy-maplibre-worker.mjs`; `configureMapLibreWorker()` must run before creating a map.
 - Bounds queries are debounced and capped (`MAX_MAP_FEATURES`); the response reports truncation.
+- Every map filter is kept in the URL and sent to `/v1/facilities/within`: taxonomy category/subtype, inclusion, ownership, operator type, facility kind, access class, region, province, municipality, barangay, source agency, precision, reference period, and update time. Changing a parent geography clears its dependent selections.
+- The directory's map link carries the same filter state and drops only `has_coordinates=false`, which cannot produce a mapped subset.
 - Markers must reflect recorded precision. Do not render a `barangay_centroid` or `unknown` point as a building-level pin.
 - The result list is a full text alternative, not a fallback afterthought. Keyboard and screen-reader users must be able to reach every map result.
 - The directory must remain usable if tiles fail. Map failure is not a page failure.

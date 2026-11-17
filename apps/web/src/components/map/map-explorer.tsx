@@ -9,62 +9,70 @@ import { List, Loader2, Map as MapIcon, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
-import { apiBaseUrl, type FacilitySummary } from "@/lib/api";
 import {
-  ACCESS_LABELS,
-  INCLUSION_CLASS_LABELS,
+  apiBaseUrl,
+  type AdministrativeUnitOut,
+  type FacilitySummary,
+  type TaxonomyResponse,
+} from "@/lib/api";
+import {
   PRECISION_LABELS,
-  titleCase,
+  PRECISION_OPTIONS,
 } from "@/lib/format";
+import { queryString } from "@/lib/query";
 import { configureMapLibreWorker } from "@/lib/maplibre";
 import { BASEMAP_STYLE } from "@/lib/map-style";
+import { labelFor, subtypeOptions, termLabels } from "@/lib/taxonomy";
 import { cn } from "@/lib/utils";
 
 const EMPTY: FeatureCollection = { type: "FeatureCollection", features: [] };
 
-const CATEGORY_OPTIONS = [
-  ["school", "Schools"],
-  ["health_facility", "Health"],
-  ["government_office", "Government offices"],
-  ["library", "Libraries"],
-  ["museum", "Museums"],
-  ["community_facility", "Community"],
-  ["emergency_facility", "Emergency"],
-  ["social_welfare_facility", "Social welfare"],
-  ["public_market", "Markets"],
-  ["transport_facility", "Transport"],
-  ["utility_facility", "Utilities"],
-  ["environmental_monitoring", "Environmental monitoring"],
-  ["public_space", "Public spaces"],
-  ["cultural_facility", "Cultural"],
-  ["agricultural_facility", "Agriculture"],
-  ["justice_facility", "Justice"],
-  ["housing_service", "Housing"],
-] as const;
+const OWNERSHIP_VALUES: Array<[string, string]> = [
+  ["", "Any ownership"],
+  ["government", "Government"],
+  ["private", "Private"],
+  ["unknown", "Unknown"],
+];
 
-const OWNERSHIP_TYPE_OPTIONS = [
-  "NATIONAL_GOVERNMENT",
-  "LOCAL_GOVERNMENT",
-  "GOCC",
-  "PUBLIC_EDUCATIONAL_INSTITUTION",
-  "OTHER_PUBLIC_BODY",
-  "GOVERNMENT_UNSPECIFIED",
-  "PRIVATE_CORPORATE",
-  "PRIVATE_INDIVIDUAL_OR_PARTNERSHIP",
-  "NGO_NON_PROFIT",
-  "COOPERATIVE",
-  "RELIGIOUS_FAITH_BASED",
-  "PUBLIC_PRIVATE_JOINT",
-  "PRIVATE_UNSPECIFIED",
-  "UNKNOWN",
-] as const;
+type Filters = {
+  type: string;
+  subtype: string;
+  q: string;
+  inclusion_class: string;
+  ownership: string;
+  ownership_type: string;
+  operator_type: string;
+  public_access_class: string;
+  facility_kind: string;
+  region_code: string;
+  province_code: string;
+  municipality_code: string;
+  barangay_code: string;
+  source: string;
+  location_precision: string;
+  has_coordinates: string;
+  reference_period_start: string;
+  reference_period_end: string;
+  updated_since: string;
+};
+
+function signatureOf(filters: Filters) {
+  return JSON.stringify(filters);
+}
 
 export function MapExplorer({
+  taxonomy,
+  sources,
+  regions,
+  provinces,
+  municipalities,
   initialType = "",
+  initialSubtype = "",
   initialQuery = "",
   initialInclusionClass = "",
   initialOwnership = "",
   initialOwnershipType = "",
+  initialOperatorType = "",
   initialAccessClass = "",
   initialKind = "",
   initialRegion = "",
@@ -78,11 +86,18 @@ export function MapExplorer({
   initialReferencePeriodEnd = "",
   initialUpdatedSince = "",
 }: {
+  taxonomy: TaxonomyResponse | null;
+  sources: Array<{ code: string; name: string }>;
+  regions: AdministrativeUnitOut[];
+  provinces: AdministrativeUnitOut[];
+  municipalities: AdministrativeUnitOut[];
   initialType?: string;
+  initialSubtype?: string;
   initialQuery?: string;
   initialInclusionClass?: string;
   initialOwnership?: string;
   initialOwnershipType?: string;
+  initialOperatorType?: string;
   initialAccessClass?: string;
   initialKind?: string;
   initialRegion?: string;
@@ -99,36 +114,157 @@ export function MapExplorer({
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const loadedSignatureRef = useRef<string>("");
+  const loadViewportRef = useRef<() => void>(() => {});
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [facilities, setFacilities] = useState<FacilitySummary[]>([]);
   const [selected, setSelected] = useState<FacilitySummary | null>(null);
-  const [type, setType] = useState(initialType);
-  const [inclusionClass, setInclusionClass] = useState(initialInclusionClass);
-  const [ownershipType, setOwnershipType] = useState(initialOwnershipType);
-  const [accessClass, setAccessClass] = useState(initialAccessClass);
-  const [kind, setKind] = useState(initialKind);
-  const [query, setQuery] = useState(initialQuery);
   const [mobileView, setMobileView] = useState<"map" | "list">("map");
   const [truncated, setTruncated] = useState(false);
+
+  const [type, setType] = useState(initialType);
+  const [subtype, setSubtype] = useState(initialSubtype);
+  const [query, setQuery] = useState(initialQuery);
+  const [inclusionClass, setInclusionClass] = useState(initialInclusionClass);
+  const [ownership, setOwnership] = useState(initialOwnership);
+  const [ownershipType, setOwnershipType] = useState(initialOwnershipType);
+  const [operatorType, setOperatorType] = useState(initialOperatorType);
+  const [accessClass, setAccessClass] = useState(initialAccessClass);
+  const [kind, setKind] = useState(initialKind);
+  const [region, setRegion] = useState(initialRegion);
+  const [province, setProvince] = useState(initialProvince);
+  const [municipality, setMunicipality] = useState(initialMunicipality);
+  const [barangay, setBarangay] = useState(initialBarangay);
+  const [source, setSource] = useState(initialSource);
+  const [precision, setPrecision] = useState(initialPrecision);
+  const [referencePeriodStart, setReferencePeriodStart] = useState(initialReferencePeriodStart);
+  const [referencePeriodEnd, setReferencePeriodEnd] = useState(initialReferencePeriodEnd);
+  const [updatedSince, setUpdatedSince] = useState(initialUpdatedSince);
+  const [barangays, setBarangays] = useState<AdministrativeUnitOut[]>([]);
+
+  const categories = taxonomy?.categories ?? [];
+  const subtypes = subtypeOptions(taxonomy);
+  const categoryLabels = termLabels(taxonomy?.categories);
+  const inclusionLabels = termLabels(taxonomy?.inclusion_classes);
+  const ownershipTypeLabels = termLabels(taxonomy?.ownership_types);
+  const accessLabels = termLabels(taxonomy?.access_classes);
+
+  const provincesByCode = useMemo(
+    () => new Map(provinces.map((item) => [item.psgc_code, item])),
+    [provinces],
+  );
+  const provinceOptions = useMemo(
+    () => provinces.filter((item) => !region || item.parent_psgc_code === region),
+    [provinces, region],
+  );
+  const municipalityOptions = useMemo(
+    () =>
+      municipalities.filter((item) => {
+        if (province) return item.parent_psgc_code === province;
+        if (!region) return true;
+        return provincesByCode.get(item.parent_psgc_code ?? "")?.parent_psgc_code === region;
+      }),
+    [municipalities, province, region, provincesByCode],
+  );
+
+  const filters: Filters = useMemo(
+    () => ({
+      type,
+      subtype,
+      q: query,
+      inclusion_class: inclusionClass,
+      ownership,
+      ownership_type: ownershipType,
+      operator_type: operatorType,
+      public_access_class: accessClass,
+      facility_kind: kind,
+      region_code: region,
+      province_code: province,
+      municipality_code: municipality,
+      barangay_code: barangay,
+      source,
+      location_precision: precision,
+      has_coordinates: initialHasCoordinates,
+      reference_period_start: referencePeriodStart,
+      reference_period_end: referencePeriodEnd,
+      updated_since: updatedSince,
+    }),
+    [
+      accessClass,
+      barangay,
+      inclusionClass,
+      initialHasCoordinates,
+      kind,
+      municipality,
+      operatorType,
+      ownership,
+      ownershipType,
+      precision,
+      province,
+      query,
+      referencePeriodEnd,
+      referencePeriodStart,
+      region,
+      source,
+      subtype,
+      type,
+      updatedSince,
+    ],
+  );
+  const filterSignature = signatureOf(filters);
+  const filtersRef = useRef(filters);
+  useEffect(() => {
+    filtersRef.current = filters;
+  }, [filters]);
+
+  useEffect(() => {
+    if (!municipality) return;
+    const controller = new AbortController();
+    async function loadBarangays() {
+      const rows: AdministrativeUnitOut[] = [];
+      let offset = 0;
+      try {
+        while (rows.length < 2000) {
+          const response = await fetch(
+            `${apiBaseUrl()}/v1/geographies?level=barangay&parent=${encodeURIComponent(
+              municipality,
+            )}&limit=500&offset=${offset}`,
+            { headers: { Accept: "application/json" }, signal: controller.signal },
+          );
+          if (!response.ok) break;
+          const page = (await response.json()) as AdministrativeUnitOut[];
+          rows.push(...page);
+          if (page.length < 500) break;
+          offset += 500;
+        }
+        if (!controller.signal.aborted) setBarangays(rows);
+      } catch {
+        // A missing barangay lookup must not block the map or the text list.
+      }
+    }
+    void loadBarangays();
+    return () => controller.abort();
+  }, [municipality]);
 
   const visible = useMemo(() => {
     const needle = query.trim().toLowerCase();
     if (initialHasCoordinates === "false") return [];
     return facilities.filter((facility) => {
       if (type && facility.facility_type !== type) return false;
+      if (subtype && facility.facility_subtype !== subtype) return false;
       if (inclusionClass && facility.inclusion_class !== inclusionClass) return false;
-      if (initialOwnership && facility.ownership !== initialOwnership) return false;
+      if (ownership && facility.ownership !== ownership) return false;
       if (ownershipType && facility.ownership_type !== ownershipType) return false;
+      if (operatorType && facility.operator_type !== operatorType) return false;
       if (accessClass && facility.public_access_class !== accessClass) return false;
       if (kind && facility.facility_kind !== kind) return false;
-      if (initialRegion && facility.geography.region_code !== initialRegion) return false;
-      if (initialProvince && facility.geography.province_code !== initialProvince) return false;
-      if (initialMunicipality && facility.geography.municipality_code !== initialMunicipality)
-        return false;
-      if (initialBarangay && facility.geography.barangay_code !== initialBarangay) return false;
-      if (initialPrecision && facility.location.precision !== initialPrecision) return false;
+      if (region && facility.geography.region_code !== region) return false;
+      if (province && facility.geography.province_code !== province) return false;
+      if (municipality && facility.geography.municipality_code !== municipality) return false;
+      if (barangay && facility.geography.barangay_code !== barangay) return false;
+      if (precision && facility.location.precision !== precision) return false;
       if (!needle) return true;
       return [
         facility.display_name,
@@ -143,18 +279,20 @@ export function MapExplorer({
     });
   }, [
     accessClass,
+    barangay,
     facilities,
     inclusionClass,
-    initialBarangay,
     initialHasCoordinates,
-    initialMunicipality,
-    initialOwnership,
-    initialPrecision,
-    initialProvince,
-    initialRegion,
     kind,
+    municipality,
+    operatorType,
+    ownership,
     ownershipType,
+    precision,
+    province,
     query,
+    region,
+    subtype,
     type,
   ]);
 
@@ -296,6 +434,8 @@ export function MapExplorer({
 
     async function loadViewport() {
       if (!map) return;
+      const current = filtersRef.current;
+      loadedSignatureRef.current = signatureOf(current);
       const bounds = map.getBounds();
       const west = bounds.getWest();
       const south = bounds.getSouth();
@@ -310,25 +450,7 @@ export function MapExplorer({
       setError(null);
       const bbox = [west, south, east, north].map((value) => value.toFixed(5)).join(",");
       const params = new URLSearchParams({ bbox, limit: "500" });
-      for (const [key, value] of Object.entries({
-        type: initialType,
-        q: initialQuery,
-        inclusion_class: initialInclusionClass || undefined,
-        ownership: initialOwnership,
-        ownership_type: initialOwnershipType || undefined,
-        public_access_class: initialAccessClass || undefined,
-        facility_kind: initialKind || undefined,
-        region_code: initialRegion,
-        province_code: initialProvince,
-        municipality_code: initialMunicipality,
-        barangay_code: initialBarangay,
-        source: initialSource,
-        location_precision: initialPrecision,
-        has_coordinates: initialHasCoordinates === "true" ? "true" : undefined,
-        reference_period_start: initialReferencePeriodStart || undefined,
-        reference_period_end: initialReferencePeriodEnd || undefined,
-        updated_since: initialUpdatedSince || undefined,
-      })) {
+      for (const [key, value] of Object.entries(current)) {
         if (value) params.set(key, value);
       }
       try {
@@ -347,8 +469,10 @@ export function MapExplorer({
         if (disposed) return;
         setFacilities(data.items);
         setTruncated(data.truncated);
-        setSelected((current) =>
-          current ? (data.items.find((item) => item.id === current.id) ?? null) : null,
+        setSelected((currentSelected) =>
+          currentSelected
+            ? (data.items.find((item) => item.id === currentSelected.id) ?? null)
+            : null,
         );
       } catch (caught) {
         if (!disposed) {
@@ -359,6 +483,7 @@ export function MapExplorer({
       }
     }
 
+    loadViewportRef.current = loadViewport;
     void init();
     return () => {
       disposed = true;
@@ -366,25 +491,25 @@ export function MapExplorer({
       map?.remove();
       mapRef.current = null;
     };
-  }, [
-    initialAccessClass,
-    initialBarangay,
-    initialHasCoordinates,
-    initialInclusionClass,
-    initialKind,
-    initialMunicipality,
-    initialOwnership,
-    initialOwnershipType,
-    initialPrecision,
-    initialProvince,
-    initialQuery,
-    initialReferencePeriodEnd,
-    initialReferencePeriodStart,
-    initialRegion,
-    initialSource,
-    initialType,
-    initialUpdatedSince,
-  ]);
+  }, []);
+
+  useEffect(() => {
+    if (!ready || loadedSignatureRef.current === filterSignature) return;
+    const handle = setTimeout(() => loadViewportRef.current(), 250);
+    return () => clearTimeout(handle);
+  }, [filterSignature, ready]);
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(filters)) {
+      if (value) params.set(key, value);
+    }
+    const search = params.toString();
+    const nextUrl = search ? `/map?${search}` : "/map";
+    if (`${window.location.pathname}${window.location.search}` !== nextUrl) {
+      window.history.replaceState(null, "", nextUrl);
+    }
+  }, [filters]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -432,7 +557,34 @@ export function MapExplorer({
     }
   }
 
+  function resetFilters() {
+    setType("");
+    setSubtype("");
+    setQuery("");
+    setInclusionClass("");
+    setOwnership("");
+    setOwnershipType("");
+    setOperatorType("");
+    setAccessClass("");
+    setKind("");
+    setRegion("");
+    setProvince("");
+    setMunicipality("");
+    setBarangay("");
+    setBarangays([]);
+    setSource("");
+    setPrecision("");
+    setReferencePeriodStart("");
+    setReferencePeriodEnd("");
+    setUpdatedSince("");
+  }
+
   const selectedNeedsAreaLabel = selected?.location.precision === "barangay_centroid";
+  const selectedCategory = selected ? labelFor(categoryLabels, selected.facility_type) : "";
+  const selectedSubtype = selected?.facility_subtype
+    ? subtypes.find((item) => item.code === selected.facility_subtype)?.label
+    : undefined;
+  const directoryHref = `/directory${queryString(filters)}`;
 
   return (
     <div className="flex h-[calc(100dvh-var(--header-height))] min-h-[36rem] flex-col border-t border-[#d1d8e6] lg:flex-row">
@@ -443,7 +595,11 @@ export function MapExplorer({
         )}
       >
         <div ref={containerRef} className="h-full w-full bg-[#e6ebf4]" />
-        <div className="absolute left-3 top-3 z-10 w-[min(23rem,calc(100%-1.5rem))] border border-[#d1d8e6] bg-white p-3 shadow-[4px_4px_0_0_rgba(0,56,168,0.18)]">
+        <form
+          className="absolute left-3 top-3 z-10 max-h-[calc(100%-1.5rem)] w-[min(23rem,calc(100%-1.5rem))] overflow-y-auto border border-[#d1d8e6] bg-white p-3 shadow-[4px_4px_0_0_rgba(0,56,168,0.18)]"
+          aria-label="Map filters"
+          onSubmit={(event) => event.preventDefault()}
+        >
           <div className="flex gap-2">
             <label htmlFor="map-search" className="sr-only">
               Filter mapped records
@@ -470,14 +626,36 @@ export function MapExplorer({
               <Select
                 id="map-type"
                 value={type}
-                onChange={(event) => setType(event.target.value)}
+                onChange={(event) => {
+                  setType(event.target.value);
+                  setSubtype("");
+                }}
               >
                 <option value="">All categories</option>
-                {CATEGORY_OPTIONS.map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
+                {categories.map((category) => (
+                  <option key={category.code} value={category.code}>
+                    {category.label}
                   </option>
                 ))}
+              </Select>
+            </div>
+            <div>
+              <label htmlFor="map-subtype" className="sr-only">
+                Facility subtype
+              </label>
+              <Select
+                id="map-subtype"
+                value={subtype}
+                onChange={(event) => setSubtype(event.target.value)}
+              >
+                <option value="">Any subtype</option>
+                {subtypes
+                  .filter((item) => !type || item.categoryCode === type)
+                  .map((item) => (
+                    <option key={item.code} value={item.code}>
+                      {item.label}
+                    </option>
+                  ))}
               </Select>
             </div>
             <div>
@@ -490,26 +668,9 @@ export function MapExplorer({
                 onChange={(event) => setInclusionClass(event.target.value)}
               >
                 <option value="">All inclusion classes</option>
-                {Object.entries(INCLUSION_CLASS_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </Select>
-            </div>
-            <div>
-              <label htmlFor="map-ownership-type" className="sr-only">
-                Ownership type
-              </label>
-              <Select
-                id="map-ownership-type"
-                value={ownershipType}
-                onChange={(event) => setOwnershipType(event.target.value)}
-              >
-                <option value="">All ownership types</option>
-                {OWNERSHIP_TYPE_OPTIONS.map((value) => (
-                  <option key={value} value={value}>
-                    {titleCase(value)}
+                {(taxonomy?.inclusion_classes ?? []).map((term) => (
+                  <option key={term.code} value={term.code}>
+                    {term.label}
                   </option>
                 ))}
               </Select>
@@ -524,28 +685,246 @@ export function MapExplorer({
                 onChange={(event) => setAccessClass(event.target.value)}
               >
                 <option value="">All access classes</option>
-                {Object.entries(ACCESS_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
+                {(taxonomy?.access_classes ?? []).map((term) => (
+                  <option key={term.code} value={term.code}>
+                    {term.label}
                   </option>
                 ))}
               </Select>
             </div>
-            <div className="col-span-2">
-              <label htmlFor="map-kind" className="sr-only">
-                Facility kind
-              </label>
-              <Select id="map-kind" value={kind} onChange={(event) => setKind(event.target.value)}>
-                <option value="">All facility kinds</option>
-                <option value="facility">Facility</option>
-                <option value="site">Site or compound</option>
-                <option value="building">Building</option>
-                <option value="facility_unit">Facility unit</option>
-                <option value="infrastructure_asset">Infrastructure asset</option>
-                <option value="project">Project</option>
-              </Select>
-            </div>
           </div>
+
+          <details className="mt-2 border-t border-[#d1d8e6] pt-2">
+            <summary className="cursor-pointer font-ui text-xs font-bold uppercase tracking-wide text-[#0038a8]">
+              Location, source, and time filters
+            </summary>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <div>
+                <label htmlFor="map-region" className="sr-only">
+                  Region
+                </label>
+                <Select
+                  id="map-region"
+                  value={region}
+                  onChange={(event) => {
+                    setRegion(event.target.value);
+                    setProvince("");
+                    setMunicipality("");
+                    setBarangay("");
+                    setBarangays([]);
+                  }}
+                >
+                  <option value="">All regions</option>
+                  {regions.map((item) => (
+                    <option key={item.psgc_code} value={item.psgc_code}>
+                      {item.name}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div>
+                <label htmlFor="map-province" className="sr-only">
+                  Province
+                </label>
+                <Select
+                  id="map-province"
+                  value={province}
+                  onChange={(event) => {
+                    setProvince(event.target.value);
+                    setMunicipality("");
+                    setBarangay("");
+                    setBarangays([]);
+                  }}
+                >
+                  <option value="">All provinces</option>
+                  {provinceOptions.map((item) => (
+                    <option key={item.psgc_code} value={item.psgc_code}>
+                      {item.name}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div>
+                <label htmlFor="map-municipality" className="sr-only">
+                  City or municipality
+                </label>
+                <Select
+                  id="map-municipality"
+                  value={municipality}
+                  onChange={(event) => {
+                    setMunicipality(event.target.value);
+                    setBarangay("");
+                    setBarangays([]);
+                  }}
+                >
+                  <option value="">All cities and municipalities</option>
+                  {municipalityOptions.map((item) => (
+                    <option key={item.psgc_code} value={item.psgc_code}>
+                      {item.name}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div>
+                <label htmlFor="map-barangay" className="sr-only">
+                  Barangay
+                </label>
+                <Select
+                  id="map-barangay"
+                  value={barangay}
+                  onChange={(event) => setBarangay(event.target.value)}
+                  disabled={!municipality}
+                >
+                  <option value="">
+                    {municipality ? "All barangays" : "Choose a city or municipality"}
+                  </option>
+                  {barangays.map((item) => (
+                    <option key={item.psgc_code} value={item.psgc_code}>
+                      {item.name}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div className="col-span-2">
+                <label htmlFor="map-source" className="sr-only">
+                  Source agency
+                </label>
+                <Select
+                  id="map-source"
+                  value={source}
+                  onChange={(event) => setSource(event.target.value)}
+                >
+                  <option value="">Any source agency</option>
+                  {sources.map((item) => (
+                    <option key={item.code} value={item.code}>
+                      {item.name}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div>
+                <label htmlFor="map-precision" className="sr-only">
+                  Location precision
+                </label>
+                <Select
+                  id="map-precision"
+                  value={precision}
+                  onChange={(event) => setPrecision(event.target.value)}
+                >
+                  <option value="">Any precision</option>
+                  {PRECISION_OPTIONS.map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div>
+                <label htmlFor="map-ownership" className="sr-only">
+                  Ownership
+                </label>
+                <Select
+                  id="map-ownership"
+                  value={ownership}
+                  onChange={(event) => setOwnership(event.target.value)}
+                >
+                  {OWNERSHIP_VALUES.map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div>
+                <label htmlFor="map-ownership-type" className="sr-only">
+                  Ownership type
+                </label>
+                <Select
+                  id="map-ownership-type"
+                  value={ownershipType}
+                  onChange={(event) => setOwnershipType(event.target.value)}
+                >
+                  <option value="">All ownership types</option>
+                  {(taxonomy?.ownership_types ?? []).map((term) => (
+                    <option key={term.code} value={term.code}>
+                      {term.label}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div>
+                <label htmlFor="map-operator-type" className="sr-only">
+                  Operator type
+                </label>
+                <Select
+                  id="map-operator-type"
+                  value={operatorType}
+                  onChange={(event) => setOperatorType(event.target.value)}
+                >
+                  <option value="">All operator types</option>
+                  {(taxonomy?.operator_types ?? []).map((term) => (
+                    <option key={term.code} value={term.code}>
+                      {term.label}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div className="col-span-2">
+                <label htmlFor="map-kind" className="sr-only">
+                  Facility kind
+                </label>
+                <Select
+                  id="map-kind"
+                  value={kind}
+                  onChange={(event) => setKind(event.target.value)}
+                >
+                  <option value="">All facility kinds</option>
+                  {(taxonomy?.facility_kinds ?? []).map((term) => (
+                    <option key={term.code} value={term.code}>
+                      {term.label}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div>
+                <label htmlFor="map-reference-start" className="sr-only">
+                  Reference period start
+                </label>
+                <Input
+                  id="map-reference-start"
+                  type="date"
+                  value={referencePeriodStart.slice(0, 10)}
+                  onChange={(event) => setReferencePeriodStart(event.target.value)}
+                  aria-label="Reference period start"
+                />
+              </div>
+              <div>
+                <label htmlFor="map-reference-end" className="sr-only">
+                  Reference period end
+                </label>
+                <Input
+                  id="map-reference-end"
+                  type="date"
+                  value={referencePeriodEnd.slice(0, 10)}
+                  onChange={(event) => setReferencePeriodEnd(event.target.value)}
+                  aria-label="Reference period end"
+                />
+              </div>
+              <div className="col-span-2">
+                <label htmlFor="map-updated-since" className="sr-only">
+                  Updated since
+                </label>
+                <Input
+                  id="map-updated-since"
+                  type="date"
+                  value={updatedSince.slice(0, 10)}
+                  onChange={(event) => setUpdatedSince(event.target.value)}
+                  aria-label="Canonical record updated since"
+                />
+              </div>
+            </div>
+          </details>
+
           <p className="mt-2 flex items-center justify-between gap-2 font-ui text-xs text-[#5a5a58]">
             <span>
               {loading ? (
@@ -558,14 +937,29 @@ export function MapExplorer({
             </span>
             <span>{truncated ? "Capped at 500" : "Bounded viewport query"}</span>
           </p>
-        </div>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <Link
+              href={directoryHref}
+              className="font-ui text-xs font-bold text-[#0038a8] underline"
+            >
+              Open as directory results
+            </Link>
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="font-ui text-xs font-bold text-[#5a5a58] underline"
+            >
+              Reset filters
+            </button>
+          </div>
+        </form>
         {error ? (
           <div
             role="alert"
-            className="absolute inset-x-3 top-28 z-20 border-l-4 border-[#9a6700] bg-[#fff8e1] p-3 font-sans text-xs text-[#3d2b00] shadow-lg lg:hidden"
+            className="absolute inset-x-3 top-28 z-20 border-l-4 border-[#9a6700] bg-[#fff8e1] p-3 font-sans text-xs text-[#3d2b00] shadow-lg lg:left-auto lg:right-3 lg:w-80"
           >
             {error}{" "}
-            <Link href="/directory" className="underline">
+            <Link href={directoryHref} className="underline">
               Use the directory
             </Link>
           </div>
@@ -591,15 +985,24 @@ export function MapExplorer({
               </button>
             </div>
             <p className="mt-2 font-sans text-sm text-[#5a5a58]">
-              {titleCase(selected.facility_type)} ·{" "}
-              {INCLUSION_CLASS_LABELS[selected.inclusion_class] ??
-                titleCase(selected.inclusion_class)}{" "}
-              · {PRECISION_LABELS[selected.location.precision]}
+              {selectedCategory}
+              {selectedSubtype ? ` · ${selectedSubtype}` : ""} ·{" "}
+              {labelFor(inclusionLabels, selected.inclusion_class)} ·{" "}
+              {PRECISION_LABELS[selected.location.precision] ?? selected.location.precision}
               {selected.is_synthetic ? " · Synthetic" : ""}
             </p>
             <p className="mt-1 font-sans text-xs text-[#5a5a58]">
-              Ownership: {titleCase(selected.ownership_type)} · Access:{" "}
-              {ACCESS_LABELS[selected.public_access_class] ?? "Unknown"}
+              Ownership: {labelFor(ownershipTypeLabels, selected.ownership_type)} · Access:{" "}
+              {labelFor(accessLabels, selected.public_access_class, "Unknown")}
+            </p>
+            <p className="mt-1 font-sans text-xs text-[#5a5a58]">
+              {[
+                selected.geography.barangay_name,
+                selected.geography.municipality_name,
+                selected.geography.province_name,
+              ]
+                .filter(Boolean)
+                .join(", ") || "Administrative geography not linked"}
             </p>
             {selectedNeedsAreaLabel ? (
               <p className="mt-2 border-l-2 border-[#9a6700] pl-2 font-sans text-xs text-[#6b4a00]">
@@ -615,8 +1018,24 @@ export function MapExplorer({
           </div>
         ) : null}
         <div className="absolute bottom-3 right-3 z-10 hidden max-w-[16rem] border border-[#d1d8e6] bg-white/95 p-2 font-sans text-[11px] leading-snug text-[#5a5a58] lg:block">
-          Unknown and barangay-centroid positions are drawn as softer, area-level markers. Do not
-          treat them as exact building locations.
+          <p className="font-ui text-[10px] font-bold uppercase tracking-wide text-[#0a0a0a]">
+            Marker colour
+          </p>
+          <p className="mt-1 flex items-center gap-1">
+            <span aria-hidden="true" className="inline-block size-2.5 bg-[#0038a8]" /> Government
+          </p>
+          <p className="flex items-center gap-1">
+            <span aria-hidden="true" className="inline-block size-2.5 bg-[#0f766e]" /> Private
+            public-service provider
+          </p>
+          <p className="flex items-center gap-1">
+            <span aria-hidden="true" className="inline-block size-2.5 bg-[#9a6700]" /> Public-access
+            venue
+          </p>
+          <p className="mt-1">
+            Unknown and barangay-centroid positions are softer, area-level markers. Do not treat
+            them as exact building locations.
+          </p>
         </div>
       </div>
 
@@ -638,7 +1057,7 @@ export function MapExplorer({
           {error ? (
             <p role="alert" className="mt-3 border-l-4 border-[#9a6700] bg-[#fff8e1] p-2 font-sans text-xs text-[#3d2b00]">
               {error}{" "}
-              <Link href="/directory" className="underline">
+              <Link href={directoryHref} className="underline">
                 Use the directory
               </Link>
             </p>
@@ -663,7 +1082,9 @@ export function MapExplorer({
                     )}
                   >
                     <span className="flex flex-wrap items-center gap-1.5">
-                      <Badge tone="outline">{titleCase(facility.facility_type)}</Badge>
+                      <Badge tone="outline">
+                        {labelFor(categoryLabels, facility.facility_type)}
+                      </Badge>
                       <Badge
                         tone={
                           facility.inclusion_class === "GOVERNMENT_FACILITY"
@@ -671,8 +1092,7 @@ export function MapExplorer({
                             : "outline"
                         }
                       >
-                        {INCLUSION_CLASS_LABELS[facility.inclusion_class] ??
-                          titleCase(facility.inclusion_class)}
+                        {labelFor(inclusionLabels, facility.inclusion_class)}
                       </Badge>
                       {facility.is_synthetic ? <Badge tone="sun">Synthetic</Badge> : null}
                     </span>
@@ -687,6 +1107,9 @@ export function MapExplorer({
                       {" · "}
                       {PRECISION_LABELS[facility.location.precision] ??
                         facility.location.precision}
+                      {" · "}
+                      {facility.source_count} source
+                      {facility.source_count === 1 ? "" : "s"}
                     </span>
                   </button>
                 </li>
