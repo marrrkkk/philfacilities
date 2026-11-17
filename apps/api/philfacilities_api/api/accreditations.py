@@ -5,50 +5,23 @@ from datetime import date
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import and_, exists, func, or_, select
+from sqlalchemy import exists, func, or_, select
 from sqlalchemy.orm import Session
 
 from ..config import get_settings
 from ..db import get_db
 from ..errors import ApiError
 from ..models import (
-    Dataset,
     Facility,
     FacilityLocation,
     HealthAccreditation,
-    Release,
-    SourceRecord,
 )
-from ..rights import PUBLIC_RIGHTS
 from ..schemas import AccreditationListItem, AccreditationListResponse
-from ..services import public_facility_filter
+from ..services import public_facility_filter, public_source_record_condition
 from .health import _accreditation
 
 router = APIRouter(prefix="/accreditations", tags=["health"])
 settings = get_settings()
-
-
-def _public_accreditation_source():
-    """Only expose accreditations whose release still permits public redistribution."""
-
-    return exists(
-        select(1)
-        .select_from(SourceRecord)
-        .join(Release, SourceRecord.release_id == Release.id)
-        .join(Dataset, Release.dataset_id == Dataset.id)
-        .where(
-            SourceRecord.id == HealthAccreditation.source_record_id,
-            or_(
-                Dataset.is_synthetic.is_(True),
-                and_(
-                    Dataset.redistribution_status.in_(tuple(PUBLIC_RIGHTS)),
-                    Dataset.publication_status.in_(("approved", "published")),
-                    Release.publication_status.in_(("approved", "published")),
-                ),
-            ),
-        )
-        .correlate(HealthAccreditation)
-    )
 
 
 def _conditions(
@@ -66,7 +39,7 @@ def _conditions(
 ) -> list:
     conditions = [
         *public_facility_filter(),
-        _public_accreditation_source(),
+        public_source_record_condition(HealthAccreditation.source_record_id),
     ]
     if facility_id:
         try:

@@ -17,7 +17,7 @@ from ..schemas import (
     HealthDetailResponse,
     LicenseOut,
 )
-from ..services import build_facility_detail
+from ..services import build_facility_detail, public_source_record_condition
 from .common import get_public_facility, paginated_facilities
 from .query import facility_conditions
 
@@ -38,6 +38,10 @@ def _accreditation(row: HealthAccreditation) -> AccreditationOut:
         valid_from=row.valid_from,
         valid_until=row.valid_until,
         source_as_of=row.source_as_of,
+        telephone=row.telephone,
+        email=row.email,
+        street_address=row.street_address,
+        municipality=row.municipality,
         page_reference=row.page_reference,
         source_record_id=row.source_record_id,
     )
@@ -94,12 +98,18 @@ def get_health_facility(facility_id: str, db: Annotated[Session, Depends(get_db)
     detail = build_facility_detail(db, facility)
     licenses = db.scalars(
         select(HealthLicense)
-        .where(HealthLicense.facility_id == facility.id)
+        .where(
+            HealthLicense.facility_id == facility.id,
+            public_source_record_condition(HealthLicense.source_record_id),
+        )
         .order_by(HealthLicense.valid_until.desc().nullslast())
     ).all()
     accreditations = db.scalars(
         select(HealthAccreditation)
-        .where(HealthAccreditation.facility_id == facility.id)
+        .where(
+            HealthAccreditation.facility_id == facility.id,
+            public_source_record_condition(HealthAccreditation.source_record_id),
+        )
         .order_by(HealthAccreditation.valid_until.desc().nullslast())
     ).all()
     return HealthDetailResponse(
@@ -130,7 +140,10 @@ def get_health_licenses(facility_id: str, db: Annotated[Session, Depends(get_db)
     facility = get_public_facility(db, facility_id)
     rows = db.scalars(
         select(HealthLicense)
-        .where(HealthLicense.facility_id == facility.id)
+        .where(
+            HealthLicense.facility_id == facility.id,
+            public_source_record_condition(HealthLicense.source_record_id),
+        )
         .order_by(HealthLicense.valid_until.desc().nullslast())
     ).all()
     return [
@@ -157,7 +170,10 @@ def get_health_accreditations(facility_id: str, db: Annotated[Session, Depends(g
     facility = get_public_facility(db, facility_id)
     rows = db.scalars(
         select(HealthAccreditation)
-        .where(HealthAccreditation.facility_id == facility.id)
+        .where(
+            HealthAccreditation.facility_id == facility.id,
+            public_source_record_condition(HealthAccreditation.source_record_id),
+        )
         .order_by(HealthAccreditation.valid_until.desc().nullslast())
     ).all()
     return [_accreditation(row) for row in rows]

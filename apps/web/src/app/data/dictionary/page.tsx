@@ -19,9 +19,14 @@ const facilityFields = [
   ["slug", "string or null", "Human-readable URL identifier. Not an identity key."],
   ["display_name", "string", "Name used for display; may be a normalized source value."],
   ["official_name", "string or null", "Name recorded as official by a source, when supplied."],
-  ["facility_type", "school or health_facility", "Broad domain. A record is not both in this release."],
-  ["facility_subtype", "string or null", "Source or normalized subtype."],
+  ["facility_type", "controlled string", "Broad category: school, health facility, government office, community facility, library, museum, transport, utility, and related categories."],
+  ["facility_subtype", "string or null", "Category-specific subtype. Null means the source did not establish one."],
+  ["facility_kind", "controlled string", "facility, site, building, facility_unit, infrastructure_asset, or project."],
+  ["inclusion_class", "controlled string", "Government facility, private public-service provider, public-access venue, or internal discovery candidate."],
   ["ownership", "government, private, unknown", "Source-reported ownership. Unknown is not assumed public."],
+  ["ownership_type, operator_type", "controlled string", "Specific public, private, joint, or unknown owner/operator type; ownership and operation are separate."],
+  ["public_access_class", "controlled string", "PUBLIC_FREE, PUBLIC_PAID_OR_CONDITIONAL, SERVICE_USERS_ONLY, APPOINTMENT_ONLY, MEMBERS_STUDENTS_ONLY, STAFF_ONLY, RESTRICTED, or UNKNOWN."],
+  ["functions", "string array", "Function codes recorded for the facility, such as HEALTHCARE or EVACUATION_SITE."],
   ["record_status", "controlled string", "Registry presence, not real-time operational status."],
   ["publication_status", "public or internal", "Only public records appear in the public API."],
   ["is_synthetic", "boolean", "True for generated demonstration records."],
@@ -50,6 +55,8 @@ const provenanceFields = [
   ["retrieved_at, processed_at", "Acquisition time and ETL completion time."],
   ["match_method, match_status", "How and how confidently the source record was linked."],
   ["match_confidence", "Numeric confidence for the recorded link method."],
+  ["rights_status, publication_status", "Dataset redistribution state and publication gate."],
+  ["license_identifier, attribution_text", "Recorded licence and required attribution."],
   ["is_synthetic", "Whether the source dataset is synthetic."],
 ];
 
@@ -369,7 +376,7 @@ export default function DataDictionaryPage() {
           Publication caveats
         </h2>
         <ul className="mt-4 max-w-3xl space-y-2 font-sans text-sm leading-relaxed text-[#5a5a58]">
-          <li>Published records are a partial, source-specific subset. PhilHealth, BetterGov PSGC, and OSM/HOT are currently represented; DepEd EBEIS is internal-only and official PSA/DepEd/DOH files remain blocked or unacquired.</li>
+          <li>Published records are a partial, source-specific subset. The dataset catalogue lists the sources currently represented; DepEd EBEIS canonical rows remain internal and official PSA/DepEd/DOH files remain blocked or unacquired.</li>
           <li>Source-data rights are separate from the Apache-2.0 code licence. Check the source release before reuse.</li>
           <li>The map uses demonstration tiles; a production provider and licence are not selected.</li>
           <li>Production backups, monitoring, WAF/TLS, and an external security review are not configured.</li>
@@ -377,7 +384,7 @@ export default function DataDictionaryPage() {
         </ul>
         <p className="mt-4 font-sans text-sm leading-relaxed text-[#5a5a58]">
           The repository copy of this dictionary is{" "}
-          <code>docs/DATA-DICTIONARY.md</code>. Operational procedures are in the{" "}
+          <code>docs/data-dictionary.md</code>. Operational procedures are in the{" "}
           <Link href="/about" className="underline">
             about and governance page
           </Link>

@@ -43,8 +43,10 @@ from ..schemas import (
 from ..services import (
     build_facility_detail,
     build_summaries,
+    facility_is_public,
     load_attribute_assertions,
     load_source_evidence,
+    public_source_record_condition,
 )
 from .query import facility_conditions
 
@@ -64,7 +66,7 @@ def _get_public_facility(db: Session, identifier: str) -> Facility:
         facility = db.get(Facility, uuid.UUID(identifier))
     if facility is None:
         facility = db.scalars(select(Facility).where(Facility.slug == identifier)).first()
-    if facility is None or facility.publication_status != "public":
+    if facility is None or not facility_is_public(db, facility):
         raise ApiError(404, "facility_not_found", "No published facility exists with that ID.")
     return facility
 
@@ -374,7 +376,10 @@ def get_facility_accreditations(facility_id: str, db: Annotated[Session, Depends
     facility = _get_public_facility(db, facility_id)
     rows = db.scalars(
         select(HealthAccreditation)
-        .where(HealthAccreditation.facility_id == facility.id)
+        .where(
+            HealthAccreditation.facility_id == facility.id,
+            public_source_record_condition(HealthAccreditation.source_record_id),
+        )
         .order_by(HealthAccreditation.valid_until.desc().nullslast())
     ).all()
     return [
@@ -390,6 +395,10 @@ def get_facility_accreditations(facility_id: str, db: Annotated[Session, Depends
             valid_from=row.valid_from,
             valid_until=row.valid_until,
             source_as_of=row.source_as_of,
+            telephone=row.telephone,
+            email=row.email,
+            street_address=row.street_address,
+            municipality=row.municipality,
             page_reference=row.page_reference,
             source_record_id=row.source_record_id,
         )

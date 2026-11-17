@@ -12,6 +12,7 @@ import pyarrow.parquet as pq
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import Response
 from sqlalchemy import and_, func, or_, select
+from sqlalchemy.dialects.postgresql import distinct_on
 from sqlalchemy.orm import Session, aliased
 
 from ..config import get_settings
@@ -279,22 +280,41 @@ def monitoring(db: Annotated[Session, Depends(get_db)]):
         .join(Agency, Dataset.agency_id == Agency.id)
         .order_by(Agency.short_code, Dataset.slug)
     ).all()
-    checks = db.execute(select(SourceCheck).order_by(SourceCheck.checked_at.desc())).scalars()
-    latest_check: dict[uuid.UUID, SourceCheck] = {}
-    successful_check: dict[uuid.UUID, SourceCheck] = {}
-    for check in checks:
-        latest_check.setdefault(check.dataset_id, check)
-        if check.status in {"ok", "not_modified"}:
-            successful_check.setdefault(check.dataset_id, check)
-    releases = db.scalars(select(Release).order_by(Release.retrieved_at.desc())).all()
-    latest_release: dict[uuid.UUID, Release] = {}
-    for release in releases:
-        latest_release.setdefault(release.dataset_id, release)
+    # Monitoring shows one row per dataset. Scanning full history here grows
+    # without bound as checks, releases, and runs accumulate, so let PostgreSQL
+    # return only the newest row for each dataset instead.
+    checks = db.scalars(
+        select(SourceCheck)
+        .order_by(SourceCheck.dataset_id, SourceCheck.checked_at.desc(), SourceCheck.id.desc())
+        .ext(distinct_on(SourceCheck.dataset_id))
+    ).all()
+    latest_check = {check.dataset_id: check for check in checks}
+    successful_checks = db.scalars(
+        select(SourceCheck)
+        .where(SourceCheck.status.in_(("ok", "not_modified")))
+        .order_by(SourceCheck.dataset_id, SourceCheck.checked_at.desc(), SourceCheck.id.desc())
+        .ext(distinct_on(SourceCheck.dataset_id))
+    ).all()
+    successful_check = {check.dataset_id: check for check in successful_checks}
+    releases = db.scalars(
+        select(Release)
+        .order_by(Release.dataset_id, Release.retrieved_at.desc(), Release.created_at.desc())
+        .ext(distinct_on(Release.dataset_id))
+    ).all()
+    latest_release = {release.dataset_id: release for release in releases}
+    runs = db.scalars(
+        select(IngestionRun)
+        .order_by(IngestionRun.dataset_id, IngestionRun.started_at.desc(), IngestionRun.id.desc())
+        .ext(distinct_on(IngestionRun.dataset_id))
+    ).all()
+    latest_run = {run.dataset_id: run for run in runs}
     payload: list[SourceMonitoringOut] = []
     for dataset, agency in datasets:
         check = latest_check.get(dataset.id)
         success = successful_check.get(dataset.id)
         release = latest_release.get(dataset.id)
+        run = latest_run.get(dataset.id)
+        run_stats = (run.stats if run else None) or {}
         warning = None
         if dataset.publication_status in {"blocked", "internal_only"}:
             warning = "Records are not public because publication is gated."
@@ -318,6 +338,11 @@ def monitoring(db: Annotated[Session, Depends(get_db)]):
                 latest_release_label=release.source_release_label if release else None,
                 latest_release_at=release.retrieved_at if release else None,
                 latest_release_rows=release.row_count_parsed if release else None,
+                latest_run_acceptance_rate=run_stats.get("acceptance_rate"),
+                latest_run_rejection_rate=run_stats.get("rejection_rate"),
+                latest_run_status=run.status if run else None,
+                latest_run_at=run.started_at if run else None,
+                latest_run_duration_ms=run_stats.get("total_ms"),
                 next_check_at=check.next_check_at if check else None,
                 warning=warning,
             )
@@ -1032,19 +1057,27 @@ def _download_rows(db: Session, facility_type: str | None) -> list[dict]:
     from ..services import load_source_evidence
 
     evidence = load_source_evidence(db, [facility.id for facility in facilities])
-    publication_status = {facility.id: facility.publication_status for facility in facilities}
+    facilities_by_id = {facility.id: facility for facility in facilities}
     rows = []
     for summary in summaries:
         sources = evidence.get(summary.id, [])
+        facility = facilities_by_id[summary.id]
         rows.append(
             {
                 "id": str(summary.id),
+                "slug": summary.slug or "",
                 "display_name": summary.display_name,
+                "official_name": facility.official_name or "",
                 "facility_type": summary.facility_type,
                 "facility_subtype": summary.facility_subtype or "",
+                "facility_kind": summary.facility_kind,
+                "inclusion_class": summary.inclusion_class,
                 "ownership": summary.ownership,
+                "ownership_type": summary.ownership_type,
+                "operator_type": summary.operator_type,
+                "public_access_class": summary.public_access_class,
                 "record_status": summary.record_status,
-                "publication_status": publication_status[summary.id],
+                "publication_status": summary.publication_status,
                 "psgc_code": summary.geography.psgc_code or "",
                 "psgc_release": summary.geography.psgc_release or "",
                 "region_code": summary.geography.region_code or "",
@@ -1060,6 +1093,7 @@ def _download_rows(db: Session, facility_type: str | None) -> list[dict]:
                 "location_precision": summary.location.precision,
                 "location_method": summary.location.method or "",
                 "address_text": summary.location.address_text or "",
+                "postal_code": summary.location.postal_code or "",
                 "source_count": summary.source_count,
                 "source_records": "; ".join(
                     f"{item.agency_code}:{item.dataset_slug}:{item.source_record_id}"

@@ -281,6 +281,98 @@ def test_school_and_health_domain_endpoints_preserve_observations(client):
     assert bad_filter.json()["code"] == "invalid_facility_id"
 
 
+def test_detail_exposes_source_contacts_postal_code_and_accreditation_contacts(client, db_session):
+    from philfacilities_api.models import (
+        Facility,
+        FacilityContact,
+        FacilityLocation,
+        HealthAccreditation,
+    )
+    from sqlalchemy import select
+
+    facility = db_session.scalars(
+        select(Facility).where(Facility.slug == "synthetic-demo-health-facility-01-doh")
+    ).one()
+    location = db_session.scalars(
+        select(FacilityLocation).where(
+            FacilityLocation.facility_id == facility.id,
+            FacilityLocation.is_current.is_(True),
+        )
+    ).one()
+    accredited = db_session.scalars(
+        select(Facility).where(Facility.slug == "synthetic-demo-accredited-hospital-01-philhealth")
+    ).one()
+    accreditation = db_session.scalars(
+        select(HealthAccreditation).where(HealthAccreditation.facility_id == accredited.id)
+    ).first()
+    assert accreditation is not None
+    original_postal_code = location.postal_code
+    original_contacts = {
+        "telephone": accreditation.telephone,
+        "email": accreditation.email,
+        "street_address": accreditation.street_address,
+        "municipality": accreditation.municipality,
+    }
+
+    location.postal_code = "1000"
+    accreditation.telephone = "+63 2 8555 0100"
+    accreditation.email = "records@example.test"
+    accreditation.street_address = "100 Synthetic Avenue"
+    accreditation.municipality = "Synthetic City"
+    contact = FacilityContact(
+        facility_id=facility.id,
+        contact_type="phone",
+        value="+63 2 8555 0100",
+        label="Main line",
+        source_record_id=location.source_record_id,
+        source_field="telephone",
+    )
+    db_session.add(contact)
+    db_session.commit()
+
+    try:
+        detail = _items(client, f"/v1/facilities/{facility.id}")
+        assert detail["location"]["postal_code"] == "1000"
+        phone = next(
+            item
+            for item in detail["contacts"]
+            if item["contact_type"] == "phone" and item["value"] == "+63 2 8555 0100"
+        )
+        assert phone["source_record_id"] == str(location.source_record_id)
+
+        detail = _items(client, f"/v1/facilities/{accredited.id}")
+        exposed = next(
+            item for item in detail["accreditations"] if item["id"] == str(accreditation.id)
+        )
+        assert exposed["telephone"] == "+63 2 8555 0100"
+        assert exposed["email"] == "records@example.test"
+        assert exposed["street_address"] == "100 Synthetic Avenue"
+        assert exposed["municipality"] == "Synthetic City"
+
+        listed = _items(client, "/v1/accreditations", facility_id=str(accredited.id))
+        listed_row = next(item for item in listed["items"] if item["id"] == str(accreditation.id))
+        assert listed_row["telephone"] == "+63 2 8555 0100"
+
+        taxonomy = _items(client, "/v1/taxonomy")
+        assert taxonomy["version"] == "3.0"
+        school = next(item for item in taxonomy["categories"] if item["code"] == "school")
+        assert school["label"] == "Education"
+        assert any(
+            item["code"] == "PUBLIC_ELEMENTARY_SCHOOL"
+            and item["label"] == "Public elementary school"
+            for item in school["subtypes"]
+        )
+        assert any(item["code"] == "phone" for item in taxonomy["contact_types"])
+    finally:
+        db_session.delete(contact)
+        location.postal_code = original_postal_code
+        accreditation.telephone = original_contacts["telephone"]
+        accreditation.email = original_contacts["email"]
+        accreditation.street_address = original_contacts["street_address"]
+        accreditation.municipality = original_contacts["municipality"]
+        db_session.commit()
+
+
 def _haversine_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     radius = 6_371_000.0
     phi1, phi2 = math.radians(lat1), math.radians(lat2)
@@ -456,7 +548,11 @@ def test_source_catalogue_and_release_history_expose_rights(client):
 def test_monitoring_endpoints_expose_measured_checks_only(client):
     monitoring = client.get("/v1/monitoring")
     assert monitoring.status_code == 200
-    assert isinstance(monitoring.json(), list)
+    rows = monitoring.json()
+    assert isinstance(rows, list)
+    for row in rows:
+        assert "latest_run_acceptance_rate" in row
+        assert "latest_run_duration_ms" in row
 
     checks = client.get("/v1/source-checks", params={"limit": 10})
     assert checks.status_code == 200
@@ -467,15 +563,50 @@ def test_monitoring_endpoints_expose_measured_checks_only(client):
         assert check["checked_at"]
 
 
+def test_monitoring_query_is_bounded_to_latest_rows_per_dataset(client):
+    """Monitoring must not load every historical check, release and run."""
+
+    from philfacilities_api.db import engine
+    from sqlalchemy import event
+
+    statements: list[str] = []
+
+    def record_statement(_conn, _cursor, statement, _params, _context, _executemany):
+        statements.append(statement)
+
+    event.listen(engine, "before_cursor_execute", record_statement)
+    try:
+        response = client.get("/v1/monitoring")
+    finally:
+        event.remove(engine, "before_cursor_execute", record_statement)
+
+    assert response.status_code == 200
+    monitoring_sql = [
+        statement
+        for statement in statements
+        if any(
+            table in statement
+            for table in ("source.source_checks", "source.releases", "source.ingestion_runs")
+        )
+    ]
+    assert monitoring_sql
+    for table in ("source.source_checks", "source.releases", "source.ingestion_runs"):
+        assert any(
+            table in statement and "DISTINCT ON" in statement.upper()
+            for statement in monitoring_sql
+        ), f"{table} was queried without a latest-per-dataset bound"
+
+
 def test_quality_summary_is_measured_not_editorial(client):
     quality = client.get("/v1/quality/summary").json()
     assert quality["facility_count"] == 22
     assert quality["published_facility_count"] == 22
     assert quality["synthetic_facility_count"] == 22
-    # Precision is measured over location rows (15 facilities have a current location);
-    # seven facilities have no location record at all and must not be invented here.
+    # Precision is measured over location rows. All 22 fixtures have some location
+    # evidence: 15 carry a point and seven persist a PSGC-only location row under
+    # data.md §9.1 rather than discarding non-coordinate evidence.
     assert sum(quality["coordinate_precision"].values()) == 22
-    assert quality["coordinate_precision"].get("unknown", 0) > 0
+    assert quality["coordinate_precision"].get("unknown", 0) == 10
     assert quality["datasets_by_redistribution_status"] == {"not_applicable": 6}
     assert quality["last_successful_runs"]
     assert {run["dataset"] for run in quality["last_successful_runs"]} == {
@@ -498,6 +629,15 @@ def test_bulk_downloads_match_publication_gate(client):
     assert len(rows) == 22
     assert all(row["is_synthetic"] == "True" for row in rows)
     assert all(row["publication_status"] == "public" for row in rows)
+    assert {
+        "official_name",
+        "ownership_type",
+        "operator_type",
+        "public_access_class",
+        "facility_kind",
+        "inclusion_class",
+        "postal_code",
+    } <= set(rows[0])
 
     schools = list(csv.DictReader(io.StringIO(client.get("/v1/downloads/schools.csv").text)))
     health = list(
@@ -558,6 +698,89 @@ def test_facility_csv_export_neutralizes_spreadsheet_formulas(client, db_session
         assert not row["latitude"].startswith("'")
     finally:
         facility.display_name = original_name
+        db_session.commit()
+
+
+def test_internal_accreditation_source_is_not_exposed(client, db_session):
+    """A public facility must not leak an accreditation from a blocked dataset."""
+
+    import uuid
+    from datetime import UTC, date, datetime
+
+    from philfacilities_api.models import (
+        Agency,
+        Dataset,
+        Facility,
+        HealthAccreditation,
+        Release,
+        SourceRecord,
+    )
+    from sqlalchemy import select
+
+    token = uuid.uuid4().hex[:10]
+    facility = db_session.scalars(
+        select(Facility).where(Facility.slug == "synthetic-demo-accredited-hospital-01-philhealth")
+    ).one()
+    agency = db_session.scalars(select(Agency).where(Agency.short_code == "philhealth")).one()
+    dataset = Dataset(
+        agency_id=agency.id,
+        slug=f"internal-accreditation-{token}",
+        name="Internal accreditation test dataset",
+        redistribution_status="restricted_non_redistributable",
+        publication_status="blocked",
+        coverage_scope="NATIONAL_PARTIAL",
+    )
+    db_session.add(dataset)
+    db_session.flush()
+    release = Release(
+        dataset_id=dataset.id,
+        source_release_label=f"INTERNAL-{token}",
+        retrieved_at=datetime.now(UTC),
+        sha256=uuid.uuid4().hex * 2,
+        ingestion_status="published",
+        publication_status="blocked",
+    )
+    db_session.add(release)
+    db_session.flush()
+    record = SourceRecord(
+        release_id=release.id,
+        source_record_key=f"internal-{token}",
+        raw_payload={"provider": "Internal Only Hospital"},
+        raw_record_hash=uuid.uuid4().hex * 2,
+    )
+    db_session.add(record)
+    db_session.flush()
+    accreditation = HealthAccreditation(
+        facility_id=facility.id,
+        authority="Internal Reviewer",
+        provider_category="Hospital",
+        accreditation_category=f"Internal {token}",
+        valid_until=date(2027, 12, 31),
+        source_record_id=record.id,
+    )
+    db_session.add(accreditation)
+    db_session.commit()
+
+    try:
+        detail = _items(client, f"/v1/facilities/{facility.id}")
+        assert detail["accreditations"]
+        assert all(item["id"] != str(accreditation.id) for item in detail["accreditations"])
+
+        nested = _items(client, f"/v1/facilities/{facility.id}/accreditations")
+        assert all(item["id"] != str(accreditation.id) for item in nested)
+
+        listed = _items(client, "/v1/accreditations", facility_id=str(facility.id))
+        assert listed["items"]
+        assert all(item["id"] != str(accreditation.id) for item in listed["items"])
+    finally:
+        # Delete in dependency order; the FK is not relationship-mapped, so a
+        # single flush could otherwise emit the dataset delete too early.
+        db_session.delete(accreditation)
+        db_session.delete(record)
+        db_session.commit()
+        db_session.delete(release)
+        db_session.commit()
+        db_session.delete(dataset)
         db_session.commit()
 
 
