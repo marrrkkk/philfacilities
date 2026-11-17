@@ -36,6 +36,6 @@ data, while source rights and dataset size limit what can be published.
 
 ## Evidence
 
-`docs/06-PUBLIC-API.md`, `packages/api-client/openapi.json`,
+`docs/api.md`, `packages/api-client/openapi.json`,
 `packages/api-client/src/schema.ts`, `tests/test_api_contract.py`, and
 `tests/test_api_integration.py`.

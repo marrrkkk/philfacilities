@@ -21,8 +21,10 @@ records with distant coordinates are unlikely to be the same facility.
   keep the text location available when the map fails.
 - Reject out-of-range and partial coordinates through validation and report them
   as quality issues.
-- Require human review for conflicting IDs or implausibly distant coordinates;
-  never merge on name similarity or proximity alone.
+- Leave conflicting IDs or implausibly distant coordinates unmerged and retry
+  them automatically; never merge on name similarity or proximity alone. The
+  rebuild brief retires the earlier human-review queue in favour of deterministic
+  exact rules plus unmerged candidates.
 
 ## Consequences
 
@@ -33,6 +35,6 @@ records with distant coordinates are unlikely to be the same facility.
 
 ## Evidence
 
-`docs/04-DATA-MODEL.md`, `apps/ingest/philfacilities_ingest/pipeline.py`,
+`docs/data-model.md`, `apps/ingest/philfacilities_ingest/pipeline/`,
 `apps/web/src/components/map/location-map.tsx`, and coordinate tests in
 `tests/test_api_integration.py` and `tests/test_data_quality.py`.

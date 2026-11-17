@@ -16,4 +16,4 @@ record only by adding a new one that supersedes it.
 | [0008](0008-publicly-available-data-inclusion.md) | Include verified, publicly available data with no explicit prohibition | Accepted |
 
 This directory satisfies the ADR list in
-[02 — Architecture](../02-ARCHITECTURE.md#9-architecture-decisions).
+[Architecture](../architecture.md#9-architecture-decisions).

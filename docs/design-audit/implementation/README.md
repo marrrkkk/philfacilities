@@ -34,4 +34,4 @@ The capture script uses Playwright at a 1× device scale with reduced motion. It
 - The directory remains a text-first product on mobile: filters are shown before results and the result list precedes the footer. The map retains a text result list through the Map/List tabs and shows the precision caveat.
 - The map screenshots show loaded viewport results and the text result list. The e2e suite also asserts the OpenStreetMap demo attribution and the same-origin MapLibre worker. The basemap is still a demo dependency, not a production tile-provider decision.
 
-These are implementation views, not copies of the reference site's layout or assets. The intentional product deviations are recorded in [reference measurements](../reference-measurements.md#8-deliberate-philfacilities-deviations) and [the reference design system](../../08-REFERENCE-DESIGN-SYSTEM.md).
+These are implementation views, not copies of the reference site's layout or assets. The intentional product deviations are recorded in [reference measurements](../reference-measurements.md#8-deliberate-philfacilities-deviations) and [the design system](../../design-system.md).

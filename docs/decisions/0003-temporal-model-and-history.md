@@ -33,6 +33,6 @@ and treating retrieval time as the source's reference period misleads users.
 
 ## Evidence
 
-`docs/04-DATA-MODEL.md`, `docs/05-INGESTION-ETL.md`,
+`docs/data-model.md`, `docs/ingestion.md`,
 `tests/test_psgc_releases.py`, and the idempotency test in
 `tests/test_api_integration.py`.

@@ -6,7 +6,16 @@ Build PhilFacilities as an open, source-linked Philippine facilities data platfo
 
 ## Read before coding
 
-Start with `README.md`, then `docs/13-AGENT-WORKFLOW.md`, `docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`, the relevant design/architecture/data documents, and `planning/TRACKER.md`.
+Start with `README.md`, then `docs/README.md`. Read only the route that matches the task:
+
+| Task | Documents |
+|---|---|
+| Local setup | `docs/getting-started.md` |
+| API / contract | `docs/api.md`, `docs/data-model.md`, `docs/testing.md` |
+| Web / UI | `docs/web.md`, `docs/design-system.md` |
+| Ingestion / source | `docs/ingestion.md`, `docs/adding-a-source.md`, `docs/sources.md` |
+| Rights / privacy | `docs/data-policy.md`, `docs/data-dictionary.md` |
+| Operations | `docs/operations.md`, `docs/operations/` |
 
 ## Architecture
 
@@ -17,16 +26,34 @@ Start with `README.md`, then `docs/13-AGENT-WORKFLOW.md`, `docs/14-DATA-INCLUSIO
 - Database: PostgreSQL + PostGIS.
 - Raw source files: private S3-compatible object storage by default.
 - OpenAPI is the contract; generate the TypeScript client from it.
+- `apps/api/philfacilities_api/taxonomy.py` owns controlled vocabularies; `rights.py` owns rights/publication states.
+
+## Commands
+
+```bash
+just setup                 # install, start DB, migrate
+just api                   # FastAPI on 127.0.0.1:8010
+just web                   # Next.js on 127.0.0.1:3000
+just demo                  # synthetic demo data
+uv run philfacilities-ingest source run --group approved
+
+uv run ruff check .
+uv run ruff format --check .
+uv run pytest
+pnpm lint
+pnpm typecheck
+pnpm build
+pnpm --filter @philfacilities/web test:e2e
+uv run python scripts/check_markdown_links.py
+```
+
+Use the dedicated test database (`_test` suffix, default port `54330`) for integration tests.
 
 ## Design system — mandatory
 
-The target visual reference is https://fellowship.bettergov.ph/.
+The visual reference is https://fellowship.bettergov.ph/. Re-inspect it in a real browser before changing values that depend on it, and record measurements in `docs/design-audit/reference-measurements.md`. Apply the measured system through shadcn CSS variables and Tailwind tokens in `apps/web`.
 
-Before production web implementation, reverse-engineer the live reference in a real browser: computed fonts and actual font files, color values, font scale/line heights, spacing, nav geometry, buttons, borders/radii/shadows, hover/focus states, and desktop/mobile menu behavior. Record measurements and evidence in `docs/design-audit/reference-measurements.md`. Convert the system into shadcn CSS variables and Tailwind tokens.
-
-Reproduce the reference navigation's visual treatment and responsive behavior, but adapt navigation labels to PhilFacilities. **Do not copy the Fellowship site's layout, content, logo, campaign graphics, or fellowship information architecture.** Design a task-oriented searchable directory, map view, and facility profile experience.
-
-Never guess tokens if browser inspection is unavailable; request screenshots or leave a clearly marked temporary neutral theme.
+Reproduce the reference navigation's visual treatment and responsive behavior, but adapt labels to PhilFacilities. **Do not copy the Fellowship site's layout, content, logo, campaign graphics, or fellowship information architecture.** Design a task-oriented searchable directory, map view, and facility profile experience. Never guess tokens; request screenshots or leave a clearly marked temporary neutral theme.
 
 ## Data integrity rules
 
@@ -37,15 +64,15 @@ Never guess tokens if browser inspection is unavailable; request screenshots or 
 - Keep coordinate precision and method; do not imply building-level precision for centroid/geocoded points.
 - Do not auto-merge ambiguous source records.
 - Do not infer operational status from registry presence.
-- Keep license/accreditation separate from real-time operational availability.
-- Publish only after a documented rights decision under `docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`. A verified, publicly available dataset with no explicit prohibition may be published with reviewed institutional fields, provenance, attribution, and takedown-on-notice. Explicit restrictions, FOI/agreement conditions, and personal or sensitive data still control.
+- Keep licence/accreditation separate from real-time operational availability.
+- Publish only after a documented rights decision under `docs/data-policy.md`. A verified, publicly available dataset with no explicit prohibition may be published with reviewed institutional fields, provenance, attribution, and takedown-on-notice. Explicit restrictions, FOI/agreement conditions, and personal or sensitive data still control.
 - Never fabricate official records; synthetic data must be marked synthetic.
 
 ## Execution discipline
 
 - Work in small vertical slices.
-- Reference tracker IDs in commits/PRs where practical.
-- Update `planning/TRACKER.md` when status changes and include evidence.
 - Add tests and update docs with each meaningful change.
 - Run relevant checks before declaring completion.
 - Avoid speculative abstractions and unnecessary infrastructure.
+- Generated reports go to `var/reports/`, not `docs/`.
+- Do not add a second source of truth for API types, vocabularies, rights states, or design tokens.

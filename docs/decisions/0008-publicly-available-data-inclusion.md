@@ -45,7 +45,7 @@ This decision:
 - does **not** relax the separate code licence or the code/data rights separation.
 
 The operational policy, eligibility checklist, evidence requirements, and takedown process
-are in [`docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`](../14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md).
+are in [`docs/data-policy.md`](../data-policy.md).
 
 ## Consequences
 
@@ -64,7 +64,7 @@ are in [`docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`](../14-DATA-INCLUSION
 
 ## Evidence
 
-- [`docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`](../14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md)
+- [`docs/data-policy.md`](../data-policy.md)
 - [`DATA-LICENSES.md`](../../DATA-LICENSES.md)
 - `apps/api/philfacilities_api/rights.py`
 - `tests/test_rights.py`

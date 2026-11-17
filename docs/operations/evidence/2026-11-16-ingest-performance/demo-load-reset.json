@@ -1,0 +1,22 @@
+{
+  "generated_at": "2026-11-16T15:48:48.454595+00:00",
+  "command": "PHILFACILITIES_DATABASE_URL=...philfacilities_demo_bench uv run philfacilities-ingest demo load --reset",
+  "database": "philfacilities_demo_bench",
+  "counts": {
+    "facilities": 22,
+    "locations": 15,
+    "source_records": 58,
+    "source_links": 58,
+    "source_releases": 5,
+    "geographic_releases": 1,
+    "datasets": 6,
+    "ingestion_runs": 6,
+    "school_profiles": 12
+  },
+  "release_publication_status": {
+    "published": 5
+  },
+  "dataset_publication_status": {
+    "published": 6
+  }
+}

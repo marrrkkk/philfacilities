@@ -1,0 +1,81 @@
+$ uv run philfacilities-ingest --help
+╭─ Commands ───────────────────────────────────────────────────────────────────╮
+│ generate-fixtures            Write deterministic synthetic fixture files and │
+│                              a checksum manifest.                            │
+│ ingest-file                  Ingest one real or synthetic source file        │
+│                              through its adapter.                            │
+│ fuse-attributes              Materialise field-level fusions and retain      │
+│                              every conflicting value.                        │
+│ fusion-report                Report fused attributes, conflicts and retained │
+│                              alternative values.                             │
+│ auto-merge-duplicates        Merge only exact normalized name + PSGC +       │
+│                              address duplicates.                             │
+│ status                       Show measured database counts and latest        │
+│                              ingestion runs.                                 │
+│ source-candidates            Validate the researched source-candidate        │
+│                              inventory.                                      │
+│ source-inventory             Merge the register, candidate registry and      │
+│                              probe ledgers into one inventory.               │
+│ source-report                Emit the data.md research deliverables from the │
+│                              merged source inventory.                        │
+│ validate-lgu-inventory       Validate an LGU facility-inventory submission   │
+│                              without importing it.                           │
+│ backfill-assertions          Reconstruct exact field claims from existing    │
+│                              source-linked child rows.                       │
+│ match-candidates-generate    Scan existing source links and queue            │
+│                              deterministic duplicate candidates.             │
+│ match-candidates             List identity-match candidates and their review │
+│                              state.                                          │
+│ match-candidates-accept      Confirm a candidate as the same facility.       │
+│                              Merging is a separate explicit step.            │
+│ match-candidates-reject      Reject a candidate and retain it so the pair is │
+│                              not re-queued.                                  │
+│ match-candidates-merge       Apply an accepted candidate: retire the source  │
+│                              facility into the candidate facility.           │
+│ match-candidates-undo-merge  Undo a merge and restore the source facility    │
+│                              and its linked evidence.                        │
+│ check-sources                Probe every registered real source and append   │
+│                              monitoring evidence.                            │
+│ apply-publication-decisions  Reconcile stored dataset rights/gates with the  │
+│                              reviewed source registry.                       │
+│ check-due-sources            Run source checks whose recorded next_check_at  │
+│                              is due.                                         │
+│ monitoring                   Show the latest append-only source check for    │
+│                              every monitored dataset.                        │
+│ source-review                List the monthly review state of every          │
+│                              registered source link and rights entry.        │
+│ compare-releases             Compare two retained releases of one dataset    │
+│                              without mutating either one.                    │
+│ release-manifest             Write a versioned manifest of published source  │
+│                              releases and known gaps.                        │
+│ release-notes                Write public release notes with coverage, gaps, │
+│                              exclusions and caveats.                         │
+│ release-rollback             Restore canonical state captured before a       │
+│                              release, conservatively.                        │
+│ crawl                        Crawl public pages politely. Challenge/WAF      │
+│                              pages are recorded, never bypassed.             │
+│ discover-sources             Probe discovery-only official sources without   │
+│                              registering or publishing them.                 │
+│ purge-synthetic              Remove synthetic demonstration records while    │
+│                              retaining real source data.                     │
+│ source                       List, check, run, and validate sources.         │
+│ demo                         Synthetic demonstration data.                   │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+$ uv run philfacilities-ingest source --help
+╭─ Commands ───────────────────────────────────────────────────────────────────╮
+│ list      List every registered source and its acquisition route.            │
+│ check     Probe registered sources and append monitoring evidence.           │
+│ run       Acquire and ingest one or more sources through the generic runner. │
+│ validate  Run parse -> validate -> normalize without writing to the          │
+│           database.                                                          │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+$ uv run philfacilities-ingest demo --help
+╭─ Commands ───────────────────────────────────────────────────────────────────╮
+│ load  Load the complete synthetic demonstration dataset through the real     │
+│       pipeline.                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+

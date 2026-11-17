@@ -9,8 +9,8 @@ project has authority to license. It does not apply to third-party source data,
 agency records, maps, logos, photographs, or other material owned by a publisher.
 
 Source-data rights and publication decisions are recorded per dataset and release
-in DATA-LICENSES.md and docs/03-SOURCE-REGISTER.md. The project's data-inclusion
-policy is in docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md. A dataset may be
+in DATA-LICENSES.md and docs/sources.md. The project's data-inclusion
+policy is in docs/data-policy.md. A dataset may be
 published when it is verified and publicly available and no explicit prohibition
 applies, or under a recorded licence, terms statement, or agreement. That policy
 is a documented product decision, not a claim of public domain and not legal

@@ -1,165 +1,39 @@
 # Contributing to PhilFacilities
 
-PhilFacilities is an open, source-linked registry of Philippine schools and health facilities. The
-canonical data, provenance, API, and source connectors are the product; the directory and map are
-clients. Contributions are welcome from data engineers, researchers, designers, and anyone who can
-improve a source adapter or the public record.
-
-Read [`AGENTS.md`](AGENTS.md), [`docs/13-AGENT-WORKFLOW.md`](docs/13-AGENT-WORKFLOW.md), and the
-[tracker](planning/TRACKER.md) before starting. The tracker is the single execution checklist; do
-not create a competing task list.
+The full contributor guide is [`docs/contributing.md`](docs/contributing.md). Start there, along with [`docs/getting-started.md`](docs/getting-started.md) and [`docs/README.md`](docs/README.md).
 
 ## Ground rules
 
-- **Do not invent source facts.** Never add an endpoint, file, field, identifier, update cadence,
-  or license unless the official source or terms have been inspected and recorded.
-- **Publish only after a documented rights decision.** Follow
-  [`docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`](docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md).
-  A verified, publicly available dataset with no explicit prohibition may be published with reviewed
-  institutional fields and recorded provenance; explicit restrictions, FOI/agreement conditions, and
-  personal or sensitive data still control. Synthetic demonstration fixtures are safe to use and must
-  stay visibly labelled.
-- **Preserve source truth.** Keep raw releases, original values, leading zeros, missing values,
-  coordinate precision, and source identifiers. Missing is not zero, false, or inactive.
-- **No silent merges.** Ambiguous facility matches go to `quality.match_candidates` for human
-  review. Accepting a candidate is separate from merging it.
-- **Keep the API ahead of the UI.** The OpenAPI document is the contract; regenerate the TypeScript
-  client when the API changes.
-- **Never commit secrets or personal data.** Do not include credentials, signed agreements,
-  learner/patient information, or private contact details. See [`SECURITY.md`](SECURITY.md).
+- **Do not invent source facts.** Verify the official source or terms before adding an endpoint, field, identifier, cadence, licence, or coverage claim.
+- **Publish only after a documented rights decision.** Follow [`docs/data-policy.md`](docs/data-policy.md). Explicit restrictions, FOI/agreement conditions, and personal or sensitive data still control.
+- **Preserve source truth.** Keep raw releases, original values, leading zeros, missing values, coordinate precision, and source identifiers. Missing is not zero, `false`, or inactive.
+- **No silent merges.** Ambiguous matches go to review. Accepting a candidate is separate from merging it.
+- **Keep the API ahead of the UI.** Regenerate the OpenAPI contract and TypeScript client when the API changes.
+- **Never commit secrets or personal data.** See [`SECURITY.md`](SECURITY.md).
 
-## Local setup
-
-Prerequisites: Docker with Compose, Node.js 22+ (24 tested), pnpm 12+, Python 3.12–3.14, and
-[uv](https://docs.astral.sh/uv/).
+## Setup and checks
 
 ```bash
 cp .env.example .env
-just setup          # install dependencies, start PostgreSQL/PostGIS, apply migrations
-just demo           # generate and load the synthetic demonstration dataset
-```
-
-Or run the underlying commands from the [README](README.md#local-development) without `just`.
-Start the API and web app in separate terminals:
-
-```bash
+just setup
 just api
 just web
-```
 
-The API is at `http://127.0.0.1:8010`; the web app is at `http://127.0.0.1:3000`. The demo database
-contains synthetic records only, and every synthetic facility, dataset, and release is labelled.
-
-## Checks
-
-Run the checks relevant to your change before opening a pull request. The full local gate is:
-
-```bash
 uv run ruff check .
 uv run ruff format --check .
+uv run mypy
 uv run pytest
-
 pnpm lint
 pnpm typecheck
 pnpm build
 pnpm --filter @philfacilities/web test:e2e
+uv run python scripts/check_markdown_links.py
 ```
 
-Integration tests use the dedicated test database:
+Integration tests use the test database (`_test` suffix, default port `54330`). See [`docs/testing.md`](docs/testing.md).
 
-```bash
-docker compose -f infra/compose.yaml --profile test up -d test-db
-```
+Source changes must follow [`docs/adding-a-source.md`](docs/adding-a-source.md). API changes must follow [`docs/api.md`](docs/api.md). Visual changes must follow [`docs/design-system.md`](docs/design-system.md).
 
-The default test URL is
-`postgresql+psycopg://philfacilities:philfacilities@localhost:54330/philfacilities_test`; override
-it with `PHILFACILITIES_TEST_DATABASE_URL`. The database name must end in `_test`.
+## Licensing and security
 
-With the API and web app running, `scripts/smoke_check.sh` verifies the public surfaces. The backup
-and restore procedure is documented in
-[`docs/operations/backup-restore-runbook.md`](docs/operations/backup-restore-runbook.md).
-
-## Repository layout
-
-- `apps/web` — Next.js App Router, TypeScript, shadcn/ui, Tailwind, MapLibre.
-- `apps/api` — FastAPI, Pydantic, SQLAlchemy 2, Alembic migrations.
-- `apps/ingest` — Python source adapters, fixtures, matching, and the ingestion CLI.
-- `packages/api-client` — generated TypeScript client from `openapi.json`.
-- `database/fixtures` — deterministic synthetic fixtures and their checksum manifest.
-- `docs`, `planning`, `infra`, `scripts`, `tests` — plans, tracker, local infrastructure, operations,
-  and cross-cutting tests.
-
-The web app must not connect directly to PostgreSQL, and source files must not be parsed inside API
-request handlers.
-
-## Contribution workflow
-
-1. Find or add the task in [`planning/TRACKER.md`](planning/TRACKER.md) and state its acceptance
-   criteria.
-2. Inspect the current implementation and record source/rights assumptions before editing.
-3. Make the smallest complete vertical change. Avoid speculative abstractions and new
-   infrastructure without a measured need.
-4. Add or update tests for the changed behavior. Source changes need fixture-based parser tests,
-   schema-drift coverage, and idempotency coverage where applicable.
-5. Update the affected documentation and the tracker evidence row.
-6. Run the checks above and include the commands and results in the pull request.
-
-Pull requests must reference tracker IDs, describe data/rights impact, and list known limitations.
-Changes to migrations, identity merges, data deletion, licensing, or public publication scope
-require explicit review.
-
-## Adding or changing a source adapter
-
-Every source-adapter contribution must include:
-
-- the official source URL and publisher;
-- the acquisition method and any access restrictions or terms flow;
-- a safe sample fixture, or a documented reason one cannot be redistributed;
-- parser implementation and schema mapping;
-- validation rules, required columns, and fail-closed schema-drift behavior;
-- expected source fields, missingness semantics, and coordinate precision;
-- license/terms status and the publication basis in [`DATA-LICENSES.md`](DATA-LICENSES.md);
-- tests for parsing, duplicates, and repeated runs;
-- an example ingestion report.
-
-Do not use a third-party cleaned dataset as if it were the official source. Do not mark a source
-`ACQUIRED` or `SCHEMA_VERIFIED` without the actual file/response and evidence in the repository.
-
-## Schema and API changes
-
-- Alembic migrations live in `apps/api/migrations/`. Every migration must be applied to a fresh
-  database and the test database.
-- Record architectural decisions in [`docs/decisions/`](docs/decisions/README.md) when changing
-  service boundaries, identity, history, rights, coordinate precision, the basemap, or API
-  compatibility.
-- Update the public data dictionary and API page when a public field or endpoint changes.
-- Regenerate the contract and client after API changes:
-
-  ```bash
-  just typegen
-  ```
-
-  Commit both `packages/api-client/openapi.json` and `packages/api-client/src/schema.ts`. CI checks
-  that the committed contract matches `app.openapi()`.
-
-## Design and accessibility
-
-The visual system is measured from the BetterGov Fellowship reference and recorded in
-[`docs/design-audit/reference-measurements.md`](docs/design-audit/reference-measurements.md). Do not
-copy the reference site's layout, content, logo, or campaign graphics. Use the existing shadcn/
-Tailwind tokens and keep the directory and map accessible by keyboard and screen reader. A map
-result must always have a text/list alternative.
-
-## Licensing
-
-Application code is Apache-2.0. That license does not grant rights to agency source data;
-redistribution rights and the publication basis are recorded per dataset in
-[`DATA-LICENSES.md`](DATA-LICENSES.md). A verified, publicly available dataset with no explicit
-prohibition may be published under [`docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`](docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md).
-By contributing code, you agree that your contribution may be distributed under the repository's
-code license. Do not contribute material you cannot license.
-
-## Reporting security issues
-
-Do not open a public issue for a vulnerability or for anything containing credentials, personal
-data, or restricted source material. Follow [`SECURITY.md`](SECURITY.md).
+Application code is Apache-2.0. Source data is not covered by that licence; rights are recorded per dataset. Do not open a public issue for a vulnerability or for anything containing credentials, personal data, or restricted source material. Follow [`SECURITY.md`](SECURITY.md).

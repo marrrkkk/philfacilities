@@ -3,7 +3,7 @@
 This file records the right to store, transform, display, and redistribute every external dataset
 used by PhilFacilities. **A government dataset is not automatically public domain merely because it
 can be viewed or downloaded.** Equally, the absence of an explicit licence or written permission is
-not by itself a prohibition. Under [`docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`](docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md),
+not by itself a prohibition. Under [`docs/data-policy.md`](docs/data-policy.md),
 a dataset may be published when its exact release is verified, publicly available through an open
 route, and not subject to an explicit prohibition, provided that only reviewed non-personal fields
 are exposed and provenance, attribution, and a takedown route are recorded. Explicit restrictions,
@@ -104,7 +104,7 @@ facility detail source evidence apply the same gate.
 
 Complete checksums, file sizes, row counts, and report paths are in the release rows in the
 `source` schema and in `var/reports/`; the current measured snapshot is in
-`docs/reports/02-acquisition-report.md`. Raw files are retained under `var/raw/` (or the configured
+`var/reports/02-acquisition-report.md`. Raw files are retained under `var/raw/` (or the configured
 S3-compatible store) and are never overwritten by a later release.
 
 ## 4. Source-by-source checklist
@@ -125,7 +125,8 @@ S3-compatible store) and are never overwritten by a later release.
 - [ ] Official PSA PSGC workbook/API data: acquire through an authorized route and record terms.
 - [ ] DepEd Machine-Ready Files: complete the human download/terms flow; inspect actual schemas and coordinates.
 - [ ] DOH NHFR/HFSRB: review the applicable Data Release and Use Agreement before any publication.
-- [ ] CHED/TESDA: verify a bulk export or public dataset; if it is publicly available with no explicit prohibition, apply the policy in `docs/14`.
+- [x] CHED HEIDA: public directory published under `publicly_available_verified` for institutional fields only; contact details and head names discarded.
+- [ ] TESDA: verify a provider-level bulk export or public dataset; if it is publicly available with no explicit prohibition, apply the policy in `docs/data-policy.md`.
 - [ ] BetterGov Statistics/OpenSTAT/Census: inventory additional indicators and verify source-table rights.
 - [ ] Hazard and additional agency sources: verify actual data and any explicit prohibition before integration.
 - [ ] Formal legal review: not completed for any source. This register records engineering and product decisions; it does not replace legal advice.
@@ -166,5 +167,5 @@ distinction is retained rather than rewriting a measured snapshot as if it were 
 ## 6. Code license is separate
 
 The Apache-2.0 license for application code does not license source files or facts. See `NOTICE`,
-`docs/09-OPEN-SOURCE-GOVERNANCE.md`, and
+`docs/data-policy.md`, and
 `docs/decisions/0004-data-licensing-and-publication-gates.md`.

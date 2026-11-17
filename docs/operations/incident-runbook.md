@@ -1,8 +1,8 @@
 # Monitoring and incident response runbook
 
-**Status:** Runbook and smoke-check tooling exist. Production monitoring, paging, and an on-call rotation are **not configured**. Tracker item `M7-07` remains `REVIEW`.
+**Status:** Runbook and smoke-check tooling exist. Production monitoring, paging, and an on-call rotation are **not configured**. See [Operations](../operations.md).
 
-Related: [Deployment and operations](../11-DEPLOYMENT-OPERATIONS.md), [backup and restore](backup-restore-runbook.md), [security review](security-review.md).
+Related: [Operations](../operations.md), [backup and restore](backup-restore-runbook.md), [security review](security-review.md).
 
 ## 1. Current signals
 

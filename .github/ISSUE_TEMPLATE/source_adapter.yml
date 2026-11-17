@@ -6,9 +6,8 @@ body:
     attributes:
       value: |
         Do not attach restricted raw files, signed agreements, credentials, or personal data.
-        Record access evidence and terms status in `docs/03-SOURCE-REGISTER.md` and
-        `DATA-LICENSES.md`. A source is not verified until the actual file or response has been
-        inspected.
+        Record access evidence and terms status in `docs/sources.md` and `docs/data-policy.md`.
+        A source is not verified until the actual file or response has been inspected.
 
   - type: input
     id: agency
@@ -43,14 +42,16 @@ body:
     id: rights
     attributes:
       label: Current rights status
-      description: See the publication statuses in `docs/09-OPEN-SOURCE-GOVERNANCE.md`.
+      description: See the rights states in `docs/data-policy.md`.
       options:
-        - UNKNOWN
-        - REVIEW_REQUIRED
-        - INTERNAL_ONLY
-        - METADATA_ONLY
-        - DERIVED_FIELDS_ONLY
-        - PUBLIC_REUSE_ALLOWED
+        - unknown
+        - review_required
+        - restricted_non_redistributable
+        - approved_public_redistribution
+        - approved_with_attribution
+        - publicly_available_verified
+        - denied
+        - expired
         - NOT_APPLICABLE (synthetic fixture only)
     validations:
       required: true

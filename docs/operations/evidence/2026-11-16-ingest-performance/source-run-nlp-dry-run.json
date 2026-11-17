@@ -1,0 +1,18 @@
+[
+  {
+    "key": "nlp",
+    "filename": "nlp-public-libraries-2025-12.pdf",
+    "dataset": "nlp-public-libraries",
+    "status": "validated",
+    "stats": {
+      "parsed_rows": 1752,
+      "accepted_rows": 1752,
+      "rejected_rows": 0,
+      "issues": 0,
+      "candidates": 1752
+    },
+    "acquisition": {
+      "controlled_import": "var/raw/nlp/nlp-public-libraries/NLP-PUBLIC-LIBRARIES-2025-12/45cb64ee6ca567c8-nlp-public-libraries-2025-12.pdf"
+    }
+  }
+]

@@ -35,4 +35,4 @@ importing API code.
 ## Evidence
 
 `pnpm-workspace.yaml`, `pyproject.toml`, `apps/*`, `packages/api-client`, and
-[02 — Architecture](../02-ARCHITECTURE.md).
+[02 — Architecture](../architecture.md).

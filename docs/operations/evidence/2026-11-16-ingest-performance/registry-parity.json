@@ -1,0 +1,27 @@
+{
+  "old_registry_source_count": 43,
+  "new_catalog_source_count": 44,
+  "added_in_refactor": [
+    "osm-pbf-facilities"
+  ],
+  "removed_in_refactor": [],
+  "metadata_fields_compared": [
+    "agency_code",
+    "agency_name",
+    "dataset_slug",
+    "dataset_name",
+    "source_url",
+    "access_method",
+    "update_pattern",
+    "rights",
+    "rights_basis",
+    "attribution_text",
+    "personal_data_status",
+    "requested_publication_status",
+    "license_identifier",
+    "terms_url",
+    "coverage_scope",
+    "coverage_note"
+  ],
+  "differences": []
+}

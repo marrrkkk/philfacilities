@@ -2,7 +2,7 @@
 
 **Status:** Local Compose procedure implemented and verified on 15 November 2026 against the 15 November 2026 real-data snapshot (88,824 facilities; 235,049 source records; 47 releases). Restore verification passed 15/15 checks. Production schedule, off-host retention, encryption, and point-in-time recovery are **not** configured. This runbook describes the tested local procedure and the steps a production operator must complete before launch.
 
-Related: [Deployment and operations](../11-DEPLOYMENT-OPERATIONS.md), tracker items `M7-05` and `M7-07`.
+Related: [Operations](../operations.md).
 
 ## 1. Scope and guarantees
 
