@@ -12,7 +12,7 @@ dependencies = [
   "pydantic-settings>=2.7",
   "pyarrow>=19.0",
   "python-dateutil>=2.9",
-  "sqlalchemy>=2.0.36",
+  "sqlalchemy>=2.1.0",
   "uvicorn[standard]>=0.34",
 ]
 
