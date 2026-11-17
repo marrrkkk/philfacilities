@@ -155,10 +155,12 @@ def backfill_assertions(session: Session, *, batch_size: int = 1000) -> Assertio
     stats = AssertionBackfillStats()
     existing = _existing_claim_keys(session)
 
-    for row in session.scalars(select(FacilityLocation).where(
-        FacilityLocation.is_current.is_(True),
-        FacilityLocation.source_record_id.is_not(None),
-    )):
+    for row in session.scalars(
+        select(FacilityLocation).where(
+            FacilityLocation.is_current.is_(True),
+            FacilityLocation.source_record_id.is_not(None),
+        )
+    ):
         assert row.source_record_id is not None
         values = (
             ("location.latitude", row.latitude, row.latitude),
@@ -253,9 +255,7 @@ def backfill_assertions(session: Session, *, batch_size: int = 1000) -> Assertio
                 facility_id=row.facility_id,
                 source_record_id=row.source_record_id,
                 attribute=(
-                    "deped_school_id"
-                    if attribute == "deped_school_id"
-                    else f"school.{attribute}"
+                    "deped_school_id" if attribute == "deped_school_id" else f"school.{attribute}"
                 ),
                 raw_value=value,
                 normalized_value=value,
@@ -280,9 +280,7 @@ def backfill_assertions(session: Session, *, batch_size: int = 1000) -> Assertio
                 facility_id=row.facility_id,
                 source_record_id=row.source_record_id,
                 attribute=(
-                    "doh_facility_id"
-                    if attribute == "doh_facility_id"
-                    else f"health.{attribute}"
+                    "doh_facility_id" if attribute == "doh_facility_id" else f"health.{attribute}"
                 ),
                 raw_value=value,
                 normalized_value=value,

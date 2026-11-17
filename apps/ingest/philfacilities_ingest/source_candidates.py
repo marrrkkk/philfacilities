@@ -28,9 +28,7 @@ REQUIRED_FIELDS = (
     "last_verified",
 )
 
-DEFAULT_PATH = (
-    Path(__file__).resolve().parents[3] / "expand" / "source-candidates.json"
-)
+DEFAULT_PATH = Path(__file__).resolve().parents[3] / "expand" / "source-candidates.json"
 
 
 def load_source_candidates(path: str | Path | None = None) -> dict[str, Any]:
@@ -111,7 +109,5 @@ def summarize_source_candidates(payload: dict[str, Any]) -> dict[str, Any]:
         "by_coverage_scope": dict(
             sorted(Counter(source.get("coverage_scope") for source in sources).items())
         ),
-        "by_priority": dict(
-            sorted(Counter(source.get("priority") for source in sources).items())
-        ),
+        "by_priority": dict(sorted(Counter(source.get("priority") for source in sources).items())),
     }

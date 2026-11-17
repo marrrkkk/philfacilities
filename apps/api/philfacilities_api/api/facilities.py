@@ -362,9 +362,7 @@ def get_facility_assertions(
     limit: int = Query(200, ge=1, le=1000),
 ):
     facility = _get_public_facility(db, facility_id)
-    return load_attribute_assertions(
-        db, facility.id, attribute=attribute, limit=limit
-    )
+    return load_attribute_assertions(db, facility.id, attribute=attribute, limit=limit)
 
 
 @router.get(
