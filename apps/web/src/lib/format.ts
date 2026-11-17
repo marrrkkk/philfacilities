@@ -69,7 +69,7 @@ export const INCLUSION_CLASS_LABELS: Record<string, string> = {
   GOVERNMENT_FACILITY: "Government facility",
   PRIVATE_PUBLIC_SERVICE_PROVIDER: "Private public-service provider",
   PUBLIC_ACCESS_VENUE: "Public-access venue",
-  DISCOVERY_CANDIDATE: "Discovery candidate",
+  DISCOVERY_CANDIDATE: "Unclassified record",
 };
 
 export const ACCESS_LABELS: Record<string, string> = {

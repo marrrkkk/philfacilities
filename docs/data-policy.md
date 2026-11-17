@@ -61,7 +61,9 @@ Every publishable record carries one inclusion class:
 | `GOVERNMENT_FACILITY` | Owned, operated, maintained, or officially designated as a government/public facility by a public body | Yes, when source rights and safety permit |
 | `PRIVATE_PUBLIC_SERVICE_PROVIDER` | Private, NGO, non-profit, cooperative, religious/non-profit, or mixed facility providing a qualifying public/essential/regulated service | Yes, when inclusion criteria and source rights permit |
 | `PUBLIC_ACCESS_VENUE` | Civic/community/cultural/recreation/market/transport venue with documented public access/function | Yes, when inclusion criteria and source rights permit |
-| `DISCOVERY_CANDIDATE` | Unverified lead awaiting evidence, source, rights, or safety review | No; internal only |
+| `DISCOVERY_CANDIDATE` | Institution-level record whose owner, operator, or qualifying class is not established by the source; published with an explicit unclassified label | Yes, when source rights, privacy, and safety permit |
+
+Publication is gated by rights, privacy, safety, and source verification, not by the presence of an ownership claim. Unclassified records are published and labelled so they are never presented as government-owned or privately owned.
 
 These are filters in the same registry and API, not separate databases. Government, private-provider, and public-access-venue counts must be reported separately. A combined total is “all qualifying PhilFacilities records”, never “government facilities”.
 

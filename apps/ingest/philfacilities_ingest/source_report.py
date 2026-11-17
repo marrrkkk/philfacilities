@@ -153,8 +153,8 @@ OFFICIAL_ALTERNATES: dict[str, tuple[dict[str, str], ...]] = {
             "url": "https://ebeis.deped.gov.ph/beis/reports_info/masterlist",
             "note": (
                 "Public paginated result form covers 19 region groups (18 regions plus "
-                "PSO). All region result sets are ingested internal-only pending terms/"
-                "privacy review; school-head names are withheld from normalized records."
+                "PSO). All region result sets are published with institution-level "
+                "fields; school-head names are withheld from normalized records."
             ),
         },
         {

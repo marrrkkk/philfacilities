@@ -200,7 +200,7 @@ These are requirements to implement, not current automation:
 - The scratch restore runs on the same database server, so it does not test host or volume loss.
 - The scripts target the Compose service. A managed PostgreSQL provider needs equivalent `pg_dump`/`pg_restore` commands, provider backup verification, and network/TLS configuration.
 - The manifest checks row counts and spatial metadata, not full row-level equality. A production acceptance test should add application-level checks and, where feasible, row-level checksums.
-- Backups contain real public data and internal-only DepEd EBEIS records. Backups and raw source objects must follow the same rights and access restrictions as the source systems; they are not public artifacts.
+- Backups contain public facility data plus private raw source rows, including DepEd EBEIS school-head names. Backups and raw source objects must follow the same rights and access restrictions as the source systems; they are not public artifacts.
 - The restore exercise used the 15 November 2026 snapshot. Dump size, restore time, and disk requirements for the current 92,422-facility database still need re-measurement.
 - Restore time and storage growth have not been measured at production scale.
 

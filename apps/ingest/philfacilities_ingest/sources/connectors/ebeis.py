@@ -103,7 +103,8 @@ class EbeisConnector:
                     f"Public EBEIS result set for {region_name} (region_id {region_id}): "
                     f"{metadata.get('reported_rows')} rows across "
                     f"{metadata.get('fetched_pages')} pages. Aggregated acquisition "
-                    "artifact; internal-only pending terms/privacy review."
+                    "artifact; institution-level fields are published and personal "
+                    "fields are withheld."
                 ),
                 metadata={"region": region_key, "region_id": region_id, **metadata},
             )

@@ -50,7 +50,7 @@ const entryPoints = [
     href: "/directory?type=school",
     icon: School,
     label: "Schools",
-    description: "OpenStreetMap-mapped school features with source precision; DepEd EBEIS remains internal-only pending terms review.",
+    description: "OpenStreetMap-mapped school features and DepEd EBEIS institution-level records, with source precision.",
   },
   {
     href: "/directory?type=health_facility",

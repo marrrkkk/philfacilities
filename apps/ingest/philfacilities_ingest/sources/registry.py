@@ -874,7 +874,7 @@ REAL_SOURCES: dict[str, RealSource] = {
             "satellite, extension site or institution is included, and it supplies no "
             "coordinates or PSGC codes. Ownership is classified only from the published "
             "institutional type; 'Others', 'CHED-Supervised Institution' and unrecognised "
-            "types remain internal."
+            "types are published as unclassified records."
         ),
         note=(
             "Server-rendered public directory with region pages and 10-row pagination. "

@@ -6,6 +6,8 @@ from parser output alone:
 
 * a licence/accreditation never turns a private provider into a government facility;
 * conflicting provider sectors stay unknown and internal;
+* unclassified records in a rights-cleared release are published with the
+  explicit unclassified label and remain visible through the public API gate;
 * enrichment-only releases cannot demote an already-classified facility;
 * a government service counter hosted in a private building keeps its own class;
 * review-required sources never publish records even when the parser succeeds.
@@ -14,6 +16,7 @@ from parser output alone:
 from __future__ import annotations
 
 import uuid
+from dataclasses import replace
 from datetime import UTC, date, datetime
 from typing import ClassVar
 
@@ -110,6 +113,18 @@ def _spec(token: str, *, suffix: str = "", agency: str | None = None) -> Release
         requested_publication_status="internal_only",
         is_synthetic=True,
         notes="Test-only release; not an official dataset.",
+    )
+
+
+def _public_spec(token: str, *, suffix: str = "") -> ReleaseSpec:
+    """A rights-cleared release used to prove publication is not class-gated."""
+
+    spec = _spec(token, suffix=suffix)
+    return replace(
+        spec,
+        redistribution_status="publicly_available_verified",
+        requested_publication_status="published",
+        notes="Synthetic test release approved for public records.",
     )
 
 
@@ -220,6 +235,75 @@ def test_conflicting_sector_codes_stay_unknown_and_internal(db_session) -> None:
     assert facility.ownership_type == "UNKNOWN"
     assert facility.inclusion_class == "DISCOVERY_CANDIDATE"
     assert facility.publication_status == "internal"
+
+
+def test_unclassified_record_in_public_release_is_published(db_session) -> None:
+    """Unknown ownership is a label, not a publication block."""
+
+    from philfacilities_api.services import facility_is_public
+
+    token = uuid.uuid4().hex[:10]
+    spec = _public_spec(token)
+    candidate = _candidate(
+        "unclassified-provider",
+        "Synthetic Unclassified Clinic",
+        ownership="unknown",
+        ownership_type="UNKNOWN",
+        inclusion_class=None,
+    )
+
+    result = run_ingestion(
+        spec=spec,
+        adapter=_StaticAdapter(spec, [candidate]),
+        session=db_session,
+    )
+    assert result.status == "published"
+
+    facility = _facility_for_release(db_session, result.release_id)
+    assert facility is not None
+    assert facility.ownership == "unknown"
+    assert facility.ownership_type == "UNKNOWN"
+    assert facility.inclusion_class == "DISCOVERY_CANDIDATE"
+    assert facility.publication_status == "public"
+    assert facility_is_public(db_session, facility)
+
+
+def test_enrichment_release_keeps_unclassified_facility_public(db_session) -> None:
+    """A later unknown-ownership row must not demote an already-public record."""
+
+    token = uuid.uuid4().hex[:10]
+    entity_id = "stable-unclassified-provider"
+    first_spec = _public_spec(token, suffix="-A")
+    first_candidate = _candidate(
+        "unclassified-first",
+        "Synthetic Stable Unclassified Clinic",
+        entity_id=entity_id,
+    )
+    first = run_ingestion(
+        spec=first_spec,
+        adapter=_StaticAdapter(first_spec, [first_candidate]),
+        session=db_session,
+    )
+    assert first.status == "published"
+
+    second_spec = _public_spec(token, suffix="-B")
+    second_candidate = _candidate(
+        "unclassified-enrichment",
+        "Synthetic Stable Unclassified Clinic",
+        entity_id=entity_id,
+        inclusion_class=None,
+    )
+    second = run_ingestion(
+        spec=second_spec,
+        adapter=_StaticAdapter(second_spec, [second_candidate]),
+        session=db_session,
+    )
+    assert second.status == "published"
+
+    facility = _facility_for_release(db_session, second.release_id)
+    assert facility is not None
+    assert facility.inclusion_class == "DISCOVERY_CANDIDATE"
+    assert facility.publication_status == "public"
 
 
 def test_duplicate_entity_rows_replace_the_current_location(db_session) -> None:

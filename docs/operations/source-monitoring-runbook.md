@@ -19,11 +19,11 @@ source's declared update pattern, so a daily workflow does not re-probe every so
 day. Known access blocks and HTTP 304 responses are recorded without creating a fresh
 incident on each run.
 
-Blocked or internal-only sources are **not** refreshed automatically:
+Blocked sources are **not** refreshed automatically:
 
 - Official PSA PSGC workbook: blocked by a Cloudflare challenge.
 - DepEd Machine-Ready Files: blocked by a human terms/download flow.
-- DepEd EBEIS: the current source release is published for institution-level fields with personal fields withheld; canonical facility rows remain internal pending field-level mapping and privacy review.
+- DepEd EBEIS: the current source release is published for institution-level fields with personal fields withheld.
 - DOH NHFR/HFSRB: blocked by Cloudflare and an unreviewed data-use agreement.
 - CHED/TESDA: no verified bulk release or documented public API.
 
@@ -124,7 +124,7 @@ curl -fsS http://127.0.0.1:8010/v1/source-checks?limit=10
 Then confirm:
 
 - new releases have a SHA-256 checksum and a preserved raw object;
-- internal-only and blocked datasets still have no public facilities;
+- blocked datasets remain read-gated and expose no public facilities;
 - downloads and facility details apply the same publication gate;
 - the previous published release remains when a new one fails validation.
 
