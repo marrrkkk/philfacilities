@@ -318,6 +318,11 @@ def test_population_loader_flushes_source_records_before_observations(db_session
     dataset_id = release.dataset_id
     try:
         assert result["observations"] == 501
+        # The release records the PhilFacilities acquisition time, not the
+        # BetterGov snapshot metadata time, which remains in the notes.
+        assert release.retrieved_at > snapshot.retrieved_at
+        assert "PhilFacilities retrieved" in (release.notes or "")
+        assert snapshot.retrieved_at.isoformat() in (release.notes or "")
         observation_count = db_session.scalar(
             select(func.count())
             .select_from(PopulationObservation)
@@ -337,6 +342,29 @@ def test_population_loader_flushes_source_records_before_observations(db_session
             .where(PopulationObservation.release_id == release.id)
         ).scalar_one()
         assert joined == 501
+
+        # Re-fetching the unchanged artifact refines acquisition metadata but
+        # keeps the release identity and checksum, and records the duplicate
+        # fetch as its own run.
+        first_retrieved = release.retrieved_at
+        duplicate = load_population_snapshot(
+            session=db_session,
+            settings=settings,
+            snapshot=snapshot,
+        )
+        assert duplicate["status"] == "skipped_duplicate"
+        assert duplicate["release_id"] == result["release_id"]
+        db_session.refresh(release)
+        assert release.retrieved_at >= first_retrieved
+        duplicate_runs = db_session.scalar(
+            select(func.count())
+            .select_from(IngestionRun)
+            .where(
+                IngestionRun.release_id == release.id,
+                IngestionRun.status == "skipped_duplicate",
+            )
+        )
+        assert duplicate_runs == 1
     finally:
         db_session.execute(
             delete(PopulationObservation).where(PopulationObservation.release_id == release.id)

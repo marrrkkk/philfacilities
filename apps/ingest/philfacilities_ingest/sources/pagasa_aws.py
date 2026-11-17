@@ -58,7 +58,7 @@ class _TableParser(HTMLParser):
         self._in_table = False
         self._tables = 0
 
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+    def handle_starttag(self, tag: str, _attrs: list[tuple[str, str | None]]) -> None:
         tag = tag.lower()
         if tag == "table":
             self._tables += 1
@@ -166,16 +166,9 @@ class PagasaAwsAdapter:
     source_code = "pagasa"
     parser_version = "pagasa-aws-html-1.0.0"
     schema_version = "pagasa-aws-html-v1"
-    expected_columns = {"required": {"Site ID", "Site Name", "Last Updated"}}  # noqa: RUF012
 
     def __init__(self, spec: ReleaseSpec) -> None:
         self.spec = spec
-
-    def discover(self, input_path: str | None) -> ReleaseSpec:
-        return self.spec
-
-    def acquire(self, spec: ReleaseSpec) -> bytes:
-        return spec.content
 
     def parse(self, spec: ReleaseSpec) -> ParsedRelease:
         try:

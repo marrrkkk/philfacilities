@@ -11,7 +11,7 @@ import io
 import re
 import zipfile
 from dataclasses import dataclass
-from datetime import UTC, date, datetime
+from datetime import UTC, datetime
 
 from openpyxl import Workbook
 
@@ -478,14 +478,3 @@ def all_fixtures() -> list[FixtureFile]:
         FixtureFile("synthetic-doh-facilities-2026.csv", doh_csv()),
         FixtureFile("synthetic-philhealth-hospitals-2026-09-30.pdf", philhealth_pdf()),
     ]
-
-
-def fixture_reference_periods() -> dict[str, tuple[date | None, date | None]]:
-    return {
-        "demo-psgc": (date(2026, 7, 1), date(2026, 9, 30)),
-        "demo-deped-masterlist": (date(2024, 6, 1), date(2025, 3, 31)),
-        "demo-deped-enrollment": (date(2023, 6, 1), date(2025, 3, 31)),
-        "demo-deped-resources": (date(2024, 6, 1), date(2025, 3, 31)),
-        "demo-doh": (date(2026, 1, 1), date(2026, 9, 30)),
-        "demo-philhealth": (date(2026, 9, 30), date(2026, 9, 30)),
-    }

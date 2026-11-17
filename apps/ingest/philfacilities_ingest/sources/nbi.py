@@ -36,10 +36,10 @@ from ..contracts import (
     ValidationIssue,
     ValidationResult,
 )
+from ..validators import coordinate_in_philippines
 from .common import clean_text
 
 OFFICES_URL = "https://nbi.gov.ph/regional-district-offices/"
-PHILIPPINES_BOUNDS = {"min_lat": 4.2, "max_lat": 21.5, "min_lon": 116.0, "max_lon": 127.0}
 PERSONAL_LABELS = (
     "Regional Director",
     "Agent In Charge",
@@ -75,10 +75,7 @@ def _map_coordinates(embed_url: str | None) -> tuple[float | None, float | None]
         return None, None
     latitude = float(match.group("lat"))
     longitude = float(match.group("lon"))
-    if not (
-        PHILIPPINES_BOUNDS["min_lat"] <= latitude <= PHILIPPINES_BOUNDS["max_lat"]
-        and PHILIPPINES_BOUNDS["min_lon"] <= longitude <= PHILIPPINES_BOUNDS["max_lon"]
-    ):
+    if not coordinate_in_philippines(latitude, longitude):
         return None, None
     return latitude, longitude
 
@@ -195,16 +192,9 @@ class NbiOfficeAdapter:
     source_code = "nbi"
     parser_version = "nbi-offices-html-1.0.0"
     schema_version = "nbi-offices-html-v1"
-    expected_columns = {"required": {"office_name", "location"}}  # noqa: RUF012
 
     def __init__(self, spec: ReleaseSpec) -> None:
         self.spec = spec
-
-    def discover(self, input_path: str | None) -> ReleaseSpec:
-        return self.spec
-
-    def acquire(self, spec: ReleaseSpec) -> bytes:
-        return spec.content
 
     def parse(self, spec: ReleaseSpec) -> ParsedRelease:
         try:

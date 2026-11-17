@@ -54,6 +54,7 @@ def _seed_duplicate_pair(db_session, label: str):
             retrieved_at=now,
             processed_at=now,
             ingestion_status="published",
+            publication_status="published",
             terms_review_status="synthetic_demo",
             parser_version="test",
             sha256=uuid.uuid4().hex + uuid.uuid4().hex,

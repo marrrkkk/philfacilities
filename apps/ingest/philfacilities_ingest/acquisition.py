@@ -302,18 +302,6 @@ def last_check(session: Session, dataset_id: uuid.UUID) -> SourceCheck | None:
     ).first()
 
 
-def last_successful_check(session: Session, dataset_id: uuid.UUID) -> SourceCheck | None:
-    return session.scalars(
-        select(SourceCheck)
-        .where(
-            SourceCheck.dataset_id == dataset_id,
-            SourceCheck.status.in_(("ok", "not_modified", "update_available")),
-        )
-        .order_by(SourceCheck.checked_at.desc())
-        .limit(1)
-    ).first()
-
-
 def record_check(
     session: Session,
     *,
@@ -414,14 +402,52 @@ def send_failure_alert(
     failures = actionable_failures(results)
     if not settings.alert_webhook_url or not failures:
         return False
-    payload = {
-        "service": "philfacilities-ingest",
-        "command": command,
-        "checked_at": datetime.now(UTC).isoformat(),
-        "failures": failures,
+    return _post_alert(
+        settings.alert_webhook_url,
+        {
+            "service": "philfacilities-ingest",
+            "command": command,
+            "checked_at": datetime.now(UTC).isoformat(),
+            "failures": failures,
+        },
+    )
+
+
+def send_ingestion_failure_alert(
+    settings: IngestSettings,
+    results: list[dict[str, Any]],
+    *,
+    command: str,
+) -> bool:
+    """Alert on failed facility/source ingestion outcomes.
+
+    The generic runner returns one row per acquired release, so a list is
+    normalised into a keyed mapping for the shared alert transport. Only rows
+    whose ingestion status is ``failed`` are actionable; a duplicate skip or a
+    dry-run validation is not an incident.
+    """
+
+    failures = {
+        f"{row.get('key') or row.get('source') or 'unknown'}:{index}": row
+        for index, row in enumerate(results)
+        if str(row.get("status")) == "failed"
     }
+    if not settings.alert_webhook_url or not failures:
+        return False
+    return _post_alert(
+        settings.alert_webhook_url,
+        {
+            "service": "philfacilities-ingest",
+            "command": command,
+            "checked_at": datetime.now(UTC).isoformat(),
+            "failures": failures,
+        },
+    )
+
+
+def _post_alert(url: str, payload: dict[str, Any]) -> bool:
     try:
-        response = httpx.post(settings.alert_webhook_url, json=payload, timeout=10.0)
+        response = httpx.post(url, json=payload, timeout=10.0)
         response.raise_for_status()
     except httpx.HTTPError:
         return False

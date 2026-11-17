@@ -1,7 +1,7 @@
 """Build the master inventory of researched source candidates.
 
-The register in ``expand/docs/03-SOURCE-REGISTER.md`` is the evidence narrative,
-``expand/source-candidates.json`` is the curator-reviewed normalized index, and
+The register in ``docs/sources.md`` is the evidence narrative,
+``data/sources/source-candidates.json`` is the curator-reviewed normalized index, and
 the probe ledgers under ``docs/operations/evidence`` record live reachability.
 This module merges those three views into one validated JSON/CSV inventory.
 
@@ -24,8 +24,33 @@ from typing import Any
 from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parents[3]
-DEFAULT_REGISTER_PATH = ROOT / "expand" / "docs" / "03-SOURCE-REGISTER.md"
-DEFAULT_CANDIDATES_PATH = ROOT / "expand" / "source-candidates.json"
+DEFAULT_REGISTER_PATH = ROOT / "docs" / "sources.md"
+DEFAULT_CANDIDATES_PATH = ROOT / "data" / "sources" / "source-candidates.json"
+
+# The register and the candidate registry use different punctuation for two
+# identifiers that point at the same preserved release, and two register
+# sections list the same portal twice. Keep one canonical row and record the
+# alternate identifier as an alias instead of a second source. Aliases stay
+# visible in ``alias_source_ids``; they are linked, not silently dropped.
+SOURCE_ID_ALIASES = {
+    "osm.sea-ports": "osm.sea_ports",
+    "dpwh.transparency_projects": "dpwh.infrastructure_projects",
+    "dilg.subaybayan_lime20": "dilg.subaybayan_evacuation_projects",
+}
+
+# A source that is one layer or route inside a shared catalogue points at its
+# host catalogue without being collapsed into it.
+SOURCE_PARENT_LINKS = {
+    "dti.shared_service_facilities": "geoportal.facility_layers",
+}
+
+# When a layer is published by one agency inside a shared catalogue, the data
+# owner's own site is its canonical URL. The catalogue stays in official_urls,
+# and parent_source_id records the relationship, so no two inventory rows share
+# a primary URL.
+SOURCE_PRIMARY_URL_OVERRIDES = {
+    "dti.shared_service_facilities": "https://www.dti.gov.ph/",
+}
 DEFAULT_PROBES_PATH = (
     ROOT
     / "docs"
@@ -34,10 +59,10 @@ DEFAULT_PROBES_PATH = (
     / "2026-11-16-category-source-search"
     / "probes-2026-11-16.txt"
 )
-DEFAULT_JSON_OUTPUT = ROOT / "expand" / "data" / "source-inventory.json"
-DEFAULT_CSV_OUTPUT = ROOT / "expand" / "data" / "source-inventory.csv"
+DEFAULT_JSON_OUTPUT = ROOT / "var" / "reports" / "source-inventory.json"
+DEFAULT_CSV_OUTPUT = ROOT / "var" / "reports" / "source-inventory.csv"
 
-# Matches the taxonomy in expand/docs/02-FACILITY-TAXONOMY.md §3.
+# Matches the facility taxonomy in docs/data-model.md.
 TAXONOMY_CATEGORIES = (
     "GOV_ADMIN",
     "COMMUNITY",
@@ -72,6 +97,36 @@ REQUIRED_FIELDS = (
     "tracker_ids",
     "last_verified",
     "provenance",
+)
+
+# The 25-field core schema in data.md section 11.2. Reports must emit these
+# fields without renaming or removing any of them.
+REQUIRED_OUTPUT_FIELDS: tuple[str, ...] = (
+    "source_id",
+    "custodian",
+    "agency_level",
+    "category",
+    "title",
+    "description",
+    "official_urls",
+    "alternate_urls",
+    "access_method",
+    "format",
+    "coverage_scope",
+    "geographic_scope",
+    "evidence_state",
+    "access_state",
+    "rights_state",
+    "publication_state",
+    "probe_status",
+    "probe_date",
+    "probe_notes",
+    "data_fields_observed",
+    "record_count_observed",
+    "ownership_semantics",
+    "tracker_ids",
+    "next_action",
+    "notes",
 )
 
 EVIDENCE_RANK = {
@@ -372,7 +427,7 @@ def parse_register(path: str | Path | None = None) -> tuple[list[RegisterRow], s
     return rows, baseline
 
 
-def _evidence_state(text: str, cells: list[str] | None = None) -> str:
+def _evidence_state(text: str) -> str:
     upper = text.upper()
     found: list[str] = []
     # Evidence labels in the register are normally backticked. Restricting the
@@ -507,7 +562,7 @@ def _category_for(source_id: str) -> str:
 
 
 def _row_to_source(row: RegisterRow, baseline: str) -> dict[str, Any]:
-    evidence = _evidence_state(row.text, row.cells)
+    evidence = _evidence_state(row.text)
     return {
         "source_id": row.source_id,
         "custodian": row.custodian,
@@ -595,6 +650,57 @@ def _apply_probe_status(probe: ProbeObservation, match: re.Match[str]) -> None:
     probe.content_type = match.group("content_type") or None
     probe.final_url = match.group("final_url") or None
     probe.size_bytes = int(match.group("size"))
+
+
+def _record_alias(source: dict[str, Any], original_id: str) -> None:
+    aliases = source.setdefault("alias_source_ids", [])
+    if original_id and original_id not in aliases:
+        aliases.append(original_id)
+
+
+def _merge_alias_row(target: dict[str, Any], alias: dict[str, Any], original_id: str) -> None:
+    """Fold a duplicate register entry into its canonical row.
+
+    URLs are unioned, the canonical row keeps its richer evidence, and a
+    missing scalar is filled from the alias. The alias identifier itself stays
+    in ``alias_source_ids``.
+    """
+
+    for url in alias.get("urls") or []:
+        if url not in target["urls"]:
+            target["urls"].append(url)
+    for name in (
+        "custodian",
+        "title",
+        "category",
+        "evidence_state",
+        "access_state",
+        "rights_state",
+        "coverage_scope",
+        "priority",
+        "next_action",
+        "notes",
+        "register_section",
+        "last_verified",
+    ):
+        if not target.get(name) and alias.get(name):
+            target[name] = alias[name]
+    target["tracker_ids"] = sorted(
+        set([*target.get("tracker_ids", []), *alias.get("tracker_ids", [])])
+    )
+    _record_alias(target, original_id)
+
+
+def _apply_source_links(sources: list[dict[str, Any]]) -> None:
+    by_id = {source["source_id"] for source in sources}
+    for source in sources:
+        parent = SOURCE_PARENT_LINKS.get(source["source_id"])
+        if parent and parent in by_id and parent != source["source_id"]:
+            source["parent_source_id"] = parent
+        preferred = SOURCE_PRIMARY_URL_OVERRIDES.get(source["source_id"])
+        if preferred and preferred in source["urls"]:
+            source["urls"].remove(preferred)
+            source["urls"].insert(0, preferred)
 
 
 def _merge_candidate(source: dict[str, Any], candidate: dict[str, Any]) -> None:
@@ -685,15 +791,30 @@ def build_source_inventory(
 ) -> dict[str, Any]:
     rows, baseline = parse_register(register_path)
     candidate_payload = load_source_candidates(candidates_path)
-    sources = [_row_to_source(row, baseline) for row in rows]
-    by_id = {source["source_id"]: source for source in sources}
+    sources: list[dict[str, Any]] = []
+    by_id: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        source = _row_to_source(row, baseline)
+        original_id = source["source_id"]
+        canonical_id = SOURCE_ID_ALIASES.get(original_id, original_id)
+        if canonical_id != original_id:
+            source["source_id"] = canonical_id
+            _record_alias(source, original_id)
+        if canonical_id in by_id:
+            _merge_alias_row(by_id[canonical_id], source, original_id)
+            continue
+        sources.append(source)
+        by_id[canonical_id] = source
 
     for candidate in candidate_payload.get("sources", []):
-        source_id = candidate.get("source_id")
-        if not source_id:
+        original_id = candidate.get("source_id")
+        if not original_id:
             continue
+        source_id = SOURCE_ID_ALIASES.get(original_id, original_id)
         if source_id in by_id:
             _merge_candidate(by_id[source_id], candidate)
+            if source_id != original_id:
+                _record_alias(by_id[source_id], original_id)
             continue
         source = {
             "source_id": source_id,
@@ -721,6 +842,7 @@ def build_source_inventory(
         sources.append(source)
         by_id[source_id] = source
 
+    _apply_source_links(sources)
     probes = parse_probes(probes_path)
     unmatched = _attach_probes(sources, probes)
     sources.sort(key=lambda source: source["source_id"])
@@ -837,9 +959,15 @@ def summarize_source_inventory(payload: dict[str, Any]) -> dict[str, Any]:
         "from_candidates": sum(1 for source in sources if source["provenance"]["candidates"]),
         "probed": sum(1 for source in sources if source["provenance"]["probe"]),
         "unmatched_probes": len(payload.get("unmatched_probes") or []),
-        "published": sum(1 for source in sources if source.get("publication_state") == "PUBLISHED"),
+        "published": sum(
+            1
+            for source in sources
+            if str(source.get("publication_state") or "").upper() == "PUBLISHED"
+        ),
         "internal_only": sum(
-            1 for source in sources if source.get("publication_state") == "INTERNAL_ONLY"
+            1
+            for source in sources
+            if str(source.get("publication_state") or "").upper() == "INTERNAL_ONLY"
         ),
         "by_category": counts("category"),
         "by_evidence_state": counts("evidence_state"),
@@ -851,24 +979,66 @@ def summarize_source_inventory(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 CSV_FIELDS = (
-    "source_id",
-    "category",
-    "custodian",
-    "title",
-    "evidence_state",
-    "access_state",
-    "rights_state",
-    "coverage_scope",
+    *REQUIRED_OUTPUT_FIELDS,
     "priority",
-    "publication_state",
+    "last_verified",
+    "provenance",
     "primary_url",
     "url_count",
-    "register_section",
-    "provenance",
     "probe_outcomes",
-    "last_verified",
-    "tracker_ids",
-    "next_action",
+    "source_key",
+    "dataset_slug",
+    "publisher",
+    "publisher_type",
+    "publisher_domain",
+    "officiality_tier",
+    "authority_level",
+    "parent_source_id",
+    "mirror_of",
+    "alias_source_ids",
+    "release_label",
+    "release_date",
+    "reference_period",
+    "retrieval_time",
+    "final_url",
+    "http_status",
+    "content_type",
+    "content_length",
+    "checksum_sha256",
+    "schema_version",
+    "parser_version",
+    "original_fields",
+    "field_definitions",
+    "source_record_key",
+    "crosswalk_keys",
+    "geographic_granularity",
+    "coordinate_method",
+    "facility_granularity",
+    "update_frequency",
+    "rights_url",
+    "rights_basis",
+    "attribution_text",
+    "takedown_route",
+    "personal_data_fields",
+    "security_sensitive_fields",
+    "skip_reason",
+    "skip_detail",
+    "alternate_route",
+    "next_retry_at",
+    "challenge_detected",
+    "robots_allowed",
+    "overlap_estimate",
+    "unique_value_notes",
+    "conflict_notes",
+    "adapter_shape",
+    "ingest_priority",
+    "can_rebuild",
+    "expected_row_count",
+    "known_exclusions",
+    "open_questions",
+    "access_state_raw",
+    "rights_state_raw",
+    "publication_state_raw",
 )
 
 
@@ -885,34 +1055,24 @@ def write_source_inventory(
         json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
     )
     with csv_target.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=CSV_FIELDS)
+        writer = csv.DictWriter(handle, fieldnames=CSV_FIELDS, extrasaction="ignore")
         writer.writeheader()
         for source in payload["sources"]:
-            writer.writerow(
-                {
-                    "source_id": source["source_id"],
-                    "category": source["category"],
-                    "custodian": source["custodian"],
-                    "title": source["title"],
-                    "evidence_state": source["evidence_state"],
-                    "access_state": source["access_state"],
-                    "rights_state": source["rights_state"],
-                    "coverage_scope": source["coverage_scope"],
-                    "priority": source.get("priority") or "",
-                    "publication_state": source.get("publication_state") or "",
-                    "primary_url": source["urls"][0] if source["urls"] else "",
-                    "url_count": len(source["urls"]),
-                    "register_section": source.get("register_section") or "",
-                    "provenance": "+".join(
-                        key for key, value in source["provenance"].items() if value
-                    ),
-                    "probe_outcomes": ";".join(
-                        f"{probe['probe_key']}={probe['outcome']}"
-                        for probe in source.get("probes") or []
-                    ),
-                    "last_verified": source["last_verified"],
-                    "tracker_ids": ";".join(source.get("tracker_ids") or []),
-                    "next_action": source.get("next_action") or "",
-                }
+            row = {field: _csv_value(source.get(field)) for field in CSV_FIELDS}
+            row["primary_url"] = source["urls"][0] if source.get("urls") else ""
+            row["url_count"] = len(source.get("urls") or [])
+            row["probe_outcomes"] = ";".join(
+                f"{probe['probe_key']}={probe['outcome']}" for probe in source.get("probes") or []
             )
+            writer.writerow(row)
     return json_target, csv_target
+
+
+def _csv_value(value: Any) -> Any:
+    if value is None:
+        return ""
+    if isinstance(value, (list, tuple, set)):
+        return ";".join(_csv_value(item) for item in value)
+    if isinstance(value, dict):
+        return json.dumps(value, ensure_ascii=False, sort_keys=True)
+    return value

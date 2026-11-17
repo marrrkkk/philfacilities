@@ -11,6 +11,7 @@ from philfacilities_api.models import (
     AttributeAssertion,
     Dataset,
     Facility,
+    FacilityContact,
     FacilityFunction,
     FacilityLocation,
     FacilitySourceLink,
@@ -108,6 +109,13 @@ def _release_fixture(session, *, slug_prefix: str = "rollback"):
                 source_record_id=record.id,
                 function_code="MULTIPURPOSE_HALL",
             ),
+            FacilityContact(
+                facility_id=facility.id,
+                source_record_id=record.id,
+                contact_type="phone",
+                value="+63 2 555 0100",
+                label="Original line",
+            ),
         ]
     )
     session.flush()
@@ -192,6 +200,10 @@ def test_rollback_restores_facility_and_children(db_session) -> None:
             normalized_value="Renamed by release",
         )
     )
+    contact = db_session.scalars(
+        select(FacilityContact).where(FacilityContact.facility_id == facility.id)
+    ).one()
+    contact.value = "+63 2 555 0199"
     # The pipeline stamps processed_at after applying every candidate, so a
     # release's own writes are never newer than processed_at. Move the release
     # timestamp forward to model that ordering.
@@ -225,6 +237,11 @@ def test_rollback_restores_facility_and_children(db_session) -> None:
     ).all()
     assert len(assertions) == 1
     assert assertions[0].normalized_value == "Original Hall"
+    contacts = db_session.scalars(
+        select(FacilityContact).where(FacilityContact.facility_id == facility.id)
+    ).all()
+    assert len(contacts) == 1
+    assert contacts[0].value == "+63 2 555 0100"
     snapshot = db_session.scalars(
         select(ReleaseFacilitySnapshot).where(ReleaseFacilitySnapshot.release_id == release.id)
     ).one()

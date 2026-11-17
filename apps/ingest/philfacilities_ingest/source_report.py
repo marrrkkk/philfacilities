@@ -27,9 +27,24 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
+from philfacilities_api.rights import (
+    PUBLICATION_INTERNAL_ONLY,
+    PUBLICATION_PUBLISHED,
+    RIGHTS_APPROVED_ATTRIBUTION,
+    RIGHTS_APPROVED_PUBLIC,
+    RIGHTS_DENIED,
+    RIGHTS_EXPIRED,
+    RIGHTS_PUBLICLY_AVAILABLE_VERIFIED,
+    RIGHTS_RESTRICTED,
+    RIGHTS_REVIEW_REQUIRED,
+    RIGHTS_UNKNOWN,
+)
+
+from .source_inventory import REQUIRED_OUTPUT_FIELDS, summarize_source_inventory
+
 ROOT = Path(__file__).resolve().parents[3]
-DEFAULT_OUTPUT_DIR = ROOT / "expand" / "data"
-DEFAULT_REGION_LEDGER = DEFAULT_OUTPUT_DIR / "region-search-ledger.json"
+DEFAULT_OUTPUT_DIR = ROOT / "var" / "reports"
+DEFAULT_REGION_LEDGER = ROOT / "data" / "sources" / "region-search-ledger.json"
 
 # The 18 regions in the current PSGC release used by the platform. data.md's
 # "17 regions" predates the 2024 Negros Island Region reinstatement; the
@@ -55,7 +70,6 @@ REGIONS: tuple[tuple[str, str], ...] = (
     ("1900000000", "Bangsamoro Autonomous Region In Muslim Mindanao (BARMM)"),
 )
 
-REGION_BY_CODE = dict(REGIONS)
 REGION_SHORT = {
     "0100000000": "I",
     "0200000000": "II",
@@ -254,37 +268,67 @@ OFFICIAL_ALTERNATES: dict[str, tuple[dict[str, str], ...]] = {
             "note": "HTTP 403 on 16 Nov 2026; no official alternate register verified.",
         },
     ),
+    "bmb.protected_areas": (
+        {
+            "title": "DENR-BMB official site",
+            "url": "https://bmb.gov.ph/",
+            "note": (
+                "Official publisher route to monitor for a public protected-area "
+                "download; PAIS is contextual geography, not a facility register."
+            ),
+        },
+    ),
+    "dswd.crcf": (
+        {
+            "title": "DSWD Standards Bureau dated directories",
+            "url": "https://standards.dswd.gov.ph/directories-3/",
+            "note": (
+                "Official dated CRCF and LGU-accredited directory route; no bulk "
+                "download was verified from the main CRCF page."
+            ),
+        },
+        {
+            "title": "DSWD e-services directory",
+            "url": "https://eodb.dswd.gov.ph/directory/",
+            "note": "Official public directory route; no bulk download verified.",
+        },
+    ),
+    "marina.ports": (
+        {
+            "title": "MARINA official site",
+            "url": "https://marina.gov.ph/",
+            "note": (
+                "Official publisher route. The /ports/ path returned HTTP 404; "
+                "monitor the site for a published port/terminal registry."
+            ),
+        },
+    ),
+    "ppa.ports": (
+        {
+            "title": "PPA official site",
+            "url": "https://ppa.com.ph/",
+            "note": (
+                "Official publisher route for the port list and revised statistics "
+                "manual; the 15 November 2026 PDF artifact remains the release of record."
+            ),
+        },
+    ),
+    "nmis.meat_establishments": (
+        {
+            "title": "NMIS official site",
+            "url": "https://www.nmis.gov.ph/",
+            "note": (
+                "Official publisher route; NARIS currently fails TLS. The dated "
+                "4 November 2025 slaughterhouse list is the preserved release."
+            ),
+        },
+        {
+            "title": "NMIS dated accredited-establishment list",
+            "url": "https://www.nmis.gov.ph/images/pdf/accredited_list/2025/sh20251104.pdf",
+            "note": "Dated public PDF used for the 357 published establishment records.",
+        },
+    ),
 }
-
-# Fields required by data.md. Every inventory row must carry them, even when the
-# honest value is null, an empty list or UNKNOWN.
-REQUIRED_OUTPUT_FIELDS: tuple[str, ...] = (
-    "source_id",
-    "custodian",
-    "agency_level",
-    "category",
-    "title",
-    "description",
-    "official_urls",
-    "alternate_urls",
-    "access_method",
-    "format",
-    "coverage_scope",
-    "geographic_scope",
-    "evidence_state",
-    "access_state",
-    "rights_state",
-    "publication_state",
-    "probe_status",
-    "probe_date",
-    "probe_notes",
-    "data_fields_observed",
-    "record_count_observed",
-    "ownership_semantics",
-    "tracker_ids",
-    "next_action",
-    "notes",
-)
 
 GOCC_PREFIXES = (
     "ppa",
@@ -336,11 +380,6 @@ def _as_list(value: Any) -> list[Any]:
 
 def _as_text(value: Any) -> str:
     return "" if value is None else str(value)
-
-
-def _primary_url(source: dict[str, Any]) -> str | None:
-    urls = _as_list(source.get("urls")) or _as_list(source.get("official_urls"))
-    return str(urls[0]) if urls else None
 
 
 def _url_extension(url: str) -> str:
@@ -483,8 +522,187 @@ def _record_count(source: dict[str, Any]) -> int | None:
     return None
 
 
+def _publisher_identity(source: dict[str, Any]) -> tuple[str, str, str, str | None]:
+    source_id = _as_text(source.get("source_id")).lower()
+    custodian = _as_text(source.get("custodian"))
+    title = _as_text(source.get("title")).lower()
+    combined = f"{source_id} {custodian.casefold()} {title}"
+    official_urls = _as_list(source.get("official_urls")) or _as_list(source.get("urls"))
+    domain = None
+    if official_urls:
+        parsed = urlparse(str(official_urls[0]))
+        domain = parsed.netloc.casefold() or None
+        if domain and domain.startswith("www."):
+            domain = domain[4:]
+
+    if "openstreetmap" in combined or source_id.startswith("osm"):
+        return custodian or "OpenStreetMap contributors", "community", "COMMUNITY_FALLBACK", domain
+    if "bettergov" in combined:
+        return custodian or "BetterGov.PH", "non_government_mirror", "OFFICIAL_MIRROR", domain
+    if "accredited_providers" in source_id or "provider-category" in title:
+        return custodian or "PhilHealth", "government_regulator", "REGULATOR_ACCREDITOR", domain
+    return custodian or "UNKNOWN", "government", "OFFICIAL_CUSTODIAN", domain
+
+
+def _source_url_key(url: str | None) -> str:
+    """Normalize a source URL for exact artifact-to-register matching."""
+
+    if not url:
+        return ""
+    parsed = urlparse(str(url).strip())
+    host = parsed.netloc.casefold()
+    if host.startswith("www."):
+        host = host[4:]
+    return f"{host}{parsed.path.rstrip('/')}".casefold()
+
+
+def attach_published_release_evidence(payload: dict[str, Any], session: Any) -> list[str]:
+    """Attach exact published-release evidence to matching inventory candidates.
+
+    The register records what was known when a candidate was researched. A later
+    public acquisition can make an ``UNVERIFIED`` or ``ACCESS_BLOCKED`` row stale.
+    This function matches an acquired dataset URL to the candidate's primary URL
+    (or to a unique alternate URL that no other candidate claims as primary) and
+    records the published dataset/release facts on the row. It does not promote
+    anything on its own; :func:`enrich_source_inventory` applies the observed
+    state while preserving the register value in ``register_*`` fields.
+    """
+
+    from philfacilities_api.models import Agency, Dataset, Release
+    from sqlalchemy import select
+
+    rows = session.execute(
+        select(Release, Dataset, Agency)
+        .join(Dataset, Release.dataset_id == Dataset.id)
+        .join(Agency, Dataset.agency_id == Agency.id)
+        .where(Release.ingestion_status == "published")
+        .order_by(Release.retrieved_at)
+    ).all()
+    evidence: dict[str, dict[str, Any]] = {}
+    for release, dataset, agency in rows:
+        key = _source_url_key(dataset.source_url)
+        if not key:
+            continue
+        entry = evidence.setdefault(
+            key,
+            {
+                "source_url": dataset.source_url,
+                "dataset_slugs": set(),
+                "release_labels": [],
+                "release_count": 0,
+                "latest_retrieved_at": None,
+                "dataset_publication_states": set(),
+                "rights_states": set(),
+                "agency_codes": set(),
+            },
+        )
+        entry["dataset_slugs"].add(dataset.slug)
+        entry["release_labels"].append(release.source_release_label)
+        entry["release_count"] += 1
+        entry["latest_retrieved_at"] = (
+            release.retrieved_at.isoformat()
+            if release.retrieved_at
+            else entry["latest_retrieved_at"]
+        )
+        entry["dataset_publication_states"].add(dataset.publication_status)
+        entry["rights_states"].add(dataset.redistribution_status)
+        entry["agency_codes"].add(agency.short_code)
+
+    sources = payload.get("sources") or []
+    primary_keys = {
+        _source_url_key((source.get("official_urls") or source.get("urls") or [None])[0])
+        for source in sources
+    }
+    annotated: list[str] = []
+    for source in sources:
+        urls = source.get("official_urls") or source.get("urls") or []
+        if not urls:
+            continue
+        match_key = _source_url_key(urls[0])
+        if match_key not in evidence:
+            alternates = {
+                _source_url_key(url)
+                for url in urls[1:]
+                if _source_url_key(url) in evidence and _source_url_key(url) not in primary_keys
+            }
+            match_key = alternates.pop() if len(alternates) == 1 else ""
+        entry = evidence.get(match_key)
+        if entry is None:
+            continue
+        source["published_release_count"] = entry["release_count"]
+        source["published_dataset_slugs"] = sorted(entry["dataset_slugs"])
+        source["published_release_labels"] = sorted(entry["release_labels"])
+        source["published_latest_retrieved_at"] = entry["latest_retrieved_at"]
+        source["published_dataset_publication_states"] = sorted(entry["dataset_publication_states"])
+        source["published_rights_states"] = sorted(entry["rights_states"])
+        source["published_agency_codes"] = sorted(entry["agency_codes"])
+        source["acquisition_evidence"] = "published_release_exact_source_url"
+        annotated.append(str(source.get("source_id")))
+    return annotated
+
+
 def enrich_source_inventory(payload: dict[str, Any]) -> dict[str, Any]:
     """Add the data.md output fields without changing preserved evidence."""
+
+    from philfacilities_api.rights import (
+        ALL_RIGHTS,
+        PUBLICATION_APPROVED,
+        PUBLICATION_BLOCKED,
+        PUBLICATION_INTERNAL_ONLY,
+        PUBLICATION_PUBLISHED,
+        PUBLICATION_QUARANTINED,
+        RIGHTS_APPROVED_ATTRIBUTION,
+        RIGHTS_APPROVED_PUBLIC,
+        RIGHTS_DENIED,
+        RIGHTS_EXPIRED,
+        RIGHTS_PUBLICLY_AVAILABLE_VERIFIED,
+        RIGHTS_RESTRICTED,
+        RIGHTS_REVIEW_REQUIRED,
+        RIGHTS_UNKNOWN,
+    )
+
+    from .skip_reasons import (
+        SKIP_REASON_SET,
+        from_access_state,
+        from_error,
+        from_http_status,
+        skip_for_source,
+    )
+
+    rights_aliases = {
+        "UNKNOWN": RIGHTS_UNKNOWN,
+        "REVIEW_REQUIRED": RIGHTS_REVIEW_REQUIRED,
+        "APPROVED_PUBLIC_REDISTRIBUTION": RIGHTS_APPROVED_PUBLIC,
+        "APPROVED_WITH_ATTRIBUTION": RIGHTS_APPROVED_ATTRIBUTION,
+        "PUBLICLY_AVAILABLE_VERIFIED": RIGHTS_PUBLICLY_AVAILABLE_VERIFIED,
+        # The research register used PUBLISHED for a source whose records were
+        # already published under the platform's public-availability rule. Keep
+        # the raw value and normalize it to the controlled rights state.
+        "PUBLISHED": RIGHTS_PUBLICLY_AVAILABLE_VERIFIED,
+        "RESTRICTED": RIGHTS_RESTRICTED,
+        "RESTRICTED_NON_REDISTRIBUTABLE": RIGHTS_RESTRICTED,
+        "DENIED": RIGHTS_DENIED,
+        "EXPIRED": RIGHTS_EXPIRED,
+    }
+    publication_aliases = {
+        "PUBLISHED": PUBLICATION_PUBLISHED,
+        "INTERNAL_ONLY": PUBLICATION_INTERNAL_ONLY,
+        "APPROVED": PUBLICATION_APPROVED,
+        "QUARANTINED": PUBLICATION_QUARANTINED,
+        "BLOCKED": PUBLICATION_BLOCKED,
+        "NOT_PUBLISHED": PUBLICATION_INTERNAL_ONLY,
+    }
+    skipped_access_states = {
+        "ACCESS_BLOCKED",
+        "UNVERIFIED",
+        "FOI_REQUIRED",
+        "FOI_ACCESS_CONFIRMED",
+        "HUMAN_DOWNLOAD_REQUIRED",
+        "HUMAN_ACCESS_REQUIRED",
+        "AGREEMENT_REQUIRED",
+        "RESTRICTED",
+        "EXPLICIT_RESTRICTION",
+    }
 
     for source in payload.get("sources") or []:
         if not isinstance(source, dict):
@@ -517,13 +735,164 @@ def enrich_source_inventory(payload: dict[str, Any]) -> dict[str, Any]:
         source.setdefault("record_count_observed", _record_count(source))
         source.setdefault("ownership_semantics", _ownership_semantics(source))
         source.setdefault("notes", _as_text(source.get("notes")))
+        publisher, publisher_type, officiality_tier, publisher_domain = _publisher_identity(source)
+        source.setdefault("publisher", publisher)
+        source.setdefault("publisher_type", publisher_type)
+        source.setdefault("publisher_domain", publisher_domain)
+        source.setdefault("officiality_tier", officiality_tier)
+        source.setdefault(
+            "authority_level",
+            "community" if officiality_tier == "COMMUNITY_FALLBACK" else "official",
+        )
+
+        # Preserve the register/candidate state as evidence, but expose only the
+        # data.md controlled access vocabulary (OPEN/SKIPPED) in the core field.
+        # Enrichment must be idempotent: callers may enrich a payload before
+        # writing reports and the writer may validate it again.
+        already_classified = "access_state_raw" in source and _as_text(
+            source.get("access_state")
+        ) in {"OPEN", "SKIPPED"}
+        source.setdefault("access_state_raw", _as_text(source.get("access_state")) or "UNKNOWN")
+        source.setdefault("rights_state_raw", _as_text(source.get("rights_state")) or "UNKNOWN")
+        source.setdefault(
+            "publication_state_raw", _as_text(source.get("publication_state")) or "UNKNOWN"
+        )
+
+        rights_value = rights_aliases.get(
+            source["rights_state_raw"].upper(), source["rights_state_raw"].lower()
+        )
+        source["rights_state"] = rights_value if rights_value in ALL_RIGHTS else RIGHTS_UNKNOWN
+        publication_value = publication_aliases.get(
+            source["publication_state_raw"].upper(),
+            source["publication_state_raw"].lower(),
+        )
+        source["publication_state"] = (
+            publication_value
+            if publication_value
+            in {
+                PUBLICATION_BLOCKED,
+                PUBLICATION_INTERNAL_ONLY,
+                PUBLICATION_QUARANTINED,
+                PUBLICATION_APPROVED,
+                PUBLICATION_PUBLISHED,
+            }
+            else PUBLICATION_INTERNAL_ONLY
+        )
+
+        if not already_classified:
+            legacy_access = source["access_state_raw"].upper()
+            probe_upper = _as_text(probe_status).upper()
+            alternate = (
+                (source.get("alternate_urls") or [None])[0]
+                or _as_text(source.get("next_action"))
+                or None
+            )
+            decision = skip_for_source(_as_text(source.get("source_id")))
+            if decision is None and source["publication_state"] != PUBLICATION_PUBLISHED:
+                if legacy_access in skipped_access_states:
+                    decision = from_access_state(
+                        legacy_access,
+                        detail=(f"Recorded access state {legacy_access}; probe={probe_status}."),
+                        alternate_route=alternate,
+                        probe_status=probe_status,
+                    )
+                elif "403" in probe_upper:
+                    decision = from_http_status(
+                        403,
+                        detail=f"Probe outcome {probe_status}.",
+                        alternate_route=alternate,
+                        challenge="WAF" in probe_upper,
+                    )
+                elif "404" in probe_upper:
+                    decision = from_http_status(
+                        404,
+                        detail=f"Probe outcome {probe_status}.",
+                        alternate_route=alternate,
+                    )
+                elif "TRANSPORT_ERROR" in probe_upper or "FAILURE" in probe_upper:
+                    decision = from_error(
+                        _as_text(source.get("probe_notes")) or probe_status,
+                        alternate_route=alternate,
+                    )
+
+            if decision is not None:
+                source["access_state"] = "SKIPPED"
+                source.update(decision.as_dict())
+                source["challenge_detected"] = decision.reason in {
+                    "WAF_CHALLENGE",
+                    "HTTP_403",
+                }
+            else:
+                source["access_state"] = "OPEN"
+                source["skip_reason"] = None
+                source["skip_detail"] = None
+                source["alternate_route"] = None
+                source["next_retry_at"] = None
+                source["challenge_detected"] = False
+        # A later public acquisition can supersede a stale register decision.
+        # Apply the exact published-release evidence after the automatic skip
+        # decision, and keep the register values in register_* fields. This runs
+        # on every enrichment pass so repeated report generation is idempotent.
+        published_release_count = source.get("published_release_count") or 0
+        if isinstance(published_release_count, int) and published_release_count > 0:
+            source.setdefault("register_access_state", source.get("access_state_raw"))
+            source.setdefault("register_publication_state", source.get("publication_state_raw"))
+            if source.get("skip_reason"):
+                source.setdefault("register_skip_reason", source.get("skip_reason"))
+                source.setdefault("register_skip_detail", source.get("skip_detail"))
+                source.setdefault("register_alternate_route", source.get("alternate_route"))
+                source.setdefault("register_next_retry_at", source.get("next_retry_at"))
+            source["access_state"] = "OPEN"
+            source["publication_state"] = PUBLICATION_PUBLISHED
+            source["skip_reason"] = None
+            source["skip_detail"] = None
+            source["alternate_route"] = None
+            source["next_retry_at"] = None
+            source["challenge_detected"] = False
+            rights_states = source.get("published_rights_states") or []
+            if len(rights_states) == 1 and rights_states[0] in ALL_RIGHTS:
+                source["rights_state"] = rights_states[0]
+            source["publication_evidence"] = "published_release_exact_source_url"
+        # A public source whose register evidence already records published
+        # records is published under publicly_available_verified. This is applied
+        # only after the automated skip decision, so it can never promote an
+        # inaccessible source, and it runs on every enrichment pass.
+        if source["access_state"] == "OPEN" and source["rights_state_raw"].upper() == "PUBLISHED":
+            source["rights_state"] = RIGHTS_PUBLICLY_AVAILABLE_VERIFIED
+            source["publication_state"] = PUBLICATION_PUBLISHED
+        source.setdefault("robots_allowed", None)
+
+        if source["access_state"] == "SKIPPED" and source["skip_reason"] not in SKIP_REASON_SET:
+            raise ValueError(
+                f"{source.get('source_id')}: invalid skip reason {source['skip_reason']!r}"
+            )
+    # The summary is written beside the normalized rows. Recompute it after
+    # enrichment so the JSON summary cannot expose the legacy access/rights
+    # vocabularies that were preserved only in the ``*_raw`` evidence fields.
+    payload["counts"] = summarize_source_inventory(payload)
     return payload
 
 
 def validate_report_fields(payload: dict[str, Any]) -> list[str]:
     """Return data.md schema violations for an enriched inventory."""
 
+    from philfacilities_api.rights import (
+        ALL_RIGHTS,
+        PUBLICATION_APPROVED,
+        PUBLICATION_BLOCKED,
+        PUBLICATION_QUARANTINED,
+    )
+
+    from .skip_reasons import SKIP_REASON_SET
+
     errors: list[str] = []
+    publication_states = {
+        PUBLICATION_APPROVED,
+        PUBLICATION_BLOCKED,
+        PUBLICATION_INTERNAL_ONLY,
+        PUBLICATION_PUBLISHED,
+        PUBLICATION_QUARANTINED,
+    }
     for index, source in enumerate(payload.get("sources") or []):
         label = source.get("source_id") or f"source[{index}]"
         for field in REQUIRED_OUTPUT_FIELDS:
@@ -531,6 +900,9 @@ def validate_report_fields(payload: dict[str, Any]) -> list[str]:
                 errors.append(f"{label}: missing required output field {field}")
         if not _as_list(source.get("official_urls")):
             errors.append(f"{label}: official_urls must be non-empty")
+        for field in ("publisher", "publisher_type", "officiality_tier", "authority_level"):
+            if not _as_text(source.get(field)):
+                errors.append(f"{label}: {field} must be non-empty")
         if not isinstance(source.get("alternate_urls"), list):
             errors.append(f"{label}: alternate_urls must be a list")
         if not isinstance(source.get("data_fields_observed"), list):
@@ -545,6 +917,21 @@ def validate_report_fields(payload: dict[str, Any]) -> list[str]:
                     date.fromisoformat(str(value))
                 except ValueError:
                     errors.append(f"{label}: {field} must be an ISO date or null")
+        access = _as_text(source.get("access_state"))
+        if access not in {"OPEN", "SKIPPED"}:
+            errors.append(f"{label}: access_state must be OPEN or SKIPPED, got {access!r}")
+        if access == "SKIPPED":
+            if source.get("skip_reason") not in SKIP_REASON_SET:
+                errors.append(f"{label}: skipped source has no controlled skip_reason")
+            for field in ("skip_detail", "alternate_route", "next_retry_at"):
+                if not _as_text(source.get(field)).strip():
+                    errors.append(f"{label}: skipped source is missing {field}")
+        rights = _as_text(source.get("rights_state"))
+        if rights not in ALL_RIGHTS:
+            errors.append(f"{label}: rights_state is not a controlled value: {rights!r}")
+        publication = _as_text(source.get("publication_state"))
+        if publication not in publication_states:
+            errors.append(f"{label}: publication_state is not a controlled value: {publication!r}")
     return errors
 
 
@@ -597,9 +984,7 @@ def _region_searches_by_code(region_ledger: dict[str, Any]) -> dict[str, list[di
     return grouped
 
 
-def _source_regions(
-    source: dict[str, Any], region_searches: dict[str, list[dict[str, Any]]]
-) -> set[str]:
+def _source_regions(source: dict[str, Any]) -> set[str]:
     source_id = _as_text(source.get("source_id"))
     explicit = SOURCE_REGIONS.get(source_id)
     if explicit is not None:
@@ -625,7 +1010,7 @@ def _category_matrix(
             has_regional = False
             has_lgu = False
             for source in sources:
-                regions = _source_regions(source, region_searches)
+                regions = _source_regions(source)
                 if code not in regions:
                     continue
                 scope = _derive_geographic_scope(source)
@@ -711,7 +1096,7 @@ def build_gap_report(
         published = [
             s
             for s in category_sources
-            if s.get("publication_state") in {"PUBLISHED", "INTERNAL_ONLY"}
+            if s.get("publication_state") in {PUBLICATION_PUBLISHED, PUBLICATION_INTERNAL_ONLY}
         ]
         lines.append(f"### {category}")
         lines.append("")
@@ -787,7 +1172,7 @@ def build_blocked_register(payload: dict[str, Any]) -> str:
             token in probe_status for token in ("HTTP_403", "TRANSPORT_ERROR", "HTTP_404")
         ):
             continue
-        if source.get("publication_state") == "PUBLISHED":
+        if source.get("publication_state") == PUBLICATION_PUBLISHED:
             continue
         blocked.append(source)
 
@@ -873,12 +1258,14 @@ ACCESS_SCORE = {
     "UNVERIFIED": 0.5,
 }
 RIGHTS_SCORE = {
-    "PUBLISHED": 3.0,
-    "PUBLICLY_AVAILABLE_VERIFIED": 2.5,
-    "REVIEW_REQUIRED": 1.0,
-    "UNKNOWN": 0.5,
-    "AGREEMENT_REQUIRED": 0.5,
-    "RESTRICTED": 0.0,
+    RIGHTS_APPROVED_PUBLIC: 3.0,
+    RIGHTS_APPROVED_ATTRIBUTION: 3.0,
+    RIGHTS_PUBLICLY_AVAILABLE_VERIFIED: 2.5,
+    RIGHTS_REVIEW_REQUIRED: 1.0,
+    RIGHTS_UNKNOWN: 0.5,
+    RIGHTS_RESTRICTED: 0.0,
+    RIGHTS_DENIED: 0.0,
+    RIGHTS_EXPIRED: 0.0,
 }
 PRIORITY_SCORE = {"P0": 3.0, "P1": 2.0, "P2": 1.0, None: 0.0}
 
@@ -886,7 +1273,7 @@ PRIORITY_SCORE = {"P0": 3.0, "P1": 2.0, "P2": 1.0, None: 0.0}
 def _queue_score(source: dict[str, Any]) -> float:
     coverage = COVERAGE_SCORE.get(_as_text(source.get("coverage_scope")), 0.0)
     access = ACCESS_SCORE.get(_as_text(source.get("access_state")), 0.0)
-    rights = RIGHTS_SCORE.get(_as_text(source.get("rights_state")), 0.0)
+    rights = RIGHTS_SCORE.get(_as_text(source.get("rights_state")).lower(), 0.0)
     priority = PRIORITY_SCORE.get(source.get("priority"), 0.0)
     count = _record_count(source)
     count_score = min(3.0, math.log10(count + 1) / 2) if count else 0.5
@@ -897,7 +1284,7 @@ def build_acquisition_queue(payload: dict[str, Any]) -> str:
     candidates = [
         source
         for source in payload.get("sources") or []
-        if source.get("publication_state") not in {"PUBLISHED"}
+        if source.get("publication_state") != PUBLICATION_PUBLISHED
     ]
     ranked = sorted(
         candidates,
@@ -979,8 +1366,7 @@ def build_acquisition_queue(payload: dict[str, Any]) -> str:
 class SourceReportPaths:
     probe_ledger: Path
     gap_report: Path
-    blocked_register: Path
-    acquisition_queue: Path
+    acquisition_plan: Path
 
 
 def write_source_reports(
@@ -995,25 +1381,24 @@ def write_source_reports(
     if errors:
         raise ValueError("Source inventory is missing data.md fields: " + "; ".join(errors[:20]))
 
-    ledger = build_probe_ledger(payload)
     probe_path = target / "probe-ledger.jsonl"
-    with probe_path.open("w", encoding="utf-8") as handle:
-        for entry in ledger:
-            handle.write(json.dumps(entry, ensure_ascii=False, default=str) + "\n")
+    # A fresh probe ledger is the richer evidence and must not be replaced by the
+    # flatter inventory-derived ledger. Only seed it when no probe has run yet.
+    if not probe_path.exists():
+        ledger = build_probe_ledger(payload)
+        with probe_path.open("w", encoding="utf-8") as handle:
+            for entry in ledger:
+                handle.write(json.dumps(entry, ensure_ascii=False, default=str) + "\n")
 
     region_ledger = load_region_searches(region_ledger_path)
     gap_path = target / "gap-report.md"
     gap_path.write_text(build_gap_report(payload, region_ledger), encoding="utf-8")
 
-    blocked_path = target / "blocked-register.md"
-    blocked_path.write_text(build_blocked_register(payload), encoding="utf-8")
-
-    queue_path = target / "acquisition-queue.md"
-    queue_path.write_text(build_acquisition_queue(payload), encoding="utf-8")
+    plan_path = target / "acquisition-plan.md"
+    plan_path.write_text(build_acquisition_queue(payload), encoding="utf-8")
 
     return SourceReportPaths(
         probe_ledger=probe_path,
         gap_report=gap_path,
-        blocked_register=blocked_path,
-        acquisition_queue=queue_path,
+        acquisition_plan=plan_path,
     )

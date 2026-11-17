@@ -13,8 +13,8 @@ Ownership and operator remain unspecified because the directory does not state
 them. Directory presence and the source active flag are not treated as proof of
 current operation or walk-in availability.
 
-Contact fields are retained only in the private preserved artifact; the normalized
-public payload excludes phone and email values.
+The directory's phone and email values are institutional center contacts, not
+named staff contacts, so they are published as source-linked contact channels.
 """
 
 from __future__ import annotations
@@ -26,6 +26,7 @@ from urllib.parse import urlencode
 
 from ..acquisition import AcquisitionError, HttpAcquirer
 from ..contracts import (
+    ContactData,
     FacilityCandidate,
     FunctionData,
     LocationData,
@@ -41,7 +42,17 @@ FINDER_URL = "https://negosyocenter.dti.gov.ph/negosyo-center-directory"
 OVERVIEW_URL = "https://negosyocenter.dti.gov.ph/api/negosyo-centers/regions-overview"
 BY_REGION_URL = "https://negosyocenter.dti.gov.ph/api/negosyo-centers/by-region"
 TERMS_URL = "https://negosyocenter.dti.gov.ph/terms-and-conditions"
-PUBLIC_FIELDS = ("id", "region", "province", "city", "name", "address", "is_active")
+PUBLIC_FIELDS = (
+    "id",
+    "region",
+    "province",
+    "city",
+    "name",
+    "address",
+    "is_active",
+    "phone",
+    "email",
+)
 
 
 def _decode_json(result: Any, url: str) -> Any:
@@ -121,9 +132,8 @@ def fetch_negosyo_centers(acquirer: HttpAcquirer) -> tuple[bytes, dict[str, Any]
         "pages_fetched": pages,
         "record_count": len(records),
         "note": (
-            "Public DTI Negosyo Center directory artifact. Contact fields are retained "
-            "only in this private raw release; normalized public rows expose institutional "
-            "name, address and geographic labels only. No coordinates are present."
+            "Public DTI Negosyo Center directory artifact. Institutional phone and email "
+            "values are published as source-linked contacts. No coordinates are present."
         ),
         "records": records,
     }
@@ -140,16 +150,9 @@ class DtiNegosyoCenterAdapter:
     source_code = "dti-negosyo"
     parser_version = "dti-negosyo-json-1.0.0"
     schema_version = "dti-negosyo-json-v1"
-    expected_columns = {"required": {"id", "name", "region", "province", "city"}}  # noqa: RUF012
 
     def __init__(self, spec: ReleaseSpec) -> None:
         self.spec = spec
-
-    def discover(self, input_path: str | None) -> ReleaseSpec:
-        return self.spec
-
-    def acquire(self, spec: ReleaseSpec) -> bytes:
-        return spec.content
 
     def parse(self, spec: ReleaseSpec) -> ParsedRelease:
         try:
@@ -190,10 +193,10 @@ class DtiNegosyoCenterAdapter:
                     ),
                 },
                 {
-                    "code": "contact_fields_withheld",
+                    "code": "institutional_contacts_only",
                     "message": (
-                        "Phone and email values remain in the private preserved artifact "
-                        "but are excluded from the normalized public payload."
+                        "Phone and email values are published only as institutional center "
+                        "contacts; named staff contacts are not present in this directory."
                     ),
                 },
                 {
@@ -290,6 +293,13 @@ class DtiNegosyoCenterAdapter:
                 if active is False
                 else "unknown"
             )
+            contacts = []
+            phone = clean_text(payload.get("phone"))
+            if phone:
+                contacts.append(ContactData("phone", phone, source_field="phone"))
+            email = clean_text(payload.get("email"))
+            if email:
+                contacts.append(ContactData("email", email, source_field="email"))
             candidates.append(
                 FacilityCandidate(
                     source_record_key=row.source_record_key,
@@ -310,6 +320,7 @@ class DtiNegosyoCenterAdapter:
                         address_text=address_text or None,
                         precision="unknown",
                     ),
+                    contacts=contacts,
                     functions=[
                         FunctionData(
                             function_code="BUSINESS_ADVISORY",

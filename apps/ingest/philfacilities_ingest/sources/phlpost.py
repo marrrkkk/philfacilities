@@ -43,7 +43,7 @@ class _TableParser(HTMLParser):
         self._cell: list[str] | None = None
         self._depth = 0
 
-    def handle_starttag(self, tag: str, attrs) -> None:
+    def handle_starttag(self, tag: str, _attrs) -> None:
         tag = tag.lower()
         if tag == "table":
             self._depth += 1
@@ -108,16 +108,9 @@ class PhlPostLocatorAdapter:
     source_code = "phlpost"
     parser_version = "phlpost-locator-1.0.0"
     schema_version = "phlpost-locator-html-v1"
-    expected_columns = {"required": set(SOURCE_COLUMNS)}  # noqa: RUF012
 
     def __init__(self, spec: ReleaseSpec) -> None:
         self.spec = spec
-
-    def discover(self, input_path: str | None) -> ReleaseSpec:
-        return self.spec
-
-    def acquire(self, spec: ReleaseSpec) -> bytes:
-        return spec.content
 
     def parse(self, spec: ReleaseSpec) -> ParsedRelease:
         _header, rows = parse_locator_html(spec.content.decode("utf-8", errors="replace"))

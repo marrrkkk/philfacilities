@@ -36,29 +36,6 @@ from ..contracts import (
 )
 from .common import clean_text
 
-DOE_GRID_URLS = {
-    "Luzon": (
-        "https://d24qbtp4vooyzi.cloudfront.net/api/media/file/"
-        "DOE-EPIMB_LoEPP%20as%20of%20September%202026_Luzon%20Grid.pdf"
-        "?prefix=dev%2Fmedia"
-    ),
-    "Visayas": (
-        "https://d24qbtp4vooyzi.cloudfront.net/api/media/file/"
-        "DOE-EPIMB_LoEPP%20as%20of%20September%202026_Visayas%20Grid.pdf"
-        "?prefix=dev%2Fmedia"
-    ),
-    "Mindanao": (
-        "https://d24qbtp4vooyzi.cloudfront.net/api/media/file/"
-        "DOE-EPIMB_LoEPP%20as%20of%20September%202026_Mindanao%20Grid.pdf"
-        "?prefix=dev%2Fmedia"
-    ),
-    "Off-grid": (
-        "https://d24qbtp4vooyzi.cloudfront.net/api/media/file/"
-        "List%20of%20Existing%20Power%20Plants%20Off-Grid%20as%20of%2030%20April%202026.pdf"
-        "?prefix=dev%2Fmedia"
-    ),
-}
-DOE_PAGE_URL = "https://doe.gov.ph/electric-power-industry-projects/list-of-existing-power-plants-grid-connected"
 GOVERNMENT_MARKERS = (
     "NPC",
     "NATIONAL POWER CORPORATION",
@@ -253,17 +230,10 @@ class DoePowerPlantAdapter:
     source_code = "doe"
     parser_version = "doe-loepp-pdf-1.0.0"
     schema_version = "doe-loepp-pdf-v1"
-    expected_columns = {"required": {"facility_code", "installed_mw", "resource_type"}}  # noqa: RUF012
 
     def __init__(self, spec: ReleaseSpec, *, grid: str) -> None:
         self.spec = spec
         self.grid = grid
-
-    def discover(self, input_path: str | None) -> ReleaseSpec:
-        return self.spec
-
-    def acquire(self, spec: ReleaseSpec) -> bytes:
-        return spec.content
 
     def parse(self, spec: ReleaseSpec) -> ParsedRelease:
         records = parse_power_plants(spec.content, grid=self.grid)

@@ -305,16 +305,9 @@ class PhilHealthOfficeAdapter:
     source_code = "philhealth-offices"
     parser_version = "philhealth-offices-html-1.0.0"
     schema_version = "philhealth-offices-html-v1"
-    expected_columns = {"required": {"office_name", "office_category"}}  # noqa: RUF012
 
     def __init__(self, spec: ReleaseSpec) -> None:
         self.spec = spec
-
-    def discover(self, input_path: str | None) -> ReleaseSpec:
-        return self.spec
-
-    def acquire(self, spec: ReleaseSpec) -> bytes:
-        return spec.content
 
     def parse(self, spec: ReleaseSpec) -> ParsedRelease:
         try:

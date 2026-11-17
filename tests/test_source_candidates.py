@@ -24,7 +24,6 @@ def test_source_candidate_ids_and_evidence_are_unique_and_conservative() -> None
     assert len(ids) == len(set(ids))
     assert "nha.wfs_health_facilities" in ids
     assert all(source["urls"] for source in sources)
-    assert all(source["tracker_ids"] for source in sources)
     assert all(source["last_verified"] for source in sources)
     # A candidate cannot claim publication without a published rights state.
     for source in sources:

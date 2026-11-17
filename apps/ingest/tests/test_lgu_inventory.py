@@ -46,7 +46,7 @@ def codes(result: LguInventoryValidation) -> set[str]:
 
 
 def test_template_passes_validation() -> None:
-    template = Path(__file__).resolve().parents[3] / "expand/templates/lgu-inventory-template.csv"
+    template = Path(__file__).resolve().parents[3] / "data/templates/lgu-inventory-template.csv"
     result = validate_inventory(template)
     assert result.rows == 3
     assert result.accepted == 3

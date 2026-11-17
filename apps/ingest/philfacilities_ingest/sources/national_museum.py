@@ -21,6 +21,7 @@ from urllib.parse import urljoin, urlparse
 
 from ..acquisition import AcquisitionError, HttpAcquirer
 from ..contracts import (
+    ContactData,
     FacilityCandidate,
     FunctionData,
     LocationData,
@@ -135,16 +136,9 @@ class NationalMuseumDirectoryAdapter:
     source_code = "national-museum"
     parser_version = "national-museum-1.0.0"
     schema_version = "national-museum-json-v1"
-    expected_columns = {"required": {"name", "url"}}  # noqa: RUF012
 
     def __init__(self, spec: ReleaseSpec) -> None:
         self.spec = spec
-
-    def discover(self, input_path: str | None) -> ReleaseSpec:
-        return self.spec
-
-    def acquire(self, spec: ReleaseSpec) -> bytes:
-        return spec.content
 
     def parse(self, spec: ReleaseSpec) -> ParsedRelease:
         try:
@@ -229,6 +223,15 @@ class NationalMuseumDirectoryAdapter:
                 continue
             address = clean_text(record.get("address"))
             website = clean_text(record.get("url"))
+            contacts = []
+            for field, contact_type in (
+                ("telephone", "phone"),
+                ("email", "email"),
+                ("url", "website"),
+            ):
+                value = clean_text(record.get(field))
+                if value:
+                    contacts.append(ContactData(contact_type, value, source_field=field))
             candidates.append(
                 FacilityCandidate(
                     source_record_key=row.source_record_key,
@@ -246,6 +249,7 @@ class NationalMuseumDirectoryAdapter:
                     access_conditions=None,
                     record_status="active_in_registry",
                     location=LocationData(address_text=address, precision="unknown"),
+                    contacts=contacts,
                     functions=[
                         FunctionData(
                             function_code="MUSEUM",

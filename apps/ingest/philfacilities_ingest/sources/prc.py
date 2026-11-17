@@ -104,16 +104,9 @@ class PrcOfficeAdapter:
     source_code = "prc"
     parser_version = "prc-office-locator-html-1.0.0"
     schema_version = "prc-office-locator-html-v1"
-    expected_columns = {"required": {"office_name", "latitude", "longitude"}}  # noqa: RUF012
 
     def __init__(self, spec: ReleaseSpec) -> None:
         self.spec = spec
-
-    def discover(self, input_path: str | None) -> ReleaseSpec:
-        return self.spec
-
-    def acquire(self, spec: ReleaseSpec) -> bytes:
-        return spec.content
 
     def parse(self, spec: ReleaseSpec) -> ParsedRelease:
         records = parse_office_locator(spec.content.decode("utf-8", "replace"))

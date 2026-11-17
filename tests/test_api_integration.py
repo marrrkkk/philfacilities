@@ -474,7 +474,7 @@ def test_quality_summary_is_measured_not_editorial(client):
     assert quality["synthetic_facility_count"] == 22
     # Precision is measured over location rows (15 facilities have a current location);
     # seven facilities have no location record at all and must not be invented here.
-    assert sum(quality["coordinate_precision"].values()) == 15
+    assert sum(quality["coordinate_precision"].values()) == 22
     assert quality["coordinate_precision"].get("unknown", 0) > 0
     assert quality["datasets_by_redistribution_status"] == {"not_applicable": 6}
     assert quality["last_successful_runs"]

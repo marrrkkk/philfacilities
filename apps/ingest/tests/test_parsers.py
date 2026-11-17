@@ -267,7 +267,7 @@ def test_psgc_parser_preserves_leading_zero_codes() -> None:
         ],
         title="Regions and Provinces",
     )
-    units, warnings = parse_psgc_workbook(content, expected_filename="psgc.xlsx")
+    units, warnings = parse_psgc_workbook(content)
     assert warnings == []
     assert [unit.psgc_code for unit in units] == ["0100000000", "0100100000"]
     assert all(unit.psgc_code.startswith("01") for unit in units)
@@ -382,13 +382,134 @@ def test_osm_facility_layers_filter_to_named_public_service_features():
     assert adapter.validate(parsed).rejected_rows == 0
     candidates = adapter.normalize(parsed)
     by_name = {candidate.display_name: candidate for candidate in candidates}
+    assert by_name["Fire Station A"].facility_type == "emergency_facility"
     assert by_name["Fire Station A"].facility_subtype == "FIRE_STATION"
+    assert by_name["Police Station B"].facility_type == "emergency_facility"
     assert by_name["Police Station B"].facility_subtype == "POLICE_STATION"
     assert by_name["Police Station B"].ownership == "government"
     assert by_name["Town Hall D"].facility_subtype == "LOCAL_GOVERNMENT_OFFICE"
     assert by_name["Bus Terminal E"].facility_subtype == "BUS_STATION"
     assert by_name["Fire Station A"].location.precision == "map_geocoded"
     assert by_name["Fire Station A"].location.latitude == pytest.approx(14.05)
+
+
+def test_osm_facility_layers_skip_punctuation_only_names_but_keep_unicode_names():
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    sink = io.BytesIO()
+    pq.write_table(
+        pa.table(
+            {
+                "id": ["node/20", "node/21", "node/22", "node/23"],
+                "name": [".", "=", "内湖中华基督教会学校", "Barangay Hall"],
+                "name_en": [None, None, None, None],
+                "amenity": ["townhall", "townhall", "townhall", "townhall"],
+                "tourism": [None, None, None, None],
+                "operator_type": [None, None, None, None],
+                "bbox": [
+                    {"ymin": 14.0, "ymax": 14.1, "xmin": 121.0, "xmax": 121.1},
+                    {"ymin": 14.2, "ymax": 14.3, "xmin": 121.2, "xmax": 121.3},
+                    {"ymin": 14.4, "ymax": 14.5, "xmin": 121.4, "xmax": 121.5},
+                    {"ymin": 14.6, "ymax": 14.7, "xmin": 121.6, "xmax": 121.7},
+                ],
+            }
+        ),
+        sink,
+    )
+    spec = _spec(
+        agency="osm",
+        slug="osm-public-service-facilities",
+        filename="points_of_interest.parquet",
+        content=sink.getvalue(),
+    )
+    adapter = OsmFacilityLayerAdapter(spec, layer="points-of-interest")
+    parsed = adapter.parse(spec)
+    assert [row.normalized_payload["name"] for row in parsed.rows] == [
+        "内湖中华基督教会学校",
+        "Barangay Hall",
+    ]
+    assert adapter.validate(parsed).rejected_rows == 0
+
+
+def test_osm_pbf_rejects_punctuation_only_names():
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+    from philfacilities_ingest.sources.osm_pbf import OsmPbfFacilityAdapter
+
+    sink = io.BytesIO()
+    pq.write_table(
+        pa.table(
+            {
+                "id": ["node/30", "node/31"],
+                "name": [".", "Barangay Health Station"],
+                "name_en": [None, None],
+                "tags_json": [
+                    json.dumps({"amenity": "townhall"}),
+                    json.dumps({"amenity": "clinic"}),
+                ],
+                "latitude": [14.1, 14.2],
+                "longitude": [121.1, 121.2],
+                "geometry_type": ["node", "node"],
+                "coordinate_method": ["openstreetmap_pbf_node", "openstreetmap_pbf_node"],
+                "source_url": [None, None],
+                "source_sha256": [None, None],
+            }
+        ),
+        sink,
+    )
+    spec = _spec(
+        agency="osm",
+        slug="osm-pbf-facilities",
+        filename="pbf-extract.parquet",
+        content=sink.getvalue(),
+    )
+    adapter = OsmPbfFacilityAdapter(spec)
+    parsed = adapter.parse(spec)
+    assert len(parsed.rows) == 2
+    result = adapter.validate(parsed)
+    assert result.rejected_rows == 1
+    assert result.issues[0].code == "missing_facility_name"
+    assert [candidate.display_name for candidate in adapter.normalize(parsed)] == [
+        "Barangay Health Station"
+    ]
+
+
+def test_osm_points_of_interest_classify_health_posts_and_childcare():
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    sink = io.BytesIO()
+    pq.write_table(
+        pa.table(
+            {
+                "id": ["node/10", "node/11"],
+                "name": ["Health Post A", "Childcare Centre B"],
+                "name_en": [None, None],
+                "amenity": ["health_post", "childcare"],
+                "tourism": [None, None],
+                "operator_type": [None, None],
+                "bbox": [
+                    {"ymin": 14.0, "ymax": 14.1, "xmin": 121.0, "xmax": 121.1},
+                    {"ymin": 14.2, "ymax": 14.3, "xmin": 121.2, "xmax": 121.3},
+                ],
+            }
+        ),
+        sink,
+    )
+    spec = _spec(
+        agency="osm",
+        slug="osm-public-service-facilities",
+        filename="points_of_interest.parquet",
+        content=sink.getvalue(),
+    )
+    adapter = OsmFacilityLayerAdapter(spec, layer="points-of-interest")
+    candidates = adapter.normalize(adapter.parse(spec))
+    by_name = {candidate.display_name: candidate for candidate in candidates}
+    assert by_name["Health Post A"].facility_type == "health_facility"
+    assert by_name["Health Post A"].facility_subtype == "OTHER_HEALTH_FACILITY"
+    assert by_name["Childcare Centre B"].facility_type == "social_welfare_facility"
+    assert by_name["Childcare Centre B"].facility_subtype == "OTHER_SOCIAL_WELFARE_FACILITY"
 
 
 def test_osm_transport_layers_classify_air_sea_and_rail_features():
@@ -1025,7 +1146,7 @@ def test_nmis_naris_groups_duplicate_ltos_and_keeps_ownership_evidence_explicit(
     assert cold_storage.ownership_type == "PRIVATE_UNSPECIFIED"
     assert cold_storage.location.latitude == 14.5
     assert cold_storage.location.longitude == 121.0
-    assert cold_storage.location.precision == "geocoded"
+    assert cold_storage.location.precision == "map_geocoded"
     assert cold_storage.location.method == "naris_cached_address_geocode"
     assert cold_storage.functions[0].function_code == "FOOD_SAFETY"
     assert municipal.inclusion_class == "GOVERNMENT_FACILITY"
@@ -1151,7 +1272,7 @@ def test_ppa_port_list_preserves_hierarchy_marks_and_private_status() -> None:
     assert unregistered.functions[0].evidence["unregistered"] is True
 
 
-def test_dti_negosyo_centers_preserve_geography_and_withhold_contacts() -> None:
+def test_dti_negosyo_centers_preserve_geography_and_publish_institutional_contacts() -> None:
     artifact = {
         "finder_url": "https://negosyocenter.dti.gov.ph/negosyo-center-directory",
         "retrieved_at": "2026-11-15T13:40:00+00:00",
@@ -1177,7 +1298,7 @@ def test_dti_negosyo_centers_preserve_geography_and_withhold_contacts() -> None:
                 "address": "4F Paranaque City Hall, Paranaque City",
                 "phone": "02-0000-0000",
                 "hours": "08:00-17:00",
-                "email": "person@example.test",
+                "email": "ncparanaque@dti.gov.ph",
                 "is_active": False,
             },
         ],
@@ -1191,8 +1312,8 @@ def test_dti_negosyo_centers_preserve_geography_and_withhold_contacts() -> None:
     adapter = DtiNegosyoCenterAdapter(spec)
     parsed = adapter.parse(spec)
     assert len(parsed.rows) == 2
-    assert "phone" not in parsed.rows[0].normalized_payload
-    assert "email" not in parsed.rows[0].normalized_payload
+    assert parsed.rows[0].normalized_payload["phone"] is None
+    assert parsed.rows[0].normalized_payload["email"] == "NCMandaluyong_LGU@dti.gov.ph"
     assert "hours" not in parsed.rows[0].normalized_payload
     assert adapter.validate(parsed).rejected_rows == 0
 
@@ -1210,13 +1331,17 @@ def test_dti_negosyo_centers_preserve_geography_and_withhold_contacts() -> None:
     assert mandaluyong.location.precision == "unknown"
     assert mandaluyong.functions[0].function_code == "BUSINESS_ADVISORY"
     assert mandaluyong.functions[0].evidence["source_is_active"] is True
-    assert "person@example.test" not in json.dumps(
-        [candidate.__dict__ for candidate in candidates.values()], default=str
-    )
+    assert [(contact.contact_type, contact.value) for contact in mandaluyong.contacts] == [
+        ("email", "NCMandaluyong_LGU@dti.gov.ph")
+    ]
 
     paranaque = candidates["Parañaque City Negosyo Center"]
     assert paranaque.record_status == "inactive_in_registry"
     assert paranaque.functions[0].designation_status == "unknown"
+    assert [(contact.contact_type, contact.value) for contact in paranaque.contacts] == [
+        ("phone", "02-0000-0000"),
+        ("email", "ncparanaque@dti.gov.ph"),
+    ]
 
 
 def test_dti_negosyo_centers_reject_missing_names_and_duplicate_ids() -> None:
@@ -1479,7 +1604,7 @@ def test_blocker_detection_ignores_cdn_asset_hostnames() -> None:
     assert is_blocker_page(challenge) is True
 
 
-def test_sss_branch_locator_withholds_contact_person_and_publishes_institution_fields() -> None:
+def test_sss_branch_locator_withholds_contact_person_and_publishes_institutional_contacts() -> None:
     artifact = {
         "locator_url": "https://www.sss.gov.ph/sss-branch-locator/",
         "records": [
@@ -1524,11 +1649,12 @@ def test_sss_branch_locator_withholds_contact_person_and_publishes_institution_f
             "22 GF & 2F, NORFIL BUILDING NATIONAL HIGHWAY PUTATAN "
             "CITY OF MUNTINLUPA NCR, FOURTH DISTRICT"
         ),
+        "branchContact": "Tel No. : +63 (02) 88072608",
+        "branchEmail": "alabang@sss.gov.ph",
         "regionCode": "N",
         "regionName": "National Capital Region",
     }
     assert "JUAN DELA CRUZ" not in json.dumps(parsed.rows[0].normalized_payload)
-    assert "alabang@sss.gov.ph" not in json.dumps(parsed.rows[0].normalized_payload)
     result = adapter.validate(parsed)
     assert result.rejected_rows == 0
     assert {issue.code for issue in result.issues} == {"missing_branch_address"}
@@ -1547,6 +1673,10 @@ def test_sss_branch_locator_withholds_contact_person_and_publishes_institution_f
     assert alabang.functions[0].function_code == "SOCIAL_SECURITY_SERVICE"
     assert alabang.roles[0].role_type == "OPERATOR"
     assert alabang.roles[0].entity_type == "GOCC"
+    assert [(contact.contact_type, contact.value) for contact in alabang.contacts] == [
+        ("phone", "Tel No. : +63 (02) 88072608"),
+        ("email", "alabang@sss.gov.ph"),
+    ]
     assert "JUAN DELA CRUZ" not in json.dumps(
         [candidate.__dict__ for candidate in candidates.values()], default=str
     )

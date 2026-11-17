@@ -195,7 +195,7 @@ def _record_key(state: dict[str, Any], group: str, name: str, ordinal: int) -> s
     return base if ordinal <= 1 else f"{base}#{ordinal}"
 
 
-def _classify_group(state: dict[str, Any], group: str | None) -> str:
+def _classify_group(group: str | None) -> str:
     if group in {
         GROUP_BASEPORT,
         GROUP_TMO,
@@ -308,7 +308,7 @@ def parse_port_pdf(content: bytes) -> tuple[list[dict[str, Any]], dict[str, Any]
                     row = NUMBERED_ROW.match(first)
                     if not row:
                         continue
-                    group = _classify_group(state, state.get("group"))
+                    group = _classify_group(state.get("group"))
                     name = _text(row.group("name"))
                     remarks = _text(cells[3]) if len(cells) > 3 else ""
                     ordinal_key = (state.get("pmo_code") or "", group, _slug(name))
@@ -537,16 +537,9 @@ class PpaPortListAdapter:
     source_code = "ppa"
     parser_version = "ppa-port-list-1.0.0"
     schema_version = "ppa-port-list-pdf-v1"
-    expected_columns = {"required": {"NAME"}}  # noqa: RUF012
 
     def __init__(self, spec: ReleaseSpec) -> None:
         self.spec = spec
-
-    def discover(self, input_path: str | None) -> ReleaseSpec:
-        return self.spec
-
-    def acquire(self, spec: ReleaseSpec) -> bytes:
-        return spec.content
 
     def parse(self, spec: ReleaseSpec) -> ParsedRelease:
         records, metadata = parse_port_pdf(spec.content)

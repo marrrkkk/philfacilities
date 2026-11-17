@@ -54,7 +54,6 @@ PUBLIC_FIELDS = (
     "page_modified_time",
     "multi_use",
 )
-PHILIPPINES_BOUNDS = {"min_lat": 4.2, "max_lat": 21.5, "min_lon": 116.0, "max_lon": 127.0}
 
 
 def _slug(value: str) -> str:
@@ -246,18 +245,9 @@ class MandaluyongBarangayAdapter:
     source_code = "mandaluyong"
     parser_version = "mandaluyong-lgu-html-1.0.0"
     schema_version = "mandaluyong-lgu-html-v1"
-    expected_columns = {  # noqa: RUF012
-        "required": {"record_type", "name", "code", "address", "source_url"}
-    }
 
     def __init__(self, spec: ReleaseSpec) -> None:
         self.spec = spec
-
-    def discover(self, input_path: str | None) -> ReleaseSpec:
-        return self.spec
-
-    def acquire(self, spec: ReleaseSpec) -> bytes:
-        return spec.content
 
     def parse(self, spec: ReleaseSpec) -> ParsedRelease:
         try:

@@ -52,8 +52,14 @@ jobs:
       - name: Ruff format check
         run: uv run ruff format --check .
 
+      - name: Mypy (ingest core)
+        run: uv run mypy
+
       - name: Pytest (unit, contract, integration, data quality)
         run: uv run pytest
+
+      - name: Non-integration coverage floor
+        run: uv run pytest -m "not integration" -q --cov --cov-fail-under=60
 
       - name: Python dependency audit
         run: uv run --with pip-audit pip-audit
@@ -163,7 +169,7 @@ jobs:
         run: uv run alembic -c apps/api/alembic.ini upgrade head
 
       - name: Load synthetic demonstration data
-        run: uv run philfacilities-ingest load-demo --reset
+        run: uv run philfacilities-ingest demo load --reset
 
       - name: Build web application
         run: pnpm build

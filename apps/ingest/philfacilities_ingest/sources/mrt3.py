@@ -99,16 +99,9 @@ class Mrt3StationAdapter:
     source_code = "dotr"
     parser_version = "mrt3-station-html-1.0.0"
     schema_version = "mrt3-station-html-v1"
-    expected_columns = {"required": {"station_name"}}  # noqa: RUF012
 
     def __init__(self, spec: ReleaseSpec) -> None:
         self.spec = spec
-
-    def discover(self, input_path: str | None) -> ReleaseSpec:
-        return self.spec
-
-    def acquire(self, spec: ReleaseSpec) -> bytes:
-        return spec.content
 
     def parse(self, spec: ReleaseSpec) -> ParsedRelease:
         document = spec.content.decode("utf-8", "replace")

@@ -122,15 +122,27 @@ def test_missing_values_remain_unknown_not_zero(db_session):
     from philfacilities_api.models import Facility, FacilityLocation, HealthProfile
 
     facilities = db_session.scalars(select(Facility)).all()
-    facilities_without_location = [
+    current_locations = {
+        location.facility_id: location
+        for location in db_session.scalars(
+            select(FacilityLocation).where(FacilityLocation.is_current.is_(True))
+        ).all()
+    }
+    facilities_without_point = [
         facility
         for facility in facilities
-        if db_session.scalars(
-            select(FacilityLocation).where(FacilityLocation.facility_id == facility.id)
-        ).first()
-        is None
+        if facility.id not in current_locations
+        or current_locations[facility.id].latitude is None
+        or current_locations[facility.id].longitude is None
     ]
-    assert len(facilities_without_location) == 7
+    # Seven facilities have no source point. Under data.md §9.1 their PSGC/address
+    # evidence is still persisted as a location row with a null geometry rather
+    # than discarded, so absence of a point is measured on coordinates.
+    assert len(facilities_without_point) == 7
+    for facility in facilities_without_point:
+        location = current_locations[facility.id]
+        assert location.geom is None
+        assert location.psgc_code or location.address_text or location.postal_code
 
     # An absent location is not represented as the valid Gulf of Guinea point (0, 0).
     assert (
@@ -143,13 +155,32 @@ def test_missing_values_remain_unknown_not_zero(db_session):
     )
 
     unknown_precision = db_session.scalars(
-        select(FacilityLocation).where(FacilityLocation.precision == "unknown")
+        select(FacilityLocation).where(
+            FacilityLocation.precision == "unknown",
+            FacilityLocation.latitude.is_not(None),
+            FacilityLocation.longitude.is_not(None),
+        )
     ).all()
     assert unknown_precision
     # Coordinates exist but the source never claimed a precision; keep the method and do not
     # promote them to a precise pin.
     assert all(location.method for location in unknown_precision)
     assert all(location.precision == "unknown" for location in unknown_precision)
+
+    address_only = db_session.scalars(
+        select(FacilityLocation).where(
+            FacilityLocation.is_current.is_(True),
+            FacilityLocation.latitude.is_(None),
+            FacilityLocation.longitude.is_(None),
+        )
+    ).all()
+    # Address/PSGC-only claims are retained without inventing a coordinate or method.
+    assert address_only
+    assert all(location.geom is None for location in address_only)
+    assert all(
+        location.psgc_code or location.address_text or location.postal_code
+        for location in address_only
+    )
 
     missing_capability = db_session.scalars(
         select(HealthProfile).where(HealthProfile.service_capability_level.is_(None))

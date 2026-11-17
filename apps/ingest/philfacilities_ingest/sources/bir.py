@@ -13,7 +13,7 @@ this release. Address enrichment requires its own reviewed release.
 from __future__ import annotations
 
 import re
-from typing import Any, ClassVar
+from typing import Any
 
 from ..contracts import (
     FacilityCandidate,
@@ -109,18 +109,9 @@ class BirRevenueDistrictOfficeAdapter:
     source_code = "bir"
     parser_version = "bir-rao-006-2025-ocr-1.0.0"
     schema_version = "bir-rao-ocr-v1"
-    expected_columns: ClassVar[dict[str, set[str]]] = {
-        "required": {"rdo_code", "rdo_name", "revenue_region_number"}
-    }
 
     def __init__(self, spec: ReleaseSpec) -> None:
         self.spec = spec
-
-    def discover(self, input_path: str | None) -> ReleaseSpec:
-        return self.spec
-
-    def acquire(self, spec: ReleaseSpec) -> bytes:
-        return spec.content
 
     def parse(self, spec: ReleaseSpec) -> ParsedRelease:
         pages = ocr_pdf(spec.content)

@@ -1,8 +1,10 @@
-"""Deterministic cross-source identity matching and review-queue operations.
+"""Deterministic cross-source identity matching and audited merge operations.
 
-The matcher only *proposes* links. It never merges facilities automatically. A candidate
-must be accepted by a reviewer, and a merge is a separate explicit operation. Every
-decision is retained with the algorithm version and evidence.
+The routine path only *proposes* links and applies the narrowly deterministic exact
+name + PSGC + address merge. An uncertain candidate remains unmerged and is retried
+automatically; explicit accept/reject/merge commands exist for operator
+investigation, not as a required approval gate. Every decision is retained with the
+algorithm version and evidence.
 """
 
 from __future__ import annotations
@@ -24,6 +26,7 @@ from philfacilities_api.models import (
     EnrollmentObservation,
     Facility,
     FacilityChangeEvent,
+    FacilityContact,
     FacilityLocation,
     FacilitySourceLink,
     HealthAccreditation,
@@ -89,6 +92,7 @@ _MERGE_MODELS = (
     HealthProfile,
     HealthLicense,
     HealthAccreditation,
+    FacilityContact,
     QualityIssue,
 )
 
@@ -772,7 +776,43 @@ def merge_match_candidate(
         "facility_source_links": len(links),
         "facility_locations": len(locations),
     }
+    retained_on_source: dict[str, int] = {}
     for model in _MERGE_MODELS:
+        if model is FacilityContact:
+            contacts = list(
+                session.scalars(
+                    select(FacilityContact).where(FacilityContact.facility_id == source.id)
+                ).all()
+            )
+            moved = []
+            for contact in contacts:
+                duplicate = session.scalar(
+                    select(FacilityContact.id).where(
+                        FacilityContact.facility_id == target.id,
+                        FacilityContact.contact_type == contact.contact_type,
+                        FacilityContact.value == contact.value,
+                        # NULL source records are distinct in the unique
+                        # constraint, but two identical unattributed contacts
+                        # would still be duplicate display rows. Skip them too.
+                        (
+                            FacilityContact.source_record_id.is_(None)
+                            if contact.source_record_id is None
+                            else FacilityContact.source_record_id == contact.source_record_id
+                        ),
+                    )
+                )
+                if duplicate is not None:
+                    # Keep the duplicate on the source tombstone. Moving it
+                    # would violate uq_facility_contact_source.
+                    continue
+                contact.facility_id = target.id
+                moved.append(contact)
+            table = model.__tablename__
+            counts[table] = len(moved)
+            moved_ids[table] = [str(contact.id) for contact in moved]
+            if len(moved) != len(contacts):
+                retained_on_source[table] = len(contacts) - len(moved)
+            continue
         ids = list(session.scalars(select(model.id).where(model.facility_id == source.id)).all())
         if ids:
             session.execute(
@@ -793,6 +833,10 @@ def merge_match_candidate(
     source.record_status = "merged"
     source.updated_at = now
     target.updated_at = now
+
+    from .fusion import delete_fusions_for_facilities
+
+    delete_fusions_for_facilities(session, (source.id, target.id))
 
     session.add(
         FacilityChangeEvent(
@@ -833,6 +877,7 @@ def merge_match_candidate(
         "target_facility_after": _facility_snapshot(target),
         "moved_counts": counts,
         "moved_ids": moved_ids,
+        "retained_on_source": retained_on_source,
         "location_state_before": location_state_before,
         "merged_by": reviewer.strip(),
         "active": True,
@@ -923,6 +968,10 @@ def undo_match_merge(
     source.record_status = source_snapshot.get("record_status", "active")
     source.updated_at = now
     target.updated_at = now
+
+    from .fusion import delete_fusions_for_facilities
+
+    delete_fusions_for_facilities(session, (source.id, target.id))
 
     session.add(
         FacilityChangeEvent(

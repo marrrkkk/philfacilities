@@ -1,13 +1,20 @@
 from __future__ import annotations
 
 import hashlib
+import json
+import os
 import re
+import tempfile
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Protocol
 
 from .config import IngestSettings
+
+
+class RawStoreIntegrityError(ValueError):
+    """Raised when stored bytes do not match their recorded SHA-256."""
 
 
 @dataclass(frozen=True)
@@ -31,6 +38,32 @@ def _safe(value: str) -> str:
     return re.sub(r"[^A-Za-z0-9._-]+", "-", value).strip("-")
 
 
+def _verify_sha256(content: bytes, expected: str) -> None:
+    actual = hashlib.sha256(content).hexdigest()
+    if actual != expected:
+        raise RawStoreIntegrityError(
+            f"Raw object SHA-256 mismatch: expected {expected}, got {actual}."
+        )
+
+
+def _atomic_write(target: Path, content: bytes) -> None:
+    """Write bytes beside the target, fsync, then rename atomically."""
+
+    descriptor, temporary_name = tempfile.mkstemp(
+        dir=target.parent, prefix=f".{target.name}.", suffix=".tmp"
+    )
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(content)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, target)
+    except BaseException:
+        temporary.unlink(missing_ok=True)
+        raise
+
+
 class FilesystemRawStore:
     """Content-addressed filesystem store used for local development and tests."""
 
@@ -43,24 +76,52 @@ class FilesystemRawStore:
         digest = hashlib.sha256(content).hexdigest()
         directory = self.root / _safe(agency) / _safe(dataset) / _safe(release_label)
         directory.mkdir(parents=True, exist_ok=True)
-        target = directory / f"{digest[:16]}-{_safe(filename)}"
-        if not target.exists():
-            target.write_bytes(content)
-        manifest = directory / f"{digest[:16]}-manifest.json"
+        prefix = digest[:16]
+        target = directory / f"{prefix}-{_safe(filename)}"
+        if target.exists():
+            # Never silently replace a content-addressed object with different
+            # bytes. A corrupt store is surfaced, not repaired in place.
+            _verify_sha256(target.read_bytes(), digest)
+        else:
+            _atomic_write(target, content)
+        manifest = directory / f"{prefix}-manifest.json"
         if not manifest.exists():
-            manifest.write_text(
-                "{\n"
-                f'  "sha256": "{digest}",\n'
-                f'  "filename": "{filename}",\n'
-                f'  "bytes": {len(content)},\n'
-                f'  "preserved_at": "{datetime.now(UTC).isoformat()}"\n'
-                "}\n",
-                encoding="utf-8",
+            _atomic_write(
+                manifest,
+                (
+                    "{\n"
+                    f'  "sha256": "{digest}",\n'
+                    f'  "filename": {json.dumps(filename)},\n'
+                    f'  "bytes": {len(content)},\n'
+                    f'  "preserved_at": "{datetime.now(UTC).isoformat()}"\n'
+                    "}\n"
+                ).encode(),
             )
         return StoredObject(uri=str(target), sha256=digest, size_bytes=len(content))
 
     def read(self, uri: str) -> bytes:
-        return Path(uri).read_bytes()
+        path = Path(uri)
+        content = path.read_bytes()
+        manifest = path.with_name(f"{path.name.split('-', 1)[0]}-manifest.json")
+        if manifest.exists():
+            document = json.loads(manifest.read_text(encoding="utf-8"))
+            expected = str(document.get("sha256") or "")
+            expected_bytes = document.get("bytes")
+            if expected:
+                _verify_sha256(content, expected)
+            if isinstance(expected_bytes, int) and len(content) != expected_bytes:
+                raise RawStoreIntegrityError(
+                    f"Raw object size mismatch for {path}: expected {expected_bytes} bytes, "
+                    f"got {len(content)}."
+                )
+        else:
+            # Legacy objects have no manifest; the filename still carries the
+            # first 16 hex characters of the checksum.
+            expected_prefix = path.name.split("-", 1)[0]
+            actual_prefix = hashlib.sha256(content).hexdigest()[:16]
+            if expected_prefix and actual_prefix != expected_prefix:
+                raise RawStoreIntegrityError(f"Raw object SHA-256 prefix mismatch for {path}.")
+        return content
 
 
 class S3RawStore:
@@ -101,7 +162,12 @@ class S3RawStore:
         if not uri.startswith(prefix) or uri == prefix:
             raise ValueError(f"Object URI is not in the configured bucket {self.bucket!r}: {uri!r}")
         response = self.client.get_object(Bucket=self.bucket, Key=uri[len(prefix) :])
-        return response["Body"].read()
+        content = response["Body"].read()
+        metadata = response.get("Metadata") or {}
+        expected = str(metadata.get("sha256") or "")
+        if expected:
+            _verify_sha256(content, expected)
+        return content
 
 
 def build_store(settings: IngestSettings) -> RawStore:

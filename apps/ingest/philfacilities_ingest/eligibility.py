@@ -1,6 +1,6 @@
 """Structural inclusion/exclusion rules for facility candidates.
 
-The binding policy is in ``expand/docs/12-INCLUSION-AND-OWNERSHIP-POLICY.md``. This
+The binding policy is in ``docs/data-policy.md``. This
 module implements only the parts that can be decided without guessing: a candidate
 must use the published facility categories and kinds, must not be a raw commercial
 property label, and an ``OTHER_QUALIFYING_FACILITY`` must carry some evidence of a

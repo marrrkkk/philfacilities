@@ -39,6 +39,21 @@ def clean_text(value: Any) -> str | None:
     return text or None
 
 
+def has_usable_name(value: Any) -> bool:
+    """Return True when a label contains at least one letter or digit.
+
+    OpenStreetMap occasionally stores punctuation-only placeholders such as
+    ``.`` or ``=`` in the ``name`` tag.  Those are not facility names and must
+    not become community facilities.  The check is Unicode-aware so legitimate
+    names written in non-Latin scripts are retained.
+    """
+
+    text = clean_text(value)
+    if text is None:
+        return False
+    return re.search(r"[^\W_]", text, flags=re.UNICODE) is not None
+
+
 def parse_int(value: Any) -> int | None:
     text = clean_text(value)
     if text is None:

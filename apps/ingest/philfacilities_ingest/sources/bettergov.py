@@ -15,7 +15,6 @@ from __future__ import annotations
 import io
 import json
 import re
-from datetime import date
 from typing import Any
 
 import pyarrow.parquet as pq
@@ -99,23 +98,15 @@ class OSMParquetAdapter:
     source_code = "osm"
     parser_version = "osm-geoparquet-1.0.0"
     schema_version = "hotosm-phl-geoparquet-v1"
-    expected_columns = {"required": {"id", "name", "bbox"}}  # noqa: RUF012
 
     def __init__(self, spec: ReleaseSpec, *, facility_domain: str) -> None:
         self.spec = spec
         self.facility_domain = facility_domain
-        self._rows: list[dict[str, Any]] = []
-
-    def discover(self, input_path: str | None) -> ReleaseSpec:
-        return self.spec
-
-    def acquire(self, spec: ReleaseSpec) -> bytes:
-        return spec.content
 
     def parse(self, spec: ReleaseSpec) -> ParsedRelease:
         table = pq.read_table(io.BytesIO(spec.content))
         columns = set(table.column_names)
-        missing = self.expected_columns["required"] - columns
+        missing = {"id", "name", "bbox"} - columns
         if missing:
             raise ValueError(
                 f"OSM GeoParquet schema changed: missing columns {sorted(missing)}; "
@@ -370,12 +361,3 @@ def build_psgc_release_payload(
 def load_psgc_release_payload(content: bytes) -> dict[str, list[dict[str, Any]]]:
     document = json.loads(content)
     return document.get("collections", document)
-
-
-def parse_date_basis(value: str | None) -> date | None:
-    if not value:
-        return None
-    try:
-        return date.fromisoformat(value[:10])
-    except ValueError:
-        return None

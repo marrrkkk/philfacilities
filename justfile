@@ -16,7 +16,7 @@ install:
     pnpm install --frozen-lockfile
 
 setup: install db-up migrate
-    @echo "Local dependencies and PostgreSQL/PostGIS are ready. Run 'uv run philfacilities-ingest load-real --skip-deped' to load the rights-cleared real data."
+    @echo "Local dependencies and PostgreSQL/PostGIS are ready. Run 'uv run philfacilities-ingest source run --group approved' to load the rights-cleared real data."
 
 format:
     uv run ruff format .
@@ -39,7 +39,7 @@ fixtures:
     uv run philfacilities-ingest generate-fixtures
 
 demo:
-    uv run philfacilities-ingest load-demo --reset
+    uv run philfacilities-ingest demo load --reset
 
 demo-status:
     uv run philfacilities-ingest status
@@ -71,6 +71,7 @@ test-db:
 lint:
     uv run ruff check .
     uv run ruff format --check .
+    uv run mypy
     pnpm lint
 
 typecheck:

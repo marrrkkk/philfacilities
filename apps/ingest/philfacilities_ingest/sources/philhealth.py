@@ -224,20 +224,11 @@ class PhilHealthPdfAdapter:
     source_code = "philhealth"
     parser_version = "philhealth-pdf-1.2.0"
     schema_version = "philhealth-accredited-pdf-v1"
-    expected_columns = {  # noqa: RUF012
-        "required": {*NAME_ALIASES, *MUNICIPALITY_ALIASES, *EXPIRY_ALIASES},
-    }
 
     def __init__(self, spec: ReleaseSpec, provider_category: str = "Hospital") -> None:
         self.spec = spec
         self.provider_category = provider_category
         self._has_expiry_field = False
-
-    def discover(self, input_path: str | None) -> ReleaseSpec:
-        return self.spec
-
-    def acquire(self, spec: ReleaseSpec) -> bytes:
-        return spec.content
 
     def _table_rows(self, content: bytes) -> list[dict]:
         tables: list[tuple[int, list[list[object]]]] = []
@@ -445,7 +436,8 @@ class _LinkParser(HTMLParser):
         super().close()
 
 
-def _date_from_filename(filename: str) -> tuple[date | None, str]:
+def date_from_filename(filename: str) -> tuple[date | None, str]:
+    """Read the publication date encoded in a PhilHealth PDF file name."""
     stem = filename.rsplit(".", 1)[0]
     match = re.search(r"_(\d{6})$", stem)
     if not match:
@@ -473,7 +465,7 @@ def parse_catalog(index_html: str, *, base_url: str) -> list[PhilHealthCatalogEn
         if filename in seen:
             continue
         seen.add(filename)
-        date_basis, label_basis = _date_from_filename(filename)
+        date_basis, label_basis = date_from_filename(filename)
         entries.append(
             PhilHealthCatalogEntry(
                 filename=filename,

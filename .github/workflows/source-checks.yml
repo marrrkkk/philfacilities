@@ -53,7 +53,7 @@ jobs:
 
       - name: Run due source checks
         if: steps.database.outputs.configured == 'true'
-        run: uv run philfacilities-ingest check-due-sources
+        run: uv run philfacilities-ingest source check --due
 
       - name: Show monitoring snapshot
         if: steps.database.outputs.configured == 'true'
