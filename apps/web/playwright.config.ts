@@ -7,6 +7,11 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
+  // Local runs query the complete ingested database; an unfiltered directory
+  // page can take 20s on a cold national dataset. CI uses the small synthetic
+  // demo, so the generous ceiling only affects local failures.
+  timeout: 120_000,
+  expect: { timeout: 15_000 },
   // One worker keeps the shared API rate limit and dynamic-render load deterministic.
   // The suite is small; parallel workers caused avoidable timeouts and 429s locally.
   workers: 1,

@@ -21,7 +21,7 @@ const LOCATION_PRECISION =
 const PRECISION_LABEL = process.env.PHILFACILITIES_E2E_PRECISION_LABEL ?? "Map geocoded";
 const SOURCE_AGENCY = process.env.PHILFACILITIES_E2E_SOURCE_AGENCY ?? "osm";
 const SOURCE_LABEL =
-  process.env.PHILFACILITIES_E2E_SOURCE_LABEL ?? "HOT-OSM-PHL-EDUCATION-2026-11-15";
+  process.env.PHILFACILITIES_E2E_SOURCE_LABEL ?? "HOT-OSM-PHL-EDUCATION";
 const SOURCE_ATTRIBUTION =
   process.env.PHILFACILITIES_E2E_SOURCE_ATTRIBUTION ??
   "© OpenStreetMap contributors, via HOT and BetterGov.PH";
@@ -33,6 +33,12 @@ const MAP_RESULT_NAME =
 
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+async function expectDirectoryHeading(page: Page, name: string | RegExp = /matching records/i) {
+  // Local E2E runs against the full ingested database, where the unfiltered
+  // directory can take 20s to render. CI uses the synthetic demo.
+  await expect(page.getByRole("heading", { name })).toBeVisible({ timeout: 30_000 });
 }
 
 async function expectSearchQuery(page: Page, expected: string) {
@@ -90,7 +96,7 @@ test.describe("directory", () => {
     await page.keyboard.press("Enter");
 
     await expectSearchQuery(page, SCHOOL_SEARCH);
-    await expect(page.getByRole("heading", { name: "1 matching records" })).toBeVisible();
+    await expectDirectoryHeading(page, "1 matching records");
   });
 
   test("search narrows results and preserves the query in the URL", async ({ page }) => {
@@ -105,7 +111,7 @@ test.describe("directory", () => {
     await page.getByRole("button", { name: "Apply filters" }).click();
 
     await expectSearchQuery(page, SCHOOL_SEARCH);
-    await expect(page.getByRole("heading", { name: "1 matching records" })).toBeVisible();
+    await expectDirectoryHeading(page, "1 matching records");
     await expect(
       page.getByRole("link", { name: SCHOOL_NAME, exact: true }),
     ).toBeVisible();
@@ -133,7 +139,7 @@ test.describe("directory", () => {
     await expect(page).toHaveURL(/type=school/);
     await expect(page).toHaveURL(new RegExp(`province_code=${PROVINCE_CODE}`));
     await expect(page).toHaveURL(new RegExp(`source=${SOURCE_AGENCY}`));
-    await expect(page.getByRole("heading", { name: "1 matching records" })).toBeVisible();
+    await expectDirectoryHeading(page, "1 matching records");
   });
 });
 
