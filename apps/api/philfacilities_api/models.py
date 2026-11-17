@@ -141,6 +141,37 @@ class Release(Base):
     )
 
 
+class ReleaseFacilitySnapshot(Base):
+    """Pre-release canonical state used to roll back one source release.
+
+    Ingestion updates facilities in place. This table records the facility and its
+    release-visible children *before* the release first touches them, so a later
+    authorised rollback can restore the prior canonical state without rewriting the
+    retained source records or pretending the release never existed.
+    """
+
+    __tablename__ = "release_facility_snapshots"
+    __table_args__ = (
+        UniqueConstraint("release_id", "facility_id", name="uq_release_facility_snapshot"),
+        Index("ix_release_facility_snapshots_release", "release_id"),
+        {"schema": "source"},
+    )
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    release_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("source.releases.id", ondelete="CASCADE"), nullable=False
+    )
+    facility_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("core.facilities.id", ondelete="SET NULL")
+    )
+    was_created: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    state: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    created_at: Mapped[datetime] = created_at()
+    restored_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    restored_by: Mapped[str | None] = mapped_column(String(120))
+    restore_note: Mapped[str | None] = mapped_column(Text)
+
+
 class SourceRecord(Base):
     __tablename__ = "records"
     __table_args__ = (

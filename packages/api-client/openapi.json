@@ -4639,6 +4639,13 @@
             "type": "array",
             "title": "By Region"
           },
+          "by_lgu_coverage": {
+            "items": {
+              "$ref": "#/components/schemas/LguCoverageRow"
+            },
+            "type": "array",
+            "title": "By Lgu Coverage"
+          },
           "source_coverage": {
             "items": {
               "$ref": "#/components/schemas/SourceCoverageRow"
@@ -6421,6 +6428,43 @@
           "sha256"
         ],
         "title": "LatestReleaseOut"
+      },
+      "LguCoverageRow": {
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "NATIONAL",
+              "REGIONAL",
+              "PARTICIPATING_LGUS",
+              "SELECTED_LGUS",
+              "UNKNOWN"
+            ],
+            "title": "State"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "source_count": {
+            "type": "integer",
+            "title": "Source Count"
+          },
+          "dataset_slugs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Dataset Slugs"
+          }
+        },
+        "type": "object",
+        "required": [
+          "state",
+          "label",
+          "source_count"
+        ],
+        "title": "LguCoverageRow"
       },
       "LicenseOut": {
         "properties": {

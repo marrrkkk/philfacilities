@@ -167,7 +167,7 @@ redistribution. The existence of an API endpoint is not a grant of data rights.
 
 | Source | State | Notes |
 |---|---|---|
-| PhilHealth accredited healthcare facilities | `approved_with_attribution` / `published` | 25 provider-category PDFs, 24,986 accreditations, 13,546 linked facilities. Time-bound and benefit-package-specific |
+| PhilHealth accredited healthcare facilities | `approved_with_attribution` / `published` | 26 provider-category releases, 28,207 accreditations, 13,546 linked facilities (13,545 public). Time-bound and benefit-package-specific |
 | HOT/OSM health facilities | `approved_with_attribution` / `published` | 17,410 linked facilities. Crowd-sourced; coordinates are bbox centres (`map_geocoded`) |
 | HOT/OSM education facilities | `approved_with_attribution` / `published` | 52,824 linked facilities. Crowd-sourced; not a DepEd masterlist |
 | BetterGov PSGC Q2 2024 mirror | `approved_with_attribution` / `published` | 43,760 units; supplementary snapshot, not the latest official PSA release |

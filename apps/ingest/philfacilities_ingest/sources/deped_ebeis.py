@@ -8,6 +8,7 @@ private source-record store; the public API never exposes this dataset.
 
 from __future__ import annotations
 
+import re
 from html.parser import HTMLParser
 from typing import Any
 
@@ -81,10 +82,32 @@ def parse_masterlist_html(html: str) -> tuple[list[str], list[dict[str, Any]]]:
     return header, rows
 
 
+PERSONAL_FIELD = "Head / Position"
+
+
+def school_levels(value: str | None) -> tuple[bool | None, bool | None, bool | None]:
+    """Map the free-text EBEIS School Type cell to elementary/JHS/SHS flags.
+
+    The source cell lists grade bands rather than an ownership or sector code. Values
+    that cannot be interpreted are returned as ``None`` instead of guessed.
+    """
+
+    text = clean_text(value)
+    if not text:
+        return None, None, None
+    normalized = re.sub(r"\s+", " ", text.casefold())
+    offers_es = True if ("kinder" in normalized or "grade 1-6" in normalized) else None
+    offers_jhs = True if "grade 7-10" in normalized else None
+    offers_shs = True if "grade 11-12" in normalized else None
+    if offers_es is None and offers_jhs is None and offers_shs is None:
+        return None, None, None
+    return offers_es, offers_jhs, offers_shs
+
+
 class DepEdEBEISAdapter:
     source_code = "deped"
-    parser_version = "deped-ebeis-html-1.0.0"
-    schema_version = "deped-ebeis-masterlist-html-v1"
+    parser_version = "deped-ebeis-html-1.1.0"
+    schema_version = "deped-ebeis-masterlist-html-v2"
     expected_columns = {"required": {"School ID", "School Name", "Head / Position", "Address"}}  # noqa: RUF012
 
     def __init__(self, spec: ReleaseSpec) -> None:
@@ -103,6 +126,7 @@ class DepEdEBEISAdapter:
             school_id = normalise_code(row.get("School ID"))
             if not school_id:
                 continue
+            normalized = {key: value for key, value in row.items() if key != PERSONAL_FIELD}
             parsed.append(
                 ParsedRow(
                     # Duplicate school IDs can legitimately appear when EBEIS lists
@@ -112,7 +136,7 @@ class DepEdEBEISAdapter:
                     source_record_key=f"{school_id}:row:{row['_table_row']}",
                     row_reference=f"html_row:{row['_table_row']}",
                     raw_payload=row,
-                    normalized_payload=row,
+                    normalized_payload=normalized,
                 )
             )
         if not parsed:
@@ -123,12 +147,21 @@ class DepEdEBEISAdapter:
             schema_version=self.schema_version,
             warnings=[
                 {
-                    "code": "contains_school_head_names",
+                    "code": "withheld_school_head_names",
                     "message": (
-                        "The source table contains school-head personal names. The dataset is "
-                        "internal-only and must not be published without privacy review."
+                        "The source table contains school-head personal names. The raw row is "
+                        "retained in the private source store, but the normalized payload and "
+                        "facility candidate omit 'Head / Position'."
                     ),
-                }
+                },
+                {
+                    "code": "ownership_not_in_source",
+                    "message": (
+                        "The EBEIS result set has no reliable per-row public/private sector "
+                        "field. Ownership is left unknown, so canonical rows remain discovery "
+                        "candidates rather than public government or private-provider records."
+                    ),
+                },
             ],
         )
 
@@ -187,7 +220,7 @@ class DepEdEBEISAdapter:
             name = clean_text(payload.get("School Name"))
             if not school_id or not name:
                 continue
-            school_type = clean_text(payload.get("School Type"))
+            offers_es, offers_jhs, offers_shs = school_levels(payload.get("School Type"))
             candidates.append(
                 FacilityCandidate(
                     source_record_key=row.source_record_key,
@@ -195,13 +228,19 @@ class DepEdEBEISAdapter:
                     row_reference=row.row_reference,
                     display_name=name,
                     facility_type="school",
-                    facility_subtype=school_type,
+                    # Sector is missing, so no public/private subtype can be asserted.
+                    facility_subtype="OTHER_SCHOOL",
                     ownership="unknown",
                     record_status="active_in_registry",
                     location=LocationData(
                         address_text=clean_text(payload.get("Address")),
                     ),
-                    school=SchoolData(deped_school_id=school_id),
+                    school=SchoolData(
+                        deped_school_id=school_id,
+                        offers_es=offers_es,
+                        offers_jhs=offers_jhs,
+                        offers_shs=offers_shs,
+                    ),
                 )
             )
         return candidates

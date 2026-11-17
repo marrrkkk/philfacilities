@@ -55,7 +55,7 @@ No record may appear in public API, map, search, counts, bulk downloads, or clie
 
 - DOH NHFR FOI files may be supplied under a signed data-release/use agreement. Review the actual agreement before publication.
 - DepEd files have their own download/terms flow. Read and store the exact terms accepted for the release.
-- PhilHealth files are public provider directories. The public disclaimer permits use/reproduction for educational or informative purposes; 25 provider-category releases are published with attribution. The acquired Antenatal release remains blocked because its parse was withdrawn and awaits a validated re-ingestion.
+- PhilHealth files are public provider directories. The public disclaimer permits use/reproduction for educational or informative purposes; 26 provider-category releases are published with attribution (28,207 accreditations). The Antenatal release was re-ingested with the corrected parser (3,221 rows, ending at page 120); its earlier 6,562-row annex double-count remains withdrawn.
 - DepEd EBEIS is a public result set. The current source release is published for institution-level fields with attribution and school-head names withheld; canonical rows remain internal pending field-level mapping/privacy review.
 - PHLPost publishes 1,272 factual locator facilities under a recorded product decision; the page's copyright notice is recorded and an earlier review-required release is retained internally.
 - Geoportal restrictions are layer-specific. The Geoportal inventory labels data restrictions, and the download guide says contact the data owner for layers that are restricted or not downloadable.

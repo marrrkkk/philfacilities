@@ -19,7 +19,7 @@ Exit gate: reproducible local setup; measured design tokens and screenshots; arc
 
 Acquired and published with recorded rights:
 
-- PhilHealth 25 provider-category PDFs: 24,986 accreditations.
+- PhilHealth 26 provider-category releases: 28,207 accreditations.
 - HOT/OSM health and education GeoParquet: 70,234 linked facilities.
 - BetterGov PSGC Q2 2024 mirror: 43,760 geographic units.
 - PSA 2024 Census population via BetterGov: 134,748 observations.
@@ -59,7 +59,7 @@ Exit gate: unit and migration tests pass; same source file loads idempotently; a
 Deliverables:
 
 - BetterGov PSGC ingestion with a real Q2 2024 release.
-- PhilHealth PDF parser and 25 published categories.
+- PhilHealth PDF parser and 26 published categories.
 - HOT/OSM GeoParquet ingestion with bbox-centre precision.
 - PSA 2024 Census population connector.
 - DepEd EBEIS internal-only ingestion.

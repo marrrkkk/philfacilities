@@ -45,13 +45,15 @@ from .fixtures import (
     philhealth_pdf,
     psgc_workbook,
 )
-from .manifest import write_release_manifest
+from .lgu_inventory import validate_inventory
+from .manifest import render_release_notes, write_release_manifest
 from .matching import (
     MatchingError,
     accept_match_candidate,
     generate_match_candidates,
     merge_match_candidate,
     reject_match_candidate,
+    undo_match_merge,
 )
 from .pipeline import (
     build_engine,
@@ -61,6 +63,7 @@ from .pipeline import (
     run_psgc_ingestion,
     session_factory,
 )
+from .release_rollback import ReleaseRollbackError, rollback_release
 from .source_candidates import (
     load_source_candidates,
     summarize_source_candidates,
@@ -73,18 +76,26 @@ from .sources.bettergov_stats import (
     load_population_snapshot,
 )
 from .sources.bir import BirRevenueDistrictOfficeAdapter
+from .sources.cainta import CaintaHealthCenterAdapter, fetch_cainta_health_centers
 from .sources.ched_heida import ChedHeidaAdapter, fetch_heida_directory
 from .sources.deped import DepEdEnrollmentAdapter, DepEdMasterlistAdapter, DepEdResourceAdapter
 from .sources.deped_ebeis import DepEdEBEISAdapter
 from .sources.doh import DOHNHFRAdapter
 from .sources.dswd_crcf import DswdCrcfDirectoryAdapter
 from .sources.dti_negosyo import DtiNegosyoCenterAdapter, fetch_negosyo_centers
+from .sources.mandaluyong import MandaluyongBarangayAdapter, fetch_mandaluyong_directory
 from .sources.national_museum import NationalMuseumDirectoryAdapter, fetch_national_museum_directory
+from .sources.nbi import NbiOfficeAdapter, fetch_nbi_offices
 from .sources.nlp import NlpPublicLibraryPdfAdapter
 from .sources.nmis_naris import NmisNarisDirectoryAdapter
+from .sources.pagasa_aws import PagasaAwsAdapter, fetch_pagasa_aws
+from .sources.pasay import PasayHealthCenterAdapter, fetch_pasay_health_centers
 from .sources.philhealth import PhilHealthPdfAdapter
+from .sources.philhealth_offices import PhilHealthOfficeAdapter, fetch_philhealth_offices
 from .sources.phlpost import PhlPostLocatorAdapter
 from .sources.ppa import PpaPortListAdapter
+from .sources.quezon_city import QuezonCityLguAdapter, fetch_quezon_city_directory
+from .sources.quezon_city_places import QuezonCityPlacesAdapter, fetch_quezon_city_places
 from .sources.registry import (
     EBEIS_REGIONS,
     REAL_SOURCES,
@@ -98,8 +109,10 @@ from .sources.registry import (
     philhealth_dataset_slug,
     psgc_release_content,
     psgc_units,
+    source_review_rows,
     source_spec,
 )
+from .sources.sss_branch import SssBranchAdapter, fetch_sss_branches
 
 app = typer.Typer(
     add_completion=False,
@@ -121,12 +134,18 @@ REAL_AGENCY_METADATA = {
     "dswd": ("Department of Social Welfare and Development", "government"),
     "nlp": ("National Library of the Philippines", "government"),
     "nmp": ("National Museum of the Philippines", "government"),
+    "nbi": ("National Bureau of Investigation", "government"),
     "nmis": ("National Meat Inspection Service", "government"),
     "osm": ("OpenStreetMap contributors (via HOT and BetterGov.PH)", "community"),
     "philhealth": ("Philippine Health Insurance Corporation", "government"),
     "phlpost": ("Philippine Postal Corporation", "government"),
     "ppa": ("Philippine Ports Authority", "government"),
     "psa": ("Philippine Statistics Authority", "government"),
+    "sss": ("Social Security System", "government"),
+    "pagasa": (
+        "Philippine Atmospheric, Geophysical and Astronomical Services Administration",
+        "government",
+    ),
     "tesda": ("Technical Education and Skills Development Authority", "government"),
 }
 
@@ -529,6 +548,50 @@ def source_candidates_command(
         raise typer.Exit(code=1)
 
 
+@app.command("validate-lgu-inventory")
+def validate_lgu_inventory_command(
+    path: Annotated[
+        Path,
+        typer.Argument(exists=True, dir_okay=False, help="LGU inventory CSV to validate."),
+    ],
+    as_json: Annotated[
+        bool, typer.Option("--json", help="Print the validation summary as JSON.")
+    ] = False,
+    output: Annotated[
+        Path | None,
+        typer.Option("--output", help="Write the full validation report as JSON."),
+    ] = None,
+) -> None:
+    """Validate an LGU facility-inventory submission without importing it.
+
+    A valid row is still a proposal. This command only checks schema, taxonomy,
+    geography and provenance shape; it never publishes records, infers ownership,
+    or accepts personal/security-sensitive columns.
+    """
+
+    result = validate_inventory(path)
+    payload = result.as_dict()
+    if output is not None:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    if as_json:
+        typer.echo(json.dumps(payload, indent=2))
+    else:
+        typer.echo(
+            f"rows={result.rows} accepted={result.accepted} rejected={result.rejected} "
+            f"issues={len(result.issues)}"
+        )
+        for issue in result.issues:
+            typer.echo(
+                f"{issue.severity.upper()} row={issue.row_number or '-'} "
+                f"{issue.code}: {issue.message}"
+            )
+        if output is not None:
+            typer.echo(f"report={output}")
+    if result.rejected or any(issue.severity == "fatal" for issue in result.issues):
+        raise typer.Exit(code=1)
+
+
 @app.command("backfill-assertions")
 def backfill_assertions_command() -> None:
     """Reconstruct exact field claims from existing source-linked child rows.
@@ -662,6 +725,17 @@ def match_candidates_merge(
     _review_candidate(merge_match_candidate, candidate_id, reviewer, note)
 
 
+@app.command("match-candidates-undo-merge")
+def match_candidates_undo_merge(
+    candidate_id: uuid.UUID,
+    reviewer: Annotated[str, typer.Option(help="Reviewer name or role identifier.")],
+    note: Annotated[str | None, typer.Option(help="Reason for undoing the merge.")] = None,
+) -> None:
+    """Undo a merge and restore the source facility and its linked evidence."""
+
+    _review_candidate(undo_match_merge, candidate_id, reviewer, note)
+
+
 @app.command("check-sources")
 def check_sources_command(
     source: Annotated[
@@ -773,6 +847,36 @@ def monitoring() -> None:
         engine.dispose()
 
 
+@app.command("source-review")
+def source_review_command(
+    days: Annotated[
+        int, typer.Option(min=1, help="Flag sources not checked within this many days.")
+    ] = 30,
+    json_output: Annotated[bool, typer.Option("--json", help="Emit the review as JSON.")] = False,
+) -> None:
+    """List the monthly review state of every registered source link and rights entry."""
+
+    engine, session = _session()
+    try:
+        rows = source_review_rows(session, days=days)
+    finally:
+        session.close()
+        engine.dispose()
+    if json_output:
+        typer.echo(json.dumps(rows, indent=2))
+        return
+    due = [row for row in rows if row["review_due"]]
+    typer.echo(f"registered={len(rows)} review_due={len(due)} window_days={days}")
+    for row in rows:
+        marker = "DUE" if row["review_due"] else "ok"
+        last = row["last_checked_at"] or "never"
+        typer.echo(
+            f"{marker:3} {row['source_key']}: {row['agency']} | "
+            f"checked={last} status={row['last_check_status'] or 'unchecked'} | "
+            f"{row['rights']}/{row['publication_status']}"
+        )
+
+
 @app.command("compare-releases")
 def compare_releases_command(
     dataset_slug: Annotated[str, typer.Argument(help="Dataset slug, e.g. philhealth-hosp.")],
@@ -854,6 +958,82 @@ def release_manifest_command(
         f"published_facilities={totals['published_facilities']}"
     )
     typer.echo(f"checksum={manifest['checksum']}")
+
+
+@app.command("release-notes")
+def release_notes_command(
+    output: Annotated[
+        Path,
+        typer.Option("--output", "-o", help="Write Markdown release notes to this path."),
+    ] = Path("var/reports/release-notes.md"),
+) -> None:
+    """Write public release notes with coverage, gaps, exclusions and caveats."""
+
+    engine, session = _session()
+    try:
+        manifest = write_release_manifest(session, output.with_suffix(".manifest.json"))
+    finally:
+        session.close()
+        engine.dispose()
+    notes = render_release_notes(manifest)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(notes, encoding="utf-8")
+    typer.echo(f"wrote {output} ({len(notes.splitlines())} lines)")
+    typer.echo(f"manifest_checksum={manifest['checksum']}")
+
+
+@app.command("release-rollback")
+def release_rollback_command(
+    dataset_slug: Annotated[str, typer.Argument(help="Dataset slug to roll back.")],
+    reviewer: Annotated[str, typer.Option(help="Reviewer name or role identifier.")],
+    release_label: Annotated[
+        str | None,
+        typer.Option("--release", help="Release label; defaults to the latest release."),
+    ] = None,
+    note: Annotated[str | None, typer.Option(help="Reason for the rollback.")] = None,
+    dry_run: Annotated[
+        bool, typer.Option("--dry-run", help="Validate and count without changing data.")
+    ] = False,
+    as_json: Annotated[bool, typer.Option("--json", help="Print the result as JSON.")] = False,
+) -> None:
+    """Restore canonical state captured before a release, conservatively.
+
+    Refuses when a later release exists, a facility changed after the release, or
+    later evidence has been linked. Raw source records and the release are retained;
+    the release is marked rolled_back/quarantined.
+    """
+
+    engine, session = _session()
+    try:
+        result = rollback_release(
+            session,
+            dataset_slug=dataset_slug,
+            release_label=release_label,
+            reviewer=reviewer,
+            note=note,
+            dry_run=dry_run,
+        )
+        if not dry_run:
+            session.commit()
+    except ReleaseRollbackError as exc:
+        session.rollback()
+        typer.echo(f"Rollback refused: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+        engine.dispose()
+    if as_json:
+        typer.echo(json.dumps(result, indent=2))
+    else:
+        typer.echo(
+            f"dataset={result['dataset']} release={result['release_label']} "
+            f"dry_run={result['dry_run']} snapshots={result['snapshots']} "
+            f"restored={result['restored']} deleted={result['deleted']} "
+            f"skipped={result['skipped']}"
+        )
 
 
 @app.command("discover-sources")
@@ -1110,6 +1290,64 @@ def load_philhealth(
                 outcomes.append(outcome)
                 typer.echo(f"  {outcome['status']}")
         typer.echo(json.dumps(outcomes, indent=2, default=str))
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("load-philhealth-offices")
+def load_philhealth_offices(
+    input_path: Annotated[
+        Path | None,
+        typer.Option(
+            "--input",
+            help="Preserved PhilHealth Directory of Offices HTML artifact for controlled import.",
+        ),
+    ] = None,
+    reprocess: Annotated[
+        bool,
+        typer.Option(
+            "--reprocess",
+            help="Reprocess an already-preserved release instead of skipping its checksum.",
+        ),
+    ] = False,
+) -> None:
+    """Acquire the public PhilHealth office directory and ingest office identities.
+
+    Office name, source category, region grouping and postal address are
+    published. Telephone numbers, e-mail addresses and schedule text stay in the
+    private raw artifact.
+    """
+
+    settings = get_settings()
+    engine, session = _session()
+    try:
+        if input_path is not None:
+            content = input_path.read_bytes()
+            retrieved_at = datetime.fromtimestamp(input_path.stat().st_mtime, UTC)
+            notes = "Controlled import of a preserved public PhilHealth office-directory artifact."
+        else:
+            with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
+                content, metadata = fetch_philhealth_offices(acquirer)
+            retrieved_at = datetime.now(UTC)
+            notes = f"Acquisition metadata: {json.dumps(metadata, default=str)}"
+        spec = source_spec(
+            REAL_SOURCES["philhealth-offices"],
+            release_label=f"PHILHEALTH-OFFICES-{retrieved_at.date().isoformat()}",
+            filename=f"philhealth-office-directory-{retrieved_at.date().isoformat()}.json",
+            content=content,
+            retrieved_at=retrieved_at,
+            enqueue_cross_source_matches=False,
+            notes=notes,
+        )
+        outcome = run_ingestion(
+            spec=spec,
+            adapter=PhilHealthOfficeAdapter(spec),
+            session=session,
+            settings=settings,
+            reprocess=reprocess,
+        )
+        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
     finally:
         session.close()
         engine.dispose()
@@ -1605,6 +1843,177 @@ def load_dti_negosyo(
         engine.dispose()
 
 
+@app.command("load-sss-branches")
+def load_sss_branches(
+    input_path: Annotated[
+        Path | None,
+        typer.Option(
+            "--input",
+            help="Preserved SSS branch-locator JSON artifact for controlled import.",
+        ),
+    ] = None,
+    reprocess: Annotated[
+        bool,
+        typer.Option(
+            "--reprocess",
+            help="Reprocess an already-preserved release instead of skipping its checksum.",
+        ),
+    ] = False,
+) -> None:
+    """Acquire the public SSS branch locator and ingest branch service facilities.
+
+    Branch name, postal address and region are published. Contact-person,
+    e-mail and telephone/fax fields stay in the private raw artifact.
+    """
+
+    settings = get_settings()
+    engine, session = _session()
+    try:
+        if input_path is not None:
+            content = input_path.read_bytes()
+            retrieved_at = datetime.fromtimestamp(input_path.stat().st_mtime, UTC)
+            notes = "Controlled import of a preserved public SSS branch-locator JSON artifact."
+        else:
+            with HttpAcquirer(settings, timeout_seconds=180.0) as acquirer:
+                content, metadata = fetch_sss_branches(acquirer)
+            retrieved_at = datetime.now(UTC)
+            notes = f"Acquisition metadata: {json.dumps(metadata, default=str)}"
+        spec = source_spec(
+            REAL_SOURCES["sss-branches"],
+            release_label=f"SSS-BRANCHES-{retrieved_at.date().isoformat()}",
+            filename=f"sss-branch-locator-{retrieved_at.date().isoformat()}.json",
+            content=content,
+            retrieved_at=retrieved_at,
+            enqueue_cross_source_matches=False,
+            notes=notes,
+        )
+        outcome = run_ingestion(
+            spec=spec,
+            adapter=SssBranchAdapter(spec),
+            session=session,
+            settings=settings,
+            reprocess=reprocess,
+        )
+        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("load-pagasa-aws")
+def load_pagasa_aws(
+    input_path: Annotated[
+        Path | None,
+        typer.Option(
+            "--input",
+            help="Preserved PAGASA AWS JSON artifact for controlled import.",
+        ),
+    ] = None,
+    reprocess: Annotated[
+        bool,
+        typer.Option(
+            "--reprocess",
+            help="Reprocess an already-preserved release instead of skipping its checksum.",
+        ),
+    ] = False,
+) -> None:
+    """Acquire the PAGASA automated-weather-station table and ingest station identity.
+
+    Only station ID, name and source last-updated value are published. Readings
+    remain in the private dated artifact; no coordinates are present.
+    """
+
+    settings = get_settings()
+    engine, session = _session()
+    try:
+        if input_path is not None:
+            content = input_path.read_bytes()
+            retrieved_at = datetime.fromtimestamp(input_path.stat().st_mtime, UTC)
+            notes = "Controlled import of a preserved public PAGASA AWS JSON artifact."
+        else:
+            with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
+                content, metadata = fetch_pagasa_aws(acquirer)
+            retrieved_at = datetime.now(UTC)
+            notes = f"Acquisition metadata: {json.dumps(metadata, default=str)}"
+        spec = source_spec(
+            REAL_SOURCES["pagasa-aws"],
+            release_label=f"PAGASA-AWS-{retrieved_at.date().isoformat()}",
+            filename=f"pagasa-automated-weather-stations-{retrieved_at.date().isoformat()}.json",
+            content=content,
+            retrieved_at=retrieved_at,
+            enqueue_cross_source_matches=False,
+            notes=notes,
+        )
+        outcome = run_ingestion(
+            spec=spec,
+            adapter=PagasaAwsAdapter(spec),
+            session=session,
+            settings=settings,
+            reprocess=reprocess,
+        )
+        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("load-nbi-offices")
+def load_nbi_offices(
+    input_path: Annotated[
+        Path | None,
+        typer.Option(
+            "--input",
+            help="Preserved NBI regional/district office JSON artifact for controlled import.",
+        ),
+    ] = None,
+    reprocess: Annotated[
+        bool,
+        typer.Option(
+            "--reprocess",
+            help="Reprocess an already-preserved release instead of skipping its checksum.",
+        ),
+    ] = False,
+) -> None:
+    """Acquire the NBI regional/district office directory and ingest office identities.
+
+    Office name, region, postal location and map-embed coordinates are published.
+    Personal names, telephone numbers and protected e-mail values stay private.
+    """
+
+    settings = get_settings()
+    engine, session = _session()
+    try:
+        if input_path is not None:
+            content = input_path.read_bytes()
+            retrieved_at = datetime.fromtimestamp(input_path.stat().st_mtime, UTC)
+            notes = "Controlled import of a preserved public NBI office JSON artifact."
+        else:
+            with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
+                content, metadata = fetch_nbi_offices(acquirer)
+            retrieved_at = datetime.now(UTC)
+            notes = f"Acquisition metadata: {json.dumps(metadata, default=str)}"
+        spec = source_spec(
+            REAL_SOURCES["nbi-offices"],
+            release_label=f"NBI-OFFICES-{retrieved_at.date().isoformat()}",
+            filename=f"nbi-regional-district-offices-{retrieved_at.date().isoformat()}.json",
+            content=content,
+            retrieved_at=retrieved_at,
+            enqueue_cross_source_matches=False,
+            notes=notes,
+        )
+        outcome = run_ingestion(
+            spec=spec,
+            adapter=NbiOfficeAdapter(spec),
+            session=session,
+            settings=settings,
+            reprocess=reprocess,
+        )
+        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
+    finally:
+        session.close()
+        engine.dispose()
+
+
 @app.command("load-ched-heida")
 def load_ched_heida(
     input_path: Annotated[
@@ -1653,6 +2062,201 @@ def load_ched_heida(
         outcome = run_ingestion(
             spec=spec,
             adapter=ChedHeidaAdapter(spec),
+            session=session,
+            settings=settings,
+            reprocess=reprocess,
+        )
+        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("load-quezon-city")
+def load_quezon_city(
+    reprocess: Annotated[
+        bool,
+        typer.Option(
+            "--reprocess",
+            help="Reprocess an already-preserved release instead of skipping its checksum.",
+        ),
+    ] = False,
+) -> None:
+    """Acquire the Quezon City LGU directories and ingest the eligible subset."""
+
+    settings = get_settings()
+    engine, session = _session()
+    try:
+        with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
+            content, metadata = fetch_quezon_city_directory(acquirer)
+        spec = source_spec(
+            REAL_SOURCES["quezon-city"],
+            release_label=f"QC-LGU-DIRECTORY-{date.today().isoformat()}",
+            filename=f"quezon-city-lgu-directory-{date.today().isoformat()}.json",
+            content=content,
+            retrieved_at=datetime.now(UTC),
+            enqueue_cross_source_matches=False,
+            notes=f"Acquisition metadata: {json.dumps(metadata, default=str)}",
+        )
+        outcome = run_ingestion(
+            spec=spec,
+            adapter=QuezonCityLguAdapter(spec),
+            session=session,
+            settings=settings,
+            reprocess=reprocess,
+        )
+        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("load-quezon-city-places")
+def load_quezon_city_places(
+    reprocess: Annotated[
+        bool,
+        typer.Option(
+            "--reprocess",
+            help="Reprocess an already-preserved release instead of skipping its checksum.",
+        ),
+    ] = False,
+) -> None:
+    """Acquire the Quezon City Places to Visit park and market subset."""
+
+    settings = get_settings()
+    engine, session = _session()
+    try:
+        with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
+            content, metadata = fetch_quezon_city_places(acquirer)
+        spec = source_spec(
+            REAL_SOURCES["quezon-city-places"],
+            release_label=f"QC-LGU-PLACES-{date.today().isoformat()}",
+            filename=f"quezon-city-lgu-places-{date.today().isoformat()}.json",
+            content=content,
+            retrieved_at=datetime.now(UTC),
+            enqueue_cross_source_matches=False,
+            notes=f"Acquisition metadata: {json.dumps(metadata, default=str)}",
+        )
+        outcome = run_ingestion(
+            spec=spec,
+            adapter=QuezonCityPlacesAdapter(spec),
+            session=session,
+            settings=settings,
+            reprocess=reprocess,
+        )
+        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("load-mandaluyong")
+def load_mandaluyong(
+    reprocess: Annotated[
+        bool,
+        typer.Option(
+            "--reprocess",
+            help="Reprocess an already-preserved release instead of skipping its checksum.",
+        ),
+    ] = False,
+) -> None:
+    """Acquire the Mandaluyong City barangay directory and ingest its offices."""
+
+    settings = get_settings()
+    engine, session = _session()
+    try:
+        with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
+            content, metadata = fetch_mandaluyong_directory(acquirer)
+        spec = source_spec(
+            REAL_SOURCES["mandaluyong"],
+            release_label=f"MANDALUYONG-LGU-{date.today().isoformat()}",
+            filename=f"mandaluyong-lgu-barangay-directory-{date.today().isoformat()}.json",
+            content=content,
+            retrieved_at=datetime.now(UTC),
+            enqueue_cross_source_matches=False,
+            notes=f"Acquisition metadata: {json.dumps(metadata, default=str)}",
+        )
+        outcome = run_ingestion(
+            spec=spec,
+            adapter=MandaluyongBarangayAdapter(spec),
+            session=session,
+            settings=settings,
+            reprocess=reprocess,
+        )
+        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("load-cainta-health")
+def load_cainta_health(
+    reprocess: Annotated[
+        bool,
+        typer.Option(
+            "--reprocess",
+            help="Reprocess an already-preserved release instead of skipping its checksum.",
+        ),
+    ] = False,
+) -> None:
+    """Acquire the Cainta RHU pages and ingest their labelled health centres."""
+
+    settings = get_settings()
+    engine, session = _session()
+    try:
+        with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
+            content, metadata = fetch_cainta_health_centers(acquirer)
+        spec = source_spec(
+            REAL_SOURCES["cainta-health"],
+            release_label=f"CAINTA-HEALTH-{date.today().isoformat()}",
+            filename=f"cainta-lgu-health-centers-{date.today().isoformat()}.json",
+            content=content,
+            retrieved_at=datetime.now(UTC),
+            enqueue_cross_source_matches=False,
+            notes=f"Acquisition metadata: {json.dumps(metadata, default=str)}",
+        )
+        outcome = run_ingestion(
+            spec=spec,
+            adapter=CaintaHealthCenterAdapter(spec),
+            session=session,
+            settings=settings,
+            reprocess=reprocess,
+        )
+        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("load-pasay-health")
+def load_pasay_health(
+    reprocess: Annotated[
+        bool,
+        typer.Option(
+            "--reprocess",
+            help="Reprocess an already-preserved release instead of skipping its checksum.",
+        ),
+    ] = False,
+) -> None:
+    """Acquire the Pasay health-care page and ingest its health facilities."""
+
+    settings = get_settings()
+    engine, session = _session()
+    try:
+        with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
+            content, metadata = fetch_pasay_health_centers(acquirer)
+        spec = source_spec(
+            REAL_SOURCES["pasay-health"],
+            release_label=f"PASAY-HEALTH-{date.today().isoformat()}",
+            filename=f"pasay-lgu-health-centers-{date.today().isoformat()}.json",
+            content=content,
+            retrieved_at=datetime.now(UTC),
+            enqueue_cross_source_matches=False,
+            notes=f"Acquisition metadata: {json.dumps(metadata, default=str)}",
+        )
+        outcome = run_ingestion(
+            spec=spec,
+            adapter=PasayHealthCenterAdapter(spec),
             session=session,
             settings=settings,
             reprocess=reprocess,

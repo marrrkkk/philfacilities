@@ -38,6 +38,37 @@ def test_due_source_keys_respect_recorded_next_check(db_session):
         db_session.rollback()
 
 
+def test_update_discovery_modes_are_source_specific():
+    from philfacilities_ingest.sources.registry import (
+        REAL_SOURCES,
+        detect_new_release,
+        update_discovery_mode,
+    )
+
+    assert update_discovery_mode(REAL_SOURCES["ppa"]) == "file_checksum"
+    assert update_discovery_mode(REAL_SOURCES["dti-negosyo"]) == "payload_checksum"
+    assert update_discovery_mode(REAL_SOURCES["deped-machine-ready"]) == "manual"
+    assert update_discovery_mode(REAL_SOURCES["pagasa-aws"]) == "observations_only"
+
+    assert detect_new_release("file_checksum", "a" * 64, "b" * 64) is True
+    assert detect_new_release("payload_checksum", "a" * 64, "a" * 64) is False
+    assert detect_new_release("manual", "a" * 64, "b" * 64) is None
+    assert detect_new_release("observations_only", "a" * 64, "b" * 64) is None
+    assert detect_new_release("file_checksum", None, "b" * 64) is None
+
+
+def test_source_review_reports_every_registered_source(db_session):
+    from philfacilities_ingest.sources.registry import REAL_SOURCES, source_review_rows
+
+    rows = source_review_rows(db_session, days=30)
+    assert len(rows) == len(REAL_SOURCES)
+    by_key = {row["source_key"]: row for row in rows}
+    assert by_key["ppa"]["access_method"] == "public_pdf"
+    assert by_key["ppa"]["rights"]
+    assert by_key["ppa"]["publication_status"]
+    assert isinstance(by_key["ppa"]["review_due"], bool)
+
+
 def test_actionable_failures_exclude_known_blocks():
     from philfacilities_ingest.acquisition import actionable_failures
 

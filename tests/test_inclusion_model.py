@@ -103,6 +103,18 @@ def test_coverage_reports_source_scope_and_class_counts(client):
         == stats["with_coordinates"]
     )
 
+    lgu_rows = coverage["by_lgu_coverage"]
+    assert lgu_rows
+    assert {row["state"] for row in lgu_rows} <= {
+        "NATIONAL",
+        "REGIONAL",
+        "PARTICIPATING_LGUS",
+        "SELECTED_LGUS",
+        "UNKNOWN",
+    }
+    assert sum(row["source_count"] for row in lgu_rows) == len(coverage["source_coverage"])
+    assert all(row["label"] for row in lgu_rows)
+
     source_rows = {row["dataset_slug"]: row for row in coverage["source_coverage"]}
     assert source_rows
     for row in source_rows.values():

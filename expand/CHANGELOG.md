@@ -1,5 +1,18 @@
 # Planning Bundle Changelog
 
+## 3.2 — 16 November 2026
+
+- Added the PhilHealth Directory of Offices release `PHILHEALTH-OFFICES-2026-11-15`: 293 offices (185 facility, 108 facility unit) across 19 regional groups published with name, source category, region grouping and postal address; telephone, e-mail and schedule fields withheld.
+- Added the Quezon City LGU directory release `QC-LGU-DIRECTORY-2026-11-16`: 68 barangay health centres and 40 barangay halls published from official LGU pages, with personal contact fields withheld and non-hall/non-health pages retained privately.
+- Added the Quezon City Places release `QC-LGU-PLACES-2026-11-16`: Kamuning Market, Quezon Memorial Circle, QC Elevated Promenade, Ninoy Aquino Parks and Wildlife Center and La Mesa Eco Park published from the official visitor directory; 23 QCPL library pages excluded after an NLP duplicate cross-check.
+- Re-ingested the PhilHealth Antenatal category with `philhealth-pdf-1.2.0` after fixing retried-release snapshot idempotency: 3,221 rows and accreditations, ending at page 120; the earlier 6,562-row annex double-count remains withdrawn. Total PhilHealth coverage is now 26 categories / 28,207 accreditations.
+- Made Antenatal accreditation-only for subtype purposes and restored 3,178 prior facility subtypes from release snapshots, so a benefit-package row cannot overwrite the physical facility classification.
+- Added release-scoped facility snapshots, automatic pre-mutation capture, and the conservative `release-rollback` CLI with dry-run, later-release/later-evidence/post-release-change refusal paths, and raw-evidence retention.
+- Added the Cainta, Rizal municipal health-centre release `CAINTA-HEALTH-2026-11-16`: 28 labelled RHU/BHS facilities published from the official landing page and six RHU pages; three unlabelled entries retained privately.
+- Added the Pasay City health-centre release `PASAY-HEALTH-2026-11-16`: 13 health centres and the Doña Marta Lying-In Clinic published from the official health-care programme page; telephone numbers withheld.
+- Added the Mandaluyong City barangay directory release `MANDALUYONG-LGU-2026-11-16`: 27 barangay government offices published from the official table, including one covered-court multi-use record; telephone numbers and chairperson names withheld.
+- Updated the source register, rights register, tracker, and root README with the new releases, publication decisions, counts and evidence.
+
 ## 3.1 — 15 November 2026
 
 - Added the root data inclusion and publication policy: a verified, publicly available source with no explicit prohibition may be published with reviewed institutional fields, provenance, attribution and takedown-on-notice.

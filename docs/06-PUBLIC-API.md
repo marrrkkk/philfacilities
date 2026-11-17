@@ -91,7 +91,7 @@ GET /v1/accreditations
 
 `GET /v1/accreditations` is the top-level accreditation search. It supports `facility_id`, `q`, `provider_category`, `authority`, `sector_code`, `source_status`, `psgc`, `region_code`, `municipality_code`, `valid_on`, `limit`, and `offset`. Each item retains the provider category, benefit package, accreditation category, bed count when supplied, sector code, validity dates, page/row reference, source record ID, and the public facility link.
 
-Current real coverage: **24,986 accreditations** across **25 PhilHealth provider categories**, linked to **13,546 public facilities**.
+Current real coverage: **28,207 accreditations** across **26 PhilHealth provider categories**, linked to **13,546 facilities (13,545 public)**.
 
 ### Geography
 

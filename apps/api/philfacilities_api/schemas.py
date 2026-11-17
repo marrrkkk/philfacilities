@@ -620,6 +620,13 @@ class CoverageSubtypeRow(BaseModel):
     with_coordinates: int = 0
 
 
+class LguCoverageRow(BaseModel):
+    state: Literal["NATIONAL", "REGIONAL", "PARTICIPATING_LGUS", "SELECTED_LGUS", "UNKNOWN"]
+    label: str
+    source_count: int
+    dataset_slugs: list[str] = Field(default_factory=list)
+
+
 class SourceCoverageRow(BaseModel):
     dataset_slug: str
     dataset_name: str
@@ -647,6 +654,7 @@ class CoverageOut(BaseModel):
     by_ownership_type: list[CoverageRow]
     by_access_class: list[CoverageRow]
     by_region: list[CoverageRow]
+    by_lgu_coverage: list[LguCoverageRow] = Field(default_factory=list)
     source_coverage: list[SourceCoverageRow]
     coverage_stale_after_days: int = 365
     stale_source_count: int = 0

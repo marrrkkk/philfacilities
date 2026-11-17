@@ -60,6 +60,12 @@ STATUS_ALIASES = ["status", "accreditation_status"]
 TELEPHONE_ALIASES = ["telephone", "tel_no", "tel", "contact"]
 EMAIL_ALIASES = ["email", "e_mail"]
 
+# Benefit-package releases can describe the service being accredited without
+# establishing the facility's physical subtype. Never overwrite an existing
+# facility subtype from these rows; the category is still retained on the
+# health profile and accreditation.
+ACCREDITATION_ONLY_CATEGORIES = {"antenatal"}
+
 
 def _slug(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
@@ -341,6 +347,11 @@ class PhilHealthPdfAdapter:
             category = (
                 clean_text(first_present(payload, CATEGORY_ALIASES)) or self.provider_category
             )
+            subtype = (
+                None
+                if self.provider_category.casefold() in ACCREDITATION_ONLY_CATEGORIES
+                else category
+            )
             expiry = parse_date(first_present(payload, EXPIRY_ALIASES))
             address = ", ".join(part for part in (street, municipality) if part) or None
             candidates.append(
@@ -355,7 +366,7 @@ class PhilHealthPdfAdapter:
                     row_reference=row.row_reference,
                     display_name=name,
                     facility_type="health_facility",
-                    facility_subtype=category,
+                    facility_subtype=subtype,
                     ownership="unknown",
                     record_status="active_in_registry",
                     location=LocationData(address_text=address),
