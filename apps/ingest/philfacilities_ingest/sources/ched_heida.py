@@ -115,7 +115,6 @@ class _HeiTableParser(HTMLParser):
         self.rows: list[dict[str, Any]] = []
         self._row: dict[str, Any] | None = None
         self._cell: list[str] | None = None
-        self._cell_index = -1
         self._span_class: str | None = None
         self._span_text: list[str] | None = None
 
@@ -123,9 +122,7 @@ class _HeiTableParser(HTMLParser):
         tag = tag.lower()
         if tag == "tr":
             self._row = {"cells": [], "spans": []}
-            self._cell_index = -1
         elif tag == "td" and self._row is not None:
-            self._cell_index += 1
             self._cell = []
             self._row["cells"].append(self._cell)
         elif tag == "span" and self._cell is not None and self._row is not None:
@@ -361,18 +358,9 @@ class ChedHeidaAdapter:
     source_code = "ched-heida"
     parser_version = "ched-heida-html-1.0.0"
     schema_version = "ched-heida-directory-v1"
-    expected_columns = {  # noqa: RUF012
-        "required": {"region_id", "region", "name", "type", "address"}
-    }
 
     def __init__(self, spec: ReleaseSpec) -> None:
         self.spec = spec
-
-    def discover(self, input_path: str | None) -> ReleaseSpec:
-        return self.spec
-
-    def acquire(self, spec: ReleaseSpec) -> bytes:
-        return spec.content
 
     def parse(self, spec: ReleaseSpec) -> ParsedRelease:
         try:

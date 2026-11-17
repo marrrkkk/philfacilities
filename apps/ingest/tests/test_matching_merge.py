@@ -11,6 +11,7 @@ from philfacilities_api.models import (
     AttributeAssertion,
     Dataset,
     Facility,
+    FacilityContact,
     FacilityLocation,
     FacilitySourceLink,
     Release,
@@ -21,7 +22,7 @@ from sqlalchemy import select
 pytestmark = pytest.mark.integration
 
 
-def _fixture(session) -> dict[str, object]:
+def _fixture(session, *, with_contacts: bool = False) -> dict[str, object]:
     from philfacilities_ingest.matching import enqueue_match_candidate
 
     suffix = uuid.uuid4().hex[:10]
@@ -120,6 +121,37 @@ def _fixture(session) -> dict[str, object]:
     session.add(assertion)
     session.flush()
 
+    source_contact = None
+    duplicate_contact = None
+    if with_contacts:
+        # Same channel and value on both facilities, with no source record, so
+        # the contact unique key would collide if the merge moved it.
+        source_contact = FacilityContact(
+            facility_id=source.id,
+            contact_type="phone",
+            value=f"+63 2 555 {suffix[:4]}",
+            label="Source line",
+        )
+        duplicate_contact = FacilityContact(
+            facility_id=target.id,
+            contact_type="phone",
+            value=source_contact.value,
+            label="Target line",
+        )
+        session.add_all(
+            [
+                source_contact,
+                duplicate_contact,
+                FacilityContact(
+                    facility_id=source.id,
+                    contact_type="email",
+                    value=f"{suffix}@example.test",
+                    label="Source email",
+                ),
+            ]
+        )
+        session.flush()
+
     candidate, created = enqueue_match_candidate(
         session,
         source_record=source_record,
@@ -138,6 +170,8 @@ def _fixture(session) -> dict[str, object]:
         "candidate": candidate,
         "source_location": source_location,
         "target_location": target_location,
+        "source_contact": source_contact,
+        "duplicate_contact": duplicate_contact,
     }
 
 
@@ -188,6 +222,47 @@ def test_merge_can_be_undone_and_restores_evidence(db_session) -> None:
         assert len(locations) == 1
         assert locations[0].is_current is True
         assert locations[0].valid_to is None
+    finally:
+        db_session.rollback()
+
+
+def test_merge_moves_unique_contacts_and_retains_duplicate_contacts(db_session) -> None:
+    from philfacilities_ingest.matching import (
+        accept_match_candidate,
+        merge_match_candidate,
+        undo_match_merge,
+    )
+
+    try:
+        data = _fixture(db_session, with_contacts=True)
+        source = data["source"]
+        target = data["target"]
+        candidate = data["candidate"]
+        source_contact = data["source_contact"]
+        duplicate_contact = data["duplicate_contact"]
+        unique_contact = db_session.scalars(
+            select(FacilityContact).where(
+                FacilityContact.facility_id == source.id,
+                FacilityContact.contact_type == "email",
+            )
+        ).one()
+
+        accept_match_candidate(db_session, candidate.id, reviewer="reviewer-1")
+        merge_match_candidate(db_session, candidate.id, reviewer="reviewer-1")
+        db_session.flush()
+
+        assert source_contact.facility_id == source.id
+        assert duplicate_contact.facility_id == target.id
+        assert unique_contact.facility_id == target.id
+        assert candidate.resolution["retained_on_source"] == {"facility_contacts": 1}
+        assert candidate.resolution["moved_counts"]["facility_contacts"] == 1
+
+        undo_match_merge(db_session, candidate.id, reviewer="reviewer-2")
+        db_session.flush()
+
+        assert unique_contact.facility_id == source.id
+        assert source_contact.facility_id == source.id
+        assert duplicate_contact.facility_id == target.id
     finally:
         db_session.rollback()
 

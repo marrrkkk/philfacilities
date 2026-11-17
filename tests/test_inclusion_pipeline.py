@@ -20,6 +20,7 @@ from typing import ClassVar
 import pytest
 from philfacilities_ingest.contracts import (
     AccreditationData,
+    ContactData,
     FacilityCandidate,
     LocationData,
     ParsedRelease,
@@ -375,3 +376,50 @@ def test_review_required_release_marks_every_record_internal(db_session) -> None
     facility = _facility_for_release(db_session, result.release_id)
     assert facility is not None
     assert facility.publication_status == "internal"
+
+
+def test_contacts_and_postal_code_are_persisted_with_source_provenance(db_session) -> None:
+    from philfacilities_api.models import FacilityContact, FacilityLocation
+
+    token = uuid.uuid4().hex[:10]
+    spec = _spec(token)
+    candidate = _candidate(
+        "contact-provider",
+        "Synthetic Contact Hospital",
+        ownership="government",
+        ownership_type="GOVERNMENT_UNSPECIFIED",
+        inclusion_class="GOVERNMENT_FACILITY",
+        latitude=14.599512,
+        longitude=120.984222,
+    )
+    candidate.location.postal_code = "1000"
+    candidate.contacts = [
+        ContactData("phone", "+63 2 8555 0100", source_field="telephone"),
+        ContactData("email", "records@example.test", source_field="email"),
+    ]
+
+    result = run_ingestion(
+        spec=spec,
+        adapter=_StaticAdapter(spec, [candidate]),
+        session=db_session,
+    )
+    assert result.status == "published"
+    assert result.stats["contacts"] == 2
+
+    facility = _facility_for_release(db_session, result.release_id)
+    assert facility is not None
+    contacts = db_session.scalars(
+        select(FacilityContact).where(FacilityContact.facility_id == facility.id)
+    ).all()
+    assert {(row.contact_type, row.value) for row in contacts} == {
+        ("phone", "+63 2 8555 0100"),
+        ("email", "records@example.test"),
+    }
+    assert all(row.source_record_id is not None for row in contacts)
+    location = db_session.scalars(
+        select(FacilityLocation).where(
+            FacilityLocation.facility_id == facility.id,
+            FacilityLocation.is_current.is_(True),
+        )
+    ).one()
+    assert location.postal_code == "1000"

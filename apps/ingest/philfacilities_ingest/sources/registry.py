@@ -19,10 +19,10 @@ import time
 from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
-from datetime import UTC, date, datetime
+from datetime import UTC, datetime
 from typing import Any
 
-from philfacilities_api.models import Dataset, Release, SourceCheck
+from philfacilities_api.models import Dataset, SourceCheck
 from philfacilities_api.rights import (
     PUBLICATION_APPROVED,
     PUBLICATION_BLOCKED,
@@ -40,14 +40,13 @@ from ..acquisition import (
     AcquisitionError,
     FetchResult,
     HttpAcquirer,
-    classify_response,
-    conditional_headers,
-    default_next_check,
     is_blocker_page,
-    last_check,
-    record_check,
 )
-from ..contracts import ReleaseSpec
+from ..contracts import (
+    DEFAULT_MINIMUM_ACCEPTANCE_RATE,
+    DEFAULT_MINIMUM_ACCEPTANCE_ROWS,
+    ReleaseSpec,
+)
 from ..pipeline import ensure_source
 from .bettergov import build_psgc_release_payload, parse_psgc_api_payload
 from .deped_ebeis import parse_masterlist_html
@@ -58,6 +57,7 @@ from .philhealth import PhilHealthCatalogEntry, parse_catalog
 # ---------------------------------------------------------------------------
 
 PHILHEALTH_INDEX_URL = "https://www.philhealth.gov.ph/partners/providers/facilities/accredited/"
+EBEIS_MASTERLIST_URL = "https://ebeis.deped.gov.ph/beis/reports_info/masterlist"
 PHILHEALTH_RIGHTS_BASIS = (
     "PhilHealth's published site disclaimer states that its information may be used "
     "for educational or informative purposes and may be reproduced, copied or "
@@ -346,8 +346,6 @@ NMIS_NARIS_RIGHTS_BASIS = (
 )
 NMIS_NARIS_ATTRIBUTION = "National Meat Inspection Service — NARIS Accredited Meat Establishments"
 QUEZON_CITY_DIRECTORY_URL = "https://quezoncity.gov.ph/qc-barangays/"
-QUEZON_CITY_HEALTH_SITEMAP_URL = "https://quezoncity.gov.ph/health_centers-sitemap.xml"
-QUEZON_CITY_BARANGAY_SITEMAP_URL = "https://quezoncity.gov.ph/brgy-directory-sitemap.xml"
 QUEZON_CITY_RIGHTS_BASIS = (
     "The Quezon City Government, a local government unit, publishes its health-centre "
     "and barangay directories as public web pages. No explicit prohibition, access "
@@ -365,9 +363,6 @@ QUEZON_CITY_RIGHTS_BASIS = (
 )
 QUEZON_CITY_ATTRIBUTION = "Quezon City Government — Health Center directory and Barangay Directory"
 QUEZON_CITY_PLACES_URL = "https://quezoncity.gov.ph/places/"
-QUEZON_CITY_PLACES_SEARCH_URL = (
-    "https://quezoncity.gov.ph/wp-json/wp/v2/search?subtype=places&per_page=100&page=1"
-)
 QUEZON_CITY_PLACES_RIGHTS_BASIS = (
     "The Quezon City Government publishes its Places to Visit directory as public web "
     "pages and exposes the same public place entries through its search endpoint. No "
@@ -495,10 +490,13 @@ class RealSource:
     requested_publication_status: str | None = None
     license_identifier: str | None = None
     terms_url: str | None = None
+    authority_level: str | None = None
     coverage_scope: str | None = None
     coverage_note: str | None = None
     is_geography: bool = False
     note: str | None = None
+    minimum_acceptance_rate: float = DEFAULT_MINIMUM_ACCEPTANCE_RATE
+    minimum_acceptance_rows: int = DEFAULT_MINIMUM_ACCEPTANCE_ROWS
 
 
 REAL_SOURCES: dict[str, RealSource] = {
@@ -690,6 +688,34 @@ REAL_SOURCES: dict[str, RealSource] = {
             "operational status is unknown."
         ),
     ),
+    "osm-pbf-facilities": RealSource(
+        key="osm-pbf-facilities",
+        agency_code="osm",
+        agency_name="OpenStreetMap contributors (via Geofabrik)",
+        dataset_slug="osm-pbf-facilities",
+        dataset_name=("OpenStreetMap filtered facility features (Geofabrik Philippines extract)"),
+        source_url="https://download.geofabrik.de/asia/philippines-latest.osm.pbf",
+        access_method="public_pbf",
+        update_pattern="daily snapshot",
+        rights=RIGHTS_APPROVED_ATTRIBUTION,
+        rights_basis=OSM_RIGHTS_BASIS,
+        attribution_text="© OpenStreetMap contributors, via Geofabrik",
+        requested_publication_status=PUBLICATION_APPROVED,
+        license_identifier="ODbL-1.0",
+        terms_url="https://opendatacommons.org/licenses/odbl/1-0/",
+        coverage_scope="NATIONAL_PARTIAL",
+        coverage_note=(
+            "Named government, public-space/recreation, emergency/DRM, healthcare, "
+            "library, market, justice and selected civic features. A filtered extract "
+            "of a Geofabrik Philippines PBF snapshot; crowd-sourced coverage is "
+            "incomplete and not an official registry."
+        ),
+        note=(
+            "Alternate coverage for blocked official registers. Way coordinates are "
+            "means of mapped nodes and are labelled map_geocoded. Ownership, opening "
+            "and operational status are never inferred."
+        ),
+    ),
     "osm-airports": RealSource(
         key="osm-airports",
         agency_code="osm",
@@ -778,7 +804,7 @@ REAL_SOURCES: dict[str, RealSource] = {
         agency_name="Department of Education",
         dataset_slug="deped-ebeis-masterlist-ncr",
         dataset_name="DepEd EBEIS school masterlist (NCR result set)",
-        source_url="https://ebeis.deped.gov.ph/beis/reports_info/masterlist",
+        source_url=EBEIS_MASTERLIST_URL,
         access_method="public_html_form",
         update_pattern="school year",
         rights=RIGHTS_APPROVED_ATTRIBUTION,
@@ -1699,13 +1725,19 @@ def source_spec(source: RealSource, **overrides: Any) -> ReleaseSpec:
         "coverage_scope": source.coverage_scope,
         "coverage_note": source.coverage_note,
         "notes": source.note,
+        "minimum_acceptance_rate": source.minimum_acceptance_rate,
+        "minimum_acceptance_rows": source.minimum_acceptance_rows,
     }
     values.update(overrides)
     return ReleaseSpec(**values)
 
 
 def apply_publication_decisions(
-    session: Session, keys: Iterable[str] | None = None
+    session: Session,
+    keys: Iterable[str] | None = None,
+    *,
+    reviewer: str | None = None,
+    note: str | None = None,
 ) -> dict[str, dict[str, Any]]:
     """Apply the reviewed registry publication decision to stored datasets.
 
@@ -1714,7 +1746,8 @@ def apply_publication_decisions(
     that action: it updates the dataset rights metadata and gate to match the
     reviewed registry entry. It never ingests, publishes or deletes records by
     itself; a release becomes public only when it is reprocessed under the updated
-    gate. Callers should name the sources they reviewed.
+    gate. Callers must name the reviewer for any decision that makes a dataset
+    public.
     """
 
     selected = list(keys) if keys else []
@@ -1742,6 +1775,11 @@ def apply_publication_decisions(
             PUBLICATION_APPROVED if rights_allow_public(rights) else PUBLICATION_BLOCKED
         )
         if requested == PUBLICATION_APPROVED and rights_allow_public(rights):
+            if not reviewer:
+                raise ValueError(
+                    f"Source {source.key!r} would become public; pass a reviewer to "
+                    "record the rights decision."
+                )
             gate_status = PUBLICATION_APPROVED
             dataset_status = PUBLICATION_APPROVED
         elif requested == PUBLICATION_INTERNAL_ONLY:
@@ -1753,9 +1791,9 @@ def apply_publication_decisions(
         dataset.redistribution_status = rights
         dataset.publication_status = dataset_status
         gate.status = gate_status
-        gate.reviewer = "registry-policy"
+        gate.reviewer = reviewer or "registry-policy"
         gate.reviewed_at = datetime.now(UTC)
-        gate.notes = spec.rights_basis or "Reviewed registry publication decision."
+        gate.notes = note or spec.rights_basis or "Reviewed registry publication decision."
         results[source.key] = {
             "dataset": dataset.slug,
             "rights": rights,
@@ -1771,10 +1809,6 @@ def monitored_dataset(session: Session, source: RealSource) -> Dataset:
 
     _agency, dataset, _gate = ensure_source(session, source_spec(source))
     return dataset
-
-
-def registry_dataset_slugs() -> dict[str, str]:
-    return {key: source.dataset_slug for key, source in REAL_SOURCES.items()}
 
 
 # ---------------------------------------------------------------------------
@@ -1836,220 +1870,17 @@ def detect_new_release(
     return fetched_sha256 != published_sha256
 
 
-def _check_url(
-    acquirer: HttpAcquirer,
-    session: Session,
-    source: RealSource,
-    *,
-    url: str | None = None,
-    method: str = "GET",
-    data: dict[str, Any] | None = None,
-    expected_marker: str | None = None,
-) -> tuple[FetchResult, str]:
-    dataset = monitored_dataset(session, source)
-    previous = last_check(session, dataset.id)
-    target = url or source.source_url
-    result = acquirer.fetch(
-        target,
-        method=method,
-        data=data,
-        headers=conditional_headers(previous),
-    )
-    status = classify_response(result)
-    message = _check_message(source, status, result)
-    mode = update_discovery_mode(source)
-    latest_release = session.scalars(
-        select(Release)
-        .where(
-            Release.dataset_id == dataset.id,
-            Release.ingestion_status == "published",
-        )
-        .order_by(Release.retrieved_at.desc())
-        .limit(1)
-    ).first()
-    details: dict[str, Any] = {
-        "source_key": source.key,
-        "rights": source.rights,
-        "access_method": source.access_method,
-        "update_discovery_mode": mode,
-        "latest_published_release": (
-            latest_release.source_release_label if latest_release else None
-        ),
-    }
-    if source.key == "philhealth" and status in {"ok", "not_modified"} and result.content:
-        try:
-            entries = parse_catalog(
-                result.content.decode("utf-8", errors="replace"), base_url=url or source.source_url
-            )
-            details["pdf_links"] = len(entries)
-            details["pdf_files"] = [entry.filename for entry in entries]
-            if not entries:
-                status = "schema_changed"
-                message = "PhilHealth index returned no provider-category PDF links."
-        except Exception as exc:  # discovery must surface, not hide, a changed index
-            status = "schema_changed"
-            message = f"PhilHealth index could not be parsed: {exc}"
-    if (
-        expected_marker
-        and status == "ok"
-        and expected_marker not in result.content.decode("utf-8", errors="replace")
-    ):
-        status = "schema_changed"
-        message = (
-            f"The endpoint returned HTTP {result.status_code} but the expected "
-            f"marker {expected_marker!r} was absent; schema or access state changed."
-        )
-    if status == "ok":
-        changed = detect_new_release(
-            mode,
-            result.sha256,
-            latest_release.sha256 if latest_release else None,
-        )
-        details["new_release_detected"] = changed
-        details["fetched_sha256"] = result.sha256 or None
-        if changed:
-            status = "update_available"
-            message = (
-                f"Fetched content differs from {latest_release.source_release_label}; "
-                "a new source release is available for authorized acquisition."
-            )
-    record_check(
-        session,
-        dataset=dataset,
-        result=result,
-        status=status,
-        message=message,
-        next_check_at=default_next_check(source.update_pattern),
-        details=details,
-    )
-    return result, status
-
-
-def _check_message(source: RealSource, status: str, result: FetchResult) -> str:
-    if status == "ok":
-        return f"{source.agency_name} endpoint returned HTTP {result.status_code}."
-    if status == "not_modified":
-        return "Conditional request returned HTTP 304; the previous release remains current."
-    if status == "access_blocked":
-        return (
-            "The source returned an access/verification page or an authentication denial. "
-            "No bypass was attempted; a human-assisted or authorized route is required."
-        )
-    if status == "not_found":
-        return "The published link returned HTTP 404. The previous release, if any, is retained."
-    if status == "source_error":
-        return f"The source returned HTTP {result.status_code}; the previous release is retained."
-    return f"The source returned HTTP {result.status_code}; no release was accepted."
-
-
 def check_sources(
     session: Session,
     *,
     keys: Iterable[str] | None = None,
     acquirer: HttpAcquirer | None = None,
 ) -> dict[str, dict[str, Any]]:
-    """Check registered sources and append monitoring evidence.
+    """Compatibility wrapper around the CheckSpec-driven checker."""
 
-    A blocked source is recorded, never retried with a forged identity. A source
-    check does not publish or delete any release.
-    """
+    from .checks import check_sources as _check_sources
 
-    selected = list(keys) if keys else list(REAL_SOURCES)
-    unknown = [key for key in selected if key not in REAL_SOURCES]
-    if unknown:
-        raise ValueError(f"Unknown source key(s): {', '.join(unknown)}")
-    own_client = acquirer is None
-    client = acquirer or HttpAcquirer()
-    results: dict[str, dict[str, Any]] = {}
-    try:
-        for key in selected:
-            source = REAL_SOURCES[key]
-            try:
-                if key == "philhealth":
-                    result, status = _check_url(client, session, source)
-                elif key == "deped-ebeis":
-                    result, status = _check_url(
-                        client,
-                        session,
-                        source,
-                        url="https://ebeis.deped.gov.ph/beis/reports_info/viewMasterList",
-                        method="POST",
-                        data={"page": "1", "region_id": "13", "user_id": "", "school_head": ""},
-                        expected_marker="School ID",
-                    )
-                elif key == "bettergov-psgc":
-                    result, status = _check_url(
-                        client,
-                        session,
-                        source,
-                        url=f"{BETTERGOV_PSGC_URL}/Q2_2024/regions",
-                    )
-                elif key == "nlp" or key == "ppa":
-                    result, status = _check_url(client, session, source, expected_marker="%PDF")
-                elif key == "dti-negosyo":
-                    result, status = _check_url(
-                        client,
-                        session,
-                        source,
-                        url=DTI_NEGOSYO_API_URL,
-                        expected_marker="region",
-                    )
-                elif key == "ched-heida":
-                    result, status = _check_url(
-                        client,
-                        session,
-                        source,
-                        expected_marker="HEI Directory",
-                    )
-                elif key == "national-museum":
-                    result, status = _check_url(client, session, source, expected_marker="uk-card")
-                elif key == "phlpost":
-                    result, status = _check_url(
-                        client, session, source, expected_marker="Post Offices"
-                    )
-                elif key == "dswd-crcf":
-                    result, status = _check_url(
-                        client,
-                        session,
-                        source,
-                        expected_marker="Centers and Residential Care Facilities",
-                    )
-                elif key == "nmis-naris":
-                    result, status = _check_url(
-                        client, session, source, expected_marker="Accredited Meat Establishments"
-                    )
-                elif key == "psa-psgc":
-                    result, status = _check_url(
-                        client,
-                        session,
-                        source,
-                        url=(
-                            "https://psa.gov.ph/system/files/scd/"
-                            "PSGC-3Q-2026-Publication-Datafile.xlsx"
-                        ),
-                    )
-                elif key.startswith("osm-"):
-                    result, status = _check_url(client, session, source, method="HEAD")
-                else:
-                    result, status = _check_url(client, session, source)
-                session.commit()
-                results[key] = {
-                    "status": status,
-                    "http_status": result.status_code,
-                    "url": result.final_url,
-                    "blocked": status
-                    in {"access_blocked", "not_found", "schema_changed", "source_error"},
-                }
-            except AcquisitionError as exc:
-                session.rollback()
-                results[key] = {"status": "request_failed", "error": str(exc), "blocked": True}
-            except Exception as exc:  # keep one source failure from hiding the others
-                session.rollback()
-                results[key] = {"status": "check_failed", "error": str(exc), "blocked": True}
-        return results
-    finally:
-        if own_client:
-            client.close()
+    return _check_sources(session, keys=keys, acquirer=acquirer)
 
 
 # ---------------------------------------------------------------------------
@@ -2074,12 +1905,6 @@ def philhealth_dataset_slug(entry: PhilHealthCatalogEntry) -> str:
     stable = re.sub(r"_\d{6}$", "", stem).lower()
     stable = re.sub(r"[^a-z0-9]+", "-", stable).strip("-") or "provider"
     return f"philhealth-{stable}"
-
-
-def _dated_midnight(value: date | None) -> datetime | None:
-    if value is None:
-        return None
-    return datetime(value.year, value.month, value.day, tzinfo=UTC)
 
 
 # ---------------------------------------------------------------------------

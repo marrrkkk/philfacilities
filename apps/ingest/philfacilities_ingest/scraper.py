@@ -363,7 +363,7 @@ class _TableParser(HTMLParser):
         self._row: list[str] | None = None
         self._cell: list[str] | None = None
 
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+    def handle_starttag(self, tag: str, _attrs: list[tuple[str, str | None]]) -> None:
         tag = tag.lower()
         if tag == "table":
             self._table = []

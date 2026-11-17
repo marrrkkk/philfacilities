@@ -4,6 +4,12 @@ from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import Any, Protocol
 
+# A release that rejects more than 10% of its rows is treated as schema drift
+# rather than a slightly dirty snapshot. The row floor keeps tiny releases
+# (a handful of offices) from being failed on one legitimately malformed row.
+DEFAULT_MINIMUM_ACCEPTANCE_RATE = 0.90
+DEFAULT_MINIMUM_ACCEPTANCE_ROWS = 20
+
 
 @dataclass
 class ReleaseSpec:
@@ -28,11 +34,20 @@ class ReleaseSpec:
     access_method: str = "fixture"
     update_pattern: str | None = None
     license_identifier: str | None = None
+    authority_level: str | None = None
     coverage_scope: str | None = None
     coverage_note: str | None = None
     is_synthetic: bool = False
     enqueue_cross_source_matches: bool = True
     notes: str | None = None
+    # Release-level acceptance policy. A release below the floor is quarantined
+    # before any canonical row is touched.
+    minimum_acceptance_rate: float = DEFAULT_MINIMUM_ACCEPTANCE_RATE
+    minimum_acceptance_rows: int = DEFAULT_MINIMUM_ACCEPTANCE_ROWS
+    # Recorded on the publication gate when an operator reviews a manual import
+    # or reconciles a registry rights decision.
+    rights_reviewer: str | None = None
+    rights_review_note: str | None = None
 
 
 @dataclass
@@ -66,10 +81,14 @@ class ValidationResult:
     issues: list[ValidationIssue]
     accepted_rows: int
     rejected_rows: int
-
-    @property
-    def fatal(self) -> bool:
-        return any(issue.severity == "fatal" for issue in self.issues)
+    # Row references whose validation failed. The pipeline uses this set to
+    # exclude rejected rows from candidate application without re-scanning the
+    # issue list, and records it in the run report for reconciliation.
+    rejected_row_references: set[str] = field(default_factory=set)
+    # True when the release must not touch canonical rows at all (for example a
+    # schema-valid file whose rows all failed validation). The pipeline decides
+    # this before candidate application, not after.
+    failed: bool = False
 
 
 @dataclass
@@ -79,8 +98,21 @@ class LocationData:
     precision: str = "unknown"
     method: str | None = None
     address_text: str | None = None
+    postal_code: str | None = None
     psgc_code: str | None = None
     review_status: str = "source_supplied"
+
+
+@dataclass
+class ContactData:
+    """An institutional contact channel supplied by one source record."""
+
+    contact_type: str
+    value: str
+    label: str | None = None
+    source_field: str | None = None
+    valid_from: date | None = None
+    valid_to: date | None = None
 
 
 @dataclass
@@ -204,6 +236,7 @@ class FacilityCandidate:
     functions: list[FunctionData] = field(default_factory=list)
     services: list[ServiceData] = field(default_factory=list)
     roles: list[RoleData] = field(default_factory=list)
+    contacts: list[ContactData] = field(default_factory=list)
     school: SchoolData | None = None
     health: HealthData | None = None
     licenses: list[LicenseData] = field(default_factory=list)
@@ -211,21 +244,16 @@ class FacilityCandidate:
 
 
 class SourceAdapter(Protocol):
-    """Contract every agency connector must satisfy.
+    """Contract every source adapter must satisfy.
 
-    discover -> acquire -> preserve -> parse -> validate -> normalize -> resolve -> publish
-    -> report. The generic pipeline owns preserve/resolve/publish/report; adapters own
-    discovery, acquisition, parse, validation, and normalization.
+    Acquisition belongs to the connector (see ``sources.connectors``).  The
+    generic pipeline owns preserve/resolve/publish/report; adapters own only
+    parse, validation, and normalization.
     """
 
     source_code: str
     parser_version: str
     schema_version: str
-    expected_columns: dict[str, set[str]]
-
-    def discover(self, input_path: str | None) -> ReleaseSpec: ...
-
-    def acquire(self, spec: ReleaseSpec) -> bytes: ...
 
     def parse(self, spec: ReleaseSpec) -> ParsedRelease: ...
 

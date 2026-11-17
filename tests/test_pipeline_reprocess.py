@@ -50,7 +50,7 @@ def _spec(token: str, *, label_suffix: str = "", content: bytes | None = None) -
     )
 
 
-def test_reprocess_adds_rows_collapsed_by_an_older_key_scheme(db_session) -> None:
+def test_reprocess_retains_rows_from_an_older_key_scheme(db_session) -> None:
     from philfacilities_api.models import (
         FacilitySourceLink,
         Release,
@@ -72,8 +72,20 @@ def test_reprocess_adds_rows_collapsed_by_an_older_key_scheme(db_session) -> Non
     before_records = db_session.scalars(
         select(SourceRecord).where(SourceRecord.release_id == release.id)
     ).all()
-    assert len(before_records) == 1
-    retained_record_id = before_records[0].id
+    # The old parser collapsed every physical row onto one business key. The
+    # staging layer retains every physical row under deterministic distinct
+    # keys; only the first occurrence is applied.
+    assert len(before_records) == 4
+    assert len({record.source_record_key for record in before_records}) == 4
+    linked_record_ids = set(
+        db_session.scalars(
+            select(FacilitySourceLink.source_record_id)
+            .join(SourceRecord, FacilitySourceLink.source_record_id == SourceRecord.id)
+            .where(SourceRecord.release_id == release.id)
+        ).all()
+    )
+    assert len(linked_record_ids) == 1
+    retained_record_id = linked_record_ids.pop()
     retained_link = db_session.scalars(
         select(FacilitySourceLink).where(FacilitySourceLink.source_record_id == retained_record_id)
     ).one()

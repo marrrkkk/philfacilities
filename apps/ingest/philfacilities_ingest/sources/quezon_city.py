@@ -58,6 +58,7 @@ from ..contracts import (
     ValidationIssue,
     ValidationResult,
 )
+from ..validators import coordinate_in_philippines
 from .common import clean_text, normalise_code
 
 SOURCE_URL = "https://quezoncity.gov.ph/qc-barangays/"
@@ -77,7 +78,6 @@ PUBLIC_FIELDS = (
     "longitude",
     "source_url",
 )
-PHILIPPINES_BOUNDS = {"min_lat": 4.2, "max_lat": 21.5, "min_lon": 116.0, "max_lon": 127.0}
 HEALTH_OFFICE_NAMES = frozenset(
     {
         "Central Office",
@@ -167,10 +167,7 @@ def _map_coordinates(url: str | None) -> tuple[float | None, float | None]:
     if not match:
         return None, None
     latitude, longitude = float(match.group(1)), float(match.group(2))
-    if not (
-        PHILIPPINES_BOUNDS["min_lat"] <= latitude <= PHILIPPINES_BOUNDS["max_lat"]
-        and PHILIPPINES_BOUNDS["min_lon"] <= longitude <= PHILIPPINES_BOUNDS["max_lon"]
-    ):
+    if not coordinate_in_philippines(latitude, longitude):
         return None, None
     return latitude, longitude
 
@@ -324,18 +321,9 @@ class QuezonCityLguAdapter:
     source_code = "quezon-city"
     parser_version = "quezon-city-lgu-html-1.0.0"
     schema_version = "quezon-city-lgu-html-v1"
-    expected_columns = {  # noqa: RUF012
-        "required": {"record_type", "name", "address", "source_url"}
-    }
 
     def __init__(self, spec: ReleaseSpec) -> None:
         self.spec = spec
-
-    def discover(self, input_path: str | None) -> ReleaseSpec:
-        return self.spec
-
-    def acquire(self, spec: ReleaseSpec) -> bytes:
-        return spec.content
 
     def _included_health(self, record: dict[str, Any]) -> bool:
         return (
@@ -546,14 +534,7 @@ class QuezonCityLguAdapter:
                         )
                     )
                     continue
-                if not (
-                    PHILIPPINES_BOUNDS["min_lat"]
-                    <= float(latitude)
-                    <= PHILIPPINES_BOUNDS["max_lat"]
-                    and PHILIPPINES_BOUNDS["min_lon"]
-                    <= float(longitude)
-                    <= PHILIPPINES_BOUNDS["max_lon"]
-                ):
+                if not coordinate_in_philippines(float(latitude), float(longitude)):
                     issues.append(
                         ValidationIssue(
                             "coordinate_outside_philippines",

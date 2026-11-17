@@ -12,6 +12,7 @@ never deleted by a rollback; the release is marked ``rolled_back`` and
 from __future__ import annotations
 
 import uuid
+from collections.abc import Iterable
 from datetime import UTC, date, datetime
 from decimal import Decimal
 from typing import Any
@@ -24,6 +25,7 @@ from philfacilities_api.models import (
     EnrollmentObservation,
     Facility,
     FacilityChangeEvent,
+    FacilityContact,
     FacilityFunction,
     FacilityLocation,
     FacilityRelationship,
@@ -57,6 +59,7 @@ CHILD_MODELS = (
     HealthProfile,
     HealthLicense,
     HealthAccreditation,
+    FacilityContact,
 )
 
 
@@ -142,12 +145,148 @@ def _facility_state(session: Session, facility: Facility) -> dict[str, Any]:
     }
 
 
+UPDATE_PREFETCH_CHUNK_SIZE = 500
+
+
+class FacilityUpdatePrefetch:
+    """Lazily load the per-facility state a bulk update would query row by row.
+
+    Capturing a snapshot normally costs one existence query plus one query per
+    child table per facility, and the school/health profile lookups add another
+    SELECT per row. On a bulk update of an existing release that is more than a
+    dozen SELECTs per row. This helper loads the same state for a chunk of
+    facilities in a fixed number of queries, so the apply-stage query count
+    scales with batches instead of rows.
+
+    Chunks are loaded on first use rather than all at once: the apply loop walks
+    candidates in order, so loading a chunk when its first facility is captured
+    happens before any facility in that chunk has been mutated, and memory stays
+    bounded by one chunk.
+    """
+
+    def __init__(
+        self,
+        session: Session,
+        *,
+        release: Release,
+        facility_ids: Iterable[uuid.UUID],
+        chunk_size: int = UPDATE_PREFETCH_CHUNK_SIZE,
+    ) -> None:
+        self.session = session
+        self.release = release
+        self.facility_ids = list(dict.fromkeys(facility_ids))
+        self.chunk_size = max(1, chunk_size)
+        self._positions = {
+            facility_id: index for index, facility_id in enumerate(self.facility_ids)
+        }
+        self._loaded: set[int] = set()
+        self._existing: dict[uuid.UUID, ReleaseFacilitySnapshot] = {}
+        self._children: dict[uuid.UUID, dict[str, list[dict[str, Any]]]] = {}
+        self._school_profiles: dict[tuple[uuid.UUID, str | None], SchoolProfile] = {}
+        self._health_profiles: dict[tuple[uuid.UUID, str | None], HealthProfile] = {}
+
+    def existing_snapshot(self, facility_id: uuid.UUID) -> ReleaseFacilitySnapshot | None:
+        self._ensure(facility_id)
+        return self._existing.get(facility_id)
+
+    def child_state(self, facility_id: uuid.UUID) -> dict[str, list[dict[str, Any]]] | None:
+        self._ensure(facility_id)
+        return self._children.get(facility_id)
+
+    def school_profile(
+        self, facility_id: uuid.UUID, deped_school_id: str | None
+    ) -> SchoolProfile | None:
+        self._ensure(facility_id)
+        return self._school_profiles.get((facility_id, deped_school_id))
+
+    def health_profile(
+        self, facility_id: uuid.UUID, doh_facility_id: str | None
+    ) -> HealthProfile | None:
+        self._ensure(facility_id)
+        return self._health_profiles.get((facility_id, doh_facility_id))
+
+    def remember_school_profile(self, profile: SchoolProfile) -> None:
+        self._school_profiles[(profile.facility_id, profile.deped_school_id)] = profile
+
+    def remember_health_profile(self, profile: HealthProfile) -> None:
+        self._health_profiles[(profile.facility_id, profile.doh_facility_id)] = profile
+
+    def _ensure(self, facility_id: uuid.UUID) -> None:
+        position = self._positions.get(facility_id)
+        if position is None:
+            return
+        chunk_index = position // self.chunk_size
+        if chunk_index in self._loaded:
+            return
+        self._loaded.add(chunk_index)
+        start = chunk_index * self.chunk_size
+        chunk = self.facility_ids[start : start + self.chunk_size]
+
+        for snapshot in self.session.scalars(
+            select(ReleaseFacilitySnapshot).where(
+                ReleaseFacilitySnapshot.release_id == self.release.id,
+                ReleaseFacilitySnapshot.facility_id.in_(chunk),
+            )
+        ):
+            self._existing[snapshot.facility_id] = snapshot
+
+        # The profile keys are (facility, agency identifier), not source record,
+        # so an update needs them even when a snapshot already exists. Load them
+        # for every facility in the chunk with two queries.
+        for school_profile in self.session.scalars(
+            select(SchoolProfile).where(SchoolProfile.facility_id.in_(chunk))
+        ):
+            self._school_profiles[(school_profile.facility_id, school_profile.deped_school_id)] = (
+                school_profile
+            )
+        for health_profile in self.session.scalars(
+            select(HealthProfile).where(HealthProfile.facility_id.in_(chunk))
+        ):
+            self._health_profiles[(health_profile.facility_id, health_profile.doh_facility_id)] = (
+                health_profile
+            )
+
+        missing = [facility_id for facility_id in chunk if facility_id not in self._existing]
+        if not missing:
+            return
+        missing_set = set(missing)
+        grouped: dict[uuid.UUID, dict[str, list[dict[str, Any]]]] = {
+            facility_id: {model.__tablename__: [] for model in CHILD_MODELS}
+            for facility_id in missing
+        }
+        for model in CHILD_MODELS:
+            if model is FacilityRelationship:
+                rows = self.session.scalars(
+                    select(FacilityRelationship).where(
+                        or_(
+                            FacilityRelationship.subject_facility_id.in_(missing),
+                            FacilityRelationship.object_facility_id.in_(missing),
+                        )
+                    )
+                ).all()
+                for row in rows:
+                    if row.subject_facility_id in missing_set:
+                        grouped[row.subject_facility_id][model.__tablename__].append(
+                            _row_to_dict(row, model)
+                        )
+                    if row.object_facility_id in missing_set:
+                        grouped[row.object_facility_id][model.__tablename__].append(
+                            _row_to_dict(row, model)
+                        )
+                continue
+            rows = self.session.scalars(select(model).where(model.facility_id.in_(missing))).all()
+            for row in rows:
+                grouped[row.facility_id][model.__tablename__].append(_row_to_dict(row, model))
+        self._children.update(grouped)
+
+
 def capture_facility_snapshot(
     session: Session,
     *,
     release: Release,
     facility: Facility,
     was_created: bool,
+    prefetch: FacilityUpdatePrefetch | None = None,
 ) -> ReleaseFacilitySnapshot:
     """Record the pre-release state once, before the release first mutates it."""
 
@@ -163,6 +302,12 @@ def capture_facility_snapshot(
     if cached is not None and cached in session:
         return cached
 
+    if prefetch is not None:
+        existing = prefetch.existing_snapshot(facility.id)
+        if existing is not None:
+            cache[key] = existing
+            return existing
+
     if was_created:
         # A facility created by this pass cannot have a pre-release snapshot
         # yet; avoid one query per bulk-loaded row.
@@ -176,20 +321,29 @@ def capture_facility_snapshot(
         cache[key] = snapshot
         return snapshot
 
-    existing = session.scalars(
-        select(ReleaseFacilitySnapshot).where(
-            ReleaseFacilitySnapshot.release_id == release.id,
-            ReleaseFacilitySnapshot.facility_id == facility.id,
+    if prefetch is None:
+        existing = session.scalars(
+            select(ReleaseFacilitySnapshot).where(
+                ReleaseFacilitySnapshot.release_id == release.id,
+                ReleaseFacilitySnapshot.facility_id == facility.id,
+            )
+        ).first()
+        if existing is not None:
+            cache[key] = existing
+            return existing
+        state = _facility_state(session, facility)
+    else:
+        children = prefetch.child_state(facility.id)
+        state = (
+            {"facility": _row_to_dict(facility, Facility), "children": children}
+            if children is not None
+            else _facility_state(session, facility)
         )
-    ).first()
-    if existing is not None:
-        cache[key] = existing
-        return existing
     snapshot = ReleaseFacilitySnapshot(
         release_id=release.id,
         facility_id=facility.id,
         was_created=was_created,
-        state=None if was_created else _facility_state(session, facility),
+        state=None if was_created else state,
     )
     session.add(snapshot)
     cache[key] = snapshot
@@ -349,6 +503,7 @@ def rollback_release(
     restore_count = 0
     delete_count = 0
     skipped = 0
+    affected_facilities: list[uuid.UUID] = []
     for snapshot in snapshots:
         if snapshot.facility_id is None:
             skipped += 1
@@ -357,6 +512,7 @@ def rollback_release(
         if facility is None:
             skipped += 1
             continue
+        affected_facilities.append(facility.id)
         if facility.updated_at > release.processed_at:
             raise ReleaseRollbackError(
                 f"Facility {facility.id} changed after release "
@@ -395,6 +551,11 @@ def rollback_release(
             restore_count += 1
 
     if not dry_run:
+        # Assertions tied to the release were removed above; the derived fusion
+        # rows must not survive as a stale selection for a later apply pass.
+        from .fusion import delete_fusions_for_facilities
+
+        delete_fusions_for_facilities(session, affected_facilities)
         release.ingestion_status = "rolled_back"
         release.publication_status = PUBLICATION_QUARANTINED
         rollback_note = (

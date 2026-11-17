@@ -34,7 +34,7 @@ class _TableParser(HTMLParser):
         self._in_table = False
         self._tables = 0
 
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+    def handle_starttag(self, tag: str, _attrs: list[tuple[str, str | None]]) -> None:
         tag = tag.lower()
         if tag == "table":
             self._tables += 1
@@ -108,16 +108,9 @@ class DepEdEBEISAdapter:
     source_code = "deped"
     parser_version = "deped-ebeis-html-1.1.0"
     schema_version = "deped-ebeis-masterlist-html-v2"
-    expected_columns = {"required": {"School ID", "School Name", "Head / Position", "Address"}}  # noqa: RUF012
 
     def __init__(self, spec: ReleaseSpec) -> None:
         self.spec = spec
-
-    def discover(self, input_path: str | None) -> ReleaseSpec:
-        return self.spec
-
-    def acquire(self, spec: ReleaseSpec) -> bytes:
-        return spec.content
 
     def parse(self, spec: ReleaseSpec) -> ParsedRelease:
         _header, rows = parse_masterlist_html(spec.content.decode("utf-8", errors="replace"))

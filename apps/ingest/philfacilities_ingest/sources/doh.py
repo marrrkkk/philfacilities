@@ -68,18 +68,9 @@ class DOHNHFRAdapter:
     source_code = "doh"
     parser_version = "doh-nhfr-csv-1.0.0"
     schema_version = "doh-nhfr-v1"
-    expected_columns = {  # noqa: RUF012
-        "required": {*FACILITY_ID_ALIASES, *NAME_ALIASES},
-    }
 
     def __init__(self, spec: ReleaseSpec) -> None:
         self.spec = spec
-
-    def discover(self, input_path: str | None) -> ReleaseSpec:
-        return self.spec
-
-    def acquire(self, spec: ReleaseSpec) -> bytes:
-        return spec.content
 
     def parse(self, spec: ReleaseSpec) -> ParsedRelease:
         headers, rows = read_csv_rows(spec.content)

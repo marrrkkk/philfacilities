@@ -145,7 +145,7 @@ def _add(
     stats.by_attribute[attribute] += 1
 
 
-def backfill_assertions(session: Session, *, batch_size: int = 1000) -> AssertionBackfillStats:
+def backfill_assertions(session: Session) -> AssertionBackfillStats:
     """Insert exact source-linked claims already represented by child rows.
 
     The operation is idempotent for the attributes it manages: an identical

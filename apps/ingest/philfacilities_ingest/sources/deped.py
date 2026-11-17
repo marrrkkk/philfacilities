@@ -106,18 +106,9 @@ class DepEdMasterlistAdapter:
     source_code = "deped"
     parser_version = "deped-masterlist-1.0.0"
     schema_version = "deped-masterlist-2023-24-v1"
-    expected_columns = {  # noqa: RUF012
-        "required": set(SCHOOL_ID_ALIASES + SCHOOL_NAME_ALIASES),
-    }
 
     def __init__(self, spec: ReleaseSpec) -> None:
         self.spec = spec
-
-    def discover(self, input_path: str | None) -> ReleaseSpec:
-        return self.spec
-
-    def acquire(self, spec: ReleaseSpec) -> bytes:
-        return spec.content
 
     def parse(self, spec: ReleaseSpec) -> ParsedRelease:
         headers, rows = _read_rows(spec.content, spec.filename, "Masterlist")
@@ -294,16 +285,9 @@ class DepEdEnrollmentAdapter:
     source_code = "deped"
     parser_version = "deped-enrollment-1.0.0"
     schema_version = "deped-enrollment-v1"
-    expected_columns = {"required": {"school_id", "school_year", "grade_level", "learner_count"}}  # noqa: RUF012
 
     def __init__(self, spec: ReleaseSpec) -> None:
         self.spec = spec
-
-    def discover(self, input_path: str | None) -> ReleaseSpec:
-        return self.spec
-
-    def acquire(self, spec: ReleaseSpec) -> bytes:
-        return spec.content
 
     def parse(self, spec: ReleaseSpec) -> ParsedRelease:
         headers, rows = _read_rows(
@@ -317,7 +301,11 @@ class DepEdEnrollmentAdapter:
                 ["learner_count", "enrolment", "enrollment"],
             ],
         )
-        require_columns(headers, self.expected_columns["required"], "DepEd enrollment")
+        require_columns(
+            headers,
+            {"school_id", "school_year", "grade_level", "learner_count"},
+            "DepEd enrollment",
+        )
         grouped: dict[tuple[str, str], dict] = {}
         for row in rows:
             school_id = normalise_code(first_present(row, SCHOOL_ID_ALIASES))
@@ -431,16 +419,9 @@ class DepEdResourceAdapter:
     source_code = "deped"
     parser_version = "deped-resources-1.0.0"
     schema_version = "deped-resources-v1"
-    expected_columns = {"required": {"school_id", "school_year", "resource_code", "value"}}  # noqa: RUF012
 
     def __init__(self, spec: ReleaseSpec) -> None:
         self.spec = spec
-
-    def discover(self, input_path: str | None) -> ReleaseSpec:
-        return self.spec
-
-    def acquire(self, spec: ReleaseSpec) -> bytes:
-        return spec.content
 
     def parse(self, spec: ReleaseSpec) -> ParsedRelease:
         headers, rows = _read_rows(
@@ -454,7 +435,11 @@ class DepEdResourceAdapter:
                 ["value", "value_numeric"],
             ],
         )
-        require_columns(headers, self.expected_columns["required"], "DepEd resources")
+        require_columns(
+            headers,
+            {"school_id", "school_year", "resource_code", "value"},
+            "DepEd resources",
+        )
         grouped: dict[tuple[str, str], dict] = {}
         for row in rows:
             school_id = normalise_code(first_present(row, SCHOOL_ID_ALIASES))

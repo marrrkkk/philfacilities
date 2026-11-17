@@ -18,17 +18,14 @@ from philfacilities_api.models import (
     MatchCandidate,
     Release,
 )
+from philfacilities_api.rights import rights_allow_public
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from .acquisition import (
-    AcquisitionError,
-    HttpAcquirer,
     actionable_failures,
-    classify_response,
-    record_check,
     send_failure_alert,
-    validate_signature,
+    send_ingestion_failure_alert,
 )
 from .assertions import backfill_assertions
 from .compare import ReleaseComparisonError, compare_releases
@@ -47,12 +44,14 @@ from .fixtures import (
     psgc_workbook,
 )
 from .fusion import (
+    FUSION_STATUSES,
     apply_fusions,
     auto_merge_exact_duplicates,
     build_attribute_fusions,
     fusion_report,
 )
 from .lgu_inventory import validate_inventory
+from .location_fill import fill_locations_from_osm
 from .manifest import render_release_notes, write_release_manifest
 from .matching import (
     MatchingError,
@@ -64,13 +63,13 @@ from .matching import (
 )
 from .pipeline import (
     build_engine,
-    ensure_source,
-    run_geography_ingestion,
     run_ingestion,
     run_psgc_ingestion,
     session_factory,
 )
+from .rebuild_reports import write_rebuild_pack
 from .release_rollback import ReleaseRollbackError, rollback_release
+from .replay import ReplayManifestError, replay_manifest
 from .scraper import CrawlPolicy, crawl, summary_json
 from .source_candidates import (
     load_source_candidates,
@@ -84,91 +83,33 @@ from .source_inventory import (
     write_source_inventory,
 )
 from .source_report import enrich_source_inventory, validate_report_fields, write_source_reports
-from .sources.bettergov import OSMParquetAdapter, load_psgc_release_payload
-from .sources.bettergov_stats import (
-    CENSUS_2024_DATASET_IDS,
-    fetch_population_snapshot,
-    load_population_snapshot,
-)
-from .sources.bir import BirRevenueDistrictOfficeAdapter
-from .sources.bucor import BucorFacilityAdapter
-from .sources.cainta import CaintaHealthCenterAdapter, fetch_cainta_health_centers
-from .sources.ched_heida import ChedHeidaAdapter, fetch_heida_directory
+from .source_runner import run_selection, summarize_results, validate_source
+from .sources.catalog import SOURCES, catalog_rows, select_keys
 from .sources.deped import DepEdEnrollmentAdapter, DepEdMasterlistAdapter, DepEdResourceAdapter
-from .sources.deped_ebeis import DepEdEBEISAdapter
-from .sources.doe_power import DOE_GRID_URLS, DoePowerPlantAdapter
 from .sources.doh import DOHNHFRAdapter
-from .sources.dswd_crcf import DswdCrcfDirectoryAdapter
-from .sources.dti_negosyo import DtiNegosyoCenterAdapter, fetch_negosyo_centers
-from .sources.lrta import LrtaStationAdapter, fetch_distance_page
-from .sources.mandaluyong import MandaluyongBarangayAdapter, fetch_mandaluyong_directory
-from .sources.mrt3 import Mrt3StationAdapter, fetch_mrt3_stations
-from .sources.national_museum import NationalMuseumDirectoryAdapter, fetch_national_museum_directory
-from .sources.nbi import NbiOfficeAdapter, fetch_nbi_offices
-from .sources.nha_wfs import NhaDohFacilityAdapter, NhaHousingProjectAdapter, NhaLandholdingAdapter
-from .sources.nlp import NlpPublicLibraryPdfAdapter
-from .sources.nmis_naris import NmisNarisDirectoryAdapter
-from .sources.osm_facilities import LAYER_FILES, OsmFacilityLayerAdapter
-from .sources.pagasa_aws import PagasaAwsAdapter, fetch_pagasa_aws
-from .sources.pasay import PasayHealthCenterAdapter, fetch_pasay_health_centers
 from .sources.philhealth import PhilHealthPdfAdapter
-from .sources.philhealth_offices import PhilHealthOfficeAdapter, fetch_philhealth_offices
-from .sources.phlpost import PhlPostLocatorAdapter
-from .sources.ppa import PpaPortListAdapter
-from .sources.prc import PrcOfficeAdapter
-from .sources.quezon_city import QuezonCityLguAdapter, fetch_quezon_city_directory
-from .sources.quezon_city_places import QuezonCityPlacesAdapter, fetch_quezon_city_places
 from .sources.registry import (
-    EBEIS_REGIONS,
-    REAL_SOURCES,
     apply_publication_decisions,
     check_sources,
     due_source_keys,
-    fetch_ebeis_region,
-    fetch_psgc_collections,
     latest_checks,
-    philhealth_catalog,
-    philhealth_dataset_slug,
-    psgc_release_content,
-    psgc_units,
     source_review_rows,
-    source_spec,
 )
-from .sources.sss_branch import SssBranchAdapter, fetch_sss_branches
 
 app = typer.Typer(
     add_completion=False,
     help="Source acquisition, repeatable ingestion, reports, and status for PhilFacilities.",
 )
+source_app = typer.Typer(add_completion=False, help="List, check, run, and validate sources.")
+demo_app = typer.Typer(add_completion=False, help="Synthetic demonstration data.")
+app.add_typer(source_app, name="source")
+app.add_typer(demo_app, name="demo")
 
 SYNTHETIC_AGENCY_NAMES = {
     "deped": "Department of Education (synthetic demo fixture)",
     "doh": "Department of Health (synthetic demo fixture)",
     "philhealth": "PhilHealth (synthetic demo fixture)",
     "psa": "Philippine Statistics Authority (synthetic demo fixture)",
-}
-
-REAL_AGENCY_METADATA = {
-    "bettergov": ("BetterGov.PH", "community"),
-    "ched": ("Commission on Higher Education", "government"),
-    "deped": ("Department of Education", "government"),
-    "doh": ("Department of Health", "government"),
-    "dswd": ("Department of Social Welfare and Development", "government"),
-    "nlp": ("National Library of the Philippines", "government"),
-    "nmp": ("National Museum of the Philippines", "government"),
-    "nbi": ("National Bureau of Investigation", "government"),
-    "nmis": ("National Meat Inspection Service", "government"),
-    "osm": ("OpenStreetMap contributors (via HOT and BetterGov.PH)", "community"),
-    "philhealth": ("Philippine Health Insurance Corporation", "government"),
-    "phlpost": ("Philippine Postal Corporation", "government"),
-    "ppa": ("Philippine Ports Authority", "government"),
-    "psa": ("Philippine Statistics Authority", "government"),
-    "sss": ("Social Security System", "government"),
-    "pagasa": (
-        "Philippine Atmospheric, Geophysical and Astronomical Services Administration",
-        "government",
-    ),
-    "tesda": ("Technical Education and Skills Development Authority", "government"),
 }
 
 
@@ -331,7 +272,7 @@ def generate_fixtures(
     typer.echo(f"Wrote {len(manifest)} synthetic fixtures to {output}")
 
 
-@app.command("load-demo")
+@demo_app.command("load")
 def load_demo(
     reset: Annotated[bool, typer.Option(help="Delete existing demo facilities first.")] = False,
 ) -> None:
@@ -424,6 +365,299 @@ def _reset_demo(session: Session) -> None:
     session.flush()
 
 
+@source_app.command("list")
+def source_list(
+    group: Annotated[
+        str | None,
+        typer.Option("--group", help="approved or skipped."),
+    ] = None,
+    json_output: Annotated[bool, typer.Option("--json", help="Emit JSON.")] = False,
+) -> None:
+    """List every registered source and its acquisition route."""
+
+    rows = catalog_rows()
+    if group is not None:
+        rows = [row for row in rows if row["group"] == group]
+    if json_output:
+        typer.echo(json.dumps(rows, indent=2, default=str))
+        return
+    typer.echo(f"{'KEY':28} {'GROUP':8} {'RIGHTS':24} {'CONNECTOR':24} DATASET")
+    for row in rows:
+        typer.echo(
+            f"{row['key']:28} {row['group']:8} {row['rights']:24} "
+            f"{row['connector']:24} {row['dataset']}"
+        )
+
+
+@source_app.command("check")
+def source_check(
+    keys: Annotated[
+        list[str] | None,
+        typer.Argument(help="Source keys to check; omit to check every registered source."),
+    ] = None,
+    source: Annotated[
+        list[str] | None,
+        typer.Option("--source", "-s", help="Repeat to check selected source keys."),
+    ] = None,
+    due: Annotated[
+        bool,
+        typer.Option("--due", help="Check only sources whose next_check_at is due."),
+    ] = False,
+    force: Annotated[
+        bool,
+        typer.Option("--force", help="Ignore next_check_at for selected sources."),
+    ] = False,
+    json_output: Annotated[bool, typer.Option("--json", help="Emit JSON.")] = True,
+) -> None:
+    """Probe registered sources and append monitoring evidence.
+
+    A check never downloads a release into canonical tables, never bypasses an
+    access control, and never accepts a licence on the operator's behalf.
+    """
+
+    selected = list(keys or []) + list(source or [])
+    settings = get_settings()
+    engine, session = _session()
+    try:
+        if due:
+            checked_keys = due_source_keys(session, keys=selected or None, force=force)
+            if not checked_keys:
+                typer.echo("No source checks are due.")
+                return
+            typer.echo(f"Checking {len(checked_keys)} due source(s): {', '.join(checked_keys)}")
+            results = check_sources(session, keys=checked_keys)
+            send_failure_alert(settings, results, command="source check --due")
+            failures = actionable_failures(results)
+            if failures:
+                typer.echo(f"Actionable failures: {', '.join(sorted(failures))}", err=True)
+                if json_output:
+                    typer.echo(json.dumps(results, indent=2, default=str))
+                raise typer.Exit(code=2)
+        else:
+            results = check_sources(session, keys=selected or None)
+        if json_output:
+            typer.echo(json.dumps(results, indent=2, default=str))
+        else:
+            for key, row in results.items():
+                detail = row.get("error") or row.get("status")
+                typer.echo(f"{key}: {detail} http={row.get('http_status')}")
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@source_app.command("run")
+def source_run(
+    keys: Annotated[
+        list[str] | None,
+        typer.Argument(help="Source keys to run; omit with --group to run a group."),
+    ] = None,
+    group: Annotated[
+        str | None,
+        typer.Option("--group", help="Run every source in approved or skipped."),
+    ] = None,
+    exclude: Annotated[
+        list[str] | None,
+        typer.Option("--exclude", help="Repeat to exclude a source key from the selection."),
+    ] = None,
+    reprocess: Annotated[
+        bool,
+        typer.Option("--reprocess", help="Reprocess an already-preserved release."),
+    ] = False,
+    dry_run: Annotated[
+        bool,
+        typer.Option(
+            "--dry-run",
+            help="Acquire and validate without writing canonical or staging rows.",
+        ),
+    ] = False,
+    input_path: Annotated[
+        Path | None,
+        typer.Option("--input", help="Controlled import of a preserved artifact."),
+    ] = None,
+    region: Annotated[
+        str | None,
+        typer.Option("--region", help="EBEIS region key, or 'all'."),
+    ] = None,
+    provider_category: Annotated[
+        str | None,
+        typer.Option("--provider-category", help="Category for a preserved PhilHealth PDF."),
+    ] = None,
+    files: Annotated[
+        list[str] | None,
+        typer.Option("--file", help="PhilHealth catalogue PDF filename; repeatable."),
+    ] = None,
+    datasets: Annotated[
+        list[str] | None,
+        typer.Option("--dataset", help="BetterGov population dataset id; repeatable."),
+    ] = None,
+    extract_out: Annotated[
+        Path | None,
+        typer.Option("--extract-out", help="Write the filtered OSM PBF extract here."),
+    ] = None,
+    pbf_path: Annotated[
+        Path | None,
+        typer.Option("--pbf-path", help="Local Geofabrik .osm.pbf snapshot."),
+    ] = None,
+    enqueue_matches: Annotated[
+        bool,
+        typer.Option(
+            "--enqueue-matches",
+            help=(
+                "Run cross-source candidate matching during ingestion. Off by default "
+                "for bulk releases; the explicit matcher command is preferred."
+            ),
+        ),
+    ] = False,
+    json_output: Annotated[bool, typer.Option("--json", help="Emit JSON.")] = True,
+) -> None:
+    """Acquire and ingest one or more sources through the generic runner."""
+
+    selected = select_keys(keys, group=group, exclude=exclude)
+    if not selected:
+        raise typer.BadParameter("No source keys selected.")
+    if input_path is not None and len(selected) != 1:
+        raise typer.BadParameter("--input can only be used with one source key.")
+    options: dict[str, Any] = {}
+    if region is not None:
+        options["region"] = region
+    if provider_category is not None:
+        options["provider_category"] = provider_category
+    if files:
+        options["files"] = files
+    if datasets:
+        options["datasets"] = datasets
+    if extract_out is not None:
+        options["extract_out"] = str(extract_out)
+    if pbf_path is not None:
+        options["pbf_path"] = str(pbf_path)
+    settings = get_settings()
+    engine, session = _session()
+    try:
+        results = run_selection(
+            session,
+            settings,
+            selected,
+            reprocess=reprocess,
+            dry_run=dry_run,
+            input_path=input_path,
+            options=options,
+            enqueue_matches=enqueue_matches,
+        )
+    finally:
+        session.close()
+        engine.dispose()
+    alerted = send_ingestion_failure_alert(settings, results, command="source run")
+    if alerted:
+        typer.echo("Failure alert sent to the configured webhook.", err=True)
+    if json_output:
+        typer.echo(json.dumps(results, indent=2, default=str))
+    else:
+        for row in results:
+            typer.echo(
+                f"{row.get('key')}: {row.get('status')} "
+                f"{row.get('filename') or ''} {row.get('error') or ''}".rstrip()
+            )
+        typer.echo(
+            " ".join(f"{status}={count}" for status, count in summarize_results(results).items())
+        )
+    if any(row.get("status") == "failed" for row in results):
+        raise typer.Exit(code=1)
+
+
+@source_app.command("validate")
+def source_validate(
+    key: Annotated[str, typer.Argument(help="Source key to validate.")],
+    fixture: Annotated[
+        Path | None,
+        typer.Option(
+            "--fixture",
+            help="Preserved raw artifact to parse; omit to acquire the current source.",
+            exists=True,
+            dir_okay=False,
+        ),
+    ] = None,
+    region: Annotated[
+        str | None,
+        typer.Option("--region", help="EBEIS region key for the fixture."),
+    ] = None,
+    provider_category: Annotated[
+        str | None,
+        typer.Option("--provider-category", help="Category for a preserved PhilHealth PDF."),
+    ] = None,
+) -> None:
+    """Run parse -> validate -> normalize without writing to the database."""
+
+    if key not in SOURCES:
+        raise typer.BadParameter(
+            f"Unknown source key {key!r}; run 'source list' to see registered keys."
+        )
+    options: dict[str, Any] = {}
+    if region is not None:
+        options["region"] = region
+    if provider_category is not None:
+        options["provider_category"] = provider_category
+    result = validate_source(
+        get_settings(),
+        key,
+        input_path=fixture,
+        options=options,
+    )
+    typer.echo(json.dumps(result, indent=2, default=str))
+    if any(
+        release.get("status") not in {"validated", "skipped_duplicate"}
+        for release in result["releases"]
+    ):
+        raise typer.Exit(code=1)
+
+
+@source_app.command("replay")
+def source_replay(
+    manifest: Annotated[
+        Path,
+        typer.Argument(
+            exists=True,
+            dir_okay=False,
+            help="JSON manifest naming preserved releases or raw object URIs.",
+        ),
+    ],
+    json_output: Annotated[bool, typer.Option("--json", help="Emit JSON.")] = True,
+) -> None:
+    """Replay preserved raw releases through the current parsers.
+
+    A replay never re-downloads a source. Each manifest entry names either a
+    stored release UUID or a raw object URI; the bytes are verified against the
+    recorded SHA-256 before the current connector and parser run.
+    """
+
+    settings = get_settings()
+    engine, session = _session()
+    try:
+        results = replay_manifest(
+            session=session,
+            settings=settings,
+            manifest_path=manifest,
+        )
+    except ReplayManifestError as exc:
+        raise typer.BadParameter(str(exc)) from exc
+    finally:
+        session.close()
+        engine.dispose()
+    alerted = send_ingestion_failure_alert(settings, results, command="source replay")
+    if alerted:
+        typer.echo("Failure alert sent to the configured webhook.", err=True)
+    if json_output:
+        typer.echo(json.dumps(results, indent=2, default=str))
+    else:
+        for row in results:
+            typer.echo(
+                f"{row.get('source')}: {row.get('status')} "
+                f"{row.get('filename') or ''} {row.get('error') or ''}".rstrip()
+            )
+    if any(row.get("status") == "failed" for row in results):
+        raise typer.Exit(code=1)
+
+
 @app.command("ingest-file")
 def ingest_file(
     source: Annotated[
@@ -447,9 +681,32 @@ def ingest_file(
     agency: Annotated[str, typer.Option(help="Agency short code")] = "unknown",
     agency_name: Annotated[str | None, typer.Option(help="Agency display name")] = None,
     is_synthetic: Annotated[bool, typer.Option(help="Mark as synthetic fixture")] = False,
+    reviewer: Annotated[
+        str | None,
+        typer.Option(
+            help=(
+                "Reviewer who accepted the rights decision. Required when the supplied "
+                "rights state may publish records."
+            )
+        ),
+    ] = None,
+    review_note: Annotated[
+        str | None,
+        typer.Option(help="Rights-review note recorded on the publication gate."),
+    ] = None,
 ) -> None:
-    """Ingest one real or synthetic source file through its adapter."""
+    """Ingest one real or synthetic source file through its adapter.
 
+    Manual imports are trusted-operator commands, but a public import must name
+    the reviewer who accepted the rights decision. The reviewer is recorded on the
+    publication gate; the command never invents a rights state.
+    """
+
+    if not is_synthetic and rights_allow_public(redistribution_status) and not reviewer:
+        raise typer.BadParameter(
+            "--reviewer is required when a manual import has a public redistribution "
+            "status; record the person or role who reviewed the source terms."
+        )
     content = path.read_bytes()
     spec = ReleaseSpec(
         agency_code=agency,
@@ -467,6 +724,8 @@ def ingest_file(
         redistribution_status=redistribution_status,
         access_method="manual_file",
         is_synthetic=is_synthetic,
+        rights_reviewer=reviewer,
+        rights_review_note=review_note,
         notes=(
             "Acquired through the documented manual file flow; terms must be reviewed "
             "before publication."
@@ -503,7 +762,7 @@ def fuse_attributes_command(
         bool,
         typer.Option(
             "--apply/--no-apply",
-            help="Apply agreed or confirmed safe fields to canonical facility rows.",
+            help="Apply eligible safe fields to canonical facility rows.",
         ),
     ] = False,
     dry_run: Annotated[
@@ -527,9 +786,10 @@ def fuse_attributes_command(
 ) -> None:
     """Materialise field-level fusions and retain every conflicting value.
 
-    Source assertions and raw releases are never rewritten. With ``--apply``
-    only agreed claims (or confirmed claims) for a small safe field set are
-    copied to the canonical facility; conflicts stay reviewable.
+    Source assertions and raw releases are never rewritten. With ``--apply``,
+    cross-agency agreements, conflicts with a clear authority winner, and
+    single-source values that fill a missing canonical field are copied to the
+    facility automatically. Equal-authority conflicts stay derived-only.
     """
 
     engine, session = _session()
@@ -546,7 +806,8 @@ def fuse_attributes_command(
             multi_source_only=not all_facilities,
             progress=lambda current: typer.echo(
                 f"  fused facilities={current.facilities_scanned} "
-                f"attributes={current.attributes_written} conflicts={current.conflict}",
+                f"attributes={current.attributes_written} "
+                f"conflicts={current.conflict} removed={current.removed}",
                 err=True,
             ),
         )
@@ -567,12 +828,30 @@ def fuse_attributes_command(
 @app.command("fusion-report")
 def fusion_report_command(
     as_json: Annotated[bool, typer.Option("--json", help="Emit the report as JSON.")] = False,
+    status: Annotated[
+        str,
+        typer.Option(
+            "--status",
+            help="Sample status: single_source, agreed, conflict, or all.",
+        ),
+    ] = "conflict",
+    limit: Annotated[
+        int,
+        typer.Option("--limit", min=1, max=200, help="Maximum samples to return."),
+    ] = 25,
 ) -> None:
-    """Report fused attributes, conflicts and retained alternative values."""
+    """Report fused attributes and conflicts left derived-only."""
+
+    if status == "all":
+        sample_status = None
+    elif status in FUSION_STATUSES:
+        sample_status = status
+    else:
+        raise typer.BadParameter(f"--status must be one of {FUSION_STATUSES} or 'all'.")
 
     engine, session = _session()
     try:
-        report = fusion_report(session)
+        report = fusion_report(session, status=sample_status, limit=limit)
     finally:
         session.close()
         engine.dispose()
@@ -580,12 +859,45 @@ def fusion_report_command(
         typer.echo(json.dumps(report, indent=2, default=str))
         return
     typer.echo(json.dumps(report["by_status"], indent=2))
-    typer.echo(f"total={report['total']} conflicts={len(report['conflict_samples'])} sample(s)")
-    for row in report["conflict_samples"][:10]:
+    typer.echo(
+        f"total={report['total']} unresolved_conflicts={report['unresolved_conflicts']} "
+        f"samples={len(report['samples'])}"
+    )
+    for row in report["samples"]:
         typer.echo(
             f"{row['facility'][:60]} · {row['attribute']}={row['selected_value']!r} "
-            f"({row['distinct_values']} distinct values)"
+            f"({row['distinct_values']} distinct values, confidence={row['confidence']})"
         )
+
+
+@app.command("fill-locations-from-osm")
+def fill_locations_from_osm_command(
+    apply: Annotated[
+        bool,
+        typer.Option(
+            "--apply",
+            help="Write the OSM-derived points; without it the command is a dry run.",
+        ),
+    ] = False,
+    report: Annotated[
+        Path | None,
+        typer.Option(
+            "--report",
+            help="Write a machine-readable fill report (JSON) here.",
+        ),
+    ] = None,
+) -> None:
+    """Fill missing facility points from deterministic OSM name + city matches."""
+
+    engine, session = _session()
+    try:
+        result = fill_locations_from_osm(session, apply=apply, report_path=report)
+    finally:
+        session.close()
+        engine.dispose()
+    typer.echo(json.dumps(result.to_dict(), indent=2, default=str))
+    if not apply:
+        typer.echo("dry run: pass --apply to write the community map locations.")
 
 
 @app.command("auto-merge-duplicates")
@@ -601,8 +913,9 @@ def auto_merge_duplicates_command(
 ) -> None:
     """Merge only exact normalized name + PSGC + address duplicates.
 
-    Ambiguous candidates remain ``pending`` for human review. A merge retires the
-    source facility but retains its source links and claims on the survivor.
+    Ambiguous candidates remain unmerged and are retried automatically when new
+    evidence arrives; there is no human review gate. A merge retires the source
+    facility but retains its source links and claims on the survivor.
     """
 
     engine, session = _session()
@@ -661,7 +974,7 @@ def source_candidates_command(
         Path | None,
         typer.Option(
             "--path",
-            help="Candidate registry JSON. Defaults to expand/source-candidates.json.",
+            help="Candidate registry JSON. Defaults to data/sources/source-candidates.json.",
         ),
     ] = None,
     as_json: Annotated[
@@ -701,14 +1014,14 @@ def source_inventory_command(
         Path | None,
         typer.Option(
             "--register",
-            help="Source register Markdown. Defaults to expand/docs/03-SOURCE-REGISTER.md.",
+            help="Source register Markdown. Defaults to docs/sources.md.",
         ),
     ] = None,
     candidates: Annotated[
         Path | None,
         typer.Option(
             "--candidates",
-            help="Candidate registry JSON. Defaults to expand/source-candidates.json.",
+            help="Candidate registry JSON. Defaults to data/sources/source-candidates.json.",
         ),
     ] = None,
     probes: Annotated[
@@ -743,6 +1056,8 @@ def source_inventory_command(
 
     payload = build_source_inventory(register, candidates, probes)
     errors = validate_source_inventory(payload)
+    if not errors:
+        enrich_source_inventory(payload)
     summary = summarize_source_inventory(payload)
     written: tuple[Path, Path] | None = None
     if not errors and not check:
@@ -787,14 +1102,14 @@ def source_report_command(
         Path | None,
         typer.Option(
             "--register",
-            help="Source register Markdown. Defaults to expand/docs/03-SOURCE-REGISTER.md.",
+            help="Source register Markdown. Defaults to docs/sources.md.",
         ),
     ] = None,
     candidates: Annotated[
         Path | None,
         typer.Option(
             "--candidates",
-            help="Candidate registry JSON. Defaults to expand/source-candidates.json.",
+            help="Candidate registry JSON. Defaults to data/sources/source-candidates.json.",
         ),
     ] = None,
     probes: Annotated[
@@ -808,15 +1123,15 @@ def source_report_command(
         Path | None,
         typer.Option(
             "--region-ledger",
-            help="Region search ledger JSON. Defaults to expand/data/region-search-ledger.json.",
+            help="Region search ledger JSON. Defaults to data/sources/region-search-ledger.json.",
         ),
     ] = None,
     output_dir: Annotated[
         Path | None,
         typer.Option(
             "--output-dir",
-            help="Directory for probe-ledger.jsonl, gap-report.md, blocked-register.md and "
-            "acquisition-queue.md. Defaults to expand/data.",
+            help="Directory for probe-ledger.jsonl, gap-report.md and acquisition-plan.md. "
+            "Defaults to var/reports.",
         ),
     ] = None,
     json_output: Annotated[
@@ -831,8 +1146,8 @@ def source_report_command(
     """Emit the data.md research deliverables from the merged source inventory.
 
     The command enriches the inventory with the required output fields, validates
-    it, and writes the probe ledger, gap report, blocked register and acquisition
-    queue. It does not acquire a source, approve rights or publish records.
+    it, and writes the probe ledger, gap report and acquisition plan. It does not
+    acquire a source, approve rights or publish records.
     """
 
     payload = build_source_inventory(register, candidates, probes)
@@ -851,10 +1166,196 @@ def source_report_command(
     typer.echo(f"sources={len(payload.get('sources') or [])}")
     typer.echo(f"probe_ledger={written.probe_ledger}")
     typer.echo(f"gap_report={written.gap_report}")
-    typer.echo(f"blocked_register={written.blocked_register}")
-    typer.echo(f"acquisition_queue={written.acquisition_queue}")
+    typer.echo(f"acquisition_plan={written.acquisition_plan}")
     for path in inventory_written:
         typer.echo(f"inventory={path}")
+
+
+@app.command("rebuild-report")
+def rebuild_report_command(
+    register: Annotated[
+        Path | None,
+        typer.Option(
+            "--register",
+            help="Source register Markdown. Defaults to docs/sources.md.",
+        ),
+    ] = None,
+    candidates: Annotated[
+        Path | None,
+        typer.Option(
+            "--candidates",
+            help="Candidate registry JSON. Defaults to data/sources/source-candidates.json.",
+        ),
+    ] = None,
+    probes: Annotated[
+        Path | None,
+        typer.Option(
+            "--probes",
+            help="Fresh probe text ledger. Defaults to the newest probes-*.txt in "
+            "var/reports/rebuild, then the register evidence ledger.",
+        ),
+    ] = None,
+    output_dir: Annotated[
+        Path | None,
+        typer.Option(
+            "--output-dir",
+            help="Directory for the data.md section 11.1 evidence pack. "
+            "Defaults to var/reports/rebuild.",
+        ),
+    ] = None,
+    baseline: Annotated[
+        Path | None,
+        typer.Option(
+            "--baseline",
+            help="Pre-rebuild counts JSON. Defaults to rebuild-baseline.json in the output dir.",
+        ),
+    ] = None,
+    region_ledger: Annotated[
+        Path | None,
+        typer.Option(
+            "--region-ledger",
+            help="Region search ledger JSON. Defaults to data/sources/region-search-ledger.json.",
+        ),
+    ] = None,
+    osm_fill: Annotated[
+        Path | None,
+        typer.Option(
+            "--osm-fill",
+            help="JSON report from fill-locations-from-osm. Defaults to "
+            "osm-location-fills.json in the output dir.",
+        ),
+    ] = None,
+    lgu_probe: Annotated[
+        Path | None,
+        typer.Option(
+            "--lgu-probe",
+            help="JSON evidence from the province/HUC official-domain sweep. "
+            "Defaults to lgu-domain-probes.json in the output dir.",
+        ),
+    ] = None,
+) -> None:
+    """Write the complete data.md section 11.1 rebuild evidence pack.
+
+    Every fact is read from the database, the retained releases, the merged source
+    inventory or the supplied ledgers. Values that cannot be verified are written
+    as UNKNOWN/NOT_VERIFIED; this command never invents coverage.
+    """
+
+    from .rebuild_reports import DEFAULT_OUTPUT_DIR
+
+    target = Path(output_dir) if output_dir is not None else DEFAULT_OUTPUT_DIR
+    target.mkdir(parents=True, exist_ok=True)
+    if probes is None:
+        fresh = sorted(target.glob("probes-*.txt"))
+        if fresh:
+            probes = fresh[-1]
+    payload = build_source_inventory(register, candidates, probes)
+    engine, session = _session()
+    try:
+        paths = write_rebuild_pack(
+            session,
+            payload,
+            output_dir=target,
+            baseline_path=baseline or target / "rebuild-baseline.json",
+            region_ledger_path=region_ledger,
+            osm_fill_path=osm_fill or target / "osm-location-fills.json",
+            probe_ledger_path=target / "probe-ledger.jsonl",
+            lgu_probe_path=lgu_probe or target / "lgu-domain-probes.json",
+        )
+    finally:
+        session.close()
+        engine.dispose()
+
+    typer.echo(f"source_inventory={paths.source_inventory_json}")
+    typer.echo(f"source_inventory_csv={paths.source_inventory_csv}")
+    typer.echo(f"probe_ledger={paths.probe_ledger}")
+    typer.echo(f"gap_report={paths.gap_report}")
+    typer.echo(f"skipped_sources={paths.skipped_sources}")
+    typer.echo(f"download_manifest={paths.download_manifest}")
+    typer.echo(f"schema_observations={paths.schema_observations}")
+    typer.echo(f"rights_register={paths.rights_register}")
+    typer.echo(f"field_matrix={paths.field_matrix}")
+    typer.echo(f"crosswalk_candidates={paths.crosswalk_candidates}")
+    typer.echo(f"community_fallback={paths.community_fallback}")
+    typer.echo(f"osm_location_fills={paths.osm_location_fills}")
+    typer.echo(f"overlap_report={paths.overlap_report}")
+    typer.echo(f"agency_domain_census={paths.agency_domain_census}")
+    typer.echo(f"lgu_search_ledger={paths.lgu_search_ledger}")
+    typer.echo(f"region_search_ledger={paths.region_search_ledger}")
+    typer.echo(f"unresolved={paths.unresolved}")
+    typer.echo(f"final_report={paths.final_report}")
+
+
+@app.command("probe-sources")
+def probe_sources_command(
+    output_dir: Annotated[
+        Path | None,
+        typer.Option(
+            "--output-dir",
+            help="Directory for the dated text ledger and probe-ledger.jsonl. "
+            "Defaults to var/reports/rebuild.",
+        ),
+    ] = None,
+    include_candidates: Annotated[
+        bool,
+        typer.Option(
+            "--candidates/--no-candidates",
+            help="Probe every URL in data/sources/source-candidates.json.",
+        ),
+    ] = True,
+    include_register: Annotated[
+        bool,
+        typer.Option(
+            "--register/--no-register",
+            help="Probe every URL in the docs/sources.md evidence register.",
+        ),
+    ] = True,
+    delay: Annotated[
+        float,
+        typer.Option("--delay", help="Minimum seconds between requests to the same host."),
+    ] = 1.5,
+    timeout: Annotated[
+        float,
+        typer.Option("--timeout", help="Per-request timeout in seconds."),
+    ] = 45.0,
+    limit: Annotated[
+        int | None,
+        typer.Option("--limit", help="Probe only the first N targets (investigation aid)."),
+    ] = None,
+    as_json: Annotated[
+        bool,
+        typer.Option("--json", help="Print the probe summary as JSON."),
+    ] = False,
+) -> None:
+    """Fresh, polite re-probe of every registered source and candidate URL.
+
+    One unauthenticated GET per URL, a truthful crawler user agent, a per-host
+    delay, and no retry or access-control bypass. Failures and negative results
+    are preserved in both the text ledger and probe-ledger.jsonl.
+    """
+
+    from .probe import collect_targets, probe_targets
+
+    targets = collect_targets(
+        include_candidates=include_candidates,
+        include_register=include_register,
+    )
+    summary = probe_targets(
+        targets,
+        output_dir=output_dir,
+        delay_seconds=delay,
+        timeout_seconds=timeout,
+        limit=limit,
+    )
+    if as_json:
+        typer.echo(json.dumps(summary, indent=2))
+    else:
+        typer.echo(f"targets={summary['targets']}")
+        typer.echo(f"outcomes={summary['by_outcome']}")
+        typer.echo(f"origins={summary['by_origin']}")
+        typer.echo(f"skip_reasons={summary['by_skip_reason']}")
+        typer.echo(f"text_ledger={summary['text_ledger']}")
+        typer.echo(f"jsonl_ledger={summary['jsonl_ledger']}")
 
 
 @app.command("validate-lgu-inventory")
@@ -943,7 +1444,7 @@ def match_candidates_list(
     ] = "pending",
     limit: Annotated[int, typer.Option(min=1, max=500)] = 50,
 ) -> None:
-    """List identity-match candidates and their review state."""
+    """List identity-match candidates and their automatic match state."""
 
     engine, session = _session()
     try:
@@ -1045,29 +1546,6 @@ def match_candidates_undo_merge(
     _review_candidate(undo_match_merge, candidate_id, reviewer, note)
 
 
-@app.command("check-sources")
-def check_sources_command(
-    source: Annotated[
-        list[str] | None,
-        typer.Option("--source", "-s", help="Repeat to check only selected source keys."),
-    ] = None,
-) -> None:
-    """Probe every registered real source and append monitoring evidence.
-
-    Blocked endpoints are recorded as blocked. This command never bypasses an
-    access control, never accepts a licence on the operator's behalf, and never
-    publishes a release.
-    """
-
-    engine, session = _session()
-    try:
-        results = check_sources(session, keys=source)
-        typer.echo(json.dumps(results, indent=2, default=str))
-    finally:
-        session.close()
-        engine.dispose()
-
-
 @app.command("apply-publication-decisions")
 def apply_publication_decisions_command(
     source: Annotated[
@@ -1081,56 +1559,33 @@ def apply_publication_decisions_command(
             ),
         ),
     ] = None,
+    reviewer: Annotated[
+        str | None,
+        typer.Option(
+            help=(
+                "Reviewer who accepted the registry rights decision. Required for any "
+                "source that becomes public."
+            )
+        ),
+    ] = None,
+    note: Annotated[
+        str | None,
+        typer.Option(help="Rights-review note recorded on the publication gate."),
+    ] = None,
 ) -> None:
     """Reconcile stored dataset rights/gates with the reviewed source registry.
 
     This does not ingest or publish records. Reprocess the affected releases
-    afterwards so their records inherit the updated gate.
+    afterwards so their records inherit the updated gate. A reviewer is required
+    when the reconciliation makes a dataset public.
     """
 
     engine, session = _session()
     try:
-        results = apply_publication_decisions(session, keys=source)
+        results = apply_publication_decisions(session, keys=source, reviewer=reviewer, note=note)
         typer.echo(json.dumps(results, indent=2, default=str))
-    finally:
-        session.close()
-        engine.dispose()
-
-
-@app.command("check-due-sources")
-def check_due_sources_command(
-    source: Annotated[
-        list[str] | None,
-        typer.Option("--source", "-s", help="Repeat to consider only selected source keys."),
-    ] = None,
-    force: Annotated[
-        bool, typer.Option("--force", help="Check selected sources regardless of next_check_at.")
-    ] = False,
-) -> None:
-    """Run source checks whose recorded next_check_at is due.
-
-    Designed for a cron/systemd timer or CI schedule. Exit status is 2 when a
-    check needs operator action (request failure, schema change, or source error);
-    known access blocks remain recorded without causing a false incident.
-    """
-
-    settings = get_settings()
-    engine, session = _session()
-    try:
-        keys = due_source_keys(session, keys=source, force=force)
-        if not keys:
-            typer.echo("No source checks are due.")
-            return
-        typer.echo(f"Checking {len(keys)} due source(s): {', '.join(keys)}")
-        results = check_sources(session, keys=keys)
-        alerted = send_failure_alert(settings, results, command="check-due-sources")
-        typer.echo(json.dumps(results, indent=2, default=str))
-        if alerted:
-            typer.echo("Failure alert sent to the configured webhook.")
-        failures = actionable_failures(results)
-        if failures:
-            typer.echo(f"Actionable failures: {', '.join(sorted(failures))}", err=True)
-            raise typer.Exit(code=2)
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
     finally:
         session.close()
         engine.dispose()
@@ -1144,7 +1599,7 @@ def monitoring() -> None:
     try:
         rows = latest_checks(session)
         if not rows:
-            typer.echo("No source checks recorded. Run 'philfacilities-ingest check-sources'.")
+            typer.echo("No source checks recorded. Run 'philfacilities-ingest source check'.")
             return
         for row in rows:
             typer.echo(
@@ -1479,1854 +1934,19 @@ def discover_sources(
         typer.echo(f"evidence={output}")
 
 
-def _previous_psgc_units(previous, store):
-    """Load a previous real PSGC release from JSON or the synthetic workbook."""
-
-    from .sources.psgc import parse_psgc_workbook
-
-    content = store.read(previous.raw_object_uri) if previous.raw_object_uri else b""
-    if content.lstrip().startswith(b"{"):
-        collections = load_psgc_release_payload(content)
-        units, _warnings = psgc_units(collections)
-        return units
-    if content:
-        units, _warnings = parse_psgc_workbook(content, expected_filename="previous.xlsx")
-        return units
-    return []
-
-
-@app.command("load-psgc-bettergov")
-def load_psgc_bettergov() -> None:
-    """Acquire and load the BetterGov PSGC Q2 2024 mirror as geography.
-
-    This is supplementary geography, not the latest official PSA workbook. It is
-    labelled as such in the source register and API metadata.
-    """
-
-    settings = get_settings()
-    engine, session = _session()
-    try:
-        with HttpAcquirer(settings) as acquirer:
-            collections, responses = fetch_psgc_collections(acquirer)
-        content = psgc_release_content(collections)
-        units, warnings = psgc_units(collections)
-        if not units:
-            raise typer.BadParameter("PSGC API returned no administrative units.")
-        spec = source_spec(
-            REAL_SOURCES["bettergov-psgc"],
-            release_label="PSGC-Q2-2024-BETTERGOV",
-            filename="psgc-q2-2024-bettergov.json",
-            content=content,
-            source_published_at=None,
-            retrieved_at=datetime.now(UTC),
-            reference_period_start=date(2024, 4, 1),
-            reference_period_end=date(2024, 6, 30),
-        )
-        result = run_geography_ingestion(
-            spec=spec,
-            units=units,
-            warnings=warnings,
-            session=session,
-            settings=settings,
-            previous_units_loader=_previous_psgc_units,
-        )
-        session.commit()
-        typer.echo(
-            json.dumps({**result.__dict__, "http_requests": len(responses)}, default=str, indent=2)
-        )
-    finally:
-        session.close()
-        engine.dispose()
-
-
-def _philhealth_release_label(entry) -> str:
-    stem = entry.filename.rsplit(".", 1)[0].upper()
-    suffix = entry.date_basis.isoformat() if entry.date_basis else "UNDATED"
-    return f"PHILHEALTH-{stem}-{suffix}"
-
-
-def _load_one_philhealth(settings, session, acquirer, entry, *, reprocess: bool = False) -> dict:
-    specimen = source_spec(
-        REAL_SOURCES["philhealth"],
-        dataset_slug=philhealth_dataset_slug(entry),
-        dataset_name=f"PhilHealth — {entry.category}",
-        release_label=_philhealth_release_label(entry),
-        filename=entry.filename,
-        content=b"",
-        source_url=entry.url,
-        reference_period_start=entry.date_basis,
-        reference_period_end=entry.date_basis,
-    )
-    _agency, dataset, _gate = ensure_source(session, specimen)
-    result = acquirer.fetch(entry.url)
-    status = classify_response(result)
-    record_check(
-        session,
-        dataset=dataset,
-        result=result,
-        status=status,
-        message=(
-            f"PhilHealth {entry.category}: HTTP {result.status_code}; "
-            f"date basis: {entry.date_basis_label}."
-        ),
-        details={
-            "source_key": "philhealth",
-            "filename": entry.filename,
-            "category": entry.category,
-            "date_basis": entry.date_basis.isoformat() if entry.date_basis else None,
-        },
-    )
-    session.commit()
-    if result.status_code >= 400 or status != "ok":
-        return {
-            "dataset": dataset.slug,
-            "filename": entry.filename,
-            "status": status,
-            "http_status": result.status_code,
-        }
-    try:
-        validate_signature(result, filename=entry.filename)
-    except AcquisitionError as exc:
-        return {
-            "dataset": dataset.slug,
-            "filename": entry.filename,
-            "status": "signature_invalid",
-            "error": str(exc),
-        }
-    spec = source_spec(
-        REAL_SOURCES["philhealth"],
-        dataset_slug=philhealth_dataset_slug(entry),
-        dataset_name=f"PhilHealth — {entry.category}",
-        release_label=_philhealth_release_label(entry),
-        filename=entry.filename,
-        content=result.content,
-        source_url=entry.url,
-        source_published_at=(
-            datetime(
-                entry.date_basis.year,
-                entry.date_basis.month,
-                entry.date_basis.day,
-                tzinfo=UTC,
-            )
-            if entry.date_basis
-            else None
-        ),
-        retrieved_at=datetime.now(UTC),
-        reference_period_start=entry.date_basis,
-        reference_period_end=entry.date_basis,
-        # Candidate generation is an explicit, separate operation. Running it per row
-        # makes large PDF loads pathologically slow and would enqueue the same pairs
-        # repeatedly across benefit-package files.
-        enqueue_cross_source_matches=False,
-        notes=(
-            f"PhilHealth public provider-category PDF. {entry.date_basis_label}. "
-            "Publication relies on PhilHealth's published reuse statement; attribution retained."
-        ),
-    )
-    result_obj = run_ingestion(
-        spec=spec,
-        adapter=PhilHealthPdfAdapter(spec, provider_category=entry.category),
-        session=session,
-        settings=settings,
-        reprocess=reprocess,
-    )
-    return {
-        "dataset": spec.dataset_slug,
-        "filename": entry.filename,
-        "status": result_obj.status,
-        "release_id": result_obj.release_id,
-        "stats": result_obj.stats,
-        "issues": len(result_obj.issues),
-    }
-
-
-@app.command("load-philhealth")
-def load_philhealth(
-    filename: Annotated[
-        list[str] | None,
-        typer.Option("--file", help="Only ingest the named catalogue PDF(s)."),
-    ] = None,
-    reprocess: Annotated[
-        bool,
-        typer.Option(
-            "--reprocess",
-            help=(
-                "Reparse an already-published release with the current parser. "
-                "Use only for an explicit parser repair; record IDs and links are retained."
-            ),
-        ),
-    ] = False,
-) -> None:
-    """Acquire every public PhilHealth provider-category PDF and ingest it."""
-
-    settings = get_settings()
-    engine, session = _session()
-    outcomes = []
-    try:
-        with HttpAcquirer(settings) as acquirer:
-            entries = philhealth_catalog(acquirer)
-            if filename:
-                wanted = set(filename)
-                entries = [entry for entry in entries if entry.filename in wanted]
-            if not entries:
-                typer.echo("No matching PhilHealth catalogue entries.", err=True)
-                raise typer.Exit(code=1)
-            for entry in entries:
-                typer.echo(f"→ {entry.filename}: {entry.category}")
-                outcome = _load_one_philhealth(
-                    settings, session, acquirer, entry, reprocess=reprocess
-                )
-                outcomes.append(outcome)
-                typer.echo(f"  {outcome['status']}")
-        typer.echo(json.dumps(outcomes, indent=2, default=str))
-    finally:
-        session.close()
-        engine.dispose()
-
-
-@app.command("load-philhealth-offices")
-def load_philhealth_offices(
-    input_path: Annotated[
-        Path | None,
-        typer.Option(
-            "--input",
-            help="Preserved PhilHealth Directory of Offices HTML artifact for controlled import.",
-        ),
-    ] = None,
-    reprocess: Annotated[
-        bool,
-        typer.Option(
-            "--reprocess",
-            help="Reprocess an already-preserved release instead of skipping its checksum.",
-        ),
-    ] = False,
-) -> None:
-    """Acquire the public PhilHealth office directory and ingest office identities.
-
-    Office name, source category, region grouping and postal address are
-    published. Telephone numbers, e-mail addresses and schedule text stay in the
-    private raw artifact.
-    """
-
-    settings = get_settings()
-    engine, session = _session()
-    try:
-        if input_path is not None:
-            content = input_path.read_bytes()
-            retrieved_at = datetime.fromtimestamp(input_path.stat().st_mtime, UTC)
-            notes = "Controlled import of a preserved public PhilHealth office-directory artifact."
-        else:
-            with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
-                content, metadata = fetch_philhealth_offices(acquirer)
-            retrieved_at = datetime.now(UTC)
-            notes = f"Acquisition metadata: {json.dumps(metadata, default=str)}"
-        spec = source_spec(
-            REAL_SOURCES["philhealth-offices"],
-            release_label=f"PHILHEALTH-OFFICES-{retrieved_at.date().isoformat()}",
-            filename=f"philhealth-office-directory-{retrieved_at.date().isoformat()}.json",
-            content=content,
-            retrieved_at=retrieved_at,
-            enqueue_cross_source_matches=False,
-            notes=notes,
-        )
-        outcome = run_ingestion(
-            spec=spec,
-            adapter=PhilHealthOfficeAdapter(spec),
-            session=session,
-            settings=settings,
-            reprocess=reprocess,
-        )
-        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
-    finally:
-        session.close()
-        engine.dispose()
-
-
-@app.command("load-population")
-def load_population(
-    dataset_id: Annotated[
-        list[str] | None,
-        typer.Option(
-            "--dataset",
-            help="BetterGov dataset id to ingest; repeatable. Defaults to all 2024 census regions.",
-        ),
-    ] = None,
-) -> None:
-    """Ingest PSA 2024 Census population snapshots from BetterGov.
-
-    The values are saved PSA OpenSTAT snapshots, not live PSA data. They are
-    stored as statistical observations with their PSA table URL, release and
-    dimension codes; they are never attached to a facility as an attribute.
-    """
-
-    settings = get_settings()
-    engine, session = _session()
-    ids = list(dataset_id or CENSUS_2024_DATASET_IDS)
-    results = []
-    try:
-        with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
-            for identifier in ids:
-                typer.echo(f"→ {identifier}")
-                snapshot, _responses = fetch_population_snapshot(acquirer, identifier)
-                result = load_population_snapshot(
-                    session=session, settings=settings, snapshot=snapshot
-                )
-                results.append(result)
-                typer.echo(
-                    f"  {result['status']}: {result.get('observations', 0)} observations; "
-                    f"{result.get('psgc_codes', 0)} PSGC codes"
-                )
-    finally:
-        session.close()
-        engine.dispose()
-    typer.echo(json.dumps(results, indent=2, default=str))
-
-
-@app.command("load-osm")
-def load_osm(
-    domain: Annotated[
-        list[str] | None,
-        typer.Option(
-            "--domain",
-            help=(
-                "health, education, points-of-interest, airports, sea-ports, railways, "
-                "or 'all'. Default health+education."
-            ),
-        ),
-    ] = None,
-) -> None:
-    """Acquire HOT/OSM GeoParquet extracts and ingest named qualifying features.
-
-    Health and education use the full extract. The other domains are filtered to
-    named public-service facility tags. Coordinates are bbox-centre map geocodes,
-    not verified facility locations, and OSM features are not evidence of
-    operational status.
-    """
-
-    builtin = {"health", "education"}
-    filtered = set(LAYER_FILES)
-    requested = domain or ["health", "education"]
-    domains: list[str] = []
-    for item in requested:
-        if item == "all":
-            domains.extend(["health", "education", *LAYER_FILES])
-            continue
-        if item not in builtin | filtered:
-            raise typer.BadParameter(
-                "Domain must be health, education, points-of-interest, airports, "
-                "sea-ports, railways, or all."
-            )
-        domains.append(item)
-    domains = list(dict.fromkeys(domains))
-    settings = get_settings()
-    engine, session = _session()
-    outcomes = []
-    try:
-        with HttpAcquirer(settings, timeout_seconds=180.0) as acquirer:
-            for item in domains:
-                if item in builtin:
-                    source = REAL_SOURCES[f"osm-{item}"]
-                    filename = f"{item}_facilities.parquet"
-                else:
-                    source = REAL_SOURCES[f"osm-{item}"]
-                    filename = LAYER_FILES[item]
-                typer.echo(f"→ {source.dataset_slug}")
-                result = acquirer.fetch(source.source_url, max_bytes=200 * 1024 * 1024)
-                status = classify_response(result)
-                dataset = ensure_source(
-                    session,
-                    source_spec(
-                        source,
-                        release_label=f"HOT-OSM-PHL-{item.upper()}-{date.today().isoformat()}",
-                        filename=filename,
-                        content=result.content,
-                    ),
-                )[1]
-                record_check(
-                    session,
-                    dataset=dataset,
-                    result=result,
-                    status=status,
-                    message=f"OSM {item} GeoParquet: HTTP {result.status_code}.",
-                    details={"source_key": source.key, "domain": item},
-                )
-                session.commit()
-                if status != "ok":
-                    outcomes.append(
-                        {"domain": item, "status": status, "http_status": result.status_code}
-                    )
-                    continue
-                validate_signature(result, filename=filename)
-                spec = source_spec(
-                    source,
-                    release_label=f"HOT-OSM-PHL-{item.upper()}-{date.today().isoformat()}",
-                    filename=filename,
-                    content=result.content,
-                    retrieved_at=datetime.now(UTC),
-                    enqueue_cross_source_matches=False,
-                    notes=(
-                        "HOT/OSM crowd-sourced extract. Coordinates are bbox-centre map "
-                        "geocodes; no operational status is inferred."
-                    ),
-                )
-                adapter = (
-                    OSMParquetAdapter(spec, facility_domain=item)
-                    if item in builtin
-                    else OsmFacilityLayerAdapter(spec, layer=item)
-                )
-                outcome = run_ingestion(
-                    spec=spec,
-                    adapter=adapter,
-                    session=session,
-                    settings=settings,
-                )
-                outcomes.append(
-                    {
-                        "domain": item,
-                        "status": outcome.status,
-                        "release_id": outcome.release_id,
-                        "stats": outcome.stats,
-                        "issues": len(outcome.issues),
-                    }
-                )
-                typer.echo(f"  {outcome.status}: {outcome.stats}")
-    finally:
-        session.close()
-        engine.dispose()
-    typer.echo(json.dumps(outcomes, indent=2, default=str))
-
-
-@app.command("load-deped-ebeis")
-def load_deped_ebeis(
-    region: Annotated[
-        str,
-        typer.Option(help="Verified EBEIS region key, or 'all' for every region; default ncr."),
-    ] = "ncr",
-    reprocess: Annotated[
-        bool,
-        typer.Option(
-            "--reprocess",
-            help="Reprocess an already-preserved release instead of skipping its checksum.",
-        ),
-    ] = False,
-) -> None:
-    """Acquire the public EBEIS masterlist and store it internal-only.
-
-    The result set contains school-head names and has no explicit reuse licence.
-    Records are never exposed by the public API in this state. ``--region all``
-    fetches regions sequentially, while each region's pages are fetched with
-    bounded, paced concurrency.
-    """
-
-    region_keys = list(EBEIS_REGIONS) if region == "all" else [region]
-    unknown = [key for key in region_keys if key not in EBEIS_REGIONS]
-    if unknown:
-        raise typer.BadParameter(
-            f"Unknown EBEIS region(s) {unknown}; known: {sorted(EBEIS_REGIONS)}; use 'all'"
-        )
-    settings = get_settings()
-    engine, session = _session()
-    outcomes: dict[str, Any] = {}
-    try:
-        with HttpAcquirer(settings, timeout_seconds=180.0) as acquirer:
-            for region_key in region_keys:
-                region_id, region_name = EBEIS_REGIONS[region_key]
-                try:
-                    content, metadata = fetch_ebeis_region(acquirer, region_key)
-                    if region_key == "ncr":
-                        dataset_slug = REAL_SOURCES["deped-ebeis"].dataset_slug
-                        dataset_name = REAL_SOURCES["deped-ebeis"].dataset_name
-                    else:
-                        dataset_slug = f"deped-ebeis-masterlist-{region_key}"
-                        dataset_name = f"DepEd EBEIS school masterlist ({region_name} result set)"
-                    spec = source_spec(
-                        REAL_SOURCES["deped-ebeis"],
-                        dataset_slug=dataset_slug,
-                        dataset_name=dataset_name,
-                        release_label=(
-                            f"DEPED-EBEIS-{region_key.upper()}-{date.today().isoformat()}"
-                        ),
-                        filename=(
-                            f"deped-ebeis-masterlist-{region_key}-{date.today().isoformat()}.html"
-                        ),
-                        content=content,
-                        retrieved_at=datetime.now(UTC),
-                        enqueue_cross_source_matches=False,
-                        notes=(
-                            f"Public EBEIS result set for {region_name} (region_id {region_id}): "
-                            f"{metadata['reported_rows']} rows across "
-                            f"{metadata['fetched_pages']} pages. Aggregated acquisition "
-                            "artifact; internal-only pending terms/privacy review."
-                        ),
-                    )
-                    outcome = run_ingestion(
-                        spec=spec,
-                        adapter=DepEdEBEISAdapter(spec),
-                        session=session,
-                        settings=settings,
-                        reprocess=reprocess,
-                    )
-                    outcomes[region_key] = {
-                        "status": outcome.status,
-                        "stats": outcome.stats,
-                        "acquisition": metadata,
-                        "report_json": outcome.report_json,
-                    }
-                    typer.echo(
-                        f"{region_key}: {metadata['reported_rows']} rows -> {outcome.status}"
-                    )
-                except Exception as exc:  # keep other regions running; record the failure
-                    session.rollback()
-                    outcomes[region_key] = {
-                        "status": "failed",
-                        "error": f"{type(exc).__name__}: {exc}",
-                    }
-                    typer.echo(f"{region_key}: FAILED {type(exc).__name__}: {exc}", err=True)
-    finally:
-        session.close()
-        engine.dispose()
-    typer.echo(json.dumps(outcomes, indent=2, default=str))
-
-
-@app.command("load-nlp")
-def load_nlp() -> None:
-    """Acquire the NLP public-library directory PDF and ingest it.
-
-    Records carry postal addresses only. No coordinates or PSGC codes are inferred.
-    """
-
-    settings = get_settings()
-    engine, session = _session()
-    try:
-        with HttpAcquirer(settings, timeout_seconds=180.0) as acquirer:
-            result = acquirer.fetch(REAL_SOURCES["nlp"].source_url, max_bytes=100 * 1024 * 1024)
-        status = classify_response(result)
-        if status != "ok":
-            raise AcquisitionError(
-                f"NLP directory returned HTTP {result.status_code}; no release was accepted.",
-                result=result,
-            )
-        validate_signature(result, filename="nlp-public-libraries.pdf")
-        spec = source_spec(
-            REAL_SOURCES["nlp"],
-            release_label="NLP-PUBLIC-LIBRARIES-2025-12",
-            filename="nlp-public-libraries-2025-12.pdf",
-            content=result.content,
-            retrieved_at=datetime.now(UTC),
-            reference_period_start=date(2025, 12, 1),
-            reference_period_end=date(2025, 12, 31),
-            enqueue_cross_source_matches=False,
-            notes=(
-                "NLP Integrated Directory of Public Libraries, December 2025 edition. "
-                "Institutional fields published with attribution; librarian contact fields "
-                "are not published."
-            ),
-        )
-        outcome = run_ingestion(
-            spec=spec,
-            adapter=NlpPublicLibraryPdfAdapter(spec),
-            session=session,
-            settings=settings,
-        )
-        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
-    finally:
-        session.close()
-        engine.dispose()
-
-
-@app.command("load-national-museum")
-def load_national_museum() -> None:
-    """Acquire the NMP regional/area/site museum directory and ingest it."""
-
-    settings = get_settings()
-    engine, session = _session()
-    try:
-        with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
-            content, metadata = fetch_national_museum_directory(acquirer)
-        spec = source_spec(
-            REAL_SOURCES["national-museum"],
-            release_label=f"NMP-MUSEUMS-{date.today().isoformat()}",
-            filename=f"nmp-regional-area-site-museums-{date.today().isoformat()}.json",
-            content=content,
-            retrieved_at=datetime.now(UTC),
-            enqueue_cross_source_matches=False,
-            notes=(
-                f"Acquisition artifact: {metadata['museums']} museum cards, "
-                f"{metadata['detail_pages_fetched']} detail pages fetched. "
-                "Postal addresses only; no coordinates were added."
-            ),
-        )
-        outcome = run_ingestion(
-            spec=spec,
-            adapter=NationalMuseumDirectoryAdapter(spec),
-            session=session,
-            settings=settings,
-        )
-        typer.echo(
-            json.dumps(
-                {**outcome.__dict__, "acquisition": metadata},
-                indent=2,
-                default=str,
-            )
-        )
-    finally:
-        session.close()
-        engine.dispose()
-
-
-@app.command("load-phlpost")
-def load_phlpost(
-    reprocess: Annotated[
-        bool,
-        typer.Option(
-            "--reprocess",
-            help="Reprocess an already-preserved release instead of skipping its checksum.",
-        ),
-    ] = False,
-) -> None:
-    """Acquire the PHLPost locator and store it internal-only.
-
-    The site carries an explicit copyright notice. No record is published until a
-    documented reuse decision exists.
-    """
-
-    settings = get_settings()
-    engine, session = _session()
-    try:
-        with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
-            result = acquirer.fetch(REAL_SOURCES["phlpost"].source_url)
-        status = classify_response(result)
-        if status != "ok":
-            raise AcquisitionError(
-                f"PHLPost locator returned HTTP {result.status_code}; no release was accepted.",
-                result=result,
-            )
-        spec = source_spec(
-            REAL_SOURCES["phlpost"],
-            release_label=f"PHLPOST-LOCATOR-{date.today().isoformat()}",
-            filename=f"phlpost-post-office-locator-{date.today().isoformat()}.html",
-            content=result.content,
-            retrieved_at=datetime.now(UTC),
-            enqueue_cross_source_matches=False,
-            notes=(
-                "PHLPost public locator table. Stored internal-only because the publisher "
-                "displays an explicit copyright/all-rights-reserved notice."
-            ),
-        )
-        outcome = run_ingestion(
-            spec=spec,
-            adapter=PhlPostLocatorAdapter(spec),
-            session=session,
-            settings=settings,
-            reprocess=reprocess,
-        )
-        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
-    finally:
-        session.close()
-        engine.dispose()
-
-
-@app.command("load-bir")
-def load_bir() -> None:
-    """Acquire and OCR the BIR RAO 006-2025 Revenue District Office list."""
-
-    settings = get_settings()
-    engine, session = _session()
-    try:
-        with HttpAcquirer(settings, timeout_seconds=180.0) as acquirer:
-            result = acquirer.fetch(REAL_SOURCES["bir"].source_url, max_bytes=50 * 1024 * 1024)
-        status = classify_response(result)
-        if status != "ok":
-            raise AcquisitionError(
-                f"BIR RAO returned HTTP {result.status_code}; no release was accepted.",
-                result=result,
-            )
-        validate_signature(result, filename="bir-rao-006-2025.pdf")
-        spec = source_spec(
-            REAL_SOURCES["bir"],
-            release_label="BIR-RAO-006-2025",
-            filename="bir-rao-006-2025.pdf",
-            content=result.content,
-            retrieved_at=datetime.now(UTC),
-            reference_period_start=date(2025, 12, 9),
-            reference_period_end=date(2025, 12, 9),
-            enqueue_cross_source_matches=False,
-            notes=(
-                "Official scanned RAO No. 006-2025. Local OCR recovered the Revenue "
-                "Region/RDO list; no addresses or coordinates were inferred."
-            ),
-        )
-        outcome = run_ingestion(
-            spec=spec,
-            adapter=BirRevenueDistrictOfficeAdapter(spec),
-            session=session,
-            settings=settings,
-        )
-        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
-    finally:
-        session.close()
-        engine.dispose()
-
-
-@app.command("load-ppa")
-def load_ppa(
-    input_path: Annotated[
-        Path | None,
-        typer.Option(
-            "--input",
-            help="Preserved PPA port-list PDF for controlled import when the live file is unreachable.",  # noqa: E501
-        ),
-    ] = None,
-    reprocess: Annotated[
-        bool,
-        typer.Option(
-            "--reprocess",
-            help="Reprocess an already-preserved release instead of skipping its checksum.",
-        ),
-    ] = False,
-) -> None:
-    """Acquire or import the PPA list of ports covered in PPA statistics.
-
-    The source supplies port hierarchy and RORO/NON-RORO marks only. No
-    coordinates, berth capacity, owner names, public access or operational status
-    are inferred.
-    """
-
-    settings = get_settings()
-    engine, session = _session()
-    try:
-        if input_path is not None:
-            content = input_path.read_bytes()
-            retrieved_at = datetime.fromtimestamp(input_path.stat().st_mtime, UTC)
-            notes = (
-                "Controlled import of the preserved public PPA port-list PDF. "
-                "Source hierarchy, RORO/NON-RORO marks and remarks are preserved."
-            )
-        else:
-            with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
-                result = acquirer.fetch(REAL_SOURCES["ppa"].source_url, max_bytes=50 * 1024 * 1024)
-            status = classify_response(result)
-            if status != "ok":
-                raise AcquisitionError(
-                    f"PPA port list returned HTTP {result.status_code}; no release was accepted.",
-                    result=result,
-                )
-            validate_signature(result, filename="ppa-port-list.pdf")
-            content = result.content
-            retrieved_at = datetime.now(UTC)
-            notes = (
-                "PPA List of Ports Covered in PPA Statistics. Base, TMO/OTP, other "
-                "government and private ports remain separate. No coordinates, owners, "
-                "public access or operational status were inferred."
-            )
-        spec = source_spec(
-            REAL_SOURCES["ppa"],
-            release_label=f"PPA-PORT-LIST-{retrieved_at.date().isoformat()}",
-            filename=f"ppa-port-list-{retrieved_at.date().isoformat()}.pdf",
-            content=content,
-            retrieved_at=retrieved_at,
-            enqueue_cross_source_matches=False,
-            notes=notes,
-        )
-        outcome = run_ingestion(
-            spec=spec,
-            adapter=PpaPortListAdapter(spec),
-            session=session,
-            settings=settings,
-            reprocess=reprocess,
-        )
-        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
-    finally:
-        session.close()
-        engine.dispose()
-
-
-@app.command("load-dti-negosyo")
-def load_dti_negosyo(
-    input_path: Annotated[
-        Path | None,
-        typer.Option(
-            "--input",
-            help="Preserved DTI Negosyo Center JSON artifact for controlled import.",
-        ),
-    ] = None,
-    reprocess: Annotated[
-        bool,
-        typer.Option(
-            "--reprocess",
-            help="Reprocess an already-preserved release instead of skipping its checksum.",
-        ),
-    ] = False,
-) -> None:
-    """Acquire the public DTI Negosyo Center directory and ingest its centers.
-
-    The finder supplies names, postal addresses and geographic labels only. No
-    coordinates, ownership, operator, hours or access conditions are inferred.
-    """
-
-    settings = get_settings()
-    engine, session = _session()
-    try:
-        if input_path is not None:
-            content = input_path.read_bytes()
-            retrieved_at = datetime.fromtimestamp(input_path.stat().st_mtime, UTC)
-            notes = "Controlled import of a preserved public DTI Negosyo Center JSON artifact."
-        else:
-            with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
-                content, metadata = fetch_negosyo_centers(acquirer)
-            retrieved_at = datetime.now(UTC)
-            notes = f"Acquisition metadata: {json.dumps(metadata, default=str)}"
-        spec = source_spec(
-            REAL_SOURCES["dti-negosyo"],
-            release_label=f"DTI-NEGOSYO-{retrieved_at.date().isoformat()}",
-            filename=f"dti-negosyo-centers-{retrieved_at.date().isoformat()}.json",
-            content=content,
-            retrieved_at=retrieved_at,
-            enqueue_cross_source_matches=False,
-            notes=notes,
-        )
-        outcome = run_ingestion(
-            spec=spec,
-            adapter=DtiNegosyoCenterAdapter(spec),
-            session=session,
-            settings=settings,
-            reprocess=reprocess,
-        )
-        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
-    finally:
-        session.close()
-        engine.dispose()
-
-
-@app.command("load-sss-branches")
-def load_sss_branches(
-    input_path: Annotated[
-        Path | None,
-        typer.Option(
-            "--input",
-            help="Preserved SSS branch-locator JSON artifact for controlled import.",
-        ),
-    ] = None,
-    reprocess: Annotated[
-        bool,
-        typer.Option(
-            "--reprocess",
-            help="Reprocess an already-preserved release instead of skipping its checksum.",
-        ),
-    ] = False,
-) -> None:
-    """Acquire the public SSS branch locator and ingest branch service facilities.
-
-    Branch name, postal address and region are published. Contact-person,
-    e-mail and telephone/fax fields stay in the private raw artifact.
-    """
-
-    settings = get_settings()
-    engine, session = _session()
-    try:
-        if input_path is not None:
-            content = input_path.read_bytes()
-            retrieved_at = datetime.fromtimestamp(input_path.stat().st_mtime, UTC)
-            notes = "Controlled import of a preserved public SSS branch-locator JSON artifact."
-        else:
-            with HttpAcquirer(settings, timeout_seconds=180.0) as acquirer:
-                content, metadata = fetch_sss_branches(acquirer)
-            retrieved_at = datetime.now(UTC)
-            notes = f"Acquisition metadata: {json.dumps(metadata, default=str)}"
-        spec = source_spec(
-            REAL_SOURCES["sss-branches"],
-            release_label=f"SSS-BRANCHES-{retrieved_at.date().isoformat()}",
-            filename=f"sss-branch-locator-{retrieved_at.date().isoformat()}.json",
-            content=content,
-            retrieved_at=retrieved_at,
-            enqueue_cross_source_matches=False,
-            notes=notes,
-        )
-        outcome = run_ingestion(
-            spec=spec,
-            adapter=SssBranchAdapter(spec),
-            session=session,
-            settings=settings,
-            reprocess=reprocess,
-        )
-        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
-    finally:
-        session.close()
-        engine.dispose()
-
-
-@app.command("load-pagasa-aws")
-def load_pagasa_aws(
-    input_path: Annotated[
-        Path | None,
-        typer.Option(
-            "--input",
-            help="Preserved PAGASA AWS JSON artifact for controlled import.",
-        ),
-    ] = None,
-    reprocess: Annotated[
-        bool,
-        typer.Option(
-            "--reprocess",
-            help="Reprocess an already-preserved release instead of skipping its checksum.",
-        ),
-    ] = False,
-) -> None:
-    """Acquire the PAGASA automated-weather-station table and ingest station identity.
-
-    Only station ID, name and source last-updated value are published. Readings
-    remain in the private dated artifact; no coordinates are present.
-    """
-
-    settings = get_settings()
-    engine, session = _session()
-    try:
-        if input_path is not None:
-            content = input_path.read_bytes()
-            retrieved_at = datetime.fromtimestamp(input_path.stat().st_mtime, UTC)
-            notes = "Controlled import of a preserved public PAGASA AWS JSON artifact."
-        else:
-            with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
-                content, metadata = fetch_pagasa_aws(acquirer)
-            retrieved_at = datetime.now(UTC)
-            notes = f"Acquisition metadata: {json.dumps(metadata, default=str)}"
-        spec = source_spec(
-            REAL_SOURCES["pagasa-aws"],
-            release_label=f"PAGASA-AWS-{retrieved_at.date().isoformat()}",
-            filename=f"pagasa-automated-weather-stations-{retrieved_at.date().isoformat()}.json",
-            content=content,
-            retrieved_at=retrieved_at,
-            enqueue_cross_source_matches=False,
-            notes=notes,
-        )
-        outcome = run_ingestion(
-            spec=spec,
-            adapter=PagasaAwsAdapter(spec),
-            session=session,
-            settings=settings,
-            reprocess=reprocess,
-        )
-        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
-    finally:
-        session.close()
-        engine.dispose()
-
-
-@app.command("load-nbi-offices")
-def load_nbi_offices(
-    input_path: Annotated[
-        Path | None,
-        typer.Option(
-            "--input",
-            help="Preserved NBI regional/district office JSON artifact for controlled import.",
-        ),
-    ] = None,
-    reprocess: Annotated[
-        bool,
-        typer.Option(
-            "--reprocess",
-            help="Reprocess an already-preserved release instead of skipping its checksum.",
-        ),
-    ] = False,
-) -> None:
-    """Acquire the NBI regional/district office directory and ingest office identities.
-
-    Office name, region, postal location and map-embed coordinates are published.
-    Personal names, telephone numbers and protected e-mail values stay private.
-    """
-
-    settings = get_settings()
-    engine, session = _session()
-    try:
-        if input_path is not None:
-            content = input_path.read_bytes()
-            retrieved_at = datetime.fromtimestamp(input_path.stat().st_mtime, UTC)
-            notes = "Controlled import of a preserved public NBI office JSON artifact."
-        else:
-            with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
-                content, metadata = fetch_nbi_offices(acquirer)
-            retrieved_at = datetime.now(UTC)
-            notes = f"Acquisition metadata: {json.dumps(metadata, default=str)}"
-        spec = source_spec(
-            REAL_SOURCES["nbi-offices"],
-            release_label=f"NBI-OFFICES-{retrieved_at.date().isoformat()}",
-            filename=f"nbi-regional-district-offices-{retrieved_at.date().isoformat()}.json",
-            content=content,
-            retrieved_at=retrieved_at,
-            enqueue_cross_source_matches=False,
-            notes=notes,
-        )
-        outcome = run_ingestion(
-            spec=spec,
-            adapter=NbiOfficeAdapter(spec),
-            session=session,
-            settings=settings,
-            reprocess=reprocess,
-        )
-        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
-    finally:
-        session.close()
-        engine.dispose()
-
-
-def _load_nha_layer(
-    *,
-    source_key: str,
-    adapter_class: type,
-    release_prefix: str,
-    filename_prefix: str,
-    input_path: Path | None,
-    reprocess: bool,
-) -> None:
-    settings = get_settings()
-    engine, session = _session()
-    try:
-        if input_path is not None:
-            content = input_path.read_bytes()
-            retrieved_at = datetime.fromtimestamp(input_path.stat().st_mtime, UTC)
-            notes = "Controlled import of a preserved NHA WFS GeoJSON artifact."
-        else:
-            with HttpAcquirer(settings, timeout_seconds=180.0) as acquirer:
-                result = acquirer.fetch(REAL_SOURCES[source_key].source_url)
-            if result.status_code >= 400 or result.error:
-                raise typer.BadParameter(
-                    f"NHA WFS request failed: HTTP {result.status_code} {result.error or ''}"
-                )
-            content = result.content
-            retrieved_at = datetime.now(UTC)
-            notes = (
-                f"NHA WFS GeoJSON, HTTP {result.status_code}, {len(content)} bytes, "
-                f"sha256={result.sha256}."
-            )
-        spec = source_spec(
-            REAL_SOURCES[source_key],
-            release_label=f"{release_prefix}-{retrieved_at.date().isoformat()}",
-            filename=f"{filename_prefix}-{retrieved_at.date().isoformat()}.geojson",
-            content=content,
-            retrieved_at=retrieved_at,
-            enqueue_cross_source_matches=False,
-            notes=notes,
-        )
-        outcome = run_ingestion(
-            spec=spec,
-            adapter=adapter_class(spec),
-            session=session,
-            settings=settings,
-            reprocess=reprocess,
-        )
-        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
-    finally:
-        session.close()
-        engine.dispose()
-
-
-@app.command("load-nha-doh-hf")
-def load_nha_doh_hf(
-    input_path: Annotated[
-        Path | None,
-        typer.Option(
-            "--input",
-            help="Preserved NHA WFS GeoJSON artifact for controlled import.",
-        ),
-    ] = None,
-    reprocess: Annotated[
-        bool,
-        typer.Option(
-            "--reprocess",
-            help="Reprocess an already-preserved release instead of skipping its checksum.",
-        ),
-    ] = False,
-) -> None:
-    """Acquire the public NHA 'DOH HF' WFS layer and ingest its facilities.
-
-    This is a partial official alternate route for the blocked DOH National
-    Health Facility Registry. It publishes institutional fields and source
-    coordinates only; no operating status or building-level precision is inferred.
-    """
-
-    _load_nha_layer(
-        source_key="nha-doh-hf",
-        adapter_class=NhaDohFacilityAdapter,
-        release_prefix="NHA-DOH-HF",
-        filename_prefix="nha-doh-hf",
-        input_path=input_path,
-        reprocess=reprocess,
-    )
-
-
-@app.command("load-nha-housing-projects")
-def load_nha_housing_projects(
-    input_path: Annotated[
-        Path | None,
-        typer.Option(
-            "--input",
-            help="Preserved NHA project-location GeoJSON artifact for controlled import.",
-        ),
-    ] = None,
-    reprocess: Annotated[
-        bool,
-        typer.Option(
-            "--reprocess",
-            help="Reprocess an already-preserved release instead of skipping its checksum.",
-        ),
-    ] = False,
-) -> None:
-    """Acquire the public NHA housing-project location layer.
-
-    The records are project sites, not operating facilities. No completion,
-    occupancy, operational status or PSGC code is inferred.
-    """
-
-    _load_nha_layer(
-        source_key="nha-housing-projects",
-        adapter_class=NhaHousingProjectAdapter,
-        release_prefix="NHA-PROJECTS",
-        filename_prefix="nha-housing-projects",
-        input_path=input_path,
-        reprocess=reprocess,
-    )
-
-
-@app.command("load-nha-landholdings")
-def load_nha_landholdings(
-    input_path: Annotated[
-        Path | None,
-        typer.Option(
-            "--input",
-            help="Preserved NHA landholdings GeoJSON artifact for controlled import.",
-        ),
-    ] = None,
-    reprocess: Annotated[
-        bool,
-        typer.Option(
-            "--reprocess",
-            help="Reprocess an already-preserved release instead of skipping its checksum.",
-        ),
-    ] = False,
-) -> None:
-    """Acquire the public NHA landholdings layer.
-
-    These are property sites, not facilities. Area values are preserved as
-    published and are not recalculated.
-    """
-
-    _load_nha_layer(
-        source_key="nha-landholdings",
-        adapter_class=NhaLandholdingAdapter,
-        release_prefix="NHA-LANDHOLDINGS",
-        filename_prefix="nha-landholdings",
-        input_path=input_path,
-        reprocess=reprocess,
-    )
-
-
-@app.command("load-lrta-stations")
-def load_lrta_stations(
-    input_path: Annotated[
-        Path | None,
-        typer.Option("--input", help="Preserved LRTA distance-page HTML for controlled import."),
-    ] = None,
-    reprocess: Annotated[
-        bool,
-        typer.Option(
-            "--reprocess",
-            help="Reprocess an already-preserved release instead of skipping its checksum.",
-        ),
-    ] = False,
-) -> None:
-    """Derive LRT Line 1/Line 2 station facilities from the official distance table."""
-
-    settings = get_settings()
-    engine, session = _session()
-    try:
-        if input_path is not None:
-            content = input_path.read_bytes()
-            retrieved_at = datetime.fromtimestamp(input_path.stat().st_mtime, UTC)
-            notes = "Controlled import of a preserved LRTA distance-page HTML artifact."
-        else:
-            with HttpAcquirer(settings, timeout_seconds=60.0) as acquirer:
-                content, metadata = fetch_distance_page(acquirer)
-            retrieved_at = datetime.now(UTC)
-            notes = f"Acquisition metadata: {json.dumps(metadata, default=str)}"
-        spec = source_spec(
-            REAL_SOURCES["lrta-stations"],
-            release_label=f"LRTA-STATIONS-{retrieved_at.date().isoformat()}",
-            filename=f"lrta-distance-stations-{retrieved_at.date().isoformat()}.html",
-            content=content,
-            retrieved_at=retrieved_at,
-            enqueue_cross_source_matches=False,
-            notes=notes,
-        )
-        outcome = run_ingestion(
-            spec=spec,
-            adapter=LrtaStationAdapter(spec),
-            session=session,
-            settings=settings,
-            reprocess=reprocess,
-        )
-        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
-    finally:
-        session.close()
-        engine.dispose()
-
-
-@app.command("load-mrt3-stations")
-def load_mrt3_stations(
-    input_path: Annotated[
-        Path | None,
-        typer.Option("--input", help="Preserved MRT-3 station-page HTML for controlled import."),
-    ] = None,
-    reprocess: Annotated[
-        bool,
-        typer.Option(
-            "--reprocess",
-            help="Reprocess an already-preserved release instead of skipping its checksum.",
-        ),
-    ] = False,
-) -> None:
-    """Ingest the official MRT-3 station directory (13 station names).
-
-    Station labels are preserved verbatim; the page supplies no coordinates,
-    addresses or operating status, so those fields are left unknown.
-    """
-
-    settings = get_settings()
-    engine, session = _session()
-    try:
-        if input_path is not None:
-            content = input_path.read_bytes()
-            retrieved_at = datetime.fromtimestamp(input_path.stat().st_mtime, UTC)
-            notes = "Controlled import of a preserved MRT-3 station-page HTML artifact."
-        else:
-            with HttpAcquirer(settings, timeout_seconds=60.0) as acquirer:
-                content, metadata = fetch_mrt3_stations(acquirer)
-            retrieved_at = datetime.now(UTC)
-            notes = f"Acquisition metadata: {json.dumps(metadata, default=str)}"
-        spec = source_spec(
-            REAL_SOURCES["mrt3-stations"],
-            release_label=f"MRT3-STATIONS-{retrieved_at.date().isoformat()}",
-            filename=f"mrt3-stations-{retrieved_at.date().isoformat()}.html",
-            content=content,
-            retrieved_at=retrieved_at,
-            enqueue_cross_source_matches=False,
-            notes=notes,
-        )
-        outcome = run_ingestion(
-            spec=spec,
-            adapter=Mrt3StationAdapter(spec),
-            session=session,
-            settings=settings,
-            reprocess=reprocess,
-        )
-        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
-    finally:
-        session.close()
-        engine.dispose()
-
-
-@app.command("load-bucor-facilities")
-def load_bucor_facilities(
-    input_path: Annotated[
-        Path | None,
-        typer.Option(
-            "--input",
-            help="Preserved BuCor OPPF HTML artifact for controlled import.",
-        ),
-    ] = None,
-    reprocess: Annotated[
-        bool,
-        typer.Option(
-            "--reprocess",
-            help="Reprocess an already-preserved release instead of skipping its checksum.",
-        ),
-    ] = False,
-) -> None:
-    """Acquire the Bureau of Corrections OPPF facility list.
-
-    The page is a seven-facility directory subset, not a national corrections
-    register. Only facility names and official detail-page links are published;
-    no address, coordinate, capacity or operating status is present or inferred.
-    """
-
-    settings = get_settings()
-    engine, session = _session()
-    try:
-        if input_path is not None:
-            content = input_path.read_bytes()
-            retrieved_at = datetime.fromtimestamp(input_path.stat().st_mtime, UTC)
-            notes = "Controlled import of a preserved BuCor OPPF HTML artifact."
-        else:
-            with HttpAcquirer(settings, timeout_seconds=60.0) as acquirer:
-                result = acquirer.fetch(REAL_SOURCES["bucor-oppf"].source_url)
-            if result.status_code >= 400 or result.error:
-                raise typer.BadParameter(
-                    f"BuCor OPPF request failed: HTTP {result.status_code} {result.error or ''}"
-                )
-            content = result.content
-            retrieved_at = datetime.now(UTC)
-            notes = (
-                f"BuCor OPPF HTML, HTTP {result.status_code}, {len(content)} bytes, "
-                f"sha256={result.sha256}."
-            )
-        spec = source_spec(
-            REAL_SOURCES["bucor-oppf"],
-            release_label=f"BUCOR-OPPF-{retrieved_at.date().isoformat()}",
-            filename=f"bucor-oppf-{retrieved_at.date().isoformat()}.html",
-            content=content,
-            retrieved_at=retrieved_at,
-            enqueue_cross_source_matches=False,
-            notes=notes,
-        )
-        outcome = run_ingestion(
-            spec=spec,
-            adapter=BucorFacilityAdapter(spec),
-            session=session,
-            settings=settings,
-            reprocess=reprocess,
-        )
-        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
-    finally:
-        session.close()
-        engine.dispose()
-
-
-@app.command("load-prc-offices")
-def load_prc_offices(
-    input_path: Annotated[
-        Path | None,
-        typer.Option(
-            "--input",
-            help="Preserved PRC office-locator HTML artifact for controlled import.",
-        ),
-    ] = None,
-    reprocess: Annotated[
-        bool,
-        typer.Option(
-            "--reprocess",
-            help="Reprocess an already-preserved release instead of skipping its checksum.",
-        ),
-    ] = False,
-) -> None:
-    """Acquire PRC regional offices from the official office locator.
-
-    The page supplies office names, short address labels and embedded map pins.
-    It is a regional-office directory subset, not a complete service-counter
-    inventory, and the map pin is not a surveyed building location.
-    """
-
-    settings = get_settings()
-    engine, session = _session()
-    try:
-        if input_path is not None:
-            content = input_path.read_bytes()
-            retrieved_at = datetime.fromtimestamp(input_path.stat().st_mtime, UTC)
-            notes = "Controlled import of a preserved PRC office-locator HTML artifact."
-        else:
-            with HttpAcquirer(settings, timeout_seconds=60.0) as acquirer:
-                result = acquirer.fetch(REAL_SOURCES["prc-offices"].source_url)
-            if result.status_code >= 400 or result.error:
-                raise typer.BadParameter(
-                    f"PRC office-locator request failed: HTTP {result.status_code} "
-                    f"{result.error or ''}"
-                )
-            content = result.content
-            retrieved_at = datetime.now(UTC)
-            notes = (
-                f"PRC office-locator HTML, HTTP {result.status_code}, "
-                f"{len(content)} bytes, sha256={result.sha256}."
-            )
-        spec = source_spec(
-            REAL_SOURCES["prc-offices"],
-            release_label=f"PRC-OFFICES-{retrieved_at.date().isoformat()}",
-            filename=f"prc-offices-{retrieved_at.date().isoformat()}.html",
-            content=content,
-            retrieved_at=retrieved_at,
-            enqueue_cross_source_matches=False,
-            notes=notes,
-        )
-        outcome = run_ingestion(
-            spec=spec,
-            adapter=PrcOfficeAdapter(spec),
-            session=session,
-            settings=settings,
-            reprocess=reprocess,
-        )
-        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
-    finally:
-        session.close()
-        engine.dispose()
-
-
-@app.command("load-doe-power-plants")
-def load_doe_power_plants(
-    grid: Annotated[
-        str | None,
-        typer.Option(
-            "--grid",
-            help="One of Luzon, Visayas, Mindanao or Off-grid. Defaults to all four.",
-        ),
-    ] = None,
-    input_path: Annotated[
-        Path | None,
-        typer.Option(
-            "--input",
-            help="Preserved DOE PDF for controlled import. Requires --grid.",
-        ),
-    ] = None,
-    reprocess: Annotated[
-        bool,
-        typer.Option(
-            "--reprocess",
-            help="Reprocess an already-preserved release instead of skipping its checksum.",
-        ),
-    ] = False,
-) -> None:
-    """Acquire the DOE existing-power-plant PDFs and ingest each grid separately.
-
-    These are registry lists, not operating-status claims. The adapter preserves
-    unit rows and source labels; no coordinates, PSGC codes or legal-ownership
-    conclusions are inferred.
-    """
-
-    source_keys = {
-        "Luzon": ("doe-power-luzon", "DOE-LOEPP-LUZON", date(2026, 9, 30)),
-        "Visayas": ("doe-power-visayas", "DOE-LOEPP-VISAYAS", date(2026, 9, 30)),
-        "Mindanao": ("doe-power-mindanao", "DOE-LOEPP-MINDANAO", date(2026, 9, 30)),
-        "Off-grid": ("doe-power-offgrid", "DOE-LOEPP-OFFGRID", date(2026, 4, 30)),
-    }
-    if grid is not None and grid not in source_keys:
-        raise typer.BadParameter(f"Unknown grid {grid!r}; use one of {sorted(source_keys)}.")
-    if input_path is not None and grid is None:
-        raise typer.BadParameter("--input requires --grid so the PDF can be identified.")
-    selected = [grid] if grid else list(source_keys)
-    settings = get_settings()
-    for selected_grid in selected:
-        source_key, release_prefix, reference_end = source_keys[selected_grid]
-        engine, session = _session()
-        try:
-            if input_path is not None:
-                content = input_path.read_bytes()
-                retrieved_at = datetime.fromtimestamp(input_path.stat().st_mtime, UTC)
-                notes = "Controlled import of a preserved DOE LoEPP PDF artifact."
-            else:
-                with HttpAcquirer(settings, timeout_seconds=180.0) as acquirer:
-                    result = acquirer.fetch(DOE_GRID_URLS[selected_grid])
-                if result.status_code >= 400 or result.error:
-                    raise typer.BadParameter(
-                        f"DOE {selected_grid} request failed: "
-                        f"HTTP {result.status_code} {result.error or ''}"
-                    )
-                content = result.content
-                retrieved_at = datetime.now(UTC)
-                notes = (
-                    f"DOE LoEPP PDF, HTTP {result.status_code}, {len(content)} bytes, "
-                    f"sha256={result.sha256}."
-                )
-            spec = source_spec(
-                REAL_SOURCES[source_key],
-                release_label=f"{release_prefix}-{reference_end.isoformat()}",
-                filename=f"{source_key}-{reference_end.isoformat()}.pdf",
-                content=content,
-                retrieved_at=retrieved_at,
-                reference_period_end=reference_end,
-                enqueue_cross_source_matches=False,
-                notes=notes,
-            )
-            outcome = run_ingestion(
-                spec=spec,
-                adapter=DoePowerPlantAdapter(spec, grid=selected_grid),
-                session=session,
-                settings=settings,
-                reprocess=reprocess,
-            )
-            typer.echo(
-                json.dumps(
-                    {"grid": selected_grid, **outcome.__dict__},
-                    indent=2,
-                    default=str,
-                )
-            )
-        finally:
-            session.close()
-            engine.dispose()
-
-
-@app.command("load-ched-heida")
-def load_ched_heida(
-    input_path: Annotated[
-        Path | None,
-        typer.Option(
-            "--input",
-            help="Preserved CHED HEIDA JSON artifact for controlled import.",
-        ),
-    ] = None,
-    reprocess: Annotated[
-        bool,
-        typer.Option(
-            "--reprocess",
-            help="Reprocess an already-preserved release instead of skipping its checksum.",
-        ),
-    ] = False,
-) -> None:
-    """Acquire the public CHED HEIDA HEI directory and ingest its institutions.
-
-    The directory supplies institutional name, CHED code, type, address and region
-    only. Contact details and institutional-head names are discarded. No
-    coordinates, PSGC codes, campus counts or operational status are inferred.
-    """
-
-    settings = get_settings()
-    engine, session = _session()
-    try:
-        if input_path is not None:
-            content = input_path.read_bytes()
-            retrieved_at = datetime.fromtimestamp(input_path.stat().st_mtime, UTC)
-            notes = "Controlled import of a preserved public CHED HEIDA JSON artifact."
-        else:
-            with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
-                content, metadata = fetch_heida_directory(acquirer)
-            retrieved_at = datetime.now(UTC)
-            notes = f"Acquisition metadata: {json.dumps(metadata, default=str)}"
-        spec = source_spec(
-            REAL_SOURCES["ched-heida"],
-            release_label=f"CHED-HEIDA-{retrieved_at.date().isoformat()}",
-            filename=f"ched-heida-hei-directory-{retrieved_at.date().isoformat()}.json",
-            content=content,
-            retrieved_at=retrieved_at,
-            enqueue_cross_source_matches=False,
-            notes=notes,
-        )
-        outcome = run_ingestion(
-            spec=spec,
-            adapter=ChedHeidaAdapter(spec),
-            session=session,
-            settings=settings,
-            reprocess=reprocess,
-        )
-        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
-    finally:
-        session.close()
-        engine.dispose()
-
-
-@app.command("load-quezon-city")
-def load_quezon_city(
-    reprocess: Annotated[
-        bool,
-        typer.Option(
-            "--reprocess",
-            help="Reprocess an already-preserved release instead of skipping its checksum.",
-        ),
-    ] = False,
-) -> None:
-    """Acquire the Quezon City LGU directories and ingest the eligible subset."""
-
-    settings = get_settings()
-    engine, session = _session()
-    try:
-        with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
-            content, metadata = fetch_quezon_city_directory(acquirer)
-        spec = source_spec(
-            REAL_SOURCES["quezon-city"],
-            release_label=f"QC-LGU-DIRECTORY-{date.today().isoformat()}",
-            filename=f"quezon-city-lgu-directory-{date.today().isoformat()}.json",
-            content=content,
-            retrieved_at=datetime.now(UTC),
-            enqueue_cross_source_matches=False,
-            notes=f"Acquisition metadata: {json.dumps(metadata, default=str)}",
-        )
-        outcome = run_ingestion(
-            spec=spec,
-            adapter=QuezonCityLguAdapter(spec),
-            session=session,
-            settings=settings,
-            reprocess=reprocess,
-        )
-        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
-    finally:
-        session.close()
-        engine.dispose()
-
-
-@app.command("load-quezon-city-places")
-def load_quezon_city_places(
-    reprocess: Annotated[
-        bool,
-        typer.Option(
-            "--reprocess",
-            help="Reprocess an already-preserved release instead of skipping its checksum.",
-        ),
-    ] = False,
-) -> None:
-    """Acquire the Quezon City Places to Visit park and market subset."""
-
-    settings = get_settings()
-    engine, session = _session()
-    try:
-        with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
-            content, metadata = fetch_quezon_city_places(acquirer)
-        spec = source_spec(
-            REAL_SOURCES["quezon-city-places"],
-            release_label=f"QC-LGU-PLACES-{date.today().isoformat()}",
-            filename=f"quezon-city-lgu-places-{date.today().isoformat()}.json",
-            content=content,
-            retrieved_at=datetime.now(UTC),
-            enqueue_cross_source_matches=False,
-            notes=f"Acquisition metadata: {json.dumps(metadata, default=str)}",
-        )
-        outcome = run_ingestion(
-            spec=spec,
-            adapter=QuezonCityPlacesAdapter(spec),
-            session=session,
-            settings=settings,
-            reprocess=reprocess,
-        )
-        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
-    finally:
-        session.close()
-        engine.dispose()
-
-
-@app.command("load-mandaluyong")
-def load_mandaluyong(
-    reprocess: Annotated[
-        bool,
-        typer.Option(
-            "--reprocess",
-            help="Reprocess an already-preserved release instead of skipping its checksum.",
-        ),
-    ] = False,
-) -> None:
-    """Acquire the Mandaluyong City barangay directory and ingest its offices."""
-
-    settings = get_settings()
-    engine, session = _session()
-    try:
-        with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
-            content, metadata = fetch_mandaluyong_directory(acquirer)
-        spec = source_spec(
-            REAL_SOURCES["mandaluyong"],
-            release_label=f"MANDALUYONG-LGU-{date.today().isoformat()}",
-            filename=f"mandaluyong-lgu-barangay-directory-{date.today().isoformat()}.json",
-            content=content,
-            retrieved_at=datetime.now(UTC),
-            enqueue_cross_source_matches=False,
-            notes=f"Acquisition metadata: {json.dumps(metadata, default=str)}",
-        )
-        outcome = run_ingestion(
-            spec=spec,
-            adapter=MandaluyongBarangayAdapter(spec),
-            session=session,
-            settings=settings,
-            reprocess=reprocess,
-        )
-        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
-    finally:
-        session.close()
-        engine.dispose()
-
-
-@app.command("load-cainta-health")
-def load_cainta_health(
-    reprocess: Annotated[
-        bool,
-        typer.Option(
-            "--reprocess",
-            help="Reprocess an already-preserved release instead of skipping its checksum.",
-        ),
-    ] = False,
-) -> None:
-    """Acquire the Cainta RHU pages and ingest their labelled health centres."""
-
-    settings = get_settings()
-    engine, session = _session()
-    try:
-        with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
-            content, metadata = fetch_cainta_health_centers(acquirer)
-        spec = source_spec(
-            REAL_SOURCES["cainta-health"],
-            release_label=f"CAINTA-HEALTH-{date.today().isoformat()}",
-            filename=f"cainta-lgu-health-centers-{date.today().isoformat()}.json",
-            content=content,
-            retrieved_at=datetime.now(UTC),
-            enqueue_cross_source_matches=False,
-            notes=f"Acquisition metadata: {json.dumps(metadata, default=str)}",
-        )
-        outcome = run_ingestion(
-            spec=spec,
-            adapter=CaintaHealthCenterAdapter(spec),
-            session=session,
-            settings=settings,
-            reprocess=reprocess,
-        )
-        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
-    finally:
-        session.close()
-        engine.dispose()
-
-
-@app.command("load-pasay-health")
-def load_pasay_health(
-    reprocess: Annotated[
-        bool,
-        typer.Option(
-            "--reprocess",
-            help="Reprocess an already-preserved release instead of skipping its checksum.",
-        ),
-    ] = False,
-) -> None:
-    """Acquire the Pasay health-care page and ingest its health facilities."""
-
-    settings = get_settings()
-    engine, session = _session()
-    try:
-        with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
-            content, metadata = fetch_pasay_health_centers(acquirer)
-        spec = source_spec(
-            REAL_SOURCES["pasay-health"],
-            release_label=f"PASAY-HEALTH-{date.today().isoformat()}",
-            filename=f"pasay-lgu-health-centers-{date.today().isoformat()}.json",
-            content=content,
-            retrieved_at=datetime.now(UTC),
-            enqueue_cross_source_matches=False,
-            notes=f"Acquisition metadata: {json.dumps(metadata, default=str)}",
-        )
-        outcome = run_ingestion(
-            spec=spec,
-            adapter=PasayHealthCenterAdapter(spec),
-            session=session,
-            settings=settings,
-            reprocess=reprocess,
-        )
-        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
-    finally:
-        session.close()
-        engine.dispose()
-
-
-@app.command("load-dswd-crcf")
-def load_dswd_crcf(
-    reprocess: Annotated[
-        bool,
-        typer.Option(
-            "--reprocess",
-            help="Reprocess an already-preserved release instead of skipping its checksum.",
-        ),
-    ] = False,
-) -> None:
-    """Acquire the DSWD CRCF directory and ingest unique facility cards."""
-
-    settings = get_settings()
-    engine, session = _session()
-    try:
-        with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
-            result = acquirer.fetch(REAL_SOURCES["dswd-crcf"].source_url)
-        status = classify_response(result)
-        if status != "ok":
-            raise AcquisitionError(
-                f"DSWD CRCF directory returned HTTP {result.status_code}; no release was accepted.",
-                result=result,
-            )
-        spec = source_spec(
-            REAL_SOURCES["dswd-crcf"],
-            release_label=f"DSWD-CRCF-{date.today().isoformat()}",
-            filename=f"dswd-crcf-directory-{date.today().isoformat()}.html",
-            content=result.content,
-            retrieved_at=datetime.now(UTC),
-            enqueue_cross_source_matches=False,
-            notes=(
-                "DSWD CRCF public directory. Desktop and mobile accordion layouts are "
-                "deduplicated by facility name and address; postal addresses only."
-            ),
-        )
-        outcome = run_ingestion(
-            spec=spec,
-            adapter=DswdCrcfDirectoryAdapter(spec),
-            session=session,
-            settings=settings,
-            reprocess=reprocess,
-        )
-        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
-    finally:
-        session.close()
-        engine.dispose()
-
-
-@app.command("load-nmis-naris")
-def load_nmis_naris(
-    input_path: Annotated[
-        Path | None,
-        typer.Option(
-            "--input",
-            help=(
-                "Preserved NARIS HTML artifact for controlled import when the live page is blocked."
-            ),
-        ),
-    ] = None,
-    reprocess: Annotated[
-        bool,
-        typer.Option(
-            "--reprocess",
-            help="Reprocess an already-preserved release instead of skipping its checksum.",
-        ),
-    ] = False,
-) -> None:
-    """Acquire or import the NMIS NARIS accredited meat-establishment directory."""
-
-    settings = get_settings()
-    engine, session = _session()
-    try:
-        if input_path is not None:
-            content = input_path.read_bytes()
-            retrieved_at = datetime.fromtimestamp(input_path.stat().st_mtime, UTC)
-            notes = (
-                "Controlled import of a preserved public NARIS directory artifact. "
-                "The live endpoint returned a WAF challenge or TLS failure on recheck; "
-                "the artifact is the release of record."
-            )
-        else:
-            with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
-                result = acquirer.fetch(REAL_SOURCES["nmis-naris"].source_url)
-            status = classify_response(result)
-            if status != "ok":
-                raise AcquisitionError(
-                    f"NARIS returned HTTP {result.status_code}; no release was accepted.",
-                    result=result,
-                )
-            content = result.content
-            retrieved_at = datetime.now(UTC)
-            notes = (
-                "Public NARIS accredited-establishment directory. Duplicate LTO rows "
-                "are grouped; no validity dates or operating status are inferred."
-            )
-        spec = source_spec(
-            REAL_SOURCES["nmis-naris"],
-            release_label=f"NMIS-NARIS-{retrieved_at.date().isoformat()}",
-            filename=f"nmis-naris-accredited-establishments-{retrieved_at.date().isoformat()}.html",
-            content=content,
-            retrieved_at=retrieved_at,
-            enqueue_cross_source_matches=False,
-            notes=notes,
-        )
-        outcome = run_ingestion(
-            spec=spec,
-            adapter=NmisNarisDirectoryAdapter(spec),
-            session=session,
-            settings=settings,
-            reprocess=reprocess,
-        )
-        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
-    finally:
-        session.close()
-        engine.dispose()
-
-
 def _repair_agency_metadata(session: Session) -> None:
     """Remove the synthetic-demo label from agencies that now hold real data."""
 
     from philfacilities_api.models import Agency
 
-    for code, (name, publisher_type) in REAL_AGENCY_METADATA.items():
+    agencies = {
+        definition.agency.code: (
+            definition.agency.name,
+            definition.agency.publisher_type,
+        )
+        for definition in SOURCES.values()
+    }
+    for code, (name, publisher_type) in agencies.items():
         agency = session.scalars(select(Agency).where(Agency.short_code == code)).first()
         if agency is None:
             continue
@@ -3349,304 +1969,6 @@ def purge_synthetic() -> None:
         session.commit()
         after = session.scalar(select(func.count()).select_from(Facility)) or 0
         typer.echo(f"Purged synthetic demonstration records: facilities {before} → {after}.")
-    finally:
-        session.close()
-        engine.dispose()
-
-
-@app.command("load-real")
-def load_real(
-    skip_osm: Annotated[bool, typer.Option(help="Skip the large OSM extracts.")] = False,
-    skip_philhealth: Annotated[bool, typer.Option(help="Skip PhilHealth PDFs.")] = False,
-    skip_population: Annotated[
-        bool, typer.Option(help="Skip the PSA 2024 Census snapshots.")
-    ] = False,
-    skip_deped: Annotated[bool, typer.Option(help="Skip the internal-only EBEIS extract.")] = False,
-    skip_libraries: Annotated[
-        bool, typer.Option(help="Skip the NLP public-library directory.")
-    ] = False,
-    skip_museums: Annotated[bool, typer.Option(help="Skip the National Museum directory.")] = False,
-    skip_phlpost: Annotated[
-        bool, typer.Option(help="Skip the internal-only PHLPost locator.")
-    ] = False,
-    skip_bir: Annotated[
-        bool, typer.Option(help="Skip the scanned BIR Revenue District Office list.")
-    ] = False,
-    skip_ppa: Annotated[bool, typer.Option(help="Skip the PPA port list.")] = False,
-    skip_dti: Annotated[bool, typer.Option(help="Skip the DTI Negosyo Center directory.")] = False,
-    skip_ched: Annotated[
-        bool, typer.Option(help="Skip the CHED HEIDA higher-education directory.")
-    ] = False,
-    skip_crcf: Annotated[bool, typer.Option(help="Skip the DSWD CRCF directory.")] = False,
-    purge: Annotated[bool, typer.Option(help="Purge synthetic records first.")] = True,
-) -> None:
-    """Run the documented real-data acquisition sequence end to end."""
-
-    settings = get_settings()
-    engine, session = _session()
-    try:
-        if purge:
-            _reset_demo(session)
-            _repair_agency_metadata(session)
-            session.commit()
-            typer.echo("Synthetic demonstration records purged.")
-        check_sources(session)
-        typer.echo("Source checks recorded.")
-
-        with HttpAcquirer(settings) as acquirer:
-            collections, _responses = fetch_psgc_collections(acquirer)
-        content = psgc_release_content(collections)
-        units, warnings = psgc_units(collections)
-        psgc_spec = source_spec(
-            REAL_SOURCES["bettergov-psgc"],
-            release_label="PSGC-Q2-2024-BETTERGOV",
-            filename="psgc-q2-2024-bettergov.json",
-            content=content,
-            retrieved_at=datetime.now(UTC),
-            reference_period_start=date(2024, 4, 1),
-            reference_period_end=date(2024, 6, 30),
-        )
-        psgc_result = run_geography_ingestion(
-            spec=psgc_spec,
-            units=units,
-            warnings=warnings,
-            session=session,
-            settings=settings,
-            previous_units_loader=_previous_psgc_units,
-        )
-        typer.echo(f"PSGC: {psgc_result.status} ({psgc_result.stats.get('units')} units)")
-
-        if not skip_population:
-            population_results = []
-            for identifier in CENSUS_2024_DATASET_IDS:
-                snapshot, _responses = fetch_population_snapshot(acquirer, identifier)
-                result = load_population_snapshot(
-                    session=session, settings=settings, snapshot=snapshot
-                )
-                population_results.append(result)
-                typer.echo(
-                    f"Population {identifier}: {result['status']} "
-                    f"({result.get('observations', 0)} observations)"
-                )
-
-        if not skip_philhealth:
-            with HttpAcquirer(settings) as acquirer:
-                entries = philhealth_catalog(acquirer)
-                for entry in entries:
-                    typer.echo(f"→ PhilHealth {entry.filename}")
-                    _load_one_philhealth(settings, session, acquirer, entry)
-
-        if not skip_osm:
-            for domain in ("health", "education"):
-                source = REAL_SOURCES[f"osm-{domain}"]
-                with HttpAcquirer(settings, timeout_seconds=180.0) as acquirer:
-                    payload = acquirer.fetch(source.source_url, max_bytes=200 * 1024 * 1024)
-                validate_signature(payload, filename=f"{domain}_facilities.parquet")
-                osm_spec = source_spec(
-                    source,
-                    release_label=f"HOT-OSM-PHL-{domain.upper()}-{date.today().isoformat()}",
-                    filename=f"{domain}_facilities.parquet",
-                    content=payload.content,
-                    retrieved_at=datetime.now(UTC),
-                    enqueue_cross_source_matches=False,
-                )
-                osm_result = run_ingestion(
-                    spec=osm_spec,
-                    adapter=OSMParquetAdapter(osm_spec, facility_domain=domain),
-                    session=session,
-                    settings=settings,
-                )
-                typer.echo(f"OSM {domain}: {osm_result.status} {osm_result.stats}")
-
-        if not skip_deped:
-            with HttpAcquirer(settings, timeout_seconds=180.0) as acquirer:
-                deped_content, metadata = fetch_ebeis_region(acquirer, "ncr")
-            deped_spec = source_spec(
-                REAL_SOURCES["deped-ebeis"],
-                release_label=f"DEPED-EBEIS-NCR-{date.today().isoformat()}",
-                filename=f"deped-ebeis-masterlist-ncr-{date.today().isoformat()}.html",
-                content=deped_content,
-                retrieved_at=datetime.now(UTC),
-                notes=f"Acquisition metadata: {json.dumps(metadata, default=str)}",
-            )
-            deped_result = run_ingestion(
-                spec=deped_spec,
-                adapter=DepEdEBEISAdapter(deped_spec),
-                session=session,
-                settings=settings,
-            )
-            typer.echo(f"DepEd EBEIS: {deped_result.status} {deped_result.stats}")
-
-        if not skip_libraries:
-            with HttpAcquirer(settings, timeout_seconds=180.0) as acquirer:
-                nlp_payload = acquirer.fetch(
-                    REAL_SOURCES["nlp"].source_url, max_bytes=100 * 1024 * 1024
-                )
-            validate_signature(nlp_payload, filename="nlp-public-libraries.pdf")
-            nlp_spec = source_spec(
-                REAL_SOURCES["nlp"],
-                release_label="NLP-PUBLIC-LIBRARIES-2025-12",
-                filename="nlp-public-libraries-2025-12.pdf",
-                content=nlp_payload.content,
-                retrieved_at=datetime.now(UTC),
-                reference_period_start=date(2025, 12, 1),
-                reference_period_end=date(2025, 12, 31),
-                enqueue_cross_source_matches=False,
-            )
-            nlp_result = run_ingestion(
-                spec=nlp_spec,
-                adapter=NlpPublicLibraryPdfAdapter(nlp_spec),
-                session=session,
-                settings=settings,
-            )
-            typer.echo(f"NLP public libraries: {nlp_result.status} {nlp_result.stats}")
-
-        if not skip_museums:
-            with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
-                museum_content, museum_metadata = fetch_national_museum_directory(acquirer)
-            museum_spec = source_spec(
-                REAL_SOURCES["national-museum"],
-                release_label=f"NMP-MUSEUMS-{date.today().isoformat()}",
-                filename=f"nmp-regional-area-site-museums-{date.today().isoformat()}.json",
-                content=museum_content,
-                retrieved_at=datetime.now(UTC),
-                enqueue_cross_source_matches=False,
-                notes=f"Acquisition metadata: {json.dumps(museum_metadata, default=str)}",
-            )
-            museum_result = run_ingestion(
-                spec=museum_spec,
-                adapter=NationalMuseumDirectoryAdapter(museum_spec),
-                session=session,
-                settings=settings,
-            )
-            typer.echo(f"National Museum: {museum_result.status} {museum_result.stats}")
-
-        if not skip_phlpost:
-            with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
-                phlpost_payload = acquirer.fetch(REAL_SOURCES["phlpost"].source_url)
-            phlpost_spec = source_spec(
-                REAL_SOURCES["phlpost"],
-                release_label=f"PHLPOST-LOCATOR-{date.today().isoformat()}",
-                filename=f"phlpost-post-office-locator-{date.today().isoformat()}.html",
-                content=phlpost_payload.content,
-                retrieved_at=datetime.now(UTC),
-                enqueue_cross_source_matches=False,
-            )
-            phlpost_result = run_ingestion(
-                spec=phlpost_spec,
-                adapter=PhlPostLocatorAdapter(phlpost_spec),
-                session=session,
-                settings=settings,
-            )
-            typer.echo(f"PHLPost: {phlpost_result.status} {phlpost_result.stats}")
-
-        if not skip_bir:
-            with HttpAcquirer(settings, timeout_seconds=180.0) as acquirer:
-                bir_payload = acquirer.fetch(
-                    REAL_SOURCES["bir"].source_url, max_bytes=50 * 1024 * 1024
-                )
-            validate_signature(bir_payload, filename="bir-rao-006-2025.pdf")
-            bir_spec = source_spec(
-                REAL_SOURCES["bir"],
-                release_label="BIR-RAO-006-2025",
-                filename="bir-rao-006-2025.pdf",
-                content=bir_payload.content,
-                retrieved_at=datetime.now(UTC),
-                reference_period_start=date(2025, 12, 9),
-                reference_period_end=date(2025, 12, 9),
-                enqueue_cross_source_matches=False,
-            )
-            bir_result = run_ingestion(
-                spec=bir_spec,
-                adapter=BirRevenueDistrictOfficeAdapter(bir_spec),
-                session=session,
-                settings=settings,
-            )
-            typer.echo(f"BIR RDOs: {bir_result.status} {bir_result.stats}")
-
-        if not skip_ppa:
-            with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
-                ppa_payload = acquirer.fetch(
-                    REAL_SOURCES["ppa"].source_url, max_bytes=50 * 1024 * 1024
-                )
-            validate_signature(ppa_payload, filename="ppa-port-list.pdf")
-            ppa_spec = source_spec(
-                REAL_SOURCES["ppa"],
-                release_label=f"PPA-PORT-LIST-{date.today().isoformat()}",
-                filename=f"ppa-port-list-{date.today().isoformat()}.pdf",
-                content=ppa_payload.content,
-                retrieved_at=datetime.now(UTC),
-                enqueue_cross_source_matches=False,
-            )
-            ppa_result = run_ingestion(
-                spec=ppa_spec,
-                adapter=PpaPortListAdapter(ppa_spec),
-                session=session,
-                settings=settings,
-            )
-            typer.echo(f"PPA ports: {ppa_result.status} {ppa_result.stats}")
-
-        if not skip_dti:
-            with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
-                dti_content, dti_metadata = fetch_negosyo_centers(acquirer)
-            dti_spec = source_spec(
-                REAL_SOURCES["dti-negosyo"],
-                release_label=f"DTI-NEGOSYO-{date.today().isoformat()}",
-                filename=f"dti-negosyo-centers-{date.today().isoformat()}.json",
-                content=dti_content,
-                retrieved_at=datetime.now(UTC),
-                enqueue_cross_source_matches=False,
-                notes=f"Acquisition metadata: {json.dumps(dti_metadata, default=str)}",
-            )
-            dti_result = run_ingestion(
-                spec=dti_spec,
-                adapter=DtiNegosyoCenterAdapter(dti_spec),
-                session=session,
-                settings=settings,
-            )
-            typer.echo(f"DTI Negosyo Centers: {dti_result.status} {dti_result.stats}")
-
-        if not skip_ched:
-            with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
-                ched_content, ched_metadata = fetch_heida_directory(acquirer)
-            ched_spec = source_spec(
-                REAL_SOURCES["ched-heida"],
-                release_label=f"CHED-HEIDA-{date.today().isoformat()}",
-                filename=f"ched-heida-hei-directory-{date.today().isoformat()}.json",
-                content=ched_content,
-                retrieved_at=datetime.now(UTC),
-                enqueue_cross_source_matches=False,
-                notes=f"Acquisition metadata: {json.dumps(ched_metadata, default=str)}",
-            )
-            ched_result = run_ingestion(
-                spec=ched_spec,
-                adapter=ChedHeidaAdapter(ched_spec),
-                session=session,
-                settings=settings,
-            )
-            typer.echo(f"CHED HEIs: {ched_result.status} {ched_result.stats}")
-
-        if not skip_crcf:
-            with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
-                crcf_payload = acquirer.fetch(REAL_SOURCES["dswd-crcf"].source_url)
-            crcf_spec = source_spec(
-                REAL_SOURCES["dswd-crcf"],
-                release_label=f"DSWD-CRCF-{date.today().isoformat()}",
-                filename=f"dswd-crcf-directory-{date.today().isoformat()}.html",
-                content=crcf_payload.content,
-                retrieved_at=datetime.now(UTC),
-                enqueue_cross_source_matches=False,
-            )
-            crcf_result = run_ingestion(
-                spec=crcf_spec,
-                adapter=DswdCrcfDirectoryAdapter(crcf_spec),
-                session=session,
-                settings=settings,
-            )
-            typer.echo(f"DSWD CRCF: {crcf_result.status} {crcf_result.stats}")
-
-        session.commit()
-        typer.echo("Real-data acquisition sequence complete.")
     finally:
         session.close()
         engine.dispose()

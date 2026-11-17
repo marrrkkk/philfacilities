@@ -4,6 +4,10 @@ services:
   db:
     image: postgis/postgis:17-3.5
     restart: unless-stopped
+    # National rebuild reports aggregate several hundred thousand records.
+    # PostgreSQL parallel workers use /dev/shm; the Docker default of 64 MB is
+    # too small for the schema-observation query and fails with DiskFull.
+    shm_size: 256mb
     environment:
       POSTGRES_USER: philfacilities
       POSTGRES_PASSWORD: philfacilities

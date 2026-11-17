@@ -9,7 +9,9 @@ personal contact fields that are not needed for facility identification.
 
 The parser preserves the source column names, library ID, status and affiliation
 date. It does not infer coordinates, PSGC codes, current opening hours or
-operational state beyond the directory's own status value.
+operational state beyond the directory's own status value. The library's
+institutional telephone number is published; librarian names and personal
+contact details are not.
 """
 
 from __future__ import annotations
@@ -22,6 +24,7 @@ from typing import Any
 import pdfplumber
 
 from ..contracts import (
+    ContactData,
     FacilityCandidate,
     FunctionData,
     LocationData,
@@ -84,16 +87,9 @@ class NlpPublicLibraryPdfAdapter:
     source_code = "nlp"
     parser_version = "nlp-public-libraries-1.0.0"
     schema_version = "nlp-public-libraries-pdf-v1"
-    expected_columns = {"required": {"PHILIPPINE PUBLIC LIBRARY ID", "NAME OF LIBRARY"}}  # noqa: RUF012
 
     def __init__(self, spec: ReleaseSpec) -> None:
         self.spec = spec
-
-    def discover(self, input_path: str | None) -> ReleaseSpec:
-        return self.spec
-
-    def acquire(self, spec: ReleaseSpec) -> bytes:
-        return spec.content
 
     def parse(self, spec: ReleaseSpec) -> ParsedRelease:
         rows: list[ParsedRow] = []
@@ -222,6 +218,10 @@ class NlpPublicLibraryPdfAdapter:
             address = clean_text(payload.get("ADDRESS"))
             address_parts = [part for part in (address, location, region) if part]
             affiliation = _affiliation_date(payload.get("DATE AFFILIATED") or "")
+            contacts = []
+            telephone = clean_text(payload.get("TELEPHONE NUMBER"))
+            if telephone and telephone != "-":
+                contacts.append(ContactData("phone", telephone, source_field="TELEPHONE NUMBER"))
             evidence = {
                 "source_columns": list(SOURCE_COLUMNS),
                 "philippine_public_library_id": library_id,
@@ -251,6 +251,7 @@ class NlpPublicLibraryPdfAdapter:
                         address_text=", ".join(address_parts) or None,
                         precision="unknown",
                     ),
+                    contacts=contacts,
                     functions=[
                         FunctionData(
                             function_code="PUBLIC_LIBRARY",

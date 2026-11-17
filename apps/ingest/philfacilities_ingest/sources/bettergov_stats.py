@@ -31,6 +31,7 @@ from ..acquisition import HttpAcquirer, record_check
 from ..config import IngestSettings
 from ..contracts import ReleaseSpec
 from ..pipeline import _existing_release, ensure_source
+from ..pipeline.locking import dataset_ingestion_lock
 from ..storage import RawStore, build_store
 from .registry import REAL_SOURCES, source_spec
 
@@ -66,6 +67,7 @@ CENSUS_2024_DATASET_IDS: tuple[str, ...] = (
 REFERENCE_DATE = date(2024, 7, 1)
 REFERENCE_PERIOD = "2024 Census of Population; reference date 01 July 2024"
 PARSER_VERSION = "bettergov-population-1.0.0"
+SCHEMA_VERSION = "bettergov-population-json-v1"
 PAGE_SIZE = 200
 GEO_CHUNK = 1000
 
@@ -295,20 +297,46 @@ def load_population_snapshot(
 ) -> dict[str, Any]:
     """Persist one regional statistical snapshot and its observation rows."""
 
+    source = REAL_SOURCES["bettergov-population"]
+    with dataset_ingestion_lock(
+        session, agency_code=source.agency_code, dataset_slug=source.dataset_slug
+    ):
+        return _load_population_snapshot_locked(
+            session=session,
+            settings=settings,
+            snapshot=snapshot,
+            store=store,
+        )
+
+
+def _load_population_snapshot_locked(
+    *,
+    session: Session,
+    settings: IngestSettings,
+    snapshot: PopulationSnapshot,
+    store: RawStore | None,
+) -> dict[str, Any]:
     store = store or build_store(settings)
     raw = _raw_document(snapshot)
+    acquired_at = datetime.now(UTC)
+    upstream_retrieved = (
+        f"BetterGov snapshot retrieved_at {snapshot.retrieved_at.isoformat()}; "
+        if snapshot.retrieved_at is not None
+        else "BetterGov snapshot retrieval time not recorded; "
+    )
     release_token = re.sub(r"[^A-Za-z0-9]+", "-", snapshot.region_label).strip("-")[:60]
     spec: ReleaseSpec = source_spec(
         REAL_SOURCES["bettergov-population"],
         release_label=f"PSA-2024-CENSUS-{release_token}-{REFERENCE_DATE.isoformat()}",
         filename=f"psa-2024-census-{release_token.lower()}.json",
         content=raw,
-        retrieved_at=snapshot.retrieved_at or datetime.now(UTC),
+        retrieved_at=acquired_at,
         reference_period_start=REFERENCE_DATE,
         reference_period_end=REFERENCE_DATE,
         notes=(
             f"PSA OpenSTAT table {snapshot.psa_source_url}; BetterGov release "
-            f"{snapshot.release}; {REFERENCE_PERIOD}."
+            f"{snapshot.release}; {upstream_retrieved}PhilFacilities retrieved "
+            f"{acquired_at.isoformat()}; {REFERENCE_PERIOD}."
         ),
     )
     _agency, dataset, _gate = ensure_source(session, spec)
@@ -321,12 +349,41 @@ def load_population_snapshot(
     )
     existing = _existing_release(session, dataset.id, preserved.sha256)
     if existing is not None and existing.ingestion_status == "published":
+        # The content is unchanged, but this invocation still acquired it. Keep
+        # the release identity and checksum, refresh the acquisition metadata and
+        # record the duplicate fetch as its own run. The upstream snapshot
+        # timestamp remains in the notes; it is not a PhilFacilities retrieval
+        # time.
+        existing.retrieved_at = acquired_at
+        existing.notes = spec.notes
+        if snapshot.source_updated_at is not None:
+            existing.source_published_at = snapshot.source_updated_at
+        session.add(
+            IngestionRun(
+                dataset_id=dataset.id,
+                release_id=existing.id,
+                started_at=acquired_at,
+                finished_at=datetime.now(UTC),
+                status="skipped_duplicate",
+                stats={
+                    "fetched_at": acquired_at.isoformat(),
+                    "upstream_retrieved_at": (
+                        snapshot.retrieved_at.isoformat()
+                        if snapshot.retrieved_at is not None
+                        else None
+                    ),
+                    "parser_version": PARSER_VERSION,
+                },
+            )
+        )
+        session.commit()
         return {
             "dataset": dataset.slug,
             "release_id": str(existing.id),
             "status": "skipped_duplicate",
             "observations": 0,
             "psgc_codes": 0,
+            "fetched_at": acquired_at.isoformat(),
         }
 
     run_id = uuid.uuid4()
@@ -355,6 +412,7 @@ def load_population_snapshot(
         terms_review_status=dataset.redistribution_status,
         publication_status=PUBLICATION_PUBLISHED,
         parser_version=PARSER_VERSION,
+        schema_version=SCHEMA_VERSION,
         notes=spec.notes,
     )
     session.add(release)

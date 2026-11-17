@@ -147,16 +147,9 @@ class DswdCrcfDirectoryAdapter:
     source_code = "dswd"
     parser_version = "dswd-crcf-html-1.0.0"
     schema_version = "dswd-crcf-html-v1"
-    expected_columns = {"required": {"facility_name", "address"}}  # noqa: RUF012
 
     def __init__(self, spec: ReleaseSpec) -> None:
         self.spec = spec
-
-    def discover(self, input_path: str | None) -> ReleaseSpec:
-        return self.spec
-
-    def acquire(self, spec: ReleaseSpec) -> bytes:
-        return spec.content
 
     def parse(self, spec: ReleaseSpec) -> ParsedRelease:
         records, metadata = parse_crcf_html(spec.content.decode("utf-8", errors="replace"))

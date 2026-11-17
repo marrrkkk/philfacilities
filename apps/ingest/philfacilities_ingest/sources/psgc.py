@@ -2,12 +2,10 @@ from __future__ import annotations
 
 import io
 from dataclasses import dataclass
-from datetime import date
 from typing import Any
 
 from openpyxl import load_workbook
 
-from ..contracts import ReleaseSpec
 from .common import clean_text, jsonify, normalise_code, normalise_header
 
 PSGC_ALIASES = ["psgc_code", "psgc", "code", "geographic_code"]
@@ -71,9 +69,7 @@ def _infer_parent(code: str, candidates: set[str]) -> str | None:
     return best
 
 
-def parse_psgc_workbook(
-    content: bytes, *, expected_filename: str = "psgc.xlsx"
-) -> tuple[list[ParsedUnit], list[str]]:
+def parse_psgc_workbook(content: bytes) -> tuple[list[ParsedUnit], list[str]]:
     workbook = load_workbook(io.BytesIO(content), read_only=True, data_only=True)
     units: list[ParsedUnit] = []
     warnings: list[str] = []
@@ -259,10 +255,3 @@ def build_crosswalk(previous: list[ParsedUnit], current: list[ParsedUnit]) -> li
                 }
             )
     return changes
-
-
-def release_dates(spec: ReleaseSpec) -> dict[str, date | None]:
-    return {
-        "reference_date": spec.reference_period_end,
-        "published_at": spec.source_published_at.date() if spec.source_published_at else None,
-    }

@@ -17,7 +17,7 @@ import hashlib
 import json
 import re
 from collections import Counter
-from typing import Any, ClassVar
+from typing import Any
 
 from ..contracts import (
     FacilityCandidate,
@@ -30,13 +30,13 @@ from ..contracts import (
     ValidationIssue,
     ValidationResult,
 )
+from ..validators import coordinate_in_philippines
 from .common import clean_text
 
 SOURCE_URL = (
     "https://maps.nha.gov.ph/geoserver/NHA_PH/ows?service=WFS&version=1.0.0"
     "&request=GetFeature&typeName=NHA_PH:DOH%20HF&outputFormat=application/json"
 )
-PHILIPPINES_BOUNDS = {"min_lat": 4.2, "max_lat": 21.5, "min_lon": 116.0, "max_lon": 127.0}
 PUBLIC_FIELDS = (
     "fac_code",
     "fac_name",
@@ -115,31 +115,9 @@ class NhaDohFacilityAdapter:
     source_code = "nha"
     parser_version = "nha-wfs-doh-hf-1.0.0"
     schema_version = "nha-wfs-doh-hf-v1"
-    expected_columns: ClassVar[dict[str, set[str]]] = {
-        "required": {"fac_name", "fac_type", "reg_name", "prov_name", "municity"},
-        "optional": {
-            "fac_code",
-            "ownershp",
-            "reg_psgc",
-            "prov_psgc",
-            "muni_psgc",
-            "brgy_name",
-            "brgy_psgc",
-            "zip_code",
-            "latitude",
-            "longitude",
-            "prec_latlo",
-        },
-    }
 
     def __init__(self, spec: ReleaseSpec) -> None:
         self.spec = spec
-
-    def discover(self, input_path: str | None) -> ReleaseSpec:
-        return self.spec
-
-    def acquire(self, spec: ReleaseSpec) -> bytes:
-        return spec.content
 
     def parse(self, spec: ReleaseSpec) -> ParsedRelease:
         records = parse_geojson(spec.content)
@@ -246,10 +224,7 @@ class NhaDohFacilityAdapter:
                     )
                     rejected += 1
                     continue
-                if not (
-                    PHILIPPINES_BOUNDS["min_lat"] <= lat <= PHILIPPINES_BOUNDS["max_lat"]
-                    and PHILIPPINES_BOUNDS["min_lon"] <= lon <= PHILIPPINES_BOUNDS["max_lon"]
-                ):
+                if not coordinate_in_philippines(lat, lon):
                     issues.append(
                         ValidationIssue(
                             "coordinates_outside_philippines",
@@ -286,10 +261,12 @@ class NhaDohFacilityAdapter:
             owner_label = _text(payload.get("ownershp"))
             is_government = owner_label.casefold() in {"government", "public", "gov't"}
             ownership = "government" if is_government else "private" if owner_label else "unknown"
+            # ``ownershp`` has only a broad private label, so do not claim a
+            # corporate, individual, or non-profit ownership type.
             ownership_type = (
                 "GOVERNMENT_UNSPECIFIED"
                 if is_government
-                else "PRIVATE"
+                else "PRIVATE_UNSPECIFIED"
                 if owner_label
                 else "UNKNOWN"
             )
@@ -333,6 +310,7 @@ class NhaDohFacilityAdapter:
                         precision="source_gps" if latitude is not None else "unknown",
                         method="nha_geoserver_wfs",
                         address_text=", ".join(part for part in address_parts if part) or None,
+                        postal_code=_text(payload.get("zip_code")) or None,
                         psgc_code=_psgc(payload.get("brgy_psgc"))
                         or _psgc(payload.get("muni_psgc"))
                         or _psgc(payload.get("prov_psgc"))
@@ -433,19 +411,9 @@ class NhaHousingProjectAdapter:
     source_code = "nha"
     parser_version = "nha-wfs-project-loc-1.0.0"
     schema_version = "nha-wfs-project-loc-v1"
-    expected_columns: ClassVar[dict[str, set[str]]] = {
-        "required": {"proj_name"},
-        "optional": set(PROJECT_FIELDS) - {"proj_name"},
-    }
 
     def __init__(self, spec: ReleaseSpec) -> None:
         self.spec = spec
-
-    def discover(self, input_path: str | None) -> ReleaseSpec:
-        return self.spec
-
-    def acquire(self, spec: ReleaseSpec) -> bytes:
-        return spec.content
 
     def parse(self, spec: ReleaseSpec) -> ParsedRelease:
         records = _parse_layer(spec.content, PROJECT_FIELDS)
@@ -623,19 +591,9 @@ class NhaLandholdingAdapter:
     source_code = "nha"
     parser_version = "nha-wfs-landholdings-1.0.0"
     schema_version = "nha-wfs-landholdings-v1"
-    expected_columns: ClassVar[dict[str, set[str]]] = {
-        "required": {"propname"},
-        "optional": set(LANDHOLDING_FIELDS) - {"propname"},
-    }
 
     def __init__(self, spec: ReleaseSpec) -> None:
         self.spec = spec
-
-    def discover(self, input_path: str | None) -> ReleaseSpec:
-        return self.spec
-
-    def acquire(self, spec: ReleaseSpec) -> bytes:
-        return spec.content
 
     def parse(self, spec: ReleaseSpec) -> ParsedRelease:
         records = _parse_layer(spec.content, LANDHOLDING_FIELDS)

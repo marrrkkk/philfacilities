@@ -10,6 +10,7 @@ from philfacilities_ingest.source_inventory import (
     DEFAULT_CANDIDATES_PATH,
     DEFAULT_PROBES_PATH,
     DEFAULT_REGISTER_PATH,
+    REQUIRED_OUTPUT_FIELDS,
     TAXONOMY_CATEGORIES,
     build_source_inventory,
     parse_probes,
@@ -207,7 +208,9 @@ def test_write_inventory_round_trips_json_and_csv(tmp_path: Path) -> None:
     loaded = json.loads(json_path.read_text(encoding="utf-8"))
     assert loaded["sources"] == payload["sources"]
     with csv_path.open(encoding="utf-8") as handle:
-        rows = list(csv.DictReader(handle))
+        reader = csv.DictReader(handle)
+        assert set(REQUIRED_OUTPUT_FIELDS) <= set(reader.fieldnames or ())
+        rows = list(reader)
     assert len(rows) == len(payload["sources"])
     assert {row["source_id"] for row in rows} == {
         source["source_id"] for source in payload["sources"]

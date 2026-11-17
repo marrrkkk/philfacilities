@@ -28,7 +28,7 @@ REQUIRED_FIELDS = (
     "last_verified",
 )
 
-DEFAULT_PATH = Path(__file__).resolve().parents[3] / "expand" / "source-candidates.json"
+DEFAULT_PATH = Path(__file__).resolve().parents[3] / "data" / "sources" / "source-candidates.json"
 
 
 def load_source_candidates(path: str | Path | None = None) -> dict[str, Any]:

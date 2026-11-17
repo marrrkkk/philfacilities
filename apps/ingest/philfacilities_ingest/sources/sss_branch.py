@@ -3,10 +3,10 @@
 The SSS branch locator is backed by three unauthenticated JSON endpoints used by
 the public locator page: a region list, a per-region branch list, and a per-branch
 detail call. The branch list supplies only branch codes and names; the detail call
-supplies the institutional address. Some detail responses also contain a contact
-person, a telephone/fax string and a branch e-mail address. Those are personal or
-contact fields and are retained only in the private preserved artifact. The
-normalized public payload exposes the branch name, address and region only.
+supplies the institutional address. The detail response can also contain a
+contact person, a telephone/fax string and a branch e-mail address. The named
+contact person stays private; the branch telephone/fax and e-mail are published
+as institutional contact channels.
 
 Presence in the locator is registry evidence, not proof that a branch is currently
 open, that its published address is current, or that walk-in service is available.
@@ -22,6 +22,7 @@ from urllib.parse import quote
 
 from ..acquisition import AcquisitionError, HttpAcquirer
 from ..contracts import (
+    ContactData,
     FacilityCandidate,
     FunctionData,
     LocationData,
@@ -38,7 +39,15 @@ LOCATOR_URL = "https://www.sss.gov.ph/sss-branch-locator/"
 REGION_LIST_URL = "https://member.sss.gov.ph/member/sss/branchloc/get-region-list"
 BRANCH_LIST_URL = "https://member.sss.gov.ph/member/sss/branchloc/get-branch-list"
 BRANCH_DETAILS_URL = "https://member.sss.gov.ph/member/sss/branchloc/get-branch-details"
-PUBLIC_FIELDS = ("branchCode", "branchName", "branchAddr", "regionCode", "regionName")
+PUBLIC_FIELDS = (
+    "branchCode",
+    "branchName",
+    "branchAddr",
+    "branchContact",
+    "branchEmail",
+    "regionCode",
+    "regionName",
+)
 
 
 def _decode_json(result: Any, url: str) -> dict[str, Any]:
@@ -152,10 +161,10 @@ def fetch_sss_branches(acquirer: HttpAcquirer) -> tuple[bytes, dict[str, Any]]:
         "detail_failures": detail_failures,
         "record_count": len(branches),
         "note": (
-            "Public SSS branch-locator artifact. Contact-person, e-mail and "
-            "telephone/fax fields are retained only in this private raw release; "
-            "normalized public rows expose branch name, address and region only. "
-            "No coordinates, PSGC codes, hours or operational status are present."
+            "Public SSS branch-locator artifact. Branch telephone/fax and e-mail are "
+            "published as institutional contacts; the named contact person stays in "
+            "the private raw release. No coordinates, PSGC codes, hours or operational "
+            "status are present."
         ),
         "records": sorted(branches.values(), key=lambda item: item["branchCode"]),
     }
@@ -174,16 +183,9 @@ class SssBranchAdapter:
     source_code = "sss"
     parser_version = "sss-branch-locator-json-1.0.0"
     schema_version = "sss-branch-locator-json-v1"
-    expected_columns = {"required": {"branchCode", "branchName"}}  # noqa: RUF012
 
     def __init__(self, spec: ReleaseSpec) -> None:
         self.spec = spec
-
-    def discover(self, input_path: str | None) -> ReleaseSpec:
-        return self.spec
-
-    def acquire(self, spec: ReleaseSpec) -> bytes:
-        return spec.content
 
     def parse(self, spec: ReleaseSpec) -> ParsedRelease:
         try:
@@ -218,11 +220,11 @@ class SssBranchAdapter:
             schema_version=self.schema_version,
             warnings=[
                 {
-                    "code": "contact_fields_withheld",
+                    "code": "institutional_contacts_only",
                     "message": (
-                        "Contact-person, e-mail and telephone/fax values remain in the "
-                        "private preserved artifact but are excluded from the normalized "
-                        "public payload."
+                        "Branch telephone/fax and e-mail are published as institutional "
+                        "contacts. The named contact person remains in the private preserved "
+                        "artifact and is excluded from the normalized public payload."
                     ),
                 },
                 {
@@ -299,6 +301,13 @@ class SssBranchAdapter:
             address = clean_text(payload.get("branchAddr"))
             region = clean_text(payload.get("regionName"))
             display_name = f"SSS {name} Branch"
+            contacts = []
+            phone = clean_text(payload.get("branchContact"))
+            if phone and phone.casefold() != "no details found":
+                contacts.append(ContactData("phone", phone, source_field="branchContact"))
+            email = clean_text(payload.get("branchEmail"))
+            if email and email.casefold() != "no details found":
+                contacts.append(ContactData("email", email, source_field="branchEmail"))
             candidates.append(
                 FacilityCandidate(
                     source_record_key=row.source_record_key,
@@ -322,6 +331,7 @@ class SssBranchAdapter:
                         address_text=address or None,
                         precision="unknown",
                     ),
+                    contacts=contacts,
                     functions=[
                         FunctionData(
                             function_code="SOCIAL_SECURITY_SERVICE",

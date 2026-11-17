@@ -64,3 +64,36 @@ def test_discovery_probe_records_transport_failure() -> None:
     assert results[0]["http_status"] is None
     assert results[0]["blocker_page"] is False
     assert "TLS verification failed" in results[0]["error"]
+
+
+def test_run_source_reports_unexpected_discovery_errors_as_failures(monkeypatch):
+    from philfacilities_ingest import source_runner
+    from philfacilities_ingest.config import IngestSettings
+
+    class BrokenConnector:
+        def discover(self, _ctx):
+            raise RuntimeError("connector exploded")
+
+    class RecordingSession:
+        def __init__(self):
+            self.rolled_back = 0
+
+        def rollback(self):
+            self.rolled_back += 1
+
+    monkeypatch.setattr(source_runner, "get_connector", lambda _key: BrokenConnector())
+
+    session = RecordingSession()
+    outcomes = source_runner.run_source(
+        session=session,
+        settings=IngestSettings(),
+        key="philhealth",
+        acquirer=object(),
+    )
+
+    assert len(outcomes) == 1
+    payload = outcomes[0].to_dict()
+    assert payload["status"] == "failed"
+    assert "skip" not in payload
+    assert "connector exploded" in payload["error"]
+    assert session.rolled_back == 1

@@ -24,7 +24,7 @@ import html as html_module
 import json
 import re
 from collections import Counter
-from typing import Any, ClassVar
+from typing import Any
 
 from ..contracts import (
     FacilityCandidate,
@@ -170,23 +170,9 @@ class NmisNarisDirectoryAdapter:
     source_code = "nmis"
     parser_version = "nmis-naris-html-1.0.0"
     schema_version = "nmis-naris-lto-v1"
-    expected_columns: ClassVar[dict[str, set[str]]] = {
-        "required": {
-            "company_name",
-            "lto_number",
-            "establishment_type",
-            "full_address",
-        }
-    }
 
     def __init__(self, spec: ReleaseSpec) -> None:
         self.spec = spec
-
-    def discover(self, input_path: str | None) -> ReleaseSpec:
-        return self.spec
-
-    def acquire(self, spec: ReleaseSpec) -> bytes:
-        return spec.content
 
     def parse(self, spec: ReleaseSpec) -> ParsedRelease:
         records, metadata = parse_naris_html(spec.content.decode("utf-8", errors="replace"))
@@ -433,7 +419,7 @@ class NmisNarisDirectoryAdapter:
                     location=LocationData(
                         latitude=latitude if has_coordinates else None,
                         longitude=longitude if has_coordinates else None,
-                        precision="geocoded" if has_coordinates else "unknown",
+                        precision="map_geocoded" if has_coordinates else "unknown",
                         method=("naris_cached_address_geocode" if has_coordinates else None),
                         address_text=address,
                         review_status=(

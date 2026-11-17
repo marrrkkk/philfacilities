@@ -98,12 +98,12 @@ def test_failure_alert_requires_a_webhook_and_sends_actionable_checks(monkeypatc
     monkeypatch.setattr(acquisition.httpx, "post", fake_post)
     settings = acquisition.IngestSettings(alert_webhook_url="https://alerts.example.invalid/hook")
     results = {"philhealth": {"status": "schema_changed", "error": "header changed"}}
-    assert acquisition.send_failure_alert(settings, results, command="check-due-sources")
+    assert acquisition.send_failure_alert(settings, results, command="source check --due")
     assert sent[0]["url"] == "https://alerts.example.invalid/hook"
     assert sent[0]["json"]["failures"]["philhealth"]["status"] == "schema_changed"
 
     no_webhook = acquisition.IngestSettings(alert_webhook_url=None)
-    assert not acquisition.send_failure_alert(no_webhook, results, command="check-due-sources")
+    assert not acquisition.send_failure_alert(no_webhook, results, command="source check --due")
     assert not acquisition.send_failure_alert(
         settings, {"x": {"status": "access_blocked"}}, command="x"
     )

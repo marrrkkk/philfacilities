@@ -185,18 +185,9 @@ class PasayHealthCenterAdapter:
     source_code = "pasay"
     parser_version = "pasay-lgu-health-html-1.0.0"
     schema_version = "pasay-lgu-health-html-v1"
-    expected_columns = {  # noqa: RUF012
-        "required": {"record_type", "name", "address", "source_url"}
-    }
 
     def __init__(self, spec: ReleaseSpec) -> None:
         self.spec = spec
-
-    def discover(self, input_path: str | None) -> ReleaseSpec:
-        return self.spec
-
-    def acquire(self, spec: ReleaseSpec) -> bytes:
-        return spec.content
 
     def parse(self, spec: ReleaseSpec) -> ParsedRelease:
         try:

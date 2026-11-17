@@ -75,16 +75,9 @@ class BucorFacilityAdapter:
     source_code = "bucor"
     parser_version = "bucor-oppf-html-1.0.0"
     schema_version = "bucor-oppf-html-v1"
-    expected_columns = {"required": {"facility_name", "source_page_id"}}  # noqa: RUF012
 
     def __init__(self, spec: ReleaseSpec) -> None:
         self.spec = spec
-
-    def discover(self, input_path: str | None) -> ReleaseSpec:
-        return self.spec
-
-    def acquire(self, spec: ReleaseSpec) -> bytes:
-        return spec.content
 
     def parse(self, spec: ReleaseSpec) -> ParsedRelease:
         records = parse_facility_links(spec.content.decode("utf-8", "replace"))
