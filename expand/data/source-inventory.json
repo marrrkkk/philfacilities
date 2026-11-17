@@ -68,13 +68,13 @@
     "OTHER_QUALIFYING"
   ],
   "counts": {
-    "total": 84,
-    "from_register": 83,
-    "from_candidates": 42,
+    "total": 92,
+    "from_register": 84,
+    "from_candidates": 51,
     "probed": 33,
     "unmatched_probes": 0,
-    "published": 3,
-    "internal_only": 2,
+    "published": 12,
+    "internal_only": 1,
     "by_category": {
       "COMMUNITY": 2,
       "CULTURE_KNOWLEDGE": 4,
@@ -83,59 +83,59 @@
       "ENVIRONMENT_AGRI": 12,
       "GOV_ADMIN": 13,
       "HEALTH": 6,
-      "HOUSING_SETTLEMENT": 4,
+      "HOUSING_SETTLEMENT": 6,
       "JUSTICE_CORRECTIONS": 4,
-      "OTHER_QUALIFYING": 8,
+      "OTHER_QUALIFYING": 13,
       "PUBLIC_COMMERCE": 3,
       "PUBLIC_SPACE": 1,
       "SOCIAL_WELFARE": 3,
       "TRANSPORT": 7,
-      "UTILITIES_SANITATION": 5
+      "UTILITIES_SANITATION": 6
     },
     "by_evidence_state": {
       "CATALOGUE_CANDIDATE": 3,
-      "DIRECTORY_CONTENT_VERIFIED": 16,
+      "DIRECTORY_CONTENT_VERIFIED": 14,
       "DIRECTORY_EXAMPLE_VERIFIED": 1,
       "DISCOVERED": 33,
-      "DISCOVERY_ONLY": 3,
+      "DISCOVERY_ONLY": 2,
       "FILE_DOCUMENT_VERIFIED": 8,
       "FOI_ACCESS_CONFIRMED": 4,
       "FOI_LIMITATION_CONFIRMED": 3,
       "OFFICIAL_LAW_VERIFIED": 1,
       "OFFICIAL_PORTAL_VERIFIED": 5,
       "PUBLIC_FEED_INSPECTED_NOT_USABLE": 1,
-      "PUBLISHED": 5,
-      "RECORDS_OBSERVED": 1
+      "PUBLISHED": 13,
+      "RECORDS_OBSERVED": 4
     },
     "by_access_state": {
       "ACCESS_BLOCKED": 31,
       "FOI_REQUIRED": 7,
-      "HUMAN_DOWNLOAD_REQUIRED": 3,
-      "OPEN": 26,
+      "HUMAN_DOWNLOAD_REQUIRED": 2,
+      "OPEN": 35,
       "PUBLISHED": 1,
       "UNVERIFIED": 16
     },
     "by_rights_state": {
       "AGREEMENT_REQUIRED": 1,
       "PUBLICLY_AVAILABLE_VERIFIED": 4,
-      "PUBLISHED": 10,
-      "REVIEW_REQUIRED": 29,
-      "UNKNOWN": 40
+      "PUBLISHED": 22,
+      "REVIEW_REQUIRED": 26,
+      "UNKNOWN": 39
     },
     "by_coverage_scope": {
-      "DIRECTORY_SUBSET": 15,
+      "DIRECTORY_SUBSET": 16,
       "DISCOVERY_LAYER": 8,
-      "NATIONAL_PARTIAL": 19,
+      "NATIONAL_PARTIAL": 26,
       "PARTICIPATING_LGUS": 2,
-      "REGIONAL": 3,
+      "REGIONAL": 4,
       "SELECTED_LGUS": 2,
       "SINGLE_LGU": 6,
-      "UNKNOWN_COVERAGE": 29
+      "UNKNOWN_COVERAGE": 28
     },
     "by_priority": {
       "P0": 19,
-      "P1": 29,
-      "P2": 22,
+      "P1": 31,
+      "P2": 28,
       "UNASSIGNED": 14
     }
   },
@@ -176,7 +176,23 @@
           "outcome": "TRANSPORT_ERROR"
         }
       ],
-      "observed_access_state": "ACCESS_BLOCKED"
+      "observed_access_state": "ACCESS_BLOCKED",
+      "official_urls": [
+        "https://www.bai.da.gov.ph/"
+      ],
+      "alternate_urls": [],
+      "description": "BAI",
+      "agency_level": "GOCC",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "UNKNOWN",
+      "probe_status": "TRANSPORT_ERROR",
+      "probe_date": "2026-11-16",
+      "probe_notes": "bai=TRANSPORT_ERROR; error=curl: (6) Could not resolve host: www.bai.da.gov.ph",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN",
+      "notes": ""
     },
     {
       "source_id": "bettergov.open_data",
@@ -202,7 +218,24 @@
         "candidates": false,
         "probe": false
       },
-      "probes": []
+      "probes": [],
+      "official_urls": [
+        "https://bettergov.ph/",
+        "https://github.com/bettergovph"
+      ],
+      "alternate_urls": [],
+      "description": "BetterGov Open Data Portal",
+      "agency_level": "GOCC",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "UNKNOWN",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN",
+      "notes": ""
     },
     {
       "source_id": "bettergov.statistics",
@@ -228,7 +261,24 @@
         "candidates": false,
         "probe": false
       },
-      "probes": []
+      "probes": [],
+      "official_urls": [
+        "https://statistics.bettergov.ph/api",
+        "https://statistics.bettergov.ph/api/v1/coverage"
+      ],
+      "alternate_urls": [],
+      "description": "Statistics API",
+      "agency_level": "GOCC",
+      "access_method": "API",
+      "format": "HTML",
+      "geographic_scope": "UNKNOWN",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN",
+      "notes": ""
     },
     {
       "source_id": "bfar.fisheries_facilities",
@@ -266,7 +316,23 @@
           "outcome": "TRANSPORT_ERROR"
         }
       ],
-      "observed_access_state": "ACCESS_BLOCKED"
+      "observed_access_state": "ACCESS_BLOCKED",
+      "official_urls": [
+        "https://www.bfar.da.gov.ph/"
+      ],
+      "alternate_urls": [],
+      "description": "BFAR",
+      "agency_level": "NATIONAL",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "UNKNOWN",
+      "probe_status": "TRANSPORT_ERROR",
+      "probe_date": "2026-11-16",
+      "probe_notes": "bfar=TRANSPORT_ERROR; error=curl: (6) Could not resolve host: www.bfar.da.gov.ph",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN",
+      "notes": ""
     },
     {
       "source_id": "bfp.fire_stations",
@@ -297,7 +363,26 @@
         "probe": false
       },
       "probes": [],
-      "notes": "`FOI ACCESS CONFIRMED`. The 15 Oct 2025 FOI response links a Google Drive folder named “LOGISTICAL REPORT as of August 2025” and a Fire Stats folder. The response explicitly says volunteer brigade fire-station data was not held in the delivered material. The actual attachment scope/schema must be downloaded and inspected; the request was for Manila, so do not assume nationwide coverage."
+      "notes": "`FOI ACCESS CONFIRMED`. The 15 Oct 2025 FOI response links a Google Drive folder named “LOGISTICAL REPORT as of August 2025” and a Fire Stats folder. The response explicitly says volunteer brigade fire-station data was not held in the delivered material. The actual attachment scope/schema must be downloaded and inspected; the request was for Manila, so do not assume nationwide coverage.",
+      "official_urls": [
+        "https://www.foi.gov.ph/agencies/bfp/list-of-all-fire-stations/",
+        "https://region3.bfp.gov.ph/contact-us/"
+      ],
+      "alternate_urls": [
+        "https://www.foi.gov.ph/agencies/bfp/list-of-all-fire-stations/",
+        "https://drrm.ncr.dilg.gov.ph/map"
+      ],
+      "description": "BFP fire-station and logistical records — `FOI ACCESS CONFIRMED`. The 15 Oct 2025 FOI response links a Google Drive folder named “LOGISTICAL REPORT as of August 2025” and a Fire Stats folder. The response explicitly says volunteer brigade fire-station data was not held in the delivered material. The actual attachment scope/schema must be downloaded and inspected; the request was for Manila, so do not assume nationwide coverage.",
+      "agency_level": "NATIONAL",
+      "access_method": "FOI",
+      "format": "HTML",
+      "geographic_scope": "LGU",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN"
     },
     {
       "source_id": "bir.revenue_district_offices",
@@ -327,7 +412,23 @@
         "probe": false
       },
       "probes": [],
-      "notes": "`FILE/DOCUMENT VERIFIED`. RAO is a current official office/jurisdiction list, not a full coordinate file. The image-only PDF was processed with local OCR; 128 RDO rows and 19 region headings are published with attribution. OCR text is not a substitute for the official document."
+      "notes": "`FILE/DOCUMENT VERIFIED`. RAO is a current official office/jurisdiction list, not a full coordinate file. The image-only PDF was processed with local OCR; 128 RDO rows and 19 region headings are published with attribution. OCR text is not a substitute for the official document.",
+      "official_urls": [
+        "https://bir-cdn.bir.gov.ph/BIR/pdf/RAO%20No.%206-2025.pdf",
+        "https://bir-cdn.bir.gov.ph/BIR/pdf/BIR%20Citizen%27s%20Charter%20%282025-Edition%29.pdf"
+      ],
+      "alternate_urls": [],
+      "description": "BIR revenue regions and revenue district offices — `FILE/DOCUMENT VERIFIED`. RAO is a current official office/jurisdiction list, not a full coordinate file. The image-only PDF was processed with local OCR; 128 RDO rows and 19 region headings are published with attribution. OCR text is not a substitute for the official document.",
+      "agency_level": "NATIONAL",
+      "access_method": "BULK_FILE",
+      "format": "PDF",
+      "geographic_scope": "NATIONAL",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN"
     },
     {
       "source_id": "bjmp.facilities",
@@ -368,7 +469,22 @@
         }
       ],
       "notes": "`DISCOVERY ONLY`. No verified national public bulk list/schema in this pass. Sensitive security and capacity information may be restricted.",
-      "observed_access_state": "ACCESS_BLOCKED"
+      "observed_access_state": "ACCESS_BLOCKED",
+      "official_urls": [
+        "https://bjmp.gov.ph/"
+      ],
+      "alternate_urls": [],
+      "description": "BJMP jail facilities — `DISCOVERY ONLY`. No verified national public bulk list/schema in this pass. Sensitive security and capacity information may be restricted.",
+      "agency_level": "NATIONAL",
+      "access_method": "SEARCH_ONLY",
+      "format": "HTML",
+      "geographic_scope": "UNKNOWN",
+      "probe_status": "HTTP_403",
+      "probe_date": "2026-11-16",
+      "probe_notes": "bjmp=HTTP_403",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN"
     },
     {
       "source_id": "bmb.protected_areas",
@@ -411,27 +527,45 @@
         }
       ],
       "notes": "`OFFICIAL PORTAL VERIFIED`. Dashboard warns current system data may not fully reflect actual/real-time conditions while updates and validation continue. Protected areas are geographic sites/areas, not individual public-facility points.",
-      "observed_access_state": "ACCESS_BLOCKED"
+      "observed_access_state": "ACCESS_BLOCKED",
+      "official_urls": [
+        "https://pais.bmb.gov.ph/index.php",
+        "https://bmb.gov.ph/"
+      ],
+      "alternate_urls": [],
+      "description": "DENR-BMB protected-area information system — `OFFICIAL PORTAL VERIFIED`. Dashboard warns current system data may not fully reflect actual/real-time conditions while updates and validation continue. Protected areas are geographic sites/areas, not individual public-facility points.",
+      "agency_level": "NATIONAL",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "NATIONAL",
+      "probe_status": "TRANSPORT_ERROR",
+      "probe_date": "2026-11-16",
+      "probe_notes": "pais=TRANSPORT_ERROR; error=curl: (35) TLS connect error: error:0A000126:SSL routines::unexpected eof while reading",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN"
     },
     {
       "source_id": "bucor.facilities",
       "custodian": "BuCor",
-      "title": "BuCor correctional facilities",
+      "title": "Bureau of Corrections OPPF operating prison and penal facilities",
       "category": "JUSTICE_CORRECTIONS",
       "urls": [
-        "https://bucor.gov.ph/"
+        "https://bucor.gov.ph/",
+        "https://bucor.gov.ph/operating-prisons-and-penal-farms/",
+        "https://bucor.gov.ph/?page_id=303"
       ],
-      "evidence_state": "DISCOVERY_ONLY",
-      "access_state": "UNVERIFIED",
-      "rights_state": "REVIEW_REQUIRED",
-      "coverage_scope": "UNKNOWN_COVERAGE",
+      "evidence_state": "PUBLISHED",
+      "access_state": "OPEN",
+      "rights_state": "PUBLISHED",
+      "coverage_scope": "DIRECTORY_SUBSET",
       "priority": "P2",
-      "next_action": "**P2/conditional.** Include only publicly acknowledged locations and safe fields.",
+      "next_action": "Do not infer national coverage; seek BJMP and provincial jail sources separately if safe fields can be published.",
       "tracker_ids": [
         "AF6-06"
       ],
       "last_verified": "2026-11-16",
-      "publication_state": "NOT_PUBLISHED",
+      "publication_state": "PUBLISHED",
       "register_section": "C. Emergency, public safety and response facilities",
       "provenance": {
         "register": true,
@@ -451,8 +585,25 @@
           "outcome": "HTTP_200"
         }
       ],
-      "notes": "`DISCOVERY ONLY`. No verified reusable facility dataset in this pass. Security-sensitive attributes must be excluded.",
-      "observed_access_state": "OPEN"
+      "notes": "`PUBLISHED`. The OPPF page lists seven BuCor operating prison and penal facilities with official detail-page links on 16 Nov 2026. It is not a national corrections register and omits BJMP, provincial and sub-provincial jails. Only facility names and detail links are published; no address, coordinate, capacity, population or operational status is present.",
+      "observed_access_state": "OPEN",
+      "official_urls": [
+        "https://bucor.gov.ph/",
+        "https://bucor.gov.ph/operating-prisons-and-penal-farms/",
+        "https://bucor.gov.ph/?page_id=303"
+      ],
+      "alternate_urls": [],
+      "description": "Bureau of Corrections OPPF operating prison and penal facilities — `PUBLISHED`. The OPPF page lists seven BuCor operating prison and penal facilities with official detail-page links on 16 Nov 2026. It is not a national corrections register and omits BJMP, provincial and sub-provincial jails. Only facility names and detail links are published; no address, coordinate, capacity, population or operational status is present.",
+      "agency_level": "NATIONAL",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "DIRECTORY_SUBSET",
+      "probe_status": "HTTP_200",
+      "probe_date": "2026-11-16",
+      "probe_notes": "bucor=HTTP_200",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN"
     },
     {
       "source_id": "caap.airports",
@@ -497,7 +648,26 @@
         }
       ],
       "notes": "`DIRECTORY CONTENT VERIFIED`. Area-centre page was indexed with airport names; direct page access may be restricted to some clients. Not a downloadable national API. CAAP regulatory oversight does not prove CAAP owns/operates every airport.",
-      "observed_access_state": "ACCESS_BLOCKED"
+      "observed_access_state": "ACCESS_BLOCKED",
+      "official_urls": [
+        "https://www.caap.gov.ph/area-centers/",
+        "https://www.caap.gov.ph/17950-2/",
+        "https://www.caap.gov.ph/"
+      ],
+      "alternate_urls": [
+        "https://geoportal.gov.ph/"
+      ],
+      "description": "CAAP area centres and aerodromes — `DIRECTORY CONTENT VERIFIED`. Area-centre page was indexed with airport names; direct page access may be restricted to some clients. Not a downloadable national API. CAAP regulatory oversight does not prove CAAP owns/operates every airport.",
+      "agency_level": "GOCC",
+      "access_method": "HTML_DIRECTORY",
+      "format": "HTML",
+      "geographic_scope": "DIRECTORY_SUBSET",
+      "probe_status": "HTTP_403",
+      "probe_date": "2026-11-16",
+      "probe_notes": "caap=HTTP_403",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN"
     },
     {
       "source_id": "ched.heida",
@@ -529,7 +699,24 @@
         "probe": false
       },
       "probes": [],
-      "notes": "`ACQUIRED AND PUBLISHED`. Public server-rendered directory read on 15 Nov 2026: 18 regional directories, 280 pages, 2,716 rows, 2,711 unique after duplicate rejection. No login/CAPTCHA/prohibition encountered. Institutional fields published under `PUBLICLY_AVAILABLE_VERIFIED`; contact details and head names discarded; 123 `Others`/CHED-supervised/unrecognised rows remain internal; no coordinates or PSGC codes."
+      "notes": "`ACQUIRED AND PUBLISHED`. Public server-rendered directory read on 15 Nov 2026: 18 regional directories, 280 pages, 2,716 rows, 2,711 unique after duplicate rejection. No login/CAPTCHA/prohibition encountered. Institutional fields published under `PUBLICLY_AVAILABLE_VERIFIED`; contact details and head names discarded; 123 `Others`/CHED-supervised/unrecognised rows remain internal; no coordinates or PSGC codes.",
+      "official_urls": [
+        "https://heida.ched.gov.ph/",
+        "https://heida.ched.gov.ph/hei-directory",
+        "https://ched.gov.ph/"
+      ],
+      "alternate_urls": [],
+      "description": "CHED HEIDA higher-education institution directory — `ACQUIRED AND PUBLISHED`. Public server-rendered directory read on 15 Nov 2026: 18 regional directories, 280 pages, 2,716 rows, 2,711 unique after duplicate rejection. No login/CAPTCHA/prohibition encountered. Institutional fields published under `PUBLICLY_AVAILABLE_VERIFIED`; contact details and head names discarded; 123 `Others`/CHED-supervised/unrecognised rows remain internal; no coordinates or PSGC codes.",
+      "agency_level": "NATIONAL",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "NATIONAL",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "MIXED_GOVERNMENT_AND_PRIVATE_PROVIDERS"
     },
     {
       "source_id": "da.agri_facilities",
@@ -567,7 +754,23 @@
           "outcome": "HTTP_200"
         }
       ],
-      "observed_access_state": "OPEN"
+      "observed_access_state": "OPEN",
+      "official_urls": [
+        "https://www.da.gov.ph/"
+      ],
+      "alternate_urls": [],
+      "description": "DA",
+      "agency_level": "NATIONAL",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "REGIONAL",
+      "probe_status": "HTTP_200",
+      "probe_date": "2026-11-16",
+      "probe_notes": "da=HTTP_200",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN",
+      "notes": ""
     },
     {
       "source_id": "denr_mgb.geohazards",
@@ -595,7 +798,22 @@
         "probe": false
       },
       "probes": [],
-      "notes": "`DISCOVERY/CATALOGUE TARGET`. Do not assume all layers have downloadable national coverage or permissive terms."
+      "notes": "`DISCOVERY/CATALOGUE TARGET`. Do not assume all layers have downloadable national coverage or permissive terms.",
+      "official_urls": [
+        "https://mgb.gov.ph/"
+      ],
+      "alternate_urls": [],
+      "description": "MGB geohazard layers — `DISCOVERY/CATALOGUE TARGET`. Do not assume all layers have downloadable national coverage or permissive terms.",
+      "agency_level": "NATIONAL",
+      "access_method": "SEARCH_ONLY",
+      "format": "UNKNOWN",
+      "geographic_scope": "UNKNOWN",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN"
     },
     {
       "source_id": "deped.ebeis_masterlist",
@@ -605,22 +823,38 @@
       "urls": [
         "https://ebeis.deped.gov.ph/beis/reports_info/masterlist"
       ],
-      "evidence_state": "PUBLISHED",
-      "access_state": "OPEN",
-      "rights_state": "PUBLICLY_AVAILABLE_VERIFIED",
-      "coverage_scope": "NATIONAL_PARTIAL",
+      "evidence_state": "DISCOVERED",
+      "access_state": "UNVERIFIED",
+      "rights_state": "UNKNOWN",
+      "coverage_scope": "UNKNOWN_COVERAGE",
       "priority": "P1",
-      "next_action": "P1. Obtain an authoritative sector/ownership field or separate DepEd releases before public canonical publication; retain release-level publication for institutional fields only",
+      "next_action": "P1. Obtain an authoritative sector/ownership field or separate DepEd releases before public canonical publication; retain release-level publication for institutional fields only. Refresh all region result sets on the next school year",
       "tracker_ids": [],
       "last_verified": "2026-11-15",
-      "publication_state": "INTERNAL_ONLY",
+      "publication_state": "NOT_PUBLISHED",
       "register_section": "A. Primary facility registries and agency directories",
       "provenance": {
         "register": true,
         "candidates": false,
         "probe": false
       },
-      "probes": []
+      "probes": [],
+      "official_urls": [
+        "https://ebeis.deped.gov.ph/beis/reports_info/masterlist"
+      ],
+      "alternate_urls": [],
+      "description": "EBEIS Masterlist report",
+      "agency_level": "NATIONAL",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "UNKNOWN",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "MIXED_GOVERNMENT_AND_PRIVATE_PROVIDERS",
+      "notes": ""
     },
     {
       "source_id": "deped.school_masterlist",
@@ -633,11 +867,11 @@
         "https://projectbukas.deped.gov.ph/"
       ],
       "evidence_state": "DIRECTORY_CONTENT_VERIFIED",
-      "access_state": "HUMAN_DOWNLOAD_REQUIRED",
+      "access_state": "OPEN",
       "rights_state": "REVIEW_REQUIRED",
       "coverage_scope": "NATIONAL_PARTIAL",
       "priority": "P0",
-      "next_action": "**P0.** Obtain original official files, inspect exact workbooks/sheets/headers, save the accepted terms and reference period, then automate parsing and any permitted future download.",
+      "next_action": "**P1.** Obtain an authoritative sector/ownership field or separate DepEd releases before public canonical publication; retain release-level publication for institutional fields only. Refresh all region result sets on the next school year and compare row counts.",
       "tracker_ids": [
         "AF1-38",
         "AF1-48",
@@ -653,7 +887,28 @@
         "probe": false
       },
       "probes": [],
-      "notes": "`DIRECTORY CONTENT VERIFIED`. DepEd publishes downloadable data families, but its file acquisition has a human download/terms or feedback flow. Do not assume an official API. Earlier source page listed enrollment through SY2024–25 and several characteristics files at SY2023–24; recheck latest release."
+      "notes": "`DIRECTORY CONTENT VERIFIED AND ACQUIRED`. The public EBEIS result form exposes 19 region groups (18 regions plus PSO). Live page counts total 83,218 rows on 16 Nov 2026: Region I 4,370; Region II 3,705; Region III 7,781; Region IV-A 9,660; MIMAROPA 3,114; Region V 5,476; Region VI 4,383; Region VII 4,873; Region VIII 5,157; Region IX 4,113; Region X 4,541; Region XI 3,971; Region XII 3,614; CARAGA 2,995; BARMM 4,268; CAR 2,613; NCR 5,055; NIR 3,451; PSO 78. All region result sets are ingested internal-only pending terms/privacy review. School-head names remain in the private raw store and are omitted from normalized records; ownership/sector is not reliably exposed, so canonical rows remain discovery candidates. DepEd Machine-Ready files remain blocked by HTTP 403/human terms flow.",
+      "official_urls": [
+        "https://www.deped.gov.ph/machine-ready-files/",
+        "https://ebeis.deped.gov.ph/beis/reports_info/masterlist",
+        "https://projectbukas.deped.gov.ph/"
+      ],
+      "alternate_urls": [
+        "https://ebeis.deped.gov.ph/beis/reports_info/masterlist",
+        "https://region8.deped.gov.ph/",
+        "https://caraga.deped.gov.ph/"
+      ],
+      "description": "Basic education school masterlist and related EBEIS datasets — `DIRECTORY CONTENT VERIFIED AND ACQUIRED`. The public EBEIS result form exposes 19 region groups (18 regions plus PSO). Live page counts total 83,218 rows on 16 Nov 2026: Region I 4,370; Region II 3,705; Region III 7,781; Region IV-A 9,660; MIMAROPA 3,114; Region V 5,476; Region VI 4,383; Region VII 4,873; Region VIII 5,157; Region IX 4,113; Region X 4,541; Region XI 3,971; Region XII 3,614; CARAGA 2,995; BARMM 4,268; CAR 2,613; NCR 5,055; NIR 3,451; PSO 78. All region result sets are ingested internal-only pending terms/privacy review. School-head names remain in the private raw store and are omitted from normalized records; ownership/sector is not reliably exposed, so canonical rows remain discovery candidates. DepEd Machine-Ready files remain blocked by HTTP 403/human terms flow.",
+      "agency_level": "NATIONAL",
+      "access_method": "HTML_DIRECTORY",
+      "format": "HTML",
+      "geographic_scope": "NATIONAL",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "MIXED_OR_PRIVATE_PROVIDERS"
     },
     {
       "source_id": "dhsud.housing_offices",
@@ -691,7 +946,23 @@
           "outcome": "HTTP_403"
         }
       ],
-      "observed_access_state": "ACCESS_BLOCKED"
+      "observed_access_state": "ACCESS_BLOCKED",
+      "official_urls": [
+        "https://dhsud.gov.ph/"
+      ],
+      "alternate_urls": [],
+      "description": "DHSUD",
+      "agency_level": "NATIONAL",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "UNKNOWN",
+      "probe_status": "HTTP_403",
+      "probe_date": "2026-11-16",
+      "probe_notes": "dhsud=HTTP_403",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN",
+      "notes": ""
     },
     {
       "source_id": "dilg.barangay_halls",
@@ -723,7 +994,26 @@
         "probe": false
       },
       "probes": [],
-      "notes": "`FOI LIMITATION CONFIRMED`. The Masterlist of Barangays is a barangay reference, not a hall inventory. No nationwide hall-address/coordinate file was verified."
+      "notes": "`FOI LIMITATION CONFIRMED`. The Masterlist of Barangays is a barangay reference, not a hall inventory. No nationwide hall-address/coordinate file was verified.",
+      "official_urls": [
+        "https://www.foi.gov.ph/agencies/dilg/list-of-barangay-halls/",
+        "https://dilg.gov.ph/page/Masterlist-of-Barangays/77",
+        "https://www.namria.gov.ph/"
+      ],
+      "alternate_urls": [
+        "https://mandaluyong.gov.ph/government/barangays/"
+      ],
+      "description": "Barangay hall locations and LGU asset inventories — `FOI LIMITATION CONFIRMED`. The Masterlist of Barangays is a barangay reference, not a hall inventory. No nationwide hall-address/coordinate file was verified.",
+      "agency_level": "NATIONAL",
+      "access_method": "FOI",
+      "format": "HTML",
+      "geographic_scope": "UNKNOWN",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN"
     },
     {
       "source_id": "dilg.barangay_masterlist",
@@ -748,7 +1038,25 @@
         "candidates": false,
         "probe": false
       },
-      "probes": []
+      "probes": [],
+      "official_urls": [
+        "https://dilg.gov.ph/page/Masterlist-of-Barangays/77"
+      ],
+      "alternate_urls": [
+        "https://statistics.bettergov.ph/api/classification/psgc"
+      ],
+      "description": "DILG Masterlist of Barangays",
+      "agency_level": "NATIONAL",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "UNKNOWN",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN",
+      "notes": ""
     },
     {
       "source_id": "dilg.drrm_pulse",
@@ -780,7 +1088,27 @@
         "probe": false
       },
       "probes": [],
-      "notes": "`PUBLIC FEED INSPECTED — NOT USABLE FOR BULK INGEST`. The map states that only DILG-validated records are shown and the portal lists participating LGUs, but `/api/facilities.geojson` returned exactly one feature (Marikina Rescue 161 / MCDRRMO Command Center, with exact coordinates) regardless of query parameters; `/api/map-layers.geojson` returned an empty collection. Coverage is participating LGUs, not nationwide, and emergency coordinates require security review."
+      "notes": "`PUBLIC FEED INSPECTED — NOT USABLE FOR BULK INGEST`. The map states that only DILG-validated records are shown and the portal lists participating LGUs, but `/api/facilities.geojson` returned exactly one feature (Marikina Rescue 161 / MCDRRMO Command Center, with exact coordinates) regardless of query parameters; `/api/map-layers.geojson` returned an empty collection. Coverage is participating LGUs, not nationwide, and emergency coordinates require security review.",
+      "official_urls": [
+        "https://drrm.ncr.dilg.gov.ph/",
+        "https://drrm.ncr.dilg.gov.ph/about",
+        "https://drrm.ncr.dilg.gov.ph/map",
+        "https://drrm.ncr.dilg.gov.ph/lgus"
+      ],
+      "alternate_urls": [
+        "https://subaybayan.dilg.gov.ph/"
+      ],
+      "description": "DILG-NCR DRRM-PULSE participating-LGU facility map — `PUBLIC FEED INSPECTED — NOT USABLE FOR BULK INGEST`. The map states that only DILG-validated records are shown and the portal lists participating LGUs, but `/api/facilities.geojson` returned exactly one feature (Marikina Rescue 161 / MCDRRMO Command Center, with exact coordinates) regardless of query parameters; `/api/map-layers.geojson` returned an empty collection. Coverage is participating LGUs, not nationwide, and emergency coordinates require security review.",
+      "agency_level": "NATIONAL",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "LGU",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN"
     },
     {
       "source_id": "dilg.evacuation_ncr_foi",
@@ -810,7 +1138,22 @@
         "probe": false
       },
       "probes": [],
-      "notes": "`FOI ACCESS CONFIRMED`, but only NCR scope. DILG said detailed nationwide information was held by OCD/NDRRMC; subsequent OCD FOI response in Feb 2026 said the requested list was not available at OCD and referred requester to DILG/LGUs. Custodian referrals are inconsistent."
+      "notes": "`FOI ACCESS CONFIRMED`, but only NCR scope. DILG said detailed nationwide information was held by OCD/NDRRMC; subsequent OCD FOI response in Feb 2026 said the requested list was not available at OCD and referred requester to DILG/LGUs. Custodian referrals are inconsistent.",
+      "official_urls": [
+        "https://www.foi.gov.ph/agencies/dilg/lists-of-existing-evacuation-centers/"
+      ],
+      "alternate_urls": [],
+      "description": "DILG-NCR evacuation-centre FOI list — `FOI ACCESS CONFIRMED`, but only NCR scope. DILG said detailed nationwide information was held by OCD/NDRRMC; subsequent OCD FOI response in Feb 2026 said the requested list was not available at OCD and referred requester to DILG/LGUs. Custodian referrals are inconsistent.",
+      "agency_level": "NATIONAL",
+      "access_method": "FOI",
+      "format": "HTML",
+      "geographic_scope": "REGIONAL",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN"
     },
     {
       "source_id": "dilg.public_markets",
@@ -841,7 +1184,24 @@
         "probe": false
       },
       "probes": [],
-      "notes": "`FOI LIMITATION CONFIRMED`. DILG says it does not maintain the requested national market list and recommends asking concerned LGUs. LGU201 is a contact/discovery directory, not the market dataset itself."
+      "notes": "`FOI LIMITATION CONFIRMED`. DILG says it does not maintain the requested national market list and recommends asking concerned LGUs. LGU201 is a contact/discovery directory, not the market dataset itself.",
+      "official_urls": [
+        "https://www.foi.gov.ph/agencies/dilg/list-of-public-markets-in-the-philippines-dilg-905479402880/",
+        "https://www.foi.gov.ph/agencies/dilg/public-market-list-area-and-population/",
+        "https://lgu201.dilg.gov.ph/"
+      ],
+      "alternate_urls": [],
+      "description": "Public markets held by LGUs — `FOI LIMITATION CONFIRMED`. DILG says it does not maintain the requested national market list and recommends asking concerned LGUs. LGU201 is a contact/discovery directory, not the market dataset itself.",
+      "agency_level": "NATIONAL",
+      "access_method": "FOI",
+      "format": "HTML",
+      "geographic_scope": "UNKNOWN",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN"
     },
     {
       "source_id": "dilg.subaybayan_evacuation_projects",
@@ -873,7 +1233,24 @@
         "probe": false
       },
       "probes": [],
-      "notes": "`FOI ACCESS CONFIRMED` for a project-data route. The response is about evacuation-centre projects, not a complete census of all existing evacuation sites. A separate DILG response says it does not maintain a consolidated master file in the requested format and says coordinates/PSGC are not held at that office. Direct portal fetch returned 403 in this research pass. Do not conflate completed project status with current facility operation."
+      "notes": "`FOI ACCESS CONFIRMED` for a project-data route. The response is about evacuation-centre projects, not a complete census of all existing evacuation sites. A separate DILG response says it does not maintain a consolidated master file in the requested format and says coordinates/PSGC are not held at that office. Direct portal fetch returned 403 in this research pass. Do not conflate completed project status with current facility operation.",
+      "official_urls": [
+        "https://subaybayan.dilg.gov.ph/",
+        "https://www.foi.gov.ph/agencies/dilg/updated-list-of-evacuation-center-in-the-philippines/",
+        "https://www.foi.gov.ph/agencies/dilg/updated-master-list-of-evacuation-center-in-the-philippines-dilg-902947380736/"
+      ],
+      "alternate_urls": [],
+      "description": "DILG Subaybayan LIME 20 evacuation-centre project records — `FOI ACCESS CONFIRMED` for a project-data route. The response is about evacuation-centre projects, not a complete census of all existing evacuation sites. A separate DILG response says it does not maintain a consolidated master file in the requested format and says coordinates/PSGC are not held at that office. Direct portal fetch returned 403 in this research pass. Do not conflate completed project status with current facility operation.",
+      "agency_level": "NATIONAL",
+      "access_method": "FOI",
+      "format": "HTML",
+      "geographic_scope": "UNKNOWN",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN"
     },
     {
       "source_id": "dilg.subaybayan_lime20",
@@ -898,7 +1275,23 @@
         "candidates": false,
         "probe": false
       },
-      "probes": []
+      "probes": [],
+      "official_urls": [
+        "https://subaybayan.dilg.gov.ph/"
+      ],
+      "alternate_urls": [],
+      "description": "DILG Subaybayan",
+      "agency_level": "NATIONAL",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "DIRECTORY_SUBSET",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN",
+      "notes": ""
     },
     {
       "source_id": "doe.energy_facilities",
@@ -906,17 +1299,21 @@
       "title": "DOE",
       "category": "UTILITIES_SANITATION",
       "urls": [
-        "https://www.doe.gov.ph/"
+        "https://www.doe.gov.ph/",
+        "https://prod-cms.doe.gov.ph/sites/default/files/pdf/e_power/2025/Luzon%20Grid.pdf",
+        "https://prod-cms.doe.gov.ph/sites/default/files/pdf/e_power/2025/Visayas%20Grid.pdf",
+        "https://prod-cms.doe.gov.ph/sites/default/files/pdf/e_power/2025/Mindanao%20Grid.pdf",
+        "https://prod-cms.doe.gov.ph/sites/default/files/pdf/e_power/2025/Off-Grid.pdf"
       ],
-      "evidence_state": "DISCOVERED",
+      "evidence_state": "PUBLISHED",
       "access_state": "OPEN",
-      "rights_state": "UNKNOWN",
-      "coverage_scope": "UNKNOWN_COVERAGE",
-      "priority": "P1",
-      "next_action": "P1. Locate the official energy-facility inventory or dataset; homepage presence is not a dataset",
+      "rights_state": "PUBLICLY_AVAILABLE_VERIFIED",
+      "coverage_scope": "NATIONAL_PARTIAL",
+      "priority": null,
+      "next_action": "ACQUIRED (national inventory). Preserve owner-type markers and grid release; do not infer current operation from list presence or convert capacity into a public-access claim",
       "tracker_ids": [],
       "last_verified": "2026-11-16",
-      "publication_state": "NOT_PUBLISHED",
+      "publication_state": "PUBLISHED",
       "register_section": "M. Category search additions — 16 November 2026",
       "provenance": {
         "register": true,
@@ -936,7 +1333,76 @@
           "outcome": "HTTP_200"
         }
       ],
-      "observed_access_state": "OPEN"
+      "observed_access_state": "OPEN",
+      "official_urls": [
+        "https://www.doe.gov.ph/",
+        "https://prod-cms.doe.gov.ph/sites/default/files/pdf/e_power/2025/Luzon%20Grid.pdf",
+        "https://prod-cms.doe.gov.ph/sites/default/files/pdf/e_power/2025/Visayas%20Grid.pdf",
+        "https://prod-cms.doe.gov.ph/sites/default/files/pdf/e_power/2025/Mindanao%20Grid.pdf",
+        "https://prod-cms.doe.gov.ph/sites/default/files/pdf/e_power/2025/Off-Grid.pdf"
+      ],
+      "alternate_urls": [],
+      "description": "DOE",
+      "agency_level": "NATIONAL",
+      "access_method": "BULK_FILE",
+      "format": "HTML",
+      "geographic_scope": "NATIONAL",
+      "probe_status": "HTTP_200",
+      "probe_date": "2026-11-16",
+      "probe_notes": "doe=HTTP_200",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN",
+      "notes": ""
+    },
+    {
+      "source_id": "doe.power_plants",
+      "custodian": "Department of Energy",
+      "title": "DOE List of Existing Power Plants (grid and off-grid PDFs)",
+      "category": "UTILITIES_SANITATION",
+      "urls": [
+        "https://d24qbtp4vooyzi.cloudfront.net/api/media/file/DOE-EPIMB_LoEPP%20as%20of%20September%202026_Luzon%20Grid.pdf?prefix=dev%2Fmedia",
+        "https://d24qbtp4vooyzi.cloudfront.net/api/media/file/DOE-EPIMB_LoEPP%20as%20of%20September%202026_Visayas%20Grid.pdf?prefix=dev%2Fmedia",
+        "https://d24qbtp4vooyzi.cloudfront.net/api/media/file/DOE-EPIMB_LoEPP%20as%20of%20September%202026_Mindanao%20Grid.pdf?prefix=dev%2Fmedia",
+        "https://d24qbtp4vooyzi.cloudfront.net/api/media/file/List%20of%20Existing%20Power%20Plants%20Off-Grid%20as%20of%2030%20April%202026.pdf?prefix=dev%2Fmedia"
+      ],
+      "evidence_state": "PUBLISHED",
+      "access_state": "OPEN",
+      "rights_state": "PUBLISHED",
+      "coverage_scope": "NATIONAL_PARTIAL",
+      "priority": "P1",
+      "next_action": "Refresh the four PDFs on their next publication cycle. Add coordinates and PSGC only from another official source; do not infer them from place names.",
+      "tracker_ids": [
+        "M9-25"
+      ],
+      "last_verified": "2026-11-16",
+      "publication_state": "PUBLISHED",
+      "register_section": null,
+      "provenance": {
+        "register": false,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "`PUBLISHED`. Four official dated PDFs were retrieved on 16 November 2026: Luzon 213 rows, Visayas 80, Mindanao 102 (all 30 September 2026) and off-grid 266 (30 April 2026), 661 rows total. Each row preserves the DOE facility code, official name, resource/technology, connection, installed and dependable capacity, unit count, place labels, operator/owner, owner type and commissioning date. Unit rows with blank names/operators are kept separately and blanks are not back-filled. The lists supply no coordinates or PSGC codes; registry presence is not an operating-status claim. Ingested as utility_facility / POWER_PLANT.",
+      "official_urls": [
+        "https://d24qbtp4vooyzi.cloudfront.net/api/media/file/DOE-EPIMB_LoEPP%20as%20of%20September%202026_Luzon%20Grid.pdf?prefix=dev%2Fmedia",
+        "https://d24qbtp4vooyzi.cloudfront.net/api/media/file/DOE-EPIMB_LoEPP%20as%20of%20September%202026_Visayas%20Grid.pdf?prefix=dev%2Fmedia",
+        "https://d24qbtp4vooyzi.cloudfront.net/api/media/file/DOE-EPIMB_LoEPP%20as%20of%20September%202026_Mindanao%20Grid.pdf?prefix=dev%2Fmedia",
+        "https://d24qbtp4vooyzi.cloudfront.net/api/media/file/List%20of%20Existing%20Power%20Plants%20Off-Grid%20as%20of%2030%20April%202026.pdf?prefix=dev%2Fmedia"
+      ],
+      "alternate_urls": [],
+      "description": "DOE List of Existing Power Plants (grid and off-grid PDFs) — `PUBLISHED`. Four official dated PDFs were retrieved on 16 November 2026: Luzon 213 rows, Visayas 80, Mindanao 102 (all 30 September 2026) and off-grid 266 (30 April 2026), 661 rows total. Each row preserves the DOE facility code, official name, resource/technology, connection, installed and dependable capacity, unit count, place labels, operator/owner, owner type and commissioning date. Unit rows with blank names/operators are kept separately and blanks are not back-filled. The lists supply no coordinates or PSGC codes; registry presence is not an operating-status claim. Ingested as utility_facility / POWER_PLANT.",
+      "agency_level": "NATIONAL",
+      "access_method": "API",
+      "format": "PDF",
+      "geographic_scope": "NATIONAL",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN"
     },
     {
       "source_id": "doh.licensed_facilities",
@@ -965,7 +1431,24 @@
         "probe": false
       },
       "probes": [],
-      "notes": "`OFFICIAL DIRECTORY VERIFIED`; exact current downloadable file and schema must be checked per page/release. A license is not the same as operational availability or PhilHealth accreditation."
+      "notes": "`OFFICIAL DIRECTORY VERIFIED`; exact current downloadable file and schema must be checked per page/release. A license is not the same as operational availability or PhilHealth accreditation.",
+      "official_urls": [
+        "https://hfsrb.doh.gov.ph/list-of-licensed-health-facilities/"
+      ],
+      "alternate_urls": [
+        "https://maps.nha.gov.ph/geoserver/NHA_PH/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=NHA_PH:DOH%20HF&outputFormat=application/json"
+      ],
+      "description": "DOH/HFSRB licensed health facilities — `OFFICIAL DIRECTORY VERIFIED`; exact current downloadable file and schema must be checked per page/release. A license is not the same as operational availability or PhilHealth accreditation.",
+      "agency_level": "NATIONAL",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "NATIONAL",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "MIXED_GOVERNMENT_AND_PRIVATE_PROVIDERS"
     },
     {
       "source_id": "doh.nhfr",
@@ -997,7 +1480,27 @@
         "probe": false
       },
       "probes": [],
-      "notes": "`FOI ACCESS CONFIRMED` and prior `ACCESS_BLOCKED`. DOH FOI disclosures in 2025/2026 describe CSV/Excel and shapefile releases. The public export returned 403 in prior tests. DOH disclosed missing coordinates, barangay centroids, map-derived coordinates, and incomplete registry coverage. Certain releases use a signed Data Release and Use Agreement."
+      "notes": "`FOI ACCESS CONFIRMED` and prior `ACCESS_BLOCKED`. DOH FOI disclosures in 2025/2026 describe CSV/Excel and shapefile releases. The public export returned 403 in prior tests. DOH disclosed missing coordinates, barangay centroids, map-derived coordinates, and incomplete registry coverage. Certain releases use a signed Data Release and Use Agreement.",
+      "official_urls": [
+        "https://nhfr.doh.gov.ph/VActivefacilitiesList",
+        "https://hfsrb.doh.gov.ph/list-of-licensed-health-facilities/",
+        "https://doh.gov.ph/"
+      ],
+      "alternate_urls": [
+        "https://maps.nha.gov.ph/geoserver/NHA_PH/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=NHA_PH:DOH%20HF&outputFormat=application/json",
+        "https://www.philhealth.gov.ph/partners/providers/facilities/accredited/"
+      ],
+      "description": "National Health Facility Registry — `FOI ACCESS CONFIRMED` and prior `ACCESS_BLOCKED`. DOH FOI disclosures in 2025/2026 describe CSV/Excel and shapefile releases. The public export returned 403 in prior tests. DOH disclosed missing coordinates, barangay centroids, map-derived coordinates, and incomplete registry coverage. Certain releases use a signed Data Release and Use Agreement.",
+      "agency_level": "NATIONAL",
+      "access_method": "FOI",
+      "format": "HTML",
+      "geographic_scope": "NATIONAL",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "MIXED_GOVERNMENT_AND_PRIVATE_PROVIDERS"
     },
     {
       "source_id": "doj.justice_offices",
@@ -1035,7 +1538,23 @@
           "outcome": "HTTP_403"
         }
       ],
-      "observed_access_state": "ACCESS_BLOCKED"
+      "observed_access_state": "ACCESS_BLOCKED",
+      "official_urls": [
+        "https://www.doj.gov.ph/"
+      ],
+      "alternate_urls": [],
+      "description": "DOJ",
+      "agency_level": "NATIONAL",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "UNKNOWN",
+      "probe_status": "HTTP_403",
+      "probe_date": "2026-11-16",
+      "probe_notes": "doj=HTTP_403",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN",
+      "notes": ""
     },
     {
       "source_id": "dotr.transport_facilities",
@@ -1073,7 +1592,23 @@
           "outcome": "HTTP_403"
         }
       ],
-      "observed_access_state": "ACCESS_BLOCKED"
+      "observed_access_state": "ACCESS_BLOCKED",
+      "official_urls": [
+        "https://www.dotr.gov.ph/"
+      ],
+      "alternate_urls": [],
+      "description": "DOTr",
+      "agency_level": "NATIONAL",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "NATIONAL",
+      "probe_status": "HTTP_403",
+      "probe_date": "2026-11-16",
+      "probe_notes": "dotr=HTTP_403",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN",
+      "notes": ""
     },
     {
       "source_id": "dpwh.infrastructure_projects",
@@ -1102,7 +1637,23 @@
         "probe": false
       },
       "probes": [],
-      "notes": "`OFFICIAL PORTAL VERIFIED`. Project records are not a facility masterlist and do not prove the facility exists/operates today. Use to connect a project to a physical facility only with identity evidence."
+      "notes": "`OFFICIAL PORTAL VERIFIED`. Project records are not a facility masterlist and do not prove the facility exists/operates today. Use to connect a project to a physical facility only with identity evidence.",
+      "official_urls": [
+        "https://transparency.dpwh.gov.ph/",
+        "https://www.dpwh.gov.ph/"
+      ],
+      "alternate_urls": [],
+      "description": "DPWH infrastructure and public-building project records — `OFFICIAL PORTAL VERIFIED`. Project records are not a facility masterlist and do not prove the facility exists/operates today. Use to connect a project to a physical facility only with identity evidence.",
+      "agency_level": "NATIONAL",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "UNKNOWN",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN"
     },
     {
       "source_id": "dpwh.ngob_inventory",
@@ -1132,7 +1683,22 @@
         "probe": false
       },
       "probes": [],
-      "notes": "`FILE/DOCUMENT VERIFIED` for the order/forms. It establishes a standardized inventory process but is not proof of a public downloadable nationwide inventory."
+      "notes": "`FILE/DOCUMENT VERIFIED` for the order/forms. It establishes a standardized inventory process but is not proof of a public downloadable nationwide inventory.",
+      "official_urls": [
+        "https://www.dpwh.gov.ph/dpwh/sites/default/files/issuances/do_247_s2024.pdf"
+      ],
+      "alternate_urls": [],
+      "description": "DPWH national government-owned building inventory process — `FILE/DOCUMENT VERIFIED` for the order/forms. It establishes a standardized inventory process but is not proof of a public downloadable nationwide inventory.",
+      "agency_level": "NATIONAL",
+      "access_method": "HUMAN_DOWNLOAD",
+      "format": "PDF",
+      "geographic_scope": "UNKNOWN",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN"
     },
     {
       "source_id": "dpwh.transparency_projects",
@@ -1157,7 +1723,23 @@
         "candidates": false,
         "probe": false
       },
-      "probes": []
+      "probes": [],
+      "official_urls": [
+        "https://transparency.dpwh.gov.ph/"
+      ],
+      "alternate_urls": [],
+      "description": "DPWH Transparency Portal",
+      "agency_level": "NATIONAL",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "UNKNOWN",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN",
+      "notes": ""
     },
     {
       "source_id": "drrm.lgu_offices_and_resources",
@@ -1188,7 +1770,23 @@
         "probe": false
       },
       "probes": [],
-      "notes": "Participating-LGU and validated-data limitations apply. Resource inventory is not automatically a public facility record."
+      "notes": "Participating-LGU and validated-data limitations apply. Resource inventory is not automatically a public facility record.",
+      "official_urls": [
+        "https://drrm.ncr.dilg.gov.ph/map",
+        "https://dilg.gov.ph/"
+      ],
+      "alternate_urls": [],
+      "description": "Local DRRM offices, command centres, and resources — Participating-LGU and validated-data limitations apply. Resource inventory is not automatically a public facility record.",
+      "agency_level": "NATIONAL",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "LGU",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN"
     },
     {
       "source_id": "dswd.crcf",
@@ -1235,7 +1833,24 @@
         }
       ],
       "notes": "`DIRECTORY CONTENT VERIFIED`. DSWD Standards Bureau lists dated files, including CRCF and LGU-accredited CRCF directories as of 24 Sep 2026. The public website may be dynamic and not provide a documented API. Separate DSWD-owned/operated, LGU-owned/accredited, and private entities. 76 facilities are `PUBLISHED` with attribution; only institutional name, field office, and postal address are exposed.",
-      "observed_access_state": "ACCESS_BLOCKED"
+      "observed_access_state": "ACCESS_BLOCKED",
+      "official_urls": [
+        "https://www.dswd.gov.ph/crcf/",
+        "https://standards.dswd.gov.ph/directories-3/",
+        "https://eodb.dswd.gov.ph/directory/"
+      ],
+      "alternate_urls": [],
+      "description": "DSWD centres, residential care facilities, and Standards Bureau lists — `DIRECTORY CONTENT VERIFIED`. DSWD Standards Bureau lists dated files, including CRCF and LGU-accredited CRCF directories as of 24 Sep 2026. The public website may be dynamic and not provide a documented API. Separate DSWD-owned/operated, LGU-owned/accredited, and private entities. 76 facilities are `PUBLISHED` with attribution; only institutional name, field office, and postal address are exposed.",
+      "agency_level": "NATIONAL",
+      "access_method": "HTML_DIRECTORY",
+      "format": "HTML",
+      "geographic_scope": "DIRECTORY_SUBSET",
+      "probe_status": "TRANSPORT_ERROR",
+      "probe_date": "2026-11-16",
+      "probe_notes": "standards-dswd=TRANSPORT_ERROR; error=curl: (35) TLS connect error: error:0A000126:SSL routines::unexpected eof while reading",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "MIXED_OR_PRIVATE_PROVIDERS"
     },
     {
       "source_id": "dswd.standards_directories",
@@ -1273,7 +1888,25 @@
           "outcome": "TRANSPORT_ERROR"
         }
       ],
-      "observed_access_state": "ACCESS_BLOCKED"
+      "observed_access_state": "ACCESS_BLOCKED",
+      "official_urls": [
+        "https://standards.dswd.gov.ph/directories-3/"
+      ],
+      "alternate_urls": [
+        "https://www.dswd.gov.ph/crcf/"
+      ],
+      "description": "Standards Bureau directories",
+      "agency_level": "NATIONAL",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "UNKNOWN",
+      "probe_status": "TRANSPORT_ERROR",
+      "probe_date": "2026-11-16",
+      "probe_notes": "standards-dswd=TRANSPORT_ERROR; error=curl: (35) TLS connect error: error:0A000126:SSL routines::unexpected eof while reading",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "MIXED_GOVERNMENT_AND_PRIVATE_PROVIDERS",
+      "notes": ""
     },
     {
       "source_id": "dti.negosyo_centers",
@@ -1305,7 +1938,25 @@
         "probe": false
       },
       "probes": [],
-      "notes": "`DIRECTORY CONTENT VERIFIED`. On 15 November 2026 the endpoints returned 1,427 unique active center records across all 17 regions. The finder does not state ownership, operator, host, hours, public-access conditions or coordinates. Centers are often co-located in city halls, SUCs or partner premises; a center is a government service unit, not proof about the host building. Phone/email are withheld from the public record."
+      "notes": "`DIRECTORY CONTENT VERIFIED`. On 15 November 2026 the endpoints returned 1,427 unique active center records across all 17 regions. The finder does not state ownership, operator, host, hours, public-access conditions or coordinates. Centers are often co-located in city halls, SUCs or partner premises; a center is a government service unit, not proof about the host building. Phone/email are withheld from the public record.",
+      "official_urls": [
+        "https://negosyocenter.dti.gov.ph/negosyo-center-directory",
+        "https://negosyocenter.dti.gov.ph/api/negosyo-centers/regions-overview",
+        "https://negosyocenter.dti.gov.ph/api/negosyo-centers/by-region",
+        "https://negosyocenter.dti.gov.ph/terms-and-conditions"
+      ],
+      "alternate_urls": [],
+      "description": "DTI Negosyo Center directory — `DIRECTORY CONTENT VERIFIED`. On 15 November 2026 the endpoints returned 1,427 unique active center records across all 17 regions. The finder does not state ownership, operator, host, hours, public-access conditions or coordinates. Centers are often co-located in city halls, SUCs or partner premises; a center is a government service unit, not proof about the host building. Phone/email are withheld from the public record.",
+      "agency_level": "NATIONAL",
+      "access_method": "API",
+      "format": "HTML",
+      "geographic_scope": "NATIONAL",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN"
     },
     {
       "source_id": "dti.shared_service_facilities",
@@ -1335,7 +1986,23 @@
         "probe": false
       },
       "probes": [],
-      "notes": "`CATALOGUE CANDIDATE`. Verify whether each is government-owned, DTI-funded, LGU-hosted, cooperative- or privately operated. Funding support alone does not make it government-owned."
+      "notes": "`CATALOGUE CANDIDATE`. Verify whether each is government-owned, DTI-funded, LGU-hosted, cooperative- or privately operated. Funding support alone does not make it government-owned.",
+      "official_urls": [
+        "https://geoportal.gov.ph/",
+        "https://www.dti.gov.ph/"
+      ],
+      "alternate_urls": [],
+      "description": "DTI shared service facilities — `CATALOGUE CANDIDATE`. Verify whether each is government-owned, DTI-funded, LGU-hosted, cooperative- or privately operated. Funding support alone does not make it government-owned.",
+      "agency_level": "NATIONAL",
+      "access_method": "SEARCH_ONLY",
+      "format": "UNKNOWN",
+      "geographic_scope": "UNKNOWN",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "MIXED_OR_PRIVATE_PROVIDERS"
     },
     {
       "source_id": "eccd.ncdc_cdc",
@@ -1381,7 +2048,25 @@
         }
       ],
       "notes": "`FILE/DOCUMENT VERIFIED` for the 2023 NCDC list and official forms; `OFFICIAL PORTAL/REPORT VERIFIED` for 2025 NCDC count and a screenshot of the ECCD MIS list interface (Province, City/Municipality, Address, Status). The complete CDC registry is not proven as a public export/API. CDCs can be public, private, LGU, NGO or workplace-based; ownership must be distinguished.",
-      "observed_access_state": "ACCESS_BLOCKED"
+      "observed_access_state": "ACCESS_BLOCKED",
+      "official_urls": [
+        "https://eccdcouncil.gov.ph/ncdc/",
+        "https://eccdcouncil.gov.ph/resources/",
+        "https://eccdcouncil.gov.ph/wp-content/uploads/2024/10/AR-2023-051024-2_compressed.pdf",
+        "https://eccdcouncil.gov.ph/wp-content/uploads/2025/10/ECCD_AR2025_7.21.pdf"
+      ],
+      "alternate_urls": [],
+      "description": "ECCD Council national child development centres and CDC resources — `FILE/DOCUMENT VERIFIED` for the 2023 NCDC list and official forms; `OFFICIAL PORTAL/REPORT VERIFIED` for 2025 NCDC count and a screenshot of the ECCD MIS list interface (Province, City/Municipality, Address, Status). The complete CDC registry is not proven as a public export/API. CDCs can be public, private, LGU, NGO or workplace-based; ownership must be distinguished.",
+      "agency_level": "NATIONAL",
+      "access_method": "BULK_FILE",
+      "format": "HTML",
+      "geographic_scope": "DIRECTORY_SUBSET",
+      "probe_status": "HTTP_403",
+      "probe_date": "2026-11-16",
+      "probe_notes": "eccd=HTTP_403",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "MIXED_OR_PRIVATE_PROVIDERS"
     },
     {
       "source_id": "emb.air_quality_stations",
@@ -1437,7 +2122,26 @@
         }
       ],
       "notes": "`DIRECTORY CONTENT VERIFIED`. Pages are region-specific and some live/download links exist. A complete nationwide station inventory and coordinate export were not verified. A monitoring station is a public/environmental asset, not necessarily a public walk-in facility.",
-      "observed_access_state": "OPEN"
+      "observed_access_state": "OPEN",
+      "official_urls": [
+        "https://air.emb.gov.ph/ambient-air-quality-monitoring/",
+        "https://ncr.emb.gov.ph/realtimeairmonitoring/",
+        "https://r11.emb.gov.ph/air-quality-management-2/"
+      ],
+      "alternate_urls": [
+        "https://ncr.emb.gov.ph/realtimeairmonitoring/"
+      ],
+      "description": "DENR-EMB ambient air-quality monitoring stations — `DIRECTORY CONTENT VERIFIED`. Pages are region-specific and some live/download links exist. A complete nationwide station inventory and coordinate export were not verified. A monitoring station is a public/environmental asset, not necessarily a public walk-in facility.",
+      "agency_level": "NATIONAL",
+      "access_method": "HTML_DIRECTORY",
+      "format": "HTML",
+      "geographic_scope": "REGIONAL",
+      "probe_status": "HTTP_200",
+      "probe_date": "2026-11-16",
+      "probe_notes": "emb-aq=HTTP_200; emb-ncr=HTTP_200",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN"
     },
     {
       "source_id": "geoportal.facility_layers",
@@ -1471,7 +2175,25 @@
         "probe": false
       },
       "probes": [],
-      "notes": "`CATALOGUE CANDIDATE`. Geoportal is a discovery/catalogue/map service. Its guide says only layers enabled in the Download window can be downloaded; otherwise contact the data owner. The inventory identifies layer-specific metadata/restrictions. Several layers are clearly old (e.g. 2003). A visible map layer is not automatically a current data file or reuse licence."
+      "notes": "`CATALOGUE CANDIDATE`. Geoportal is a discovery/catalogue/map service. Its guide says only layers enabled in the Download window can be downloaded; otherwise contact the data owner. The inventory identifies layer-specific metadata/restrictions. Several layers are clearly old (e.g. 2003). A visible map layer is not automatically a current data file or reuse licence.",
+      "official_urls": [
+        "https://geoportal.gov.ph/",
+        "https://www.geoportal.gov.ph/gpresources/GP_DataInventory.pdf",
+        "https://www.geoportal.gov.ph/gpresources/How%20to%20Download%20data%20from%20Geoportal%20Philippines.pdf",
+        "https://www.namria.gov.ph/Downloads.aspx"
+      ],
+      "alternate_urls": [],
+      "description": "Philippine Geoportal facility layers — `CATALOGUE CANDIDATE`. Geoportal is a discovery/catalogue/map service. Its guide says only layers enabled in the Download window can be downloaded; otherwise contact the data owner. The inventory identifies layer-specific metadata/restrictions. Several layers are clearly old (e.g. 2003). A visible map layer is not automatically a current data file or reuse licence.",
+      "agency_level": "NATIONAL",
+      "access_method": "BULK_FILE",
+      "format": "PDF",
+      "geographic_scope": "UNKNOWN",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN"
     },
     {
       "source_id": "govph.directory",
@@ -1509,7 +2231,23 @@
           "outcome": "HTTP_404"
         }
       ],
-      "observed_access_state": "MIXED"
+      "observed_access_state": "MIXED",
+      "official_urls": [
+        "https://www.gov.ph/directory"
+      ],
+      "alternate_urls": [],
+      "description": "GOV.PH Directory",
+      "agency_level": "NATIONAL",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "NATIONAL",
+      "probe_status": "HTTP_404",
+      "probe_date": "2026-11-16",
+      "probe_notes": "govph-directory=HTTP_404",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN",
+      "notes": ""
     },
     {
       "source_id": "judiciary.courts",
@@ -1547,7 +2285,23 @@
           "outcome": "TRANSPORT_ERROR"
         }
       ],
-      "observed_access_state": "ACCESS_BLOCKED"
+      "observed_access_state": "ACCESS_BLOCKED",
+      "official_urls": [
+        "https://sc.judiciary.gov.ph/"
+      ],
+      "alternate_urls": [],
+      "description": "Supreme Court",
+      "agency_level": "NATIONAL",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "UNKNOWN",
+      "probe_status": "TRANSPORT_ERROR",
+      "probe_date": "2026-11-16",
+      "probe_notes": "judiciary=TRANSPORT_ERROR; error=curl: (60) SSL certificate OpenSSL verify result: unable to get local issuer certificate (20)",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN",
+      "notes": ""
     },
     {
       "source_id": "lgu.cainta_health_centers",
@@ -1578,7 +2332,29 @@
         "candidates": false,
         "probe": false
       },
-      "probes": []
+      "probes": [],
+      "official_urls": [
+        "https://www.cainta.gov.ph/healthcentersandservices2025",
+        "https://www.cainta.gov.ph/rhu1",
+        "https://www.cainta.gov.ph/rhu2",
+        "https://www.cainta.gov.ph/rhu3",
+        "https://www.cainta.gov.ph/rhu4",
+        "https://www.cainta.gov.ph/rhu5",
+        "https://www.cainta.gov.ph/rhu6"
+      ],
+      "alternate_urls": [],
+      "description": "Health Centers and Other Services",
+      "agency_level": "LGU",
+      "access_method": "HTML_DIRECTORY",
+      "format": "HTML",
+      "geographic_scope": "LGU",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "MIXED_GOVERNMENT_AND_PRIVATE_PROVIDERS",
+      "notes": ""
     },
     {
       "source_id": "lgu.community_facility_inventory",
@@ -1610,7 +2386,23 @@
         "probe": false
       },
       "probes": [],
-      "notes": "`OFFICIAL LAW VERIFIED`; `NO CENTRAL DATASET VERIFIED`. The law does not itself create a centralized open database or prove that every LGU has published a digitized inventory."
+      "notes": "`OFFICIAL LAW VERIFIED`; `NO CENTRAL DATASET VERIFIED`. The law does not itself create a centralized open database or prove that every LGU has published a digitized inventory.",
+      "official_urls": [
+        "https://lawphil.net/statutes/repacts/ra1991/ra_7160_1991.html",
+        "https://lgu201.dilg.gov.ph/"
+      ],
+      "alternate_urls": [],
+      "description": "LGU Section 524 community-facility inventory — `OFFICIAL LAW VERIFIED`; `NO CENTRAL DATASET VERIFIED`. The law does not itself create a centralized open database or prove that every LGU has published a digitized inventory.",
+      "agency_level": "LGU",
+      "access_method": "FOI",
+      "format": "HTML",
+      "geographic_scope": "LGU",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "LGU_GOVERNMENT_FACILITIES"
     },
     {
       "source_id": "lgu.mandaluyong_barangay_directory",
@@ -1635,7 +2427,23 @@
         "candidates": false,
         "probe": false
       },
-      "probes": []
+      "probes": [],
+      "official_urls": [
+        "https://mandaluyong.gov.ph/government/barangays/"
+      ],
+      "alternate_urls": [],
+      "description": "Barangay Directory",
+      "agency_level": "LGU",
+      "access_method": "HTML_DIRECTORY",
+      "format": "HTML",
+      "geographic_scope": "LGU",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "LGU_GOVERNMENT_FACILITIES",
+      "notes": ""
     },
     {
       "source_id": "lgu.market_and_abattoir_directories",
@@ -1664,7 +2472,22 @@
         "probe": false
       },
       "probes": [],
-      "notes": "`DIRECTORY EXAMPLE VERIFIED`; not a national source. DILG FOI says market records are at LGU level."
+      "notes": "`DIRECTORY EXAMPLE VERIFIED`; not a national source. DILG FOI says market records are at LGU level.",
+      "official_urls": [
+        "https://quezoncity.gov.ph/departments/market-development-and-administration-department-mdad/"
+      ],
+      "alternate_urls": [],
+      "description": "LGU public-market and slaughterhouse directories — `DIRECTORY EXAMPLE VERIFIED`; not a national source. DILG FOI says market records are at LGU level.",
+      "agency_level": "LGU",
+      "access_method": "HTML_DIRECTORY",
+      "format": "HTML",
+      "geographic_scope": "LGU",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "LGU_GOVERNMENT_FACILITIES"
     },
     {
       "source_id": "lgu.pasay_health_centers",
@@ -1689,7 +2512,23 @@
         "candidates": false,
         "probe": false
       },
-      "probes": []
+      "probes": [],
+      "official_urls": [
+        "https://pasay.gov.ph/programa/health-care/"
+      ],
+      "alternate_urls": [],
+      "description": "Health Care programme page",
+      "agency_level": "LGU",
+      "access_method": "HTML_DIRECTORY",
+      "format": "HTML",
+      "geographic_scope": "LGU",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "MIXED_GOVERNMENT_AND_PRIVATE_PROVIDERS",
+      "notes": ""
     },
     {
       "source_id": "lgu.quezon_city_directories",
@@ -1716,7 +2555,25 @@
         "candidates": false,
         "probe": false
       },
-      "probes": []
+      "probes": [],
+      "official_urls": [
+        "https://quezoncity.gov.ph/health_centers-sitemap.xml",
+        "https://quezoncity.gov.ph/brgy-directory-sitemap.xml",
+        "https://quezoncity.gov.ph/qc-barangays/"
+      ],
+      "alternate_urls": [],
+      "description": "Health Center directory sitemap",
+      "agency_level": "LGU",
+      "access_method": "HTML_DIRECTORY",
+      "format": "HTML",
+      "geographic_scope": "LGU",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "LGU_GOVERNMENT_FACILITIES",
+      "notes": ""
     },
     {
       "source_id": "lgu.quezon_city_places",
@@ -1742,30 +2599,50 @@
         "candidates": false,
         "probe": false
       },
-      "probes": []
+      "probes": [],
+      "official_urls": [
+        "https://quezoncity.gov.ph/places/",
+        "https://quezoncity.gov.ph/wp-json/wp/v2/search?subtype=places&per_page=100&page=1"
+      ],
+      "alternate_urls": [],
+      "description": "Places to Visit directory",
+      "agency_level": "LGU",
+      "access_method": "HTML_DIRECTORY",
+      "format": "HTML",
+      "geographic_scope": "LGU",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "LGU_GOVERNMENT_FACILITIES",
+      "notes": ""
     },
     {
       "source_id": "lrta.stations",
       "custodian": "Light Rail Transit Authority",
-      "title": "LRTA",
+      "title": "LRTA Line 1 and Line 2 station distances (derived station list)",
       "category": "TRANSPORT",
       "urls": [
         "https://lrta.gov.ph/",
-        "https://lrta.gov.ph/distance-between-stations/"
+        "https://lrta.gov.ph/distance-between-stations/",
+        "https://www.lrta.gov.ph/distance-between-stations/"
       ],
-      "evidence_state": "DIRECTORY_CONTENT_VERIFIED",
+      "evidence_state": "PUBLISHED",
       "access_state": "OPEN",
-      "rights_state": "UNKNOWN",
+      "rights_state": "PUBLISHED",
       "coverage_scope": "DIRECTORY_SUBSET",
-      "priority": "P1",
-      "next_action": "P1. Verify current station names and dates before any release; do not infer national rail coverage",
-      "tracker_ids": [],
+      "priority": "P2",
+      "next_action": "Verify current station names and dates before enrichment; do not infer national rail coverage.",
+      "tracker_ids": [
+        "AF6-06"
+      ],
       "last_verified": "2026-11-16",
-      "publication_state": "NOT_PUBLISHED",
+      "publication_state": "PUBLISHED",
       "register_section": "M. Category search additions — 16 November 2026",
       "provenance": {
         "register": true,
-        "candidates": false,
+        "candidates": true,
         "probe": true
       },
       "probes": [
@@ -1781,7 +2658,25 @@
           "outcome": "HTTP_200"
         }
       ],
-      "observed_access_state": "OPEN"
+      "notes": "`PUBLISHED`. Official page publishes station-pair interval distances, not a station inventory. 33 unique station names were derived from the Line 1 and Line 2 tables on 16 Nov 2026 and ingested as transport_facility / LRT_STATION. No coordinates, addresses, opening dates or operating status are supplied; the derivation is recorded in each record.",
+      "observed_access_state": "OPEN",
+      "official_urls": [
+        "https://lrta.gov.ph/",
+        "https://lrta.gov.ph/distance-between-stations/",
+        "https://www.lrta.gov.ph/distance-between-stations/"
+      ],
+      "alternate_urls": [],
+      "description": "LRTA Line 1 and Line 2 station distances (derived station list) — `PUBLISHED`. Official page publishes station-pair interval distances, not a station inventory. 33 unique station names were derived from the Line 1 and Line 2 tables on 16 Nov 2026 and ingested as transport_facility / LRT_STATION. No coordinates, addresses, opening dates or operating status are supplied; the derivation is recorded in each record.",
+      "agency_level": "GOCC",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "DIRECTORY_SUBSET",
+      "probe_status": "HTTP_200",
+      "probe_date": "2026-11-16",
+      "probe_notes": "lrta=HTTP_200",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN"
     },
     {
       "source_id": "lwua.water_districts",
@@ -1819,7 +2714,25 @@
           "outcome": "HTTP_403"
         }
       ],
-      "observed_access_state": "ACCESS_BLOCKED"
+      "observed_access_state": "ACCESS_BLOCKED",
+      "official_urls": [
+        "https://lwua.gov.ph/"
+      ],
+      "alternate_urls": [
+        "https://lwua.gov.ph/"
+      ],
+      "description": "LWUA",
+      "agency_level": "GOCC",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "UNKNOWN",
+      "probe_status": "HTTP_403",
+      "probe_date": "2026-11-16",
+      "probe_notes": "lwua=HTTP_403",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN",
+      "notes": ""
     },
     {
       "source_id": "marina.ports",
@@ -1869,7 +2782,69 @@
           "outcome": "HTTP_404"
         }
       ],
-      "observed_access_state": "MIXED"
+      "observed_access_state": "MIXED",
+      "official_urls": [
+        "https://marina.gov.ph/",
+        "https://marina.gov.ph/ports/"
+      ],
+      "alternate_urls": [],
+      "description": "MARINA",
+      "agency_level": "GOCC",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "UNKNOWN",
+      "probe_status": "HTTP_404",
+      "probe_date": "2026-11-16",
+      "probe_notes": "marina=HTTP_200; marina-ports=HTTP_404",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN",
+      "notes": ""
+    },
+    {
+      "source_id": "mrt3.stations",
+      "custodian": "MRT-3 / Department of Transportation",
+      "title": "MRT-3 station directory",
+      "category": "OTHER_QUALIFYING",
+      "urls": [
+        "https://www.mrt3.com/index.php/menu-stations",
+        "https://www.mrt3.com/"
+      ],
+      "evidence_state": "PUBLISHED",
+      "access_state": "OPEN",
+      "rights_state": "PUBLISHED",
+      "coverage_scope": "DIRECTORY_SUBSET",
+      "priority": "P2",
+      "next_action": "Seek a current MRT-3 operations/station inventory with coordinates and operating status; keep the published labels as source evidence.",
+      "tracker_ids": [
+        "AF6-06"
+      ],
+      "last_verified": "2026-11-16",
+      "publication_state": "PUBLISHED",
+      "register_section": "M. Category search additions — 16 November 2026",
+      "provenance": {
+        "register": true,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "`PUBLISHED`. Official station carousel returned HTTP 200 on 16 Nov 2026; 13 station names and landmark descriptions were ingested as transport_facility / MRT_STATION (release `MRT3-STATIONS-2026-11-16`). Source labels are preserved verbatim and include older names such as `Araneta CenterCubao`, `Santolan Annapolis` and `Buendia`; no current-name mapping is inferred. No coordinates, addresses, fares, opening dates or operating status are supplied.",
+      "official_urls": [
+        "https://www.mrt3.com/index.php/menu-stations",
+        "https://www.mrt3.com/"
+      ],
+      "alternate_urls": [],
+      "description": "MRT-3 station directory — `PUBLISHED`. Official station carousel returned HTTP 200 on 16 Nov 2026; 13 station names and landmark descriptions were ingested as transport_facility / MRT_STATION (release `MRT3-STATIONS-2026-11-16`). Source labels are preserved verbatim and include older names such as `Araneta CenterCubao`, `Santolan Annapolis` and `Buendia`; no current-name mapping is inferred. No coordinates, addresses, fares, opening dates or operating status are supplied.",
+      "agency_level": "NATIONAL",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "DIRECTORY_SUBSET",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN"
     },
     {
       "source_id": "mwss.water_facilities",
@@ -1907,7 +2882,23 @@
           "outcome": "HTTP_403"
         }
       ],
-      "observed_access_state": "ACCESS_BLOCKED"
+      "observed_access_state": "ACCESS_BLOCKED",
+      "official_urls": [
+        "https://mwss.gov.ph/"
+      ],
+      "alternate_urls": [],
+      "description": "MWSS",
+      "agency_level": "GOCC",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "UNKNOWN",
+      "probe_status": "HTTP_403",
+      "probe_date": "2026-11-16",
+      "probe_notes": "mwss=HTTP_403",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN",
+      "notes": ""
     },
     {
       "source_id": "nationalmuseum.museums",
@@ -1937,7 +2928,23 @@
         "probe": false
       },
       "probes": [],
-      "notes": "`DIRECTORY CONTENT VERIFIED`. Current official page exposes the location list and individual museum links. No national bulk API/export verified. Institutional museum fields are published with attribution; this is a directory subset, not all Philippine museums."
+      "notes": "`DIRECTORY CONTENT VERIFIED`. Current official page exposes the location list and individual museum links. No national bulk API/export verified. Institutional museum fields are published with attribution; this is a directory subset, not all Philippine museums.",
+      "official_urls": [
+        "https://www.nationalmuseum.gov.ph/our-museums/regional-area-and-site-museums/",
+        "https://www.nationalmuseum.gov.ph/"
+      ],
+      "alternate_urls": [],
+      "description": "National Museum regional, area, and site museums — `DIRECTORY CONTENT VERIFIED`. Current official page exposes the location list and individual museum links. No national bulk API/export verified. Institutional museum fields are published with attribution; this is a directory subset, not all Philippine museums.",
+      "agency_level": "NATIONAL",
+      "access_method": "HTML_DIRECTORY",
+      "format": "HTML",
+      "geographic_scope": "DIRECTORY_SUBSET",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN"
     },
     {
       "source_id": "nbi.regional_district_offices",
@@ -1962,7 +2969,23 @@
         "candidates": false,
         "probe": false
       },
-      "probes": []
+      "probes": [],
+      "official_urls": [
+        "https://nbi.gov.ph/regional-district-offices/"
+      ],
+      "alternate_urls": [],
+      "description": "Regional & District Offices",
+      "agency_level": "NATIONAL",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "DIRECTORY_SUBSET",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN",
+      "notes": ""
     },
     {
       "source_id": "ncca.cultural_facilities",
@@ -2000,7 +3023,23 @@
           "outcome": "TRANSPORT_ERROR"
         }
       ],
-      "observed_access_state": "ACCESS_BLOCKED"
+      "observed_access_state": "ACCESS_BLOCKED",
+      "official_urls": [
+        "https://ncca.gov.ph/"
+      ],
+      "alternate_urls": [],
+      "description": "NCCA",
+      "agency_level": "NATIONAL",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "NATIONAL",
+      "probe_status": "TRANSPORT_ERROR",
+      "probe_date": "2026-11-16",
+      "probe_notes": "ncca=TRANSPORT_ERROR; error=curl: (6) Could not resolve host: ncca.gov.ph",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN",
+      "notes": ""
     },
     {
       "source_id": "nea.electric_cooperatives",
@@ -2038,7 +3077,23 @@
           "outcome": "HTTP_403"
         }
       ],
-      "observed_access_state": "ACCESS_BLOCKED"
+      "observed_access_state": "ACCESS_BLOCKED",
+      "official_urls": [
+        "https://nea.gov.ph/"
+      ],
+      "alternate_urls": [],
+      "description": "NEA",
+      "agency_level": "GOCC",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "NATIONAL",
+      "probe_status": "HTTP_403",
+      "probe_date": "2026-11-16",
+      "probe_notes": "nea=HTTP_403",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN",
+      "notes": ""
     },
     {
       "source_id": "nfa.grain_facilities",
@@ -2076,7 +3131,23 @@
           "outcome": "HTTP_403"
         }
       ],
-      "observed_access_state": "ACCESS_BLOCKED"
+      "observed_access_state": "ACCESS_BLOCKED",
+      "official_urls": [
+        "https://www.nfa.gov.ph/"
+      ],
+      "alternate_urls": [],
+      "description": "NFA",
+      "agency_level": "GOCC",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "NATIONAL",
+      "probe_status": "HTTP_403",
+      "probe_date": "2026-11-16",
+      "probe_notes": "nfa=HTTP_403",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN",
+      "notes": ""
     },
     {
       "source_id": "nha.maps",
@@ -2084,7 +3155,10 @@
       "title": "NHA MAPS project, landholding, and occupancy layers",
       "category": "HOUSING_SETTLEMENT",
       "urls": [
-        "https://maps.nha.gov.ph/"
+        "https://maps.nha.gov.ph/",
+        "https://maps.nha.gov.ph/geoserver/NHA_PH/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=NHA_PH:DOH%20HF&outputFormat=application/json",
+        "https://maps.nha.gov.ph/geoserver/NHA_PH/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=NHA_PH:NHA_Project_Loc&outputFormat=application/json",
+        "https://maps.nha.gov.ph/geoserver/NHA_PH/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=NHA_PH:NHA%20LANDHOLDINGS&outputFormat=application/json"
       ],
       "evidence_state": "OFFICIAL_PORTAL_VERIFIED",
       "access_state": "OPEN",
@@ -2104,7 +3178,25 @@
         "probe": false
       },
       "probes": [],
-      "notes": "`OFFICIAL PORTAL VERIFIED`. Actual map portal sections were visible. Layer-specific records, downloads and rights still require inspection. Many records are project/land/occupancy sites, not facility identities."
+      "notes": "`OFFICIAL PORTAL VERIFIED`. Actual map portal sections were visible. Layer-specific records, downloads and rights still require inspection. Many records are project/land/occupancy sites, not facility identities.",
+      "official_urls": [
+        "https://maps.nha.gov.ph/",
+        "https://maps.nha.gov.ph/geoserver/NHA_PH/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=NHA_PH:DOH%20HF&outputFormat=application/json",
+        "https://maps.nha.gov.ph/geoserver/NHA_PH/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=NHA_PH:NHA_Project_Loc&outputFormat=application/json",
+        "https://maps.nha.gov.ph/geoserver/NHA_PH/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=NHA_PH:NHA%20LANDHOLDINGS&outputFormat=application/json"
+      ],
+      "alternate_urls": [],
+      "description": "NHA MAPS project, landholding, and occupancy layers — `OFFICIAL PORTAL VERIFIED`. Actual map portal sections were visible. Layer-specific records, downloads and rights still require inspection. Many records are project/land/occupancy sites, not facility identities.",
+      "agency_level": "GOCC",
+      "access_method": "GIS_LAYER",
+      "format": "HTML",
+      "geographic_scope": "UNKNOWN",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN"
     },
     {
       "source_id": "nha.wfs_health_facilities",
@@ -2112,20 +3204,20 @@
       "title": "NHA WFS DOH health-facility layer",
       "category": "HOUSING_SETTLEMENT",
       "urls": [
-        "https://maps.nha.gov.ph/geoserver/NHA_PH/ows?service=WFS&version=1.0.0&request=GetCapabilities"
+        "https://maps.nha.gov.ph/geoserver/NHA_PH/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=NHA_PH:DOH%20HF&outputFormat=application/json"
       ],
-      "evidence_state": "RECORDS_OBSERVED",
+      "evidence_state": "PUBLISHED",
       "access_state": "OPEN",
-      "rights_state": "REVIEW_REQUIRED",
+      "rights_state": "PUBLISHED",
       "coverage_scope": "NATIONAL_PARTIAL",
-      "priority": null,
-      "next_action": "Compare identities and ownership/type distributions against the canonical health registry; obtain written rights/derivation evidence before any publish or enrichment decision.",
+      "priority": "P1",
+      "next_action": "Compare identities and ownership/type distributions against PhilHealth and OSM health records; retain conflicts; seek DOH HFSRB licensed-facility files as an additional independent route.",
       "tracker_ids": [
         "AF1-27",
         "AF3-06"
       ],
-      "last_verified": "2026-11-15",
-      "publication_state": "NOT_PUBLISHED",
+      "last_verified": "2026-11-16",
+      "publication_state": "PUBLISHED",
       "register_section": null,
       "provenance": {
         "register": false,
@@ -2133,7 +3225,108 @@
         "probe": false
       },
       "probes": [],
-      "notes": "Public WFS GetFeature returned 3 sampled features from a layer reporting 31,016 total features on 15 Nov 2026. Fields include fac_code, fac_name, fac_type, ownershp, region/province/municipality/barangay names and PSGC-style codes, latitude/longitude and prec_latlo. The layer appears derived from DOH data; ownership values, duplicate risk against existing health records, and redistribution rights are not yet established."
+      "notes": "`PUBLISHED`. Public WFS GetFeature returned 31,016 features on 16 Nov 2026 (18 MB). Fields include fac_code, fac_name, fac_type, ownershp, region/province/municipality/barangay names and PSGC-style codes, latitude/longitude and prec_latlo. Ingested as a partial official alternate route for the blocked DOH NHFR; no operating status or building-level precision is inferred. ARMM PSGC codes are preserved, not remapped.",
+      "official_urls": [
+        "https://maps.nha.gov.ph/geoserver/NHA_PH/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=NHA_PH:DOH%20HF&outputFormat=application/json"
+      ],
+      "alternate_urls": [],
+      "description": "NHA WFS DOH health-facility layer — `PUBLISHED`. Public WFS GetFeature returned 31,016 features on 16 Nov 2026 (18 MB). Fields include fac_code, fac_name, fac_type, ownershp, region/province/municipality/barangay names and PSGC-style codes, latitude/longitude and prec_latlo. Ingested as a partial official alternate route for the blocked DOH NHFR; no operating status or building-level precision is inferred. ARMM PSGC codes are preserved, not remapped.",
+      "agency_level": "GOCC",
+      "access_method": "GIS_LAYER",
+      "format": "HTML",
+      "geographic_scope": "NATIONAL",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN"
+    },
+    {
+      "source_id": "nha.wfs_housing_projects",
+      "custodian": "National Housing Authority",
+      "title": "NHA WFS housing project locations",
+      "category": "HOUSING_SETTLEMENT",
+      "urls": [
+        "https://maps.nha.gov.ph/geoserver/NHA_PH/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=NHA_PH:NHA_Project_Loc&outputFormat=application/json"
+      ],
+      "evidence_state": "PUBLISHED",
+      "access_state": "OPEN",
+      "rights_state": "PUBLISHED",
+      "coverage_scope": "NATIONAL_PARTIAL",
+      "priority": "P2",
+      "next_action": "Use as project/site context. Do not turn project points into facilities without completion and occupancy evidence.",
+      "tracker_ids": [
+        "AF1-27"
+      ],
+      "last_verified": "2026-11-16",
+      "publication_state": "PUBLISHED",
+      "register_section": null,
+      "provenance": {
+        "register": false,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "`PUBLISHED`. Public WFS layer returned 946 project-location features on 16 Nov 2026. These are NHA project sites, not operating facilities; the layer states no completion, occupancy or current status and carries NHA place labels instead of standard PSGC codes. All 946 source records were preserved; 0 were admitted to the facility registry because project records are excluded by the platform's related-asset policy.",
+      "official_urls": [
+        "https://maps.nha.gov.ph/geoserver/NHA_PH/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=NHA_PH:NHA_Project_Loc&outputFormat=application/json"
+      ],
+      "alternate_urls": [],
+      "description": "NHA WFS housing project locations — `PUBLISHED`. Public WFS layer returned 946 project-location features on 16 Nov 2026. These are NHA project sites, not operating facilities; the layer states no completion, occupancy or current status and carries NHA place labels instead of standard PSGC codes. All 946 source records were preserved; 0 were admitted to the facility registry because project records are excluded by the platform's related-asset policy.",
+      "agency_level": "GOCC",
+      "access_method": "GIS_LAYER",
+      "format": "HTML",
+      "geographic_scope": "NATIONAL",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN"
+    },
+    {
+      "source_id": "nha.wfs_landholdings",
+      "custodian": "National Housing Authority",
+      "title": "NHA WFS landholdings",
+      "category": "HOUSING_SETTLEMENT",
+      "urls": [
+        "https://maps.nha.gov.ph/geoserver/NHA_PH/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=NHA_PH:NHA%20LANDHOLDINGS&outputFormat=application/json"
+      ],
+      "evidence_state": "PUBLISHED",
+      "access_state": "OPEN",
+      "rights_state": "PUBLISHED",
+      "coverage_scope": "NATIONAL_PARTIAL",
+      "priority": "P2",
+      "next_action": "Keep as property/site context; do not infer public access or occupancy.",
+      "tracker_ids": [
+        "AF1-27"
+      ],
+      "last_verified": "2026-11-16",
+      "publication_state": "PUBLISHED",
+      "register_section": null,
+      "provenance": {
+        "register": false,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "`PUBLISHED`. Public WFS layer returned 169 property features on 16 Nov 2026 (160 with point geometry). These are NHA landholdings, not service facilities; no occupancy, tenancy or operating status is published. Ingested as housing_service sites with source area in square metres; 169 facilities published, 9 with unknown coordinates.",
+      "official_urls": [
+        "https://maps.nha.gov.ph/geoserver/NHA_PH/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=NHA_PH:NHA%20LANDHOLDINGS&outputFormat=application/json"
+      ],
+      "alternate_urls": [],
+      "description": "NHA WFS landholdings — `PUBLISHED`. Public WFS layer returned 169 property features on 16 Nov 2026 (160 with point geometry). These are NHA landholdings, not service facilities; no occupancy, tenancy or operating status is published. Ingested as housing_service sites with source area in square metres; 169 facilities published, 9 with unknown coordinates.",
+      "agency_level": "GOCC",
+      "access_method": "GIS_LAYER",
+      "format": "HTML",
+      "geographic_scope": "NATIONAL",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN"
     },
     {
       "source_id": "nhcp.heritage_sites",
@@ -2171,7 +3364,23 @@
           "outcome": "HTTP_403"
         }
       ],
-      "observed_access_state": "ACCESS_BLOCKED"
+      "observed_access_state": "ACCESS_BLOCKED",
+      "official_urls": [
+        "https://nhcp.gov.ph/"
+      ],
+      "alternate_urls": [],
+      "description": "NHCP",
+      "agency_level": "NATIONAL",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "NATIONAL",
+      "probe_status": "HTTP_403",
+      "probe_date": "2026-11-16",
+      "probe_notes": "nhcp=HTTP_403",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN",
+      "notes": ""
     },
     {
       "source_id": "nia.irrigation_facilities",
@@ -2209,7 +3418,23 @@
           "outcome": "HTTP_200"
         }
       ],
-      "observed_access_state": "OPEN"
+      "observed_access_state": "OPEN",
+      "official_urls": [
+        "https://www.nia.gov.ph/"
+      ],
+      "alternate_urls": [],
+      "description": "NIA",
+      "agency_level": "GOCC",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "NATIONAL",
+      "probe_status": "HTTP_200",
+      "probe_date": "2026-11-16",
+      "probe_notes": "nia=HTTP_200",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN",
+      "notes": ""
     },
     {
       "source_id": "nlp.public_libraries",
@@ -2241,7 +3466,24 @@
         "probe": false
       },
       "probes": [],
-      "notes": "`FILE/DOCUMENT VERIFIED`. January 2025 PDF was directly inspected. December 2025 official PDF is identified at the linked URL. Institution-level fields are published with attribution; librarian names and personal contact details stay private."
+      "notes": "`FILE/DOCUMENT VERIFIED`. January 2025 PDF was directly inspected. December 2025 official PDF is identified at the linked URL. Institution-level fields are published with attribution; librarian names and personal contact details stay private.",
+      "official_urls": [
+        "https://web.nlp.gov.ph/wp-content/uploads/2026/01/OFFICIAL-Integrated-Directory-of-Public-Libraries-as-of-December-2025.pdf",
+        "https://web.nlp.gov.ph/wp-content/uploads/2025/02/Directory-of-Affiliated-Public-Libraries-in-the-Philippines-As-of-January-2025-Rhodora-Valdez.pdf",
+        "https://web.nlp.gov.ph/"
+      ],
+      "alternate_urls": [],
+      "description": "NLP integrated directory of public libraries — `FILE/DOCUMENT VERIFIED`. January 2025 PDF was directly inspected. December 2025 official PDF is identified at the linked URL. Institution-level fields are published with attribution; librarian names and personal contact details stay private.",
+      "agency_level": "NATIONAL",
+      "access_method": "BULK_FILE",
+      "format": "PDF",
+      "geographic_scope": "DIRECTORY_SUBSET",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "MIXED_OR_PRIVATE_PROVIDERS"
     },
     {
       "source_id": "nmis.meat_establishments",
@@ -2271,7 +3513,23 @@
         "probe": false
       },
       "probes": [],
-      "notes": "`DIRECTORY CONTENT VERIFIED` and `FILE/DOCUMENT VERIFIED` for the dated slaughterhouse list. This is an accreditation/licensing registry of establishments, many private. Eligible facility-level records may qualify as `PRIVATE_PUBLIC_SERVICE_PROVIDER`; they are not government-owned merely because NMIS licenses them. 357 establishments are `PUBLISHED` with attribution using factual establishment fields only; the page currently returns a WAF/TLS failure, so the verified 15 November 2026 artifact is the release of record."
+      "notes": "`DIRECTORY CONTENT VERIFIED` and `FILE/DOCUMENT VERIFIED` for the dated slaughterhouse list. This is an accreditation/licensing registry of establishments, many private. Eligible facility-level records may qualify as `PRIVATE_PUBLIC_SERVICE_PROVIDER`; they are not government-owned merely because NMIS licenses them. 357 establishments are `PUBLISHED` with attribution using factual establishment fields only; the page currently returns a WAF/TLS failure, so the verified 15 November 2026 artifact is the release of record.",
+      "official_urls": [
+        "https://naris.nmis.gov.ph/",
+        "https://www.nmis.gov.ph/images/pdf/accredited_list/2025/sh20251104.pdf"
+      ],
+      "alternate_urls": [],
+      "description": "NMIS NARIS accredited meat establishments — `DIRECTORY CONTENT VERIFIED` and `FILE/DOCUMENT VERIFIED` for the dated slaughterhouse list. This is an accreditation/licensing registry of establishments, many private. Eligible facility-level records may qualify as `PRIVATE_PUBLIC_SERVICE_PROVIDER`; they are not government-owned merely because NMIS licenses them. 357 establishments are `PUBLISHED` with attribution using factual establishment fields only; the page currently returns a WAF/TLS failure, so the verified 15 November 2026 artifact is the release of record.",
+      "agency_level": "NATIONAL",
+      "access_method": "BULK_FILE",
+      "format": "PDF",
+      "geographic_scope": "NATIONAL",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "MIXED_OR_PRIVATE_PROVIDERS"
     },
     {
       "source_id": "nwrb.water_permits",
@@ -2309,7 +3567,23 @@
           "outcome": "HTTP_403"
         }
       ],
-      "observed_access_state": "ACCESS_BLOCKED"
+      "observed_access_state": "ACCESS_BLOCKED",
+      "official_urls": [
+        "https://nwrb.gov.ph/"
+      ],
+      "alternate_urls": [],
+      "description": "NWRB",
+      "agency_level": "GOCC",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "UNKNOWN",
+      "probe_status": "HTTP_403",
+      "probe_date": "2026-11-16",
+      "probe_notes": "nwrb=HTTP_403",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN",
+      "notes": ""
     },
     {
       "source_id": "ocd.evacuation_centres",
@@ -2366,7 +3640,25 @@
         }
       ],
       "notes": "`FOI LIMITATION / ROUTING CONFLICT`. OCD's Feb 2026 FOI response said it did not have the requested updated list and referred requester to DILG and LGUs. DILG has project-type evacuation-centre records on Subaybayan and limited NCR lists. No complete nationwide masterlist was verified.",
-      "observed_access_state": "ACCESS_BLOCKED"
+      "observed_access_state": "ACCESS_BLOCKED",
+      "official_urls": [
+        "https://ocd.gov.ph/",
+        "https://ndrrmc.gov.ph/",
+        "https://www.foi.gov.ph/agencies/ocd/updated-list-of-evacuation-center-in-the-philippines-ocd-397929143969/",
+        "https://www.foi.gov.ph/agencies/dilg/updated-list-of-evacuation-center-in-the-philippines/"
+      ],
+      "alternate_urls": [],
+      "description": "OCD/NDRRMC evacuation-centre inventory — `FOI LIMITATION / ROUTING CONFLICT`. OCD's Feb 2026 FOI response said it did not have the requested updated list and referred requester to DILG and LGUs. DILG has project-type evacuation-centre records on Subaybayan and limited NCR lists. No complete nationwide masterlist was verified.",
+      "agency_level": "NATIONAL",
+      "access_method": "FOI",
+      "format": "HTML",
+      "geographic_scope": "UNKNOWN",
+      "probe_status": "HTTP_403",
+      "probe_date": "2026-11-16",
+      "probe_notes": "ocd=HTTP_403; ndrrmc=HTTP_403",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN"
     },
     {
       "source_id": "open_data_philippines",
@@ -2391,7 +3683,202 @@
         "candidates": false,
         "probe": false
       },
-      "probes": []
+      "probes": [],
+      "official_urls": [
+        "https://data.gov.ph/"
+      ],
+      "alternate_urls": [
+        "https://data.gov.ph/"
+      ],
+      "description": "Open Data Philippines",
+      "agency_level": "NATIONAL",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "UNKNOWN",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN",
+      "notes": ""
+    },
+    {
+      "source_id": "osm.airports",
+      "custodian": "OpenStreetMap contributors (via HOT and BetterGov.PH)",
+      "title": "OpenStreetMap airports, heliports and terminals (HOT Philippines extract)",
+      "category": "OTHER_QUALIFYING",
+      "urls": [
+        "https://production-raw-data-api.s3.amazonaws.com/ISO3/PHL/_layers/osm/airports.parquet"
+      ],
+      "evidence_state": "RECORDS_OBSERVED",
+      "access_state": "OPEN",
+      "rights_state": "PUBLISHED",
+      "coverage_scope": "NATIONAL_PARTIAL",
+      "priority": "P1",
+      "next_action": "**P1.** Ingest named qualifying features and compare with the CAAP area-centre directory if it becomes accessible; do not claim a complete airport census.",
+      "tracker_ids": [
+        "AF2-04",
+        "AF5-03"
+      ],
+      "last_verified": "2026-11-16",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": null,
+      "provenance": {
+        "register": false,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "Public GeoParquet layer with 6,543 features. Filtered to named aerodromes, helipads and airport terminals; runways, taxiways and navigation aids are excluded. Alternate coverage for blocked CAAP/DOTr sources. Not an official aerodrome registry; operator, ownership and operating status are not inferred. Coordinates are bounding-box centres (`map_geocoded`). ODbL attribution required.",
+      "official_urls": [
+        "https://production-raw-data-api.s3.amazonaws.com/ISO3/PHL/_layers/osm/airports.parquet"
+      ],
+      "alternate_urls": [],
+      "description": "OpenStreetMap airports, heliports and terminals (HOT Philippines extract) — Public GeoParquet layer with 6,543 features. Filtered to named aerodromes, helipads and airport terminals; runways, taxiways and navigation aids are excluded. Alternate coverage for blocked CAAP/DOTr sources. Not an official aerodrome registry; operator, ownership and operating status are not inferred. Coordinates are bounding-box centres (`map_geocoded`). ODbL attribution required.",
+      "agency_level": "NATIONAL",
+      "access_method": "UNKNOWN",
+      "format": "PARQUET",
+      "geographic_scope": "NATIONAL",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN"
+    },
+    {
+      "source_id": "osm.points_of_interest",
+      "custodian": "OpenStreetMap contributors (via HOT and BetterGov.PH)",
+      "title": "OpenStreetMap public-service points of interest (HOT Philippines extract)",
+      "category": "OTHER_QUALIFYING",
+      "urls": [
+        "https://production-raw-data-api.s3.amazonaws.com/ISO3/PHL/_layers/osm/points_of_interest.parquet"
+      ],
+      "evidence_state": "RECORDS_OBSERVED",
+      "access_state": "OPEN",
+      "rights_state": "PUBLISHED",
+      "coverage_scope": "NATIONAL_PARTIAL",
+      "priority": "P1",
+      "next_action": "**P1.** Ingest the filtered layer, record parsed/accepted/rejected counts and source-tag coverage, then compare against official BFP/PNP/LGU/library releases. Never treat an OSM feature as proof of ownership, opening or current operation.",
+      "tracker_ids": [
+        "AF2-04",
+        "AF5-03",
+        "M9-06"
+      ],
+      "last_verified": "2026-11-16",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": null,
+      "provenance": {
+        "register": false,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "Public GeoParquet layer with 421,482 features. Filtered to named features with selected tags: town hall 10,140; police 2,157; marketplace 2,077; community centre 1,706; fire station 1,135; social facility 1,102; post office 878; museum 401; library 395; courthouse 323; prison 190; public building 173; gallery 48; about 20,725 named qualifying features. This is an alternate route where BFP, PNP, DILG/local-government, market, library and community-facility registries are blocked. Coordinates are bounding-box centres (`map_geocoded`), not building-verified; coverage is crowd-sourced and operational status is unknown. ODbL attribution required.",
+      "official_urls": [
+        "https://production-raw-data-api.s3.amazonaws.com/ISO3/PHL/_layers/osm/points_of_interest.parquet"
+      ],
+      "alternate_urls": [],
+      "description": "OpenStreetMap public-service points of interest (HOT Philippines extract) — Public GeoParquet layer with 421,482 features. Filtered to named features with selected tags: town hall 10,140; police 2,157; marketplace 2,077; community centre 1,706; fire station 1,135; social facility 1,102; post office 878; museum 401; library 395; courthouse 323; prison 190; public building 173; gallery 48; about 20,725 named qualifying features. This is an alternate route where BFP, PNP, DILG/local-government, market, library and community-facility registries are blocked. Coordinates are bounding-box centres (`map_geocoded`), not building-verified; coverage is crowd-sourced and operational status is unknown. ODbL attribution required.",
+      "agency_level": "NATIONAL",
+      "access_method": "UNKNOWN",
+      "format": "PARQUET",
+      "geographic_scope": "NATIONAL",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN"
+    },
+    {
+      "source_id": "osm.railways",
+      "custodian": "OpenStreetMap contributors (via HOT and BetterGov.PH)",
+      "title": "OpenStreetMap railway stations (HOT Philippines extract)",
+      "category": "OTHER_QUALIFYING",
+      "urls": [
+        "https://production-raw-data-api.s3.amazonaws.com/ISO3/PHL/_layers/osm/railways.parquet"
+      ],
+      "evidence_state": "RECORDS_OBSERVED",
+      "access_state": "OPEN",
+      "rights_state": "PUBLISHED",
+      "coverage_scope": "NATIONAL_PARTIAL",
+      "priority": "P2",
+      "next_action": "**P2.** Ingest named qualifying features and compare with LRTA/MRT-3 station releases; retain unmatched and conflicting records for review.",
+      "tracker_ids": [
+        "AF2-04",
+        "M9-06"
+      ],
+      "last_verified": "2026-11-16",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": null,
+      "provenance": {
+        "register": false,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "Public GeoParquet layer with 592 features. Filtered to named railway stations and halts; rail lines and unnamed features are excluded. Alternate coverage for blocked PNR/DOTr station sources. Not an official rail inventory; current station names and operating status are not inferred. Coordinates are bounding-box centres (`map_geocoded`). ODbL attribution required.",
+      "official_urls": [
+        "https://production-raw-data-api.s3.amazonaws.com/ISO3/PHL/_layers/osm/railways.parquet"
+      ],
+      "alternate_urls": [],
+      "description": "OpenStreetMap railway stations (HOT Philippines extract) — Public GeoParquet layer with 592 features. Filtered to named railway stations and halts; rail lines and unnamed features are excluded. Alternate coverage for blocked PNR/DOTr station sources. Not an official rail inventory; current station names and operating status are not inferred. Coordinates are bounding-box centres (`map_geocoded`). ODbL attribution required.",
+      "agency_level": "NATIONAL",
+      "access_method": "UNKNOWN",
+      "format": "PARQUET",
+      "geographic_scope": "NATIONAL",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN"
+    },
+    {
+      "source_id": "osm.sea_ports",
+      "custodian": "OpenStreetMap contributors (via HOT and BetterGov.PH)",
+      "title": "OpenStreetMap sea ports and ferry terminals (HOT Philippines extract)",
+      "category": "OTHER_QUALIFYING",
+      "urls": [
+        "https://production-raw-data-api.s3.amazonaws.com/ISO3/PHL/_layers/osm/sea_ports.parquet"
+      ],
+      "evidence_state": "RECORDS_OBSERVED",
+      "access_state": "OPEN",
+      "rights_state": "PUBLISHED",
+      "coverage_scope": "NATIONAL_PARTIAL",
+      "priority": "P2",
+      "next_action": "**P2.** Ingest named qualifying features; compare against PPA ports and retain conflicts or unmatched records without forced merging.",
+      "tracker_ids": [
+        "AF2-04",
+        "M9-06"
+      ],
+      "last_verified": "2026-11-16",
+      "publication_state": "NOT_PUBLISHED",
+      "register_section": null,
+      "provenance": {
+        "register": false,
+        "candidates": true,
+        "probe": false
+      },
+      "probes": [],
+      "notes": "Public GeoParquet layer with 1,640 features. Filtered to named ferry terminals, ports and harbour features. Complements the official PPA port list; it is not a port census and carries no berth, capacity, ownership or operating-status claim. Coordinates are bounding-box centres (`map_geocoded`). ODbL attribution required.",
+      "official_urls": [
+        "https://production-raw-data-api.s3.amazonaws.com/ISO3/PHL/_layers/osm/sea_ports.parquet"
+      ],
+      "alternate_urls": [],
+      "description": "OpenStreetMap sea ports and ferry terminals (HOT Philippines extract) — Public GeoParquet layer with 1,640 features. Filtered to named ferry terminals, ports and harbour features. Complements the official PPA port list; it is not a port census and carries no berth, capacity, ownership or operating-status claim. Coordinates are bounding-box centres (`map_geocoded`). ODbL attribution required.",
+      "agency_level": "NATIONAL",
+      "access_method": "UNKNOWN",
+      "format": "PARQUET",
+      "geographic_scope": "NATIONAL",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN"
     },
     {
       "source_id": "pagasa.aws_stations",
@@ -2416,7 +3903,23 @@
         "candidates": false,
         "probe": false
       },
-      "probes": []
+      "probes": [],
+      "official_urls": [
+        "https://bagong.pagasa.dost.gov.ph/automated-weather-station"
+      ],
+      "alternate_urls": [],
+      "description": "Automated Weather Station page",
+      "agency_level": "GOCC",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "DIRECTORY_SUBSET",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN",
+      "notes": ""
     },
     {
       "source_id": "pagasa.climate",
@@ -2445,7 +3948,23 @@
         "probe": false
       },
       "probes": [],
-      "notes": "`OFFICIAL PORTAL VERIFIED` in prior research. Download may require request/affiliation/purpose and acceptance of terms. Not a facility register."
+      "notes": "`OFFICIAL PORTAL VERIFIED` in prior research. Download may require request/affiliation/purpose and acceptance of terms. Not a facility register.",
+      "official_urls": [
+        "https://climgridph.pagasa.dost.gov.ph/climapv2/",
+        "https://www.pagasa.dost.gov.ph/"
+      ],
+      "alternate_urls": [],
+      "description": "PAGASA climate grids — `OFFICIAL PORTAL VERIFIED` in prior research. Download may require request/affiliation/purpose and acceptance of terms. Not a facility register.",
+      "agency_level": "GOCC",
+      "access_method": "HUMAN_DOWNLOAD",
+      "format": "HTML",
+      "geographic_scope": "UNKNOWN",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN"
     },
     {
       "source_id": "pca.coconut_facilities",
@@ -2483,7 +4002,23 @@
           "outcome": "HTTP_403"
         }
       ],
-      "observed_access_state": "ACCESS_BLOCKED"
+      "observed_access_state": "ACCESS_BLOCKED",
+      "official_urls": [
+        "https://www.pca.gov.ph/"
+      ],
+      "alternate_urls": [],
+      "description": "PCA",
+      "agency_level": "GOCC",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "UNKNOWN",
+      "probe_status": "HTTP_403",
+      "probe_date": "2026-11-16",
+      "probe_notes": "pca=HTTP_403",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN",
+      "notes": ""
     },
     {
       "source_id": "pcg.stations",
@@ -2521,7 +4056,23 @@
           "outcome": "TRANSPORT_ERROR"
         }
       ],
-      "observed_access_state": "ACCESS_BLOCKED"
+      "observed_access_state": "ACCESS_BLOCKED",
+      "official_urls": [
+        "https://www.pcg.gov.ph/"
+      ],
+      "alternate_urls": [],
+      "description": "PCG",
+      "agency_level": "NATIONAL",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "UNKNOWN",
+      "probe_status": "TRANSPORT_ERROR",
+      "probe_date": "2026-11-16",
+      "probe_notes": "pcg=TRANSPORT_ERROR; error=curl: (6) Could not resolve host: www.pcg.gov.ph",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN",
+      "notes": ""
     },
     {
       "source_id": "pfda.fish_ports",
@@ -2566,7 +4117,24 @@
         }
       ],
       "notes": "`FILE/DOCUMENT VERIFIED` for source descriptions and named regional fish ports; not a current complete geospatial masterlist. Municipal fish-port status/ownership changes on turnover.",
-      "observed_access_state": "ACCESS_BLOCKED"
+      "observed_access_state": "ACCESS_BLOCKED",
+      "official_urls": [
+        "https://www.pfda.gov.ph/",
+        "https://www.pfda.gov.ph/images/ISO_/CO/QMS/PFDA_QMS_2023_09.pdf",
+        "https://fishcore.bfar.da.gov.ph/"
+      ],
+      "alternate_urls": [],
+      "description": "PFDA regional and municipal fish ports — `FILE/DOCUMENT VERIFIED` for source descriptions and named regional fish ports; not a current complete geospatial masterlist. Municipal fish-port status/ownership changes on turnover.",
+      "agency_level": "GOCC",
+      "access_method": "BULK_FILE",
+      "format": "HTML",
+      "geographic_scope": "DIRECTORY_SUBSET",
+      "probe_status": "HTTP_403",
+      "probe_date": "2026-11-16",
+      "probe_notes": "pfda=HTTP_403",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN"
     },
     {
       "source_id": "philhealth.accredited_providers",
@@ -2598,7 +4166,23 @@
         "probe": false
       },
       "probes": [],
-      "notes": "`FILE/DOCUMENT VERIFIED`. The 30 Sep 2026 hospital PDF was parsed locally in prior project work (75 pages, 1,934 rows). The public site disclaimer permits use/reproduction for educational or informative purposes; 25 provider-category releases are published with attribution. The acquired Antenatal release remains blocked pending a validated re-ingestion. Category accreditation is not real-time service availability."
+      "notes": "`FILE/DOCUMENT VERIFIED`. The 30 Sep 2026 hospital PDF was parsed locally in prior project work (75 pages, 1,934 rows). The public site disclaimer permits use/reproduction for educational or informative purposes; 25 provider-category releases are published with attribution. The acquired Antenatal release remains blocked pending a validated re-ingestion. Category accreditation is not real-time service availability.",
+      "official_urls": [
+        "https://www.philhealth.gov.ph/partners/providers/facilities/accredited/",
+        "https://www.philhealth.gov.ph/partners/providers/facilities/status.php"
+      ],
+      "alternate_urls": [],
+      "description": "PhilHealth accredited healthcare provider directories — `FILE/DOCUMENT VERIFIED`. The 30 Sep 2026 hospital PDF was parsed locally in prior project work (75 pages, 1,934 rows). The public site disclaimer permits use/reproduction for educational or informative purposes; 25 provider-category releases are published with attribution. The acquired Antenatal release remains blocked pending a validated re-ingestion. Category accreditation is not real-time service availability.",
+      "agency_level": "GOCC",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "NATIONAL",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "MIXED_GOVERNMENT_AND_PRIVATE_PROVIDERS"
     },
     {
       "source_id": "philhealth.office_directory",
@@ -2623,7 +4207,23 @@
         "candidates": false,
         "probe": false
       },
-      "probes": []
+      "probes": [],
+      "official_urls": [
+        "https://www.philhealth.gov.ph/about_us/directory/"
+      ],
+      "alternate_urls": [],
+      "description": "Directory of Offices",
+      "agency_level": "GOCC",
+      "access_method": "HTML_DIRECTORY",
+      "format": "HTML",
+      "geographic_scope": "DIRECTORY_SUBSET",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "MIXED_GOVERNMENT_AND_PRIVATE_PROVIDERS",
+      "notes": ""
     },
     {
       "source_id": "phivolcs.hazards",
@@ -2653,7 +4253,23 @@
         "probe": false
       },
       "probes": [],
-      "notes": "`OFFICIAL MAP/PORTAL DISCOVERED`. Source layers, download routes and reuse restrictions must be checked individually. Not a facility register."
+      "notes": "`OFFICIAL MAP/PORTAL DISCOVERED`. Source layers, download routes and reuse restrictions must be checked individually. Not a facility register.",
+      "official_urls": [
+        "https://maps.phivolcs.dost.gov.ph/",
+        "https://www.phivolcs.dost.gov.ph/"
+      ],
+      "alternate_urls": [],
+      "description": "PHIVOLCS hazard layers — `OFFICIAL MAP/PORTAL DISCOVERED`. Source layers, download routes and reuse restrictions must be checked individually. Not a facility register.",
+      "agency_level": "GOCC",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "UNKNOWN",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN"
     },
     {
       "source_id": "phlpost.post_offices",
@@ -2682,7 +4298,22 @@
         "probe": false
       },
       "probes": [],
-      "notes": "`DIRECTORY CONTENT VERIFIED`. Public records are visible in page text. No formal public API/bulk download was identified. The page carries a copyright/all-rights-reserved notice; the recorded product decision publishes 1,272 factual locator facilities with attribution and takedown-on-notice. An earlier review-required release is retained internally."
+      "notes": "`DIRECTORY CONTENT VERIFIED`. Public records are visible in page text. No formal public API/bulk download was identified. The page carries a copyright/all-rights-reserved notice; the recorded product decision publishes 1,272 factual locator facilities with attribution and takedown-on-notice. An earlier review-required release is retained internally.",
+      "official_urls": [
+        "https://phlpost.gov.ph/post-office-locator/"
+      ],
+      "alternate_urls": [],
+      "description": "PHLPost post offices and service locations — `DIRECTORY CONTENT VERIFIED`. Public records are visible in page text. No formal public API/bulk download was identified. The page carries a copyright/all-rights-reserved notice; the recorded product decision publishes 1,272 factual locator facilities with attribution and takedown-on-notice. An earlier review-required release is retained internally.",
+      "agency_level": "NATIONAL",
+      "access_method": "HTML_DIRECTORY",
+      "format": "HTML",
+      "geographic_scope": "DIRECTORY_SUBSET",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN"
     },
     {
       "source_id": "pnp.police_stations",
@@ -2712,7 +4343,23 @@
         "probe": false
       },
       "probes": [],
-      "notes": "`CATALOGUE CANDIDATE` only for the Geoportal Police precinct/station layer. A verified nationwide PNP bulk directory/API was not found in this research pass. Third-party police directories are not source-of-record."
+      "notes": "`CATALOGUE CANDIDATE` only for the Geoportal Police precinct/station layer. A verified nationwide PNP bulk directory/API was not found in this research pass. Third-party police directories are not source-of-record.",
+      "official_urls": [
+        "https://pnp.gov.ph/",
+        "https://geoportal.gov.ph/"
+      ],
+      "alternate_urls": [],
+      "description": "PNP police stations and precincts — `CATALOGUE CANDIDATE` only for the Geoportal Police precinct/station layer. A verified nationwide PNP bulk directory/API was not found in this research pass. Third-party police directories are not source-of-record.",
+      "agency_level": "NATIONAL",
+      "access_method": "SEARCH_ONLY",
+      "format": "UNKNOWN",
+      "geographic_scope": "UNKNOWN",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN"
     },
     {
       "source_id": "pnr.stations",
@@ -2750,7 +4397,23 @@
           "outcome": "HTTP_403"
         }
       ],
-      "observed_access_state": "ACCESS_BLOCKED"
+      "observed_access_state": "ACCESS_BLOCKED",
+      "official_urls": [
+        "https://pnr.gov.ph/"
+      ],
+      "alternate_urls": [],
+      "description": "PNR",
+      "agency_level": "GOCC",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "NATIONAL",
+      "probe_status": "HTTP_403",
+      "probe_date": "2026-11-16",
+      "probe_notes": "pnr=HTTP_403",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN",
+      "notes": ""
     },
     {
       "source_id": "ppa.ports",
@@ -2782,7 +4445,24 @@
         "probe": false
       },
       "probes": [],
-      "notes": "`FILE/DOCUMENT VERIFIED` and `DIRECTORY CONTENT VERIFIED`. The 22-page PDF was acquired on 15 November 2026 and parsed into 574 rows: 54 base ports, 94 TMO/OTP entries, 155 other government ports and 271 private ports. PPA-managed base ports and TMO/OTP entries are classified as government facilities, other government ports keep an unspecified owner, and private ports are private public-service providers with no inferred owner/operator. Blank RORO/NON-RORO marks remain unknown. The separate MICT note is retained as evidence and not ingested because its hierarchy and ownership are not stated."
+      "notes": "`FILE/DOCUMENT VERIFIED` and `DIRECTORY CONTENT VERIFIED`. The 22-page PDF was acquired on 15 November 2026 and parsed into 574 rows: 54 base ports, 94 TMO/OTP entries, 155 other government ports and 271 private ports. PPA-managed base ports and TMO/OTP entries are classified as government facilities, other government ports keep an unspecified owner, and private ports are private public-service providers with no inferred owner/operator. Blank RORO/NON-RORO marks remain unknown. The separate MICT note is retained as evidence and not ingested because its hierarchy and ownership are not stated.",
+      "official_urls": [
+        "https://ppa.com.ph/sites/default/files/List%20of%20Ports%20covered%20in%20PPA%20Statistics.pdf",
+        "https://ppa.com.ph/",
+        "https://www.ppa.com.ph/sites/default/files/issuances_docs/PPA_MC_No005_2026_03032026.pdf"
+      ],
+      "alternate_urls": [],
+      "description": "PPA list of ports covered in PPA statistics — `FILE/DOCUMENT VERIFIED` and `DIRECTORY CONTENT VERIFIED`. The 22-page PDF was acquired on 15 November 2026 and parsed into 574 rows: 54 base ports, 94 TMO/OTP entries, 155 other government ports and 271 private ports. PPA-managed base ports and TMO/OTP entries are classified as government facilities, other government ports keep an unspecified owner, and private ports are private public-service providers with no inferred owner/operator. Blank RORO/NON-RORO marks remain unknown. The separate MICT note is retained as evidence and not ingested because its hierarchy and ownership are not stated.",
+      "agency_level": "GOCC",
+      "access_method": "BULK_FILE",
+      "format": "PDF",
+      "geographic_scope": "DIRECTORY_SUBSET",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "MIXED_OR_PRIVATE_PROVIDERS"
     },
     {
       "source_id": "prc.offices_and_service_centers",
@@ -2795,18 +4475,18 @@
         "https://www.prc.gov.ph/InteractiveMap-v2-37.html",
         "https://info.prc.gov.ph/prc-office-locator/regional-offices"
       ],
-      "evidence_state": "DIRECTORY_CONTENT_VERIFIED",
+      "evidence_state": "PUBLISHED",
       "access_state": "OPEN",
-      "rights_state": "REVIEW_REQUIRED",
-      "coverage_scope": "DIRECTORY_SUBSET",
+      "rights_state": "PUBLISHED",
+      "coverage_scope": "REGIONAL",
       "priority": "P1",
-      "next_action": "**P1.** Inspect current map/detail pages and data payload; preserve facility-vs-host location distinction and opening-hour freshness.",
+      "next_action": "Re-probe the service-centers view and add only officially enumerated counters; keep host-vs-PRC premises and map-pin precision explicit.",
       "tracker_ids": [
         "AF1-20",
         "AF2-14"
       ],
-      "last_verified": "2026-11-15",
-      "publication_state": "NOT_PUBLISHED",
+      "last_verified": "2026-11-16",
+      "publication_state": "PUBLISHED",
       "register_section": "D. Public-facing government service offices and institutional sites",
       "provenance": {
         "register": true,
@@ -2814,7 +4494,25 @@
         "probe": false
       },
       "probes": [],
-      "notes": "`DIRECTORY CONTENT VERIFIED`. The interactive location map enumerates many service centres, including mall/LGU-hosted points. These are PRC-operated service locations, not necessarily PRC-owned real estate. No public API verified."
+      "notes": "`PUBLISHED`. The official PRC office locator on info.prc.gov.ph returned 16 regional-office cards on 16 November 2026. Each card supplies an office name, a short address label and an embedded map pin (latitude/longitude). Ingested as government_office / NATIONAL_AGENCY_OFFICE with precision=map_geocoded; the pin is not a surveyed building location. The locator is a regional-office subset, not a complete inventory of satellite, mall-based or host-agency service counters, and it does not state office hours or operating status.",
+      "official_urls": [
+        "https://www.prc.gov.ph/prc-offices-and-offsite-service-centers-contact-information",
+        "https://www.prc.gov.ph/regional-offices-contact-information",
+        "https://www.prc.gov.ph/InteractiveMap-v2-37.html",
+        "https://info.prc.gov.ph/prc-office-locator/regional-offices"
+      ],
+      "alternate_urls": [],
+      "description": "PRC regional offices, satellite offices, and offsite service centres — `PUBLISHED`. The official PRC office locator on info.prc.gov.ph returned 16 regional-office cards on 16 November 2026. Each card supplies an office name, a short address label and an embedded map pin (latitude/longitude). Ingested as government_office / NATIONAL_AGENCY_OFFICE with precision=map_geocoded; the pin is not a surveyed building location. The locator is a regional-office subset, not a complete inventory of satellite, mall-based or host-agency service counters, and it does not state office hours or operating status.",
+      "agency_level": "NATIONAL",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "REGIONAL",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN"
     },
     {
       "source_id": "psa.openstat",
@@ -2840,7 +4538,24 @@
         "candidates": false,
         "probe": false
       },
-      "probes": []
+      "probes": [],
+      "official_urls": [
+        "https://openstat.psa.gov.ph/",
+        "https://openstat.psa.gov.ph/API-Documentation"
+      ],
+      "alternate_urls": [],
+      "description": "PSA OpenSTAT",
+      "agency_level": "NATIONAL",
+      "access_method": "API",
+      "format": "HTML",
+      "geographic_scope": "UNKNOWN",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN",
+      "notes": ""
     },
     {
       "source_id": "psa.psgc",
@@ -2867,7 +4582,27 @@
         "candidates": false,
         "probe": false
       },
-      "probes": []
+      "probes": [],
+      "official_urls": [
+        "https://psa.gov.ph/classification/psgc",
+        "https://classification.psa.gov.ph/psgc",
+        "https://psa.gov.ph/content/classification-api-guide"
+      ],
+      "alternate_urls": [
+        "https://statistics.bettergov.ph/api/classification/psgc"
+      ],
+      "description": "PSA PSGC releases",
+      "agency_level": "NATIONAL",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "UNKNOWN",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN",
+      "notes": ""
     },
     {
       "source_id": "shfc.housing_projects",
@@ -2905,7 +4640,23 @@
           "outcome": "TRANSPORT_ERROR"
         }
       ],
-      "observed_access_state": "ACCESS_BLOCKED"
+      "observed_access_state": "ACCESS_BLOCKED",
+      "official_urls": [
+        "https://shfc.com.ph/"
+      ],
+      "alternate_urls": [],
+      "description": "SHFC",
+      "agency_level": "NATIONAL",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "UNKNOWN",
+      "probe_status": "TRANSPORT_ERROR",
+      "probe_date": "2026-11-16",
+      "probe_notes": "shfc=TRANSPORT_ERROR; error=curl: (60) SSL certificate OpenSSL verify result: unable to get local issuer certificate (20)",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN",
+      "notes": ""
     },
     {
       "source_id": "sss.branches",
@@ -2933,7 +4684,26 @@
         "candidates": false,
         "probe": false
       },
-      "probes": []
+      "probes": [],
+      "official_urls": [
+        "https://www.sss.gov.ph/sss-branch-locator/",
+        "https://member.sss.gov.ph/member/sss/branchloc/get-region-list",
+        "https://member.sss.gov.ph/member/sss/branchloc/get-branch-list",
+        "https://member.sss.gov.ph/member/sss/branchloc/get-branch-details?branchCode=C5"
+      ],
+      "alternate_urls": [],
+      "description": "SSS Branch Locator",
+      "agency_level": "GOCC",
+      "access_method": "UNKNOWN",
+      "format": "HTML",
+      "geographic_scope": "DIRECTORY_SUBSET",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "GOVERNMENT_FACILITIES_OR_UNKNOWN",
+      "notes": ""
     },
     {
       "source_id": "tesda.providers",
@@ -2966,7 +4736,27 @@
         "probe": false
       },
       "probes": [],
-      "notes": "`DIRECTORY CONTENT VERIFIED` for searchable public directory and statistics. National bulk export/public API and exact provider-level schema remain unverified. Aggregate provincial counts are not provider records."
+      "notes": "`DIRECTORY CONTENT VERIFIED` for searchable public directory and statistics. National bulk export/public API and exact provider-level schema remain unverified. Aggregate provincial counts are not provider records.",
+      "official_urls": [
+        "https://www.tesda.gov.ph/TVI",
+        "https://www.tesda.gov.ph/AssessmentCenters",
+        "https://www.tesda.gov.ph/About/TESDA/53",
+        "https://www.tesda.gov.ph/"
+      ],
+      "alternate_urls": [
+        "https://geoportal.gov.ph/"
+      ],
+      "description": "TESDA registered TVIs and assessment centres — `DIRECTORY CONTENT VERIFIED` for searchable public directory and statistics. National bulk export/public API and exact provider-level schema remain unverified. Aggregate provincial counts are not provider records.",
+      "agency_level": "NATIONAL",
+      "access_method": "HTML_DIRECTORY",
+      "format": "HTML",
+      "geographic_scope": "UNKNOWN",
+      "probe_status": "NOT_PROBED",
+      "probe_date": null,
+      "probe_notes": "No live probe is recorded for this candidate.",
+      "data_fields_observed": [],
+      "record_count_observed": null,
+      "ownership_semantics": "MIXED_GOVERNMENT_AND_PRIVATE_PROVIDERS"
     }
   ],
   "unmatched_probes": []

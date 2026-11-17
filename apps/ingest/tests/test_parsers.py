@@ -5,6 +5,8 @@ from __future__ import annotations
 import hashlib
 import io
 import json
+import threading
+import time
 from datetime import date
 
 import pytest
@@ -19,8 +21,10 @@ from philfacilities_ingest.fixtures import (
     philhealth_pdf,
     psgc_workbook,
 )
+from philfacilities_ingest.sources import doe_power
 from philfacilities_ingest.sources.bettergov import OSMParquetAdapter
 from philfacilities_ingest.sources.bir import BirRevenueDistrictOfficeAdapter, parse_rao_lines
+from philfacilities_ingest.sources.bucor import BucorFacilityAdapter, parse_facility_links
 from philfacilities_ingest.sources.ched_heida import (
     ChedHeidaAdapter,
     parse_hei_rows,
@@ -38,13 +42,26 @@ from philfacilities_ingest.sources.deped_ebeis import (
     parse_masterlist_html,
     school_levels,
 )
+from philfacilities_ingest.sources.doe_power import (
+    DoePowerPlantAdapter,
+    _offgrid_record,
+    _ownership,
+    parse_power_plants,
+)
 from philfacilities_ingest.sources.doh import DOHNHFRAdapter
 from philfacilities_ingest.sources.dswd_crcf import DswdCrcfDirectoryAdapter
 from philfacilities_ingest.sources.dti_negosyo import DtiNegosyoCenterAdapter
+from philfacilities_ingest.sources.lrta import LrtaStationAdapter, parse_distance_page
+from philfacilities_ingest.sources.mrt3 import Mrt3StationAdapter, parse_station_page
 from philfacilities_ingest.sources.national_museum import NationalMuseumDirectoryAdapter
 from philfacilities_ingest.sources.nbi import NbiOfficeAdapter, parse_office_html
+from philfacilities_ingest.sources.nha_wfs import (
+    NhaHousingProjectAdapter,
+    NhaLandholdingAdapter,
+)
 from philfacilities_ingest.sources.nlp import NlpPublicLibraryPdfAdapter
 from philfacilities_ingest.sources.nmis_naris import NmisNarisDirectoryAdapter
+from philfacilities_ingest.sources.osm_facilities import OsmFacilityLayerAdapter
 from philfacilities_ingest.sources.pagasa_aws import PagasaAwsAdapter, parse_aws_html
 from philfacilities_ingest.sources.philhealth import PhilHealthPdfAdapter, _row_key, parse_catalog
 from philfacilities_ingest.sources.philhealth_offices import (
@@ -55,6 +72,7 @@ from philfacilities_ingest.sources.philhealth_offices import (
 )
 from philfacilities_ingest.sources.phlpost import PhlPostLocatorAdapter
 from philfacilities_ingest.sources.ppa import PpaPortListAdapter
+from philfacilities_ingest.sources.prc import PrcOfficeAdapter, parse_office_locator
 from philfacilities_ingest.sources.psgc import parse_psgc_workbook
 from philfacilities_ingest.sources.sss_branch import SssBranchAdapter
 
@@ -296,6 +314,136 @@ def test_osm_adapter_keeps_multi_valued_healthcare_within_column_limit() -> None
     assert "pharmacy" in parsed.rows[0].raw_payload["healthcare"]
 
 
+def test_osm_facility_layers_filter_to_named_public_service_features():
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    table = pa.table(
+        {
+            "id": ["node/1", "node/2", "node/3", "node/4", "node/5", "node/6"],
+            "name": [
+                "Fire Station A",
+                "Police Station B",
+                "Unnamed Hall",
+                "School C",
+                "Town Hall D",
+                "Bus Terminal E",
+            ],
+            "name_en": [None, None, None, None, None, None],
+            "amenity": [
+                "fire_station",
+                "police",
+                "townhall",
+                "school",
+                "townhall",
+                "bus_station",
+            ],
+            "tourism": [None, None, None, None, None, None],
+            "operator_type": [None, "government", None, None, None, None],
+            "bbox": [
+                {"ymin": 14.0, "ymax": 14.1, "xmin": 121.0, "xmax": 121.1},
+                {"ymin": 14.2, "ymax": 14.3, "xmin": 121.2, "xmax": 121.3},
+                {"ymin": 14.4, "ymax": 14.5, "xmin": 121.4, "xmax": 121.5},
+                {"ymin": 14.6, "ymax": 14.7, "xmin": 121.6, "xmax": 121.7},
+                {"ymin": 14.8, "ymax": 14.9, "xmin": 121.8, "xmax": 121.9},
+                {"ymin": 15.0, "ymax": 15.1, "xmin": 122.0, "xmax": 122.1},
+            ],
+            "adm1_pcode": ["PH13", "PH13", "PH13", "PH13", "PH13", "PH13"],
+            "adm2_pcode": ["PH1339", "PH1339", "PH1339", "PH1339", "PH1339", "PH1339"],
+            "adm3_pcode": [
+                "PH133901",
+                "PH133901",
+                "PH133901",
+                "PH133901",
+                "PH133901",
+                "PH133901",
+            ],
+            "adm4_pcode": [
+                "PH133901001",
+                "PH133901001",
+                "PH133901001",
+                "PH133901001",
+                "PH133901001",
+                "PH133901001",
+            ],
+        }
+    )
+    sink = io.BytesIO()
+    pq.write_table(table, sink)
+    spec = _spec(
+        agency="osm",
+        slug="osm-public-service-facilities",
+        filename="points_of_interest.parquet",
+        content=sink.getvalue(),
+    )
+    adapter = OsmFacilityLayerAdapter(spec, layer="points-of-interest")
+    parsed = adapter.parse(spec)
+    assert len(parsed.rows) == 5  # unnamed and school features are filtered out
+    assert adapter.validate(parsed).rejected_rows == 0
+    candidates = adapter.normalize(parsed)
+    by_name = {candidate.display_name: candidate for candidate in candidates}
+    assert by_name["Fire Station A"].facility_subtype == "FIRE_STATION"
+    assert by_name["Police Station B"].facility_subtype == "POLICE_STATION"
+    assert by_name["Police Station B"].ownership == "government"
+    assert by_name["Town Hall D"].facility_subtype == "LOCAL_GOVERNMENT_OFFICE"
+    assert by_name["Bus Terminal E"].facility_subtype == "BUS_STATION"
+    assert by_name["Fire Station A"].location.precision == "map_geocoded"
+    assert by_name["Fire Station A"].location.latitude == pytest.approx(14.05)
+
+
+def test_osm_transport_layers_classify_air_sea_and_rail_features():
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    def _parquet(rows: list[dict[str, object]]) -> bytes:
+        sink = io.BytesIO()
+        pq.write_table(pa.table(rows), sink)
+        return sink.getvalue()
+
+    base = {
+        "id": ["node/1"],
+        "name": ["Sample"],
+        "name_en": [None],
+        "operator_type": [None],
+        "bbox": [{"ymin": 10.0, "ymax": 10.1, "xmin": 123.0, "xmax": 123.1}],
+    }
+    cases = [
+        (
+            "airports",
+            {**base, "aeroway": ["aerodrome"]},
+            "AIRPORT",
+        ),
+        (
+            "sea-ports",
+            {
+                **base,
+                "amenity": ["ferry_terminal"],
+                "port": [None],
+                "harbour": [None],
+                "industrial": [None],
+            },
+            "FERRY_TERMINAL",
+        ),
+        (
+            "railways",
+            {**base, "railway": ["station"]},
+            "RAIL_STATION",
+        ),
+    ]
+    for layer, columns, expected in cases:
+        spec = _spec(
+            agency="osm",
+            slug=f"osm-{layer}",
+            filename=f"{layer}.parquet",
+            content=_parquet(columns),
+        )
+        adapter = OsmFacilityLayerAdapter(spec, layer=layer)
+        parsed = adapter.parse(spec)
+        candidates = adapter.normalize(parsed)
+        assert len(candidates) == 1
+        assert candidates[0].facility_subtype == expected
+
+
 def test_philhealth_catalogue_keeps_malformed_anchor_links() -> None:
     """The live index omits </a> on some EMCB rows; those links must not be dropped."""
 
@@ -392,6 +540,29 @@ def test_reprocess_rekeys_stored_records_by_page_and_row() -> None:
     _reconcile_source_record_keys(existing_records=records, parsed_rows=rows, session=_Session())
 
     assert [record.source_record_key for record in records] == ["new-a", "new-b"]
+
+
+def test_reprocess_uses_stable_key_when_legacy_row_references_were_duplicated() -> None:
+    from types import SimpleNamespace
+
+    from philfacilities_ingest.pipeline import _reconcile_source_record_keys
+
+    class _Session:
+        def flush(self) -> None:
+            pass
+
+    records = [
+        SimpleNamespace(source_record_key="doe:ANDA", row_number_or_page="doe:Luzon:ANDA"),
+        SimpleNamespace(source_record_key="doe:ANDA#2", row_number_or_page="doe:Luzon:ANDA"),
+    ]
+    rows = [
+        SimpleNamespace(source_record_key="doe:ANDA", row_reference="doe:Luzon:ANDA"),
+        SimpleNamespace(source_record_key="doe:ANDA#2", row_reference="doe:Luzon:ANDA#2"),
+    ]
+
+    _reconcile_source_record_keys(existing_records=records, parsed_rows=rows, session=_Session())
+
+    assert [record.source_record_key for record in records] == ["doe:ANDA", "doe:ANDA#2"]
 
 
 def test_reprocess_refuses_to_orphan_a_stored_record() -> None:
@@ -1649,3 +1820,587 @@ def test_ebeis_school_levels_does_not_guess():
     assert school_levels("Grade 7-10 & Grade 11-12") == (None, True, True)
     assert school_levels("Ungraded special program") == (None, None, None)
     assert school_levels(None) == (None, None, None)
+
+
+def test_lrta_station_names_are_derived_from_interval_table():
+    html = """
+    <table class="distance-stn">
+      <tr><td>Baclaran - EDSA</td><td>1,000</td><td>1.000</td></tr>
+      <tr><td>EDSA - Libertad</td><td>900</td><td>0.900</td></tr>
+      <tr><td>TOTAL DISTANCE</td><td>1,900</td><td>1.900</td></tr>
+    </table>
+    """
+    records = parse_distance_page(html)
+    assert [record["station_name"] for record in records] == [
+        "Baclaran",
+        "EDSA",
+        "Libertad",
+    ]
+    assert records[1]["intervals"][0]["meters"] == 1000
+    assert records[2]["terminal"] is True
+
+    spec = _spec(
+        agency="lrta",
+        slug="lrta-stations",
+        filename="lrta.html",
+        content=html.encode("utf-8"),
+    )
+    adapter = LrtaStationAdapter(spec)
+    parsed = adapter.parse(spec)
+    assert {warning["code"] for warning in parsed.warnings} == {
+        "station_names_derived_from_intervals",
+        "no_coordinates",
+    }
+    assert adapter.validate(parsed).rejected_rows == 0
+    candidates = adapter.normalize(parsed)
+    assert len(candidates) == 3
+    assert candidates[0].facility_type == "transport_facility"
+    assert candidates[0].facility_subtype == "LRT_STATION"
+    assert candidates[0].location.latitude is None
+    assert candidates[0].record_status == "unknown"
+
+
+def test_mrt3_station_names_are_preserved_from_official_carousel():
+    page = """
+    <ul class="carousel-indicators">
+      <li data-slide-to="0" class="station">North Avenue</li>
+      <li data-slide-to="1" class="station">Quezon Avenue</li>
+      <li data-slide-to="2" class="station">Taft Avenue</li>
+    </ul>
+    <div class="carousel-caption station-caption"><h2>First station.</h2></div>
+    <div class="carousel-caption station-caption"><h2>Second station.</h2></div>
+    <div class="carousel-caption station-caption"><h2>Last station.</h2></div>
+    """
+    records = parse_station_page(page)
+    assert [record["station_name"] for record in records] == [
+        "North Avenue",
+        "Quezon Avenue",
+        "Taft Avenue",
+    ]
+    assert records[0]["landmark_description"] == "First station."
+
+    spec = _spec(
+        agency="dotr",
+        slug="mrt3-stations",
+        filename="mrt3.html",
+        content=page.encode("utf-8"),
+    )
+    adapter = Mrt3StationAdapter(spec)
+    parsed = adapter.parse(spec)
+    assert {warning["code"] for warning in parsed.warnings} == {
+        "station_names_verbatim_may_be_stale",
+        "no_coordinates_or_operating_status",
+    }
+    assert adapter.validate(parsed).rejected_rows == 0
+    candidates = adapter.normalize(parsed)
+    assert len(candidates) == 3
+    assert candidates[0].facility_subtype == "MRT_STATION"
+    assert candidates[0].location.latitude is None
+    assert candidates[0].record_status == "unknown"
+    assert candidates[0].functions[0].function_code == "RAIL_TRANSPORT"
+
+
+def test_ebeis_region_catalog_covers_the_public_form():
+    from philfacilities_ingest.sources.registry import EBEIS_REGIONS
+
+    assert len(EBEIS_REGIONS) == 19
+    assert EBEIS_REGIONS["ncr"] == ("13", "NCR")
+    assert EBEIS_REGIONS["nir"] == ("18", "NIR")
+    assert EBEIS_REGIONS["barmm"] == ("15", "BARMM")
+    assert len({region_id for region_id, _ in EBEIS_REGIONS.values()}) == 19
+
+
+class _FakeEbeisAcquirer:
+    """Serve synthetic EBEIS result pages and track request concurrency."""
+
+    def __init__(self, total: int, *, bad_header_page: int | None = None) -> None:
+        self.total = total
+        self.bad_header_page = bad_header_page
+        self.pages_requested: list[int] = []
+        self.max_active = 0
+        self._active = 0
+        self._lock = threading.Lock()
+
+    def _page_html(self, page: int) -> str:
+        first_row = (page - 1) * 30 + 1
+        last_row = min(first_row + 29, self.total)
+        header = ["School ID", "School Name"]
+        if page == self.bad_header_page:
+            header[1] = "Different Name"
+        rows = "".join(
+            f"<tr><td>S-{row:05d}</td><td>School {row:05d}</td></tr>"
+            for row in range(first_row, last_row + 1)
+        )
+        return (
+            f"<html><body><p>{self.total} results found</p><table>"
+            f"<tr><th>{header[0]}</th><th>{header[1]}</th></tr>{rows}"
+            "</table></body></html>"
+        )
+
+    def fetch(self, _url: str, *, method: str = "GET", data=None, **_kwargs: object):
+        assert method == "POST"
+        page = int(data["page"])
+        with self._lock:
+            self.pages_requested.append(page)
+            self._active += 1
+            self.max_active = max(self.max_active, self._active)
+        time.sleep(0.02)  # make overlap observable without slowing the suite
+        with self._lock:
+            self._active -= 1
+        content = self._page_html(page).encode("utf-8")
+        from philfacilities_ingest.acquisition import FetchResult
+
+        return FetchResult(
+            url=_url,
+            final_url=_url,
+            status_code=200,
+            content=content,
+            headers={"content-type": "text/html"},
+            sha256=hashlib.sha256(content).hexdigest(),
+        )
+
+
+def test_ebeis_pages_are_fetched_concurrently_and_kept_in_order(monkeypatch):
+    from philfacilities_ingest.sources import registry
+
+    monkeypatch.setattr(registry, "EBEIS_FETCH_WORKERS", 3)
+    monkeypatch.setattr(registry, "EBEIS_PAGE_DELAY_SECONDS", 0.0)
+    acquirer = _FakeEbeisAcquirer(total=65)
+
+    content, metadata = registry.fetch_ebeis_region(acquirer, "ncr")
+
+    assert metadata["reported_rows"] == 65
+    assert metadata["fetched_pages"] == 3
+    assert sorted(acquirer.pages_requested) == [1, 2, 3]
+    # Page 1 is fetched alone for the result count; pages 2-3 may overlap.
+    assert acquirer.max_active <= 3
+    document = content.decode("utf-8")
+    assert document.count("<tr>") - 1 == 65  # header row excluded
+    ids = [f"S-{row:05d}" for row in range(1, 66)]
+    assert all(identifier in document for identifier in ids)
+    assert document.index("S-00031") < document.index("S-00061")
+
+
+def test_ebeis_chunked_fetch_stops_after_changed_header(monkeypatch):
+    from philfacilities_ingest.sources import registry
+
+    monkeypatch.setattr(registry, "EBEIS_FETCH_WORKERS", 2)
+    monkeypatch.setattr(registry, "EBEIS_PAGE_DELAY_SECONDS", 0.0)
+    acquirer = _FakeEbeisAcquirer(total=125, bad_header_page=2)
+
+    with pytest.raises(Exception, match="changed its table header"):
+        registry.fetch_ebeis_region(acquirer, "ncr")
+
+    # The second chunk (pages 4-5) is never requested once page 2 fails.
+    assert sorted(acquirer.pages_requested) == [1, 2, 3]
+
+
+def test_bucor_oppf_parses_only_content_links():
+    page = """
+    <h1 class="page-title entry-title">OPPF</h1>
+    <div class="content">
+      <p><a href="https://bucor.gov.ph/?page_id=1213">New Bilibid Prison</a></p>
+      <p><a href="https://bucor.gov.ph/?page_id=1259">Correctional Institution for Women</a></p>
+      <p><a href="https://bucor.gov.ph/?page_id=1213">New Bilibid Prison</a></p>
+    </div>
+    <footer>Contact Us</footer>
+    <a href="https://bucor.gov.ph/?page_id=999">Menu link outside content</a>
+    """
+    records = parse_facility_links(page)
+    assert [record["facility_name"] for record in records] == [
+        "New Bilibid Prison",
+        "Correctional Institution for Women",
+    ]
+
+    spec = _spec(
+        agency="bucor",
+        slug="bucor-oppf-facilities",
+        filename="bucor.html",
+        content=page.encode("utf-8"),
+    )
+    adapter = BucorFacilityAdapter(spec)
+    parsed = adapter.parse(spec)
+    assert len(parsed.rows) == 2
+    candidate = adapter.normalize(parsed)[0]
+    assert candidate.facility_type == "justice_facility"
+    assert candidate.facility_subtype == "JAIL"
+    assert candidate.ownership_type == "NATIONAL_GOVERNMENT"
+    assert candidate.public_access_class == "RESTRICTED"
+    assert candidate.location.latitude is None
+    assert candidate.record_status == "unknown"
+
+
+def test_nha_project_duplicate_keys_are_disambiguated():
+    features = {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "geometry": {"type": "Point", "coordinates": [121.0, 14.0]},
+                "properties": {"proj_code": "P1", "proj_name": "Same Project"},
+            },
+            {
+                "type": "Feature",
+                "geometry": {"type": "Point", "coordinates": [121.0, 14.0]},
+                "properties": {"proj_code": "P1", "proj_name": "Same Project"},
+            },
+        ],
+    }
+    spec = _spec(
+        agency="nha",
+        slug="nha-housing-project-locations",
+        filename="projects.geojson",
+        content=json.dumps(features).encode("utf-8"),
+    )
+    adapter = NhaHousingProjectAdapter(spec)
+    parsed = adapter.parse(spec)
+    keys = [row.source_record_key for row in parsed.rows]
+    assert len(keys) == len(set(keys)) == 2
+    assert adapter.validate(parsed).rejected_rows == 0
+
+
+def test_nha_landholding_maps_to_housing_service_site():
+    features = {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "geometry": {"type": "Point", "coordinates": [121.0, 14.0]},
+                "properties": {
+                    "region": "NCR",
+                    "layer": "LANDHOLDING",
+                    "propname": "Sample Landholding",
+                    "area_sqm": 1234.5,
+                    "location": "Sample City",
+                },
+            }
+        ],
+    }
+    spec = _spec(
+        agency="nha",
+        slug="nha-landholdings",
+        filename="landholdings.geojson",
+        content=json.dumps(features).encode("utf-8"),
+    )
+    adapter = NhaLandholdingAdapter(spec)
+    parsed = adapter.parse(spec)
+    candidate = adapter.normalize(parsed)[0]
+    assert candidate.facility_type == "housing_service"
+    assert candidate.facility_kind == "site"
+    assert candidate.location.precision == "source_gps"
+    assert candidate.functions[0].capacity_value == 1234.5
+    assert candidate.functions[0].capacity_unit == "square_metres"
+
+
+class _FakeDoePage:
+    def __init__(self, tables):
+        self._tables = tables
+
+    def extract_tables(self):
+        return self._tables
+
+
+class _FakeDoePdf:
+    def __init__(self, tables):
+        self.pages = [_FakeDoePage(tables)]
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return False
+
+
+_GRID_HEADER = [
+    "FACILITY NAME (DOE Code)",
+    "Official Facility Name",
+    "RESOURCE TYPE",
+    "TECHNOLOGY TYPE",
+    "",
+    "INSTALLED",
+    "DEPENDABLE",
+    "NUMBER OF UNITS",
+    "MUNICIPALITY/ PROVINCE",
+    "PROVINCE",
+    "CITY/ MUNICIPALITY",
+    "REGION",
+    "OPERATOR",
+    "OWNER / IPPA",
+    "FIT APPROVED / GEA",
+    "OWNER TYPE",
+    "TYPE OF CONTRACT",
+    "DATE COMMISSIONED/ COMMERCIAL OPERATION",
+]
+
+_VISIT_HEADER = [
+    "FACILITY NAME (DOE Code)",
+    "Official Facility Name",
+    "RESOURCE TYPE",
+    "TECHNOLOGY",
+    "TECHNOLOGY TYPE",
+    "",
+    "INSTALLED",
+    "DEPENDABLE",
+    "NUMBER OF UNITS",
+    "MUNICIPALITY/ PROVINCE",
+    "PROVINCE",
+    "SUB-GRID",
+    "CITY/ MUNICIPALITY",
+    "REGION",
+    "OPERATOR",
+    "OWNER / IPPA",
+    "FIT APPROVED / GEA",
+    "OWNER TYPE",
+    "TYPE OF CONTRACT",
+    "DATE COMMISSIONED/ COMMERCIAL OPERATION",
+]
+
+
+def test_doe_grid_18_column_rows_keep_location_columns_aligned(monkeypatch):
+    rows = [
+        _GRID_HEADER,
+        ["COAL", "", "", "", "", "9,410.0", "8,588.7", "", "", "", "", "", "", "", "", "", "", ""],
+        [
+            "ANDA",
+            "Anda Coal-Fired Power Plant",
+            "Coal",
+            "Circulating Fluidized Bed",
+            "Grid",
+            "83.7",
+            "72.0",
+            "1",
+            "TECO Industrial Park, Mabalacat",
+            "Pampanga",
+            "Mabalacat",
+            "3",
+            "Anda Power Corporation",
+            "Anda Power Corporation",
+            "",
+            "NON-NPC/IPP",
+            "",
+            "Sep-2016",
+        ],
+    ]
+    monkeypatch.setattr(
+        doe_power.pdfplumber,
+        "open",
+        lambda content: _FakeDoePdf([rows]),
+    )
+    records = parse_power_plants(b"unused", grid="Luzon")
+    assert len(records) == 1
+    record = records[0]
+    assert record["facility_code"] == "ANDA"
+    assert record["official_name"] == "Anda Coal-Fired Power Plant"
+    assert record["number_of_units"] == "1"
+    assert record["municipality_province"] == "TECO Industrial Park, Mabalacat"
+    assert record["province"] == "Pampanga"
+    assert record["city_municipality"] == "Mabalacat"
+    assert record["region"] == "3"
+    assert record["owner_type"] == "NON-NPC/IPP"
+    assert record["technology_type"] == "Circulating Fluidized Bed"
+    assert record["sub_grid"] is None
+
+
+def test_doe_grid_20_column_rows_preserve_sub_grid(monkeypatch):
+    rows = [
+        _VISIT_HEADER,
+        [
+            "CEDC U1",
+            "Cebu Energy Development Corporation Unit 1",
+            "Coal",
+            "Coal",
+            "Circulating Fluidized Bed",
+            "Grid",
+            "83.7",
+            "82.0",
+            "1",
+            "Barangay Daanglungsod, Toledo City",
+            "Cebu",
+            "Cebu",
+            "Toledo City",
+            "7",
+            "MGEN Thermal - Cebu",
+            "MGEN Thermal - Cebu",
+            "",
+            "NON-NPC/IPP",
+            "",
+            "Apr-2010",
+        ],
+    ]
+    monkeypatch.setattr(
+        doe_power.pdfplumber,
+        "open",
+        lambda content: _FakeDoePdf([rows]),
+    )
+    records = parse_power_plants(b"unused", grid="Visayas")
+    assert len(records) == 1
+    record = records[0]
+    assert record["number_of_units"] == "1"
+    assert record["municipality_province"] == "Barangay Daanglungsod, Toledo City"
+    assert record["province"] == "Cebu"
+    assert record["sub_grid"] == "Cebu"
+    assert record["city_municipality"] == "Toledo City"
+    assert record["region"] == "7"
+
+
+def test_doe_offgrid_rows_use_the_compact_column_layout():
+    row = [
+        "",
+        "DPC - NARRA PHASE 1",
+        "Coal-fired",
+        "15.000",
+        "13.500",
+        "Narra, Palawan",
+        "4-B",
+        "DMCI Power Corporation",
+        "NPP",
+        "24",
+        "May-2023",
+        "",
+    ]
+    record = _offgrid_record(row, "Off-grid")
+    assert record is not None
+    assert record["facility_code"] == "DPC - NARRA PHASE 1"
+    assert record["installed_mw"] == 15.0
+    assert record["dependable_mw"] == 13.5
+    assert record["municipality_province"] == "Narra, Palawan"
+    assert record["region"] == "4-B"
+    assert record["operator"] == "DMCI Power Corporation"
+    assert record["owner_type"] == "NPP"
+    assert record["operating_hours"] == "24"
+    assert _offgrid_record(["", "COAL", "", "30.000", "28.500"], "Off-grid") is None
+
+
+def test_doe_ownership_does_not_infer_private_or_public_status():
+    government = _ownership(
+        {"owner_type": "NPC", "owner": "National Power Corporation", "operator": ""}
+    )
+    assert government == (
+        "government",
+        "NATIONAL_GOVERNMENT",
+        "NATIONAL_GOVERNMENT",
+        "GOVERNMENT_FACILITY",
+    )
+    private = _ownership(
+        {
+            "owner_type": "NON-NPC/IPP",
+            "owner": "Example Energy Corporation",
+            "operator": "Example Energy Corporation",
+        }
+    )
+    assert private == (
+        "private",
+        "PRIVATE_UNSPECIFIED",
+        "PRIVATE_UNSPECIFIED",
+        "PRIVATE_PUBLIC_SERVICE_PROVIDER",
+    )
+    assert _ownership({}) == (
+        "unknown",
+        "UNKNOWN",
+        "UNKNOWN",
+        "DISCOVERY_CANDIDATE",
+    )
+
+
+def test_doe_adapter_normalizes_and_disambiguates_duplicate_codes(monkeypatch):
+    data_row = [
+        "ANDA",
+        "Anda Coal-Fired Power Plant",
+        "Coal",
+        "Circulating Fluidized Bed",
+        "Grid",
+        "83.7",
+        "72.0",
+        "1",
+        "TECO Industrial Park, Mabalacat",
+        "Pampanga",
+        "Mabalacat",
+        "3",
+        "Anda Power Corporation",
+        "Anda Power Corporation",
+        "",
+        "NON-NPC/IPP",
+        "",
+        "Sep-2016",
+    ]
+    monkeypatch.setattr(
+        doe_power.pdfplumber,
+        "open",
+        lambda content: _FakeDoePdf([[_GRID_HEADER, data_row, data_row]]),
+    )
+    spec = _spec(
+        agency="doe",
+        slug="doe-power-plants-luzon",
+        filename="doe.pdf",
+        content=b"unused",
+    )
+    adapter = DoePowerPlantAdapter(spec, grid="Luzon")
+    parsed = adapter.parse(spec)
+    assert [row.source_record_key for row in parsed.rows] == [
+        "DOE:LUZON:ANDA",
+        "DOE:LUZON:ANDA#2",
+    ]
+    validation = adapter.validate(parsed)
+    assert validation.rejected_rows == 0
+    candidates = adapter.normalize(parsed)
+    assert len(candidates) == 2
+    first = candidates[0]
+    assert first.display_name == "Anda Coal-Fired Power Plant"
+    assert first.facility_type == "utility_facility"
+    assert first.facility_subtype == "POWER_PLANT"
+    assert first.inclusion_class == "PRIVATE_PUBLIC_SERVICE_PROVIDER"
+    assert first.location.latitude is None
+    assert first.location.precision == "unknown"
+    assert first.functions[0].function_code == "POWER_SERVICE"
+    assert first.functions[0].capacity_value == 83.7
+    assert first.functions[0].capacity_unit == "megawatts_installed"
+    assert first.functions[0].evidence["doe_facility_code"] == "ANDA"
+    assert first.functions[0].evidence["municipality_province"] == (
+        "TECO Industrial Park, Mabalacat"
+    )
+
+
+def test_prc_office_locator_parses_cards_and_embedded_map_pins():
+    page = """
+    <html><body>
+    <iframe src="https://maps-api-ssl.google.com/maps?hl=en-US&amp;ll=14.6,121.0&amp;output=embed&amp;q=14.641316,121.040537&amp;z=17"></iframe>
+    <p>PRC - National Capital Region</p>
+    <p>ETON Centris, Quezon City</p>
+    <iframe src="https://maps-api-ssl.google.com/maps?hl=en-US&amp;ll=16.4,120.6&amp;output=embed&amp;q=16.412779,120.592278&amp;z=17"></iframe>
+    <p>PRC - Cordillera Administrative Region</p>
+    <p>Otek St., Baguio City</p>
+    <iframe src="https://maps-api-ssl.google.com/maps?hl=en-US&amp;q=not-a-coordinate"></iframe>
+    <p>Not a PRC office</p>
+    <p>Ignored</p>
+    </body></html>
+    """
+    records = parse_office_locator(page)
+    assert len(records) == 2
+    assert records[0]["office_name"] == "PRC - National Capital Region"
+    assert records[0]["address"] == "ETON Centris, Quezon City"
+    assert records[0]["latitude"] == 14.641316
+    assert records[0]["longitude"] == 121.040537
+    assert records[1]["office_name"] == "PRC - Cordillera Administrative Region"
+
+    spec = _spec(
+        agency="prc",
+        slug="prc-regional-offices",
+        filename="prc-offices.html",
+        content=page.encode("utf-8"),
+    )
+    adapter = PrcOfficeAdapter(spec)
+    parsed = adapter.parse(spec)
+    assert len(parsed.rows) == 2
+    assert adapter.validate(parsed).rejected_rows == 0
+
+    candidates = adapter.normalize(parsed)
+    first = candidates[0]
+    assert first.facility_type == "government_office"
+    assert first.facility_subtype == "NATIONAL_AGENCY_OFFICE"
+    assert first.inclusion_class == "GOVERNMENT_FACILITY"
+    assert first.location.precision == "map_geocoded"
+    assert first.location.method == "official_embedded_map_pin"
+    assert first.location.latitude == 14.641316
+    assert first.location.address_text == "ETON Centris, Quezon City"
+    assert first.functions[0].function_code == "LICENSING_SERVICE"
+    assert first.record_status == "unknown"

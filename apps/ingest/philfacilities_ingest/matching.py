@@ -40,11 +40,45 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 MATCH_METHOD = "exact_normalized_name_psgc_type"
+GEO_MATCH_METHOD = "exact_normalized_name_geo"
 ALGORITHM_VERSION = "1"
 PENDING = "pending"
 ACCEPTED = "accepted"
 REJECTED = "rejected"
 MERGED = "merged"
+
+# Names that are too generic to identify one real-world facility even when two
+# points are metres apart. They stay out of the automatic geo queue.
+GENERIC_FACILITY_NAMES = frozenset(
+    {
+        "barangay health station",
+        "health center",
+        "health centre",
+        "rural health unit",
+        "birthing center",
+        "birthing home",
+        "public market",
+        "barangay hall",
+        "day care center",
+        "daycare center",
+        "elementary school",
+        "high school",
+        "national high school",
+        "public school",
+        "police station",
+        "fire station",
+        "post office",
+        "multi purpose hall",
+        "covered court",
+        "gymnasium",
+        "plaza",
+        "terminal",
+        "port",
+        "airport",
+        "hospital",
+        "clinic",
+    }
+)
 
 # Child tables that follow a facility when a human-confirmed merge is applied.
 _MERGE_MODELS = (
@@ -68,6 +102,7 @@ class _FacilityRef:
     facility: Facility
     location: FacilityLocation
     agency_codes: set[str] = field(default_factory=set)
+    dataset_slugs: set[str] = field(default_factory=set)
     links: list[tuple[FacilitySourceLink, SourceRecord, Agency, Release]] = field(
         default_factory=list
     )
@@ -91,10 +126,12 @@ def normalize_name(value: str | None) -> str:
 def candidate_key(
     source_record_id: uuid.UUID,
     candidate_facility_id: uuid.UUID,
+    *,
+    method: str = MATCH_METHOD,
 ) -> str:
     raw = "|".join(
         (
-            MATCH_METHOD,
+            method,
             ALGORITHM_VERSION,
             str(source_record_id),
             str(candidate_facility_id),
@@ -251,6 +288,19 @@ def _current_location(session: Session, facility_id: uuid.UUID) -> FacilityLocat
     ).first()
 
 
+def _current_locations(session: Session) -> dict[uuid.UUID, FacilityLocation]:
+    """Load current locations once instead of querying per facility."""
+
+    locations: dict[uuid.UUID, FacilityLocation] = {}
+    for location in session.scalars(
+        select(FacilityLocation)
+        .where(FacilityLocation.is_current.is_(True))
+        .order_by(FacilityLocation.facility_id, FacilityLocation.created_at)
+    ):
+        locations.setdefault(location.facility_id, location)
+    return locations
+
+
 def enqueue_cross_source_candidates(
     session: Session,
     *,
@@ -319,10 +369,11 @@ def generate_match_candidates(session: Session) -> dict[str, int]:
         .order_by(Release.retrieved_at.desc(), FacilitySourceLink.created_at.desc())
     ).all()
     refs: dict[uuid.UUID, _FacilityRef] = {}
+    locations = _current_locations(session)
     for link, record, agency, release, facility in rows:
         ref = refs.get(facility.id)
         if ref is None:
-            location = _current_location(session, facility.id)
+            location = locations.get(facility.id)
             if location is None or not location.psgc_code:
                 continue
             ref = _FacilityRef(facility=facility, location=location)
@@ -389,6 +440,195 @@ def generate_match_candidates(session: Session) -> dict[str, int]:
                     stats["created"] += 1
                 else:
                     stats["existing"] += 1
+    return stats
+
+
+def _is_official_dataset(dataset_slugs: set[str]) -> bool:
+    return any(
+        not slug.startswith("osm-") and not slug.startswith("bettergov") for slug in dataset_slugs
+    )
+
+
+def _name_is_specific(display_name: str) -> bool:
+    normalized = normalize_name(display_name)
+    return (
+        len(normalized) >= 12
+        and len(normalized.split()) >= 2
+        and normalized not in GENERIC_FACILITY_NAMES
+    )
+
+
+def _geo_confidence(
+    distance_m: float,
+    *,
+    official_side: bool,
+) -> Decimal:
+    if distance_m <= 10:
+        value = 0.950
+    elif distance_m <= 25:
+        value = 0.930
+    elif distance_m <= 50:
+        value = 0.900
+    else:
+        value = 0.800
+    if not official_side:
+        value = min(value, 0.850)
+    return Decimal(str(value)).quantize(Decimal("0.001"))
+
+
+def generate_geo_match_candidates(
+    session: Session,
+    *,
+    max_distance_m: float = 50.0,
+) -> dict[str, int]:
+    """Queue cross-source facilities with the same name and near-identical points.
+
+    This complements the PSGC-based matcher for sources such as OpenStreetMap
+    that carry coordinates but no PSGC code. A candidate is proposed only when
+    the normalized name is specific (not a generic "health center" label), the
+    facility type matches, the agencies differ, and the points are within
+    ``max_distance_m``. Ambiguous names and larger distances are not queued.
+    """
+
+    rows = session.execute(
+        select(FacilitySourceLink, SourceRecord, Agency, Release, Facility, Dataset)
+        .join(SourceRecord, FacilitySourceLink.source_record_id == SourceRecord.id)
+        .join(Release, SourceRecord.release_id == Release.id)
+        .join(Dataset, Release.dataset_id == Dataset.id)
+        .join(Agency, Dataset.agency_id == Agency.id)
+        .join(Facility, FacilitySourceLink.facility_id == Facility.id)
+        .where(Facility.publication_status == "public")
+    ).all()
+    locations = _current_locations(session)
+    refs: dict[uuid.UUID, _FacilityRef] = {}
+    for link, record, agency, release, facility, dataset in rows:
+        location = locations.get(facility.id)
+        if location is None:
+            continue
+        if location.latitude is None or location.longitude is None:
+            continue
+        ref = refs.get(facility.id)
+        if ref is None:
+            ref = _FacilityRef(facility=facility, location=location)
+            refs[facility.id] = ref
+        ref.agency_codes.add(agency.short_code)
+        ref.links.append((link, record, agency, release))
+        ref.dataset_slugs.add(dataset.slug)
+
+    groups: dict[tuple[str, str], list[_FacilityRef]] = defaultdict(list)
+    stats = {
+        "facilities_scanned": len(refs),
+        "groups_considered": 0,
+        "pairs_considered": 0,
+        "created": 0,
+        "existing": 0,
+        "skipped_same_agency": 0,
+        "skipped_distance": 0,
+        "skipped_generic": 0,
+        "skipped_subtype": 0,
+    }
+    for ref in refs.values():
+        normalized = normalize_name(ref.facility.display_name)
+        if normalized:
+            groups[(ref.facility.facility_type, normalized)].append(ref)
+
+    for (facility_type, normalized), group in groups.items():
+        if len(group) < 2:
+            continue
+        if normalized in GENERIC_FACILITY_NAMES or not _name_is_specific(
+            group[0].facility.display_name
+        ):
+            stats["skipped_generic"] += len(group)
+            continue
+        stats["groups_considered"] += 1
+        ordered = sorted(
+            group,
+            key=lambda ref: (ref.facility.created_at, str(ref.facility.id)),
+        )
+        for index, older in enumerate(ordered):
+            for newer in ordered[index + 1 :]:
+                if older.agency_codes == newer.agency_codes and len(older.agency_codes) == 1:
+                    stats["skipped_same_agency"] += 1
+                    continue
+                if not _subtypes_compatible(newer.facility, older.facility):
+                    stats["skipped_subtype"] += 1
+                    continue
+                distance = _distance_m(newer.location, older.location)
+                if distance is None or distance > max_distance_m:
+                    stats["skipped_distance"] += 1
+                    continue
+                newer_official = _is_official_dataset(newer.dataset_slugs)
+                older_official = _is_official_dataset(older.dataset_slugs)
+                if newer_official and not older_official:
+                    candidate, source = newer, older
+                elif older_official and not newer_official:
+                    candidate, source = older, newer
+                else:
+                    candidate, source = older, newer
+                chosen = source.link_for_other_agency(candidate.agency_codes)
+                if chosen is None:
+                    stats["skipped_same_agency"] += 1
+                    continue
+                _link, record, agency, _release = chosen
+                confidence = _geo_confidence(
+                    distance,
+                    official_side=newer_official or older_official,
+                )
+                stats["pairs_considered"] += 1
+                key = candidate_key(
+                    record.id,
+                    candidate.facility.id,
+                    method=GEO_MATCH_METHOD,
+                )
+                existing = session.scalars(
+                    select(MatchCandidate).where(MatchCandidate.candidate_key == key)
+                ).first()
+                if existing is not None:
+                    stats["existing"] += 1
+                    continue
+                evidence = {
+                    "reason": (
+                        "Exact normalized name, same facility type, different source "
+                        f"agency, and points {distance:.1f} m apart."
+                    ),
+                    "algorithm": GEO_MATCH_METHOD,
+                    "algorithm_version": ALGORITHM_VERSION,
+                    "normalized_name": normalized,
+                    "facility_type": facility_type,
+                    "source_agency_code": agency.short_code,
+                    "candidate_agency_code": next(
+                        code for code in sorted(candidate.agency_codes) if code != agency.short_code
+                    ),
+                    "address_match": False,
+                    "distance_m": round(distance, 1),
+                    "psgc_code": source.location.psgc_code or candidate.location.psgc_code,
+                    "source_location_precision": source.location.precision,
+                    "candidate_location_precision": candidate.location.precision,
+                    "source_datasets": sorted(source.dataset_slugs),
+                    "candidate_datasets": sorted(candidate.dataset_slugs),
+                    "source_facility_snapshot": _facility_snapshot(source.facility),
+                    "candidate_facility_snapshot": _facility_snapshot(candidate.facility),
+                    "subtype_compatible": True,
+                    "name_specific": True,
+                    "official_side": newer_official or older_official,
+                }
+                session.add(
+                    MatchCandidate(
+                        candidate_key=key,
+                        source_record_id=record.id,
+                        source_facility_id=source.facility.id,
+                        candidate_facility_id=candidate.facility.id,
+                        source_agency_code=agency.short_code,
+                        candidate_agency_code=evidence["candidate_agency_code"],
+                        match_method=GEO_MATCH_METHOD,
+                        algorithm_version=ALGORITHM_VERSION,
+                        match_confidence=confidence,
+                        match_status=PENDING,
+                        evidence=evidence,
+                    )
+                )
+                session.flush()
+                stats["created"] += 1
     return stats
 
 

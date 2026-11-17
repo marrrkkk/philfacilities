@@ -32,7 +32,7 @@ Current ingestion and parser coverage:
 
 ### Current measured state (15 November 2026)
 
-- 92,422 canonical facilities; 61,806 pass the public gate; 30,616 are non-public, including the 5,055 DepEd EBEIS rows; 0 are synthetic.
+- 228,291 canonical facilities; 99,352 pass the public gate; 128,939 are non-public, including the 83,218 DepEd EBEIS rows; 0 are synthetic.
 - 44,751 public facilities have coordinates, all `map_geocoded`; 17,055 public facilities have no location.
 - 14,216 located public facilities have no PSGC assignment.
 - Open issues: `location_missing` 30,041; `duplicate_osm_id` 3,572; `missing_facility_name` 25; `coordinate_outside_philippines_bbox` 1.
@@ -157,8 +157,8 @@ Measured search medians after warm-up are 252 ms for `Mulanay` (40 results), 638
 (832), 1,869 ms for `Bacolod` (140), and 88 ms for a no-match term. The unfiltered facility list
 remains about 2.6 s p50, which is still too high for a production launch; query-plan optimization and caching
 remain pre-launch work. Bulk exports took roughly 100 seconds locally at the earlier 83,769-row
-benchmark, so production
-exports should be pre-generated or cached rather than rebuilt per request. Evidence:
+benchmark; that measurement predates the current 228,291-facility (99,352-public) load, so exports
+should be pre-generated or cached rather than rebuilt per request. Evidence:
 [`docs/operations/evidence/2026-11-15-real-api/api-benchmark-optimized.txt`](operations/evidence/2026-11-15-real-api/api-benchmark-optimized.txt),
 the pre-fix baseline in
 [`docs/operations/evidence/2026-11-15-real-api/api-benchmark.txt`](operations/evidence/2026-11-15-real-api/api-benchmark.txt),

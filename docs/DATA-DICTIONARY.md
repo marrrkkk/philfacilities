@@ -172,7 +172,7 @@ redistribution. The existence of an API endpoint is not a grant of data rights.
 | HOT/OSM education facilities | `approved_with_attribution` / `published` | 52,824 linked facilities. Crowd-sourced; not a DepEd masterlist |
 | BetterGov PSGC Q2 2024 mirror | `approved_with_attribution` / `published` | 43,760 units; supplementary snapshot, not the latest official PSA release |
 | PSA 2024 Census population via BetterGov | `approved_with_attribution` / `published` | 134,748 observations across 18 regional releases |
-| DepEd EBEIS NCR | `approved_with_attribution` / source release `published`; canonical rows `internal` | 5,055 records. Current release published for institution-level fields with attribution; school-head names withheld. Canonical rows await field-level mapping/privacy review. |
+| DepEd EBEIS regional result sets | `approved_with_attribution` / source releases `published`; canonical rows `internal` | 83,218 records. Current release published for institution-level fields with attribution; school-head names withheld. Canonical rows await field-level mapping/privacy review. |
 | NLP public libraries | `approved_with_attribution` / `published` | 1,752 institution-level rows; personal librarian contacts withheld |
 | NMP museums | `approved_with_attribution` / `published` | NMP-run regional, area, and site museums; directory subset |
 | BIR RDOs | `approved_with_attribution` / `published` | RAO 006-2025; 128 RDO rows and 19 region headings; local OCR |
@@ -358,7 +358,7 @@ History is append-oriented. A correction creates a new event; it does not rewrit
 ## 13. Caveats
 
 - Coverage counts describe processed source records, not the real-world facility universe. Of
-  92,422 canonical facilities, 61,806 are public, 30,616 are non-public (including the 5,055
+  228,291 canonical facilities, 99,352 are public, 128,939 are non-public (including the 83,218
   DepEd EBEIS rows), and 44,751 public facilities have coordinates. None of these counts establishes nationwide
   completeness.
 - OSM/HOT facilities are crowd-sourced map features, not official DepEd or DOH registries. Their

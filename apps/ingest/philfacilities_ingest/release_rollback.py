@@ -152,16 +152,29 @@ def capture_facility_snapshot(
     """Record the pre-release state once, before the release first mutates it."""
 
     # Sessions in this project use autoflush=False, so a pending snapshot from an
-    # earlier row for the same facility is not visible to the query below. Check
-    # session.new first to keep repeated captures idempotent and avoid violating
-    # the (release_id, facility_id) uniqueness constraint at commit time.
-    for pending in session.new:
-        if (
-            isinstance(pending, ReleaseFacilitySnapshot)
-            and pending.release_id == release.id
-            and pending.facility_id == facility.id
-        ):
-            return pending
+    # earlier row for the same facility is not visible to the query below. Keep a
+    # per-session keyed cache instead of scanning session.new for every row: that
+    # scan is quadratic on bulk releases with tens of thousands of new facilities.
+    cache: dict[tuple[uuid.UUID, uuid.UUID], ReleaseFacilitySnapshot] = session.info.setdefault(
+        "release_facility_snapshots", {}
+    )
+    key = (release.id, facility.id)
+    cached = cache.get(key)
+    if cached is not None and cached in session:
+        return cached
+
+    if was_created:
+        # A facility created by this pass cannot have a pre-release snapshot
+        # yet; avoid one query per bulk-loaded row.
+        snapshot = ReleaseFacilitySnapshot(
+            release_id=release.id,
+            facility_id=facility.id,
+            was_created=True,
+            state=None,
+        )
+        session.add(snapshot)
+        cache[key] = snapshot
+        return snapshot
 
     existing = session.scalars(
         select(ReleaseFacilitySnapshot).where(
@@ -170,6 +183,7 @@ def capture_facility_snapshot(
         )
     ).first()
     if existing is not None:
+        cache[key] = existing
         return existing
     snapshot = ReleaseFacilitySnapshot(
         release_id=release.id,
@@ -178,6 +192,7 @@ def capture_facility_snapshot(
         state=None if was_created else _facility_state(session, facility),
     )
     session.add(snapshot)
+    cache[key] = snapshot
     return snapshot
 
 
