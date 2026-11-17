@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import hashlib
 import io
+import json
 from datetime import date
 
 import pytest
 from openpyxl import Workbook
+from philfacilities_ingest.acquisition import FetchResult, is_blocker_page
 from philfacilities_ingest.contracts import ReleaseSpec
 from philfacilities_ingest.fixtures import (
     deped_enrollment,
@@ -18,6 +20,13 @@ from philfacilities_ingest.fixtures import (
     psgc_workbook,
 )
 from philfacilities_ingest.sources.bettergov import OSMParquetAdapter
+from philfacilities_ingest.sources.bir import BirRevenueDistrictOfficeAdapter, parse_rao_lines
+from philfacilities_ingest.sources.ched_heida import (
+    ChedHeidaAdapter,
+    parse_hei_rows,
+    parse_records_found,
+    parse_region_links,
+)
 from philfacilities_ingest.sources.common import RequiredColumnsError, normalise_code
 from philfacilities_ingest.sources.deped import (
     DepEdEnrollmentAdapter,
@@ -25,7 +34,14 @@ from philfacilities_ingest.sources.deped import (
     DepEdResourceAdapter,
 )
 from philfacilities_ingest.sources.doh import DOHNHFRAdapter
+from philfacilities_ingest.sources.dswd_crcf import DswdCrcfDirectoryAdapter
+from philfacilities_ingest.sources.dti_negosyo import DtiNegosyoCenterAdapter
+from philfacilities_ingest.sources.national_museum import NationalMuseumDirectoryAdapter
+from philfacilities_ingest.sources.nlp import NlpPublicLibraryPdfAdapter
+from philfacilities_ingest.sources.nmis_naris import NmisNarisDirectoryAdapter
 from philfacilities_ingest.sources.philhealth import PhilHealthPdfAdapter, _row_key, parse_catalog
+from philfacilities_ingest.sources.phlpost import PhlPostLocatorAdapter
+from philfacilities_ingest.sources.ppa import PpaPortListAdapter
 from philfacilities_ingest.sources.psgc import parse_psgc_workbook
 
 
@@ -430,3 +446,831 @@ def test_enrollment_and_resource_parsers_preserve_observations() -> None:
     resource_candidates = resource_adapter.normalize(resource_parsed)
     assert resource_candidates[0].school is not None
     assert resource_candidates[0].school.resources[0].resource_code == "classrooms_total"
+
+
+def _pdf_table(rows: list[list[str]]) -> bytes:
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import letter
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+
+    sink = io.BytesIO()
+    document = SimpleDocTemplate(sink, pagesize=letter)
+    table = Table(rows)
+    table.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), 0.5, colors.black)]))
+    document.build([table])
+    return sink.getvalue()
+
+
+def test_nlp_public_library_pdf_parses_ids_status_and_types() -> None:
+    header = [
+        "NO.",
+        "PHILIPPINE PUBLIC LIBRARY ID",
+        "REGION",
+        "LOCATION",
+        "TYPE OF PUBLIC LIBRARY",
+        "NAME OF LIBRARY",
+        "ADDRESS",
+        "TELEPHONE NUMBER",
+        "STATUS",
+        "DATE AFFILIATED",
+    ]
+    rows = [
+        header,
+        [
+            "1",
+            "000123",
+            "NCR",
+            "Quezon City",
+            "City",
+            "Synthetic City Library",
+            "1 Example Street",
+            "(02) 000-0000",
+            "Active",
+            "January 10, 2020",
+        ],
+        [
+            "2",
+            "000124",
+            "Region III",
+            "San Fernando",
+            "Barangay Reading Center",
+            "Synthetic Reading Center",
+            "2 Example Street",
+            "-",
+            "Closed",
+            "-",
+        ],
+    ]
+    spec = _spec(
+        agency="nlp",
+        slug="nlp-public-libraries",
+        filename="nlp-public-libraries.pdf",
+        content=_pdf_table(rows),
+    )
+    adapter = NlpPublicLibraryPdfAdapter(spec)
+    parsed = adapter.parse(spec)
+    assert len(parsed.rows) == 2
+    assert parsed.rows[0].source_record_key == "000123"
+    assert adapter.validate(parsed).issues == []
+
+    candidates = adapter.normalize(parsed)
+    assert candidates[0].inclusion_class == "GOVERNMENT_FACILITY"
+    assert candidates[0].ownership_type == "GOVERNMENT_UNSPECIFIED"
+    assert candidates[0].facility_subtype == "CITY_LIBRARY"
+    assert candidates[0].public_access_class == "PUBLIC_FREE"
+    assert candidates[0].record_status == "active_in_registry"
+    assert candidates[0].location.latitude is None
+    assert candidates[0].location.precision == "unknown"
+    assert candidates[0].functions[0].function_code == "PUBLIC_LIBRARY"
+    assert candidates[1].facility_subtype == "BARANGAY_READING_CENTER"
+    assert candidates[1].record_status == "inactive_in_registry"
+
+
+def test_national_museum_adapter_uses_directory_artifact_without_coordinates() -> None:
+    artifact = {
+        "directory_url": "https://www.nationalmuseum.gov.ph/our-museums/",
+        "retrieved_at": "2026-11-15T00:00:00+00:00",
+        "records": [
+            {
+                "name": "Synthetic Area Museum",
+                "url": "https://www.nationalmuseum.gov.ph/our-museums/synthetic-area-museum/",
+                "detail_status": 200,
+                "address": "Example Avenue, Synthetic Town",
+                "telephone": None,
+                "email": None,
+            },
+            {
+                "name": "Synthetic Site Museum",
+                "url": "https://www.nationalmuseum.gov.ph/our-museums/synthetic-site-museum/",
+                "detail_status": 200,
+                "address": None,
+                "telephone": None,
+                "email": None,
+            },
+        ],
+    }
+    spec = _spec(
+        agency="nmp",
+        slug="nmp-regional-area-site-museums",
+        filename="nmp-museums.json",
+        content=json.dumps(artifact).encode("utf-8"),
+    )
+    adapter = NationalMuseumDirectoryAdapter(spec)
+    parsed = adapter.parse(spec)
+    assert len(parsed.rows) == 2
+    assert parsed.rows[0].source_record_key == "synthetic-area-museum"
+    assert adapter.validate(parsed).issues == []
+
+    candidates = adapter.normalize(parsed)
+    assert candidates[0].inclusion_class == "GOVERNMENT_FACILITY"
+    assert candidates[0].ownership_type == "NATIONAL_GOVERNMENT"
+    assert candidates[0].facility_kind == "site"
+    assert candidates[0].facility_type == "museum"
+    assert candidates[0].location.address_text == "Example Avenue, Synthetic Town"
+    assert candidates[0].location.latitude is None
+    assert candidates[0].functions[0].function_code == "MUSEUM"
+
+
+def test_phlpost_locator_keeps_host_semantics_and_duplicate_rows_distinct() -> None:
+    html = """
+    <html><body>
+    <table>
+      <tr><th>Provinces</th><th>Post Offices</th><th>Addresss</th><th>Services</th></tr>
+      <tr><td>Metro Manila</td><td>Example Post Office</td>
+          <td>Example Mall, Quezon City</td><td>Acceptance; Delivery</td></tr>
+      <tr><td>Metro Manila</td><td>Example Post Office</td>
+          <td>Example Mall, Quezon City</td><td>Acceptance; Delivery</td></tr>
+      <tr><td>Cebu</td><td>Standalone Post Office</td>
+          <td>Main Street, Cebu City</td><td>Acceptance</td></tr>
+    </table>
+    </body></html>
+    """
+    spec = _spec(
+        agency="phlpost",
+        slug="phlpost-post-office-locator",
+        filename="phlpost-locator.html",
+        content=html.encode("utf-8"),
+    )
+    adapter = PhlPostLocatorAdapter(spec)
+    parsed = adapter.parse(spec)
+    assert len(parsed.rows) == 3
+    keys = [row.source_record_key for row in parsed.rows]
+    assert len(keys) == len(set(keys)) == 3
+    assert "internal_only_rights" in {warning["code"] for warning in parsed.warnings}
+
+    candidates = adapter.normalize(parsed)
+    hosted = candidates[0]
+    standalone = candidates[2]
+    assert hosted.facility_kind == "facility_unit"
+    assert hosted.public_access_class == "UNKNOWN"
+    assert {role.role_type for role in hosted.roles} == {"OPERATOR", "HOST"}
+    host = next(role for role in hosted.roles if role.role_type == "HOST")
+    assert host.entity_name == "Example Mall"
+    assert host.entity_type == "unknown"
+    assert [service.service_name for service in hosted.services] == ["Acceptance", "Delivery"]
+    assert standalone.facility_kind == "facility"
+    assert {role.role_type for role in standalone.roles} == {"OPERATOR"}
+
+
+def test_bir_rao_ocr_rows_keep_region_and_office_identity() -> None:
+    from philfacilities_ingest.ocr import OcrLine
+
+    lines = [
+        OcrLine(text="RRNo.1-llocosRegion", confidence=0.99, page_number=1),
+        OcrLine(text="RDONo.1-llocosNorte", confidence=0.99, page_number=1),
+        OcrLine(text="RDONo.17A-NorthTarlac", confidence=0.98, page_number=2),
+        OcrLine(
+            text="RDONo.94-IsabelaCity(Non-BARMM)/Basilan(BARMM)",
+            confidence=0.97,
+            page_number=4,
+        ),
+        OcrLine(text="RDONo.1-llocosNorte", confidence=0.99, page_number=4),
+    ]
+    records, warnings = parse_rao_lines(lines)
+    assert [record["rdo_code"] for record in records] == ["1", "17A", "94"]
+    assert records[0]["revenue_region_name"] == "llocos Region"
+    assert records[1]["rdo_name"] == "North Tarlac"
+    assert warnings and "Duplicate OCR row" in warnings[0]
+
+    spec = _spec(
+        agency="bir",
+        slug="bir-revenue-district-offices",
+        filename="bir-rao-006-2025.pdf",
+        content=b"",
+    )
+    adapter = BirRevenueDistrictOfficeAdapter(spec)
+    from philfacilities_ingest.contracts import ParsedRelease, ParsedRow
+
+    parsed = ParsedRelease(
+        rows=[
+            ParsedRow(
+                source_record_key=f"RDO-{record['rdo_code']}",
+                row_reference=f"rdo:{record['rdo_code']}",
+                raw_payload=record,
+                normalized_payload=record,
+            )
+            for record in records
+        ],
+        parser_version=adapter.parser_version,
+        schema_version=adapter.schema_version,
+    )
+    assert adapter.validate(parsed).rejected_rows == 0
+    candidates = adapter.normalize(parsed)
+    assert candidates[0].facility_type == "government_office"
+    assert candidates[0].facility_subtype == "REVENUE_DISTRICT_OFFICE"
+    assert candidates[0].inclusion_class == "GOVERNMENT_FACILITY"
+    assert candidates[0].ownership_type == "NATIONAL_GOVERNMENT"
+    assert candidates[0].location.latitude is None
+    assert candidates[0].functions[0].function_code == "TAX_ADMINISTRATION"
+    assert candidates[0].roles[0].entity_name == "Bureau of Internal Revenue"
+
+
+def test_dswd_crcf_deduplicates_desktop_and_mobile_cards_without_coordinates() -> None:
+    def card(name: str, address: str) -> str:
+        return (
+            "<figure class='wp-caption'>"
+            f"<figcaption>{name}</figcaption>"
+            "</figure>"
+            "<h6><strong>Field Office 1 – Example</strong><br />"  # noqa: RUF001
+            f"{address}</h6>"
+        )
+
+    def block(region: str, cards: list[str]) -> str:
+        return (
+            "<details><summary>"
+            f"<div class='e-n-accordion-item-title-text'>{region}</div>"
+            "</summary>" + "".join(cards) + "</details>"
+        )
+
+    region = "REGION 1: Ilocos Region"
+    desktop = [
+        card("Synthetic Haven", "1 Example St., Example City"),
+        card("Synthetic Home", "2 Example St., Example Town"),
+    ]
+    html = (
+        "<html><body><p>The agency operates 77 CRCF.</p>"
+        + block(region, desktop)
+        + block(region, desktop)
+        + "</body></html>"
+    )
+    spec = _spec(
+        agency="dswd",
+        slug="dswd-crcf-directory",
+        filename="dswd-crcf-directory.html",
+        content=html.encode("utf-8"),
+    )
+    adapter = DswdCrcfDirectoryAdapter(spec)
+    parsed = adapter.parse(spec)
+    assert len(parsed.rows) == 2
+    metadata = parsed.warnings[0]["metadata"]
+    assert metadata["raw_cards"] == 4
+    assert metadata["unique_cards"] == 2
+    assert metadata["duplicate_variants"] == 2
+    assert metadata["page_claim"] == 77
+    warning_codes = {warning["code"] for warning in parsed.warnings}
+    assert {
+        "desktop_mobile_duplicate_cards",
+        "no_coordinates",
+        "source_count_discrepancy",
+    } <= warning_codes
+    assert adapter.validate(parsed).rejected_rows == 0
+
+    candidates = adapter.normalize(parsed)
+    assert len(candidates) == 2
+    first = candidates[0]
+    assert first.facility_type == "social_welfare_facility"
+    assert first.facility_subtype == "CRCF"
+    assert first.inclusion_class == "GOVERNMENT_FACILITY"
+    assert first.ownership_type == "NATIONAL_GOVERNMENT"
+    assert first.location.address_text == (
+        "1 Example St., Example City, Field Office 1 – Example, "  # noqa: RUF001
+        "REGION 1: Ilocos Region"
+    )
+    assert first.location.latitude is None
+    assert first.location.precision == "unknown"
+    assert first.functions[0].function_code == "SOCIAL_WELFARE"
+    assert {role.role_type for role in first.roles} == {"OWNER", "OPERATOR", "MANAGER"}
+    manager = next(role for role in first.roles if role.role_type == "MANAGER")
+    assert manager.entity_name == "Field Office 1 – Example"  # noqa: RUF001
+
+
+def test_nmis_naris_groups_duplicate_ltos_and_keeps_ownership_evidence_explicit() -> None:
+    payload = [
+        {
+            "company_name": "Example Cold Storage Inc.",
+            "full_address": "1 Example St., Example City",
+            "region_code": "130000000",
+            "province_code": None,
+            "municipality_code": "Example City",
+            "barangay": "Example Barangay",
+            "lto_number": "NMIS-CSW-0001-AA",
+            "establishment_type": "coldstorage_warehouse",
+            "geocode_address": "1 Example St., Example City, Philippines",
+            "cached_lat": 14.5,
+            "cached_lng": 121.0,
+        },
+        {
+            "company_name": "Example Cold Storage Inc.",
+            "full_address": "1 EXAMPLE ST., EXAMPLE CITY",
+            "region_code": "130000000",
+            "province_code": None,
+            "municipality_code": "Example City",
+            "barangay": "Example Barangay",
+            "lto_number": "NMIS-CSW-0001-AA",
+            "establishment_type": "coldstorage_warehouse",
+            "geocode_address": "1 EXAMPLE ST., EXAMPLE CITY, Philippines",
+            "cached_lat": None,
+            "cached_lng": None,
+        },
+        {
+            "company_name": "Sample Municipal Slaughterhouse",
+            "full_address": "2 Example St., Sample Town",
+            "region_code": "030000000",
+            "province_code": "Example Province",
+            "municipality_code": "Sample Town",
+            "barangay": "Poblacion",
+            "lto_number": "SH-0002-AA",
+            "establishment_type": "slaughterhouse",
+            "geocode_address": "2 Example St., Sample Town, Philippines",
+            "cached_lat": None,
+            "cached_lng": None,
+        },
+        {
+            "company_name": "Private Meat Co.",
+            "full_address": "3 Example St., Sample Town",
+            "region_code": "030000000",
+            "province_code": "Example Province",
+            "municipality_code": "Sample Town",
+            "barangay": "Poblacion",
+            "lto_number": "SH-0003-AA",
+            "establishment_type": "slaughterhouse",
+            "geocode_address": "3 Example St., Sample Town, Philippines",
+            "cached_lat": 15.0,
+            "cached_lng": None,
+        },
+    ]
+    html = (
+        "<html><body><h1>Accredited Meat Establishments</h1>"
+        f"<script>const ltoLocations = {json.dumps(payload)};</script></body></html>"
+    )
+    spec = _spec(
+        agency="nmis",
+        slug="nmis-naris-accredited-meat-establishments",
+        filename="nmis-naris.html",
+        content=html.encode("utf-8"),
+    )
+    adapter = NmisNarisDirectoryAdapter(spec)
+    parsed = adapter.parse(spec)
+    assert len(parsed.rows) == 3
+    metadata = parsed.warnings[0]["metadata"]
+    assert metadata["raw_rows"] == 4
+    assert metadata["unique_lto_rows"] == 3
+    assert metadata["duplicate_lto_rows"] == 1
+    assert metadata["rows_with_cached_coordinates"] == 1
+    validation = adapter.validate(parsed)
+    assert validation.rejected_rows == 0
+    assert "partial_coordinates" in {issue.code for issue in validation.issues}
+
+    candidates = adapter.normalize(parsed)
+    assert len(candidates) == 3
+    cold_storage = candidates[0]
+    municipal = candidates[1]
+    private = candidates[2]
+    assert cold_storage.facility_type == "agricultural_facility"
+    assert cold_storage.facility_subtype == "COLD_STORAGE_WAREHOUSE"
+    assert cold_storage.inclusion_class == "PRIVATE_PUBLIC_SERVICE_PROVIDER"
+    assert cold_storage.ownership_type == "PRIVATE_UNSPECIFIED"
+    assert cold_storage.location.latitude == 14.5
+    assert cold_storage.location.longitude == 121.0
+    assert cold_storage.location.precision == "geocoded"
+    assert cold_storage.location.method == "naris_cached_address_geocode"
+    assert cold_storage.functions[0].function_code == "FOOD_SAFETY"
+    assert municipal.inclusion_class == "GOVERNMENT_FACILITY"
+    assert municipal.ownership_type == "LOCAL_GOVERNMENT"
+    assert municipal.facility_subtype == "SLAUGHTERHOUSE"
+    assert {role.role_type for role in municipal.roles} == {
+        "OWNER",
+        "OPERATOR",
+        "LICENSOR",
+    }
+    assert municipal.location.latitude is None
+    assert private.inclusion_class == "PRIVATE_PUBLIC_SERVICE_PROVIDER"
+    assert private.location.latitude is None
+    assert {function.function_code for function in private.functions} == {
+        "FOOD_SAFETY",
+        "SLAUGHTERHOUSE",
+    }
+    assert "LTO number is registry evidence" in private.access_conditions
+
+
+def test_nmis_naris_fails_closed_without_lto_payload() -> None:
+    spec = _spec(
+        agency="nmis",
+        slug="nmis-naris-accredited-meat-establishments",
+        filename="nmis-naris.html",
+        content=b"<html><body><p>Busy</p></body></html>",
+    )
+    with pytest.raises(ValueError):
+        NmisNarisDirectoryAdapter(spec).parse(spec)
+
+
+def _ppa_pdf() -> bytes:
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import letter
+    from reportlab.platypus import (
+        PageBreak,
+        Paragraph,
+        SimpleDocTemplate,
+        Spacer,
+        Table,
+        TableStyle,
+    )
+
+    sink = io.BytesIO()
+    document = SimpleDocTemplate(sink, pagesize=letter)
+    story: list[object] = [
+        Paragraph("2.1 MANILA/NORTHERN LUZON____", None),
+        Paragraph("A. PORT MANAGEMENT OFFICE OF NCR NORTH (PMO NCN)", None),
+    ]
+    rows = [
+        ["NAME", "RORO", "NON-RORO", "REMARKS"],
+        ["BASEPORT", "", "", ""],
+        ["1. PIER 2", "X", "X", ""],
+        ["2. ANCHORAGE EXAMPLE", "", "X", ""],
+        ["TMO - VITAS", "", "", ""],
+        ["1. OTP EXAMPLE", "", "X", ""],
+    ]
+    table = Table(rows)
+    table.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), 0.5, colors.black)]))
+    story.extend([table, PageBreak()])
+    story.extend(
+        [
+            Paragraph("LIST OF PRIVATE PORTS", None),
+            Spacer(1, 8),
+            Paragraph("I. MANILA/NORTHERN LUZON", None),
+            Spacer(1, 8),
+            Paragraph("A. PORT MANAGEMENT OFFICE OF NCR NORTH (PMO NCN)", None),
+            Spacer(1, 8),
+            Paragraph("PRIVATE PORT", None),
+            Spacer(1, 8),
+            Paragraph("1) Example Private Port RoRo", None),
+            Spacer(1, 8),
+            Paragraph("2) Example Unregistered Port*", None),
+        ]
+    )
+    document.build(story)
+    return sink.getvalue()
+
+
+def test_ppa_port_list_preserves_hierarchy_marks_and_private_status() -> None:
+    content = _ppa_pdf()
+    spec = _spec(
+        agency="ppa",
+        slug="ppa-port-list",
+        filename="ppa-port-list.pdf",
+        content=content,
+    )
+    adapter = PpaPortListAdapter(spec)
+    parsed = adapter.parse(spec)
+    assert len(parsed.rows) == 5
+    assert {warning["code"] for warning in parsed.warnings} == {"no_coordinates"}
+    assert adapter.validate(parsed).rejected_rows == 0
+
+    candidates = {candidate.display_name: candidate for candidate in adapter.normalize(parsed)}
+    pier = candidates["PIER 2"]
+    assert pier.facility_type == "transport_facility"
+    assert pier.facility_subtype == "SEAPORT"
+    assert pier.facility_kind == "facility"
+    assert pier.inclusion_class == "GOVERNMENT_FACILITY"
+    assert pier.ownership_type == "GOVERNMENT_UNSPECIFIED"
+    assert pier.operator_type == "GOCC"
+    assert pier.functions[0].function_code == "SEA_TRANSPORT"
+    assert pier.roles[0].role_type == "OPERATOR"
+    assert pier.roles[0].entity_name == "Philippine Ports Authority"
+    assert pier.location.latitude is None
+    assert pier.location.precision == "unknown"
+
+    anchorage = candidates["ANCHORAGE EXAMPLE"]
+    assert anchorage.facility_kind == "site"
+
+    private = candidates["Example Private Port"]
+    assert private.inclusion_class == "PRIVATE_PUBLIC_SERVICE_PROVIDER"
+    assert private.ownership_type == "PRIVATE_UNSPECIFIED"
+    assert private.operator_type == "UNKNOWN"
+    assert private.roles == []
+    assert private.public_access_class == "UNKNOWN"
+    assert "must not be assumed" in private.access_conditions
+    evidence = private.functions[0].evidence
+    assert evidence["roro_marked"] is True
+    assert evidence["non_roro_marked"] is None
+
+    unregistered = candidates["Example Unregistered Port"]
+    assert unregistered.functions[0].evidence["unregistered"] is True
+
+
+def test_dti_negosyo_centers_preserve_geography_and_withhold_contacts() -> None:
+    artifact = {
+        "finder_url": "https://negosyocenter.dti.gov.ph/negosyo-center-directory",
+        "retrieved_at": "2026-11-15T13:40:00+00:00",
+        "records": [
+            {
+                "id": 1434,
+                "region": "NCR - National Capital Region",
+                "province": "Metro Manila",
+                "city": "Mandaluyong",
+                "name": "Negosyo Center Mandaluyong",
+                "address": "Mandaluyong City Hall Complex, Maysilo Circle, Mandaluyong City",
+                "phone": None,
+                "hours": None,
+                "email": "NCMandaluyong_LGU@dti.gov.ph",
+                "is_active": True,
+            },
+            {
+                "id": 1435,
+                "region": "NCR - National Capital Region",
+                "province": "Metro Manila",
+                "city": "Parañaque City",
+                "name": "Parañaque City Negosyo Center",
+                "address": "4F Paranaque City Hall, Paranaque City",
+                "phone": "02-0000-0000",
+                "hours": "08:00-17:00",
+                "email": "person@example.test",
+                "is_active": False,
+            },
+        ],
+    }
+    spec = _spec(
+        agency="dti",
+        slug="dti-negosyo-centers",
+        filename="dti-negosyo-centers.json",
+        content=json.dumps(artifact).encode("utf-8"),
+    )
+    adapter = DtiNegosyoCenterAdapter(spec)
+    parsed = adapter.parse(spec)
+    assert len(parsed.rows) == 2
+    assert "phone" not in parsed.rows[0].normalized_payload
+    assert "email" not in parsed.rows[0].normalized_payload
+    assert "hours" not in parsed.rows[0].normalized_payload
+    assert adapter.validate(parsed).rejected_rows == 0
+
+    candidates = {candidate.display_name: candidate for candidate in adapter.normalize(parsed)}
+    mandaluyong = candidates["Negosyo Center Mandaluyong"]
+    assert mandaluyong.facility_type == "government_office"
+    assert mandaluyong.facility_subtype == "NEGOSYO_CENTER"
+    assert mandaluyong.facility_kind == "facility_unit"
+    assert mandaluyong.inclusion_class == "GOVERNMENT_FACILITY"
+    assert mandaluyong.ownership_type == "GOVERNMENT_UNSPECIFIED"
+    assert mandaluyong.operator_type == "GOVERNMENT_UNSPECIFIED"
+    assert mandaluyong.public_access_class == "UNKNOWN"
+    assert mandaluyong.record_status == "active_in_registry"
+    assert mandaluyong.location.latitude is None
+    assert mandaluyong.location.precision == "unknown"
+    assert mandaluyong.functions[0].function_code == "BUSINESS_ADVISORY"
+    assert mandaluyong.functions[0].evidence["source_is_active"] is True
+    assert "person@example.test" not in json.dumps(
+        [candidate.__dict__ for candidate in candidates.values()], default=str
+    )
+
+    paranaque = candidates["Parañaque City Negosyo Center"]
+    assert paranaque.record_status == "inactive_in_registry"
+    assert paranaque.functions[0].designation_status == "unknown"
+
+
+def test_dti_negosyo_centers_reject_missing_names_and_duplicate_ids() -> None:
+    artifact = {
+        "records": [
+            {"id": 1, "name": "", "region": "NCR", "province": "Metro Manila", "city": "Manila"},
+            {
+                "id": 2,
+                "name": "Duplicate Center",
+                "region": "NCR",
+                "province": "Metro Manila",
+                "city": "Manila",
+            },
+            {
+                "id": 2,
+                "name": "Duplicate Center",
+                "region": "NCR",
+                "province": "Metro Manila",
+                "city": "Manila",
+            },
+        ]
+    }
+    spec = _spec(
+        agency="dti",
+        slug="dti-negosyo-centers",
+        filename="dti-negosyo-centers.json",
+        content=json.dumps(artifact).encode("utf-8"),
+    )
+    adapter = DtiNegosyoCenterAdapter(spec)
+    parsed = adapter.parse(spec)
+    result = adapter.validate(parsed)
+    assert result.rejected_rows == 2
+    assert {issue.code for issue in result.issues} == {
+        "missing_center_name",
+        "duplicate_center_id",
+        "missing_address",
+    }
+
+
+def test_ched_heida_parser_extracts_institutional_fields_only() -> None:
+    directory_html = """
+    <a href="https://heida.ched.gov.ph/hei-directory/1" class="group">
+      <h3 class="text-xl font-bold">Region I (Ilocos Region)</h3>
+      <div>Browse Directory</div>
+    </a>
+    <a href="https://heida.ched.gov.ph/hei-directory/2" class="group">
+      <h3 class="text-xl font-bold">Region II (Cagayan Valley)</h3>
+      <div>Browse Directory</div>
+    </a>
+    """
+    assert parse_region_links(directory_html) == [
+        {"id": "1", "name": "Region I (Ilocos Region)"},
+        {"id": "2", "name": "Region II (Cagayan Valley)"},
+    ]
+
+    region_html = """
+    <div>153 Records Found</div>
+    <table>
+      <thead><tr>
+        <th>HEI Name &amp; Code</th><th>Type</th><th>Contact Info</th>
+        <th>Address</th><th>Institutional Head</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td><div><span class="text-sm font-bold text-gray-900">Example Private College</span>
+            <span class="mt-1 text-xs font-mono text-gray-400">1122</span></div></td>
+          <td><span class="inline-flex uppercase text-orange-600">
+            Private Non-Sectarian Stock</span></td>
+          <td><a href="mailto:person@example.test">person@example.test</a>
+            <div>075-000-0000</div></td>
+          <td>Mc Arthur Highway, Urdaneta City, Pangasinan</td>
+          <td><span>Dr. Person Name</span></td>
+        </tr>
+        <tr>
+          <td><div><span class="text-sm font-bold text-gray-900">Example State University</span>
+            <span class="mt-1 text-xs font-mono text-gray-400">1001</span></div></td>
+          <td><span class="inline-flex uppercase text-blue-600">
+            Chartered State College/University (Main)</span></td>
+          <td><div></div></td>
+          <td>Batac, Ilocos Norte</td>
+          <td><span>Not available</span></td>
+        </tr>
+      </tbody>
+    </table>
+    """
+    assert parse_records_found(region_html) == 153
+    rows = parse_hei_rows(region_html)
+    assert rows == [
+        {
+            "name": "Example Private College",
+            "code": "1122",
+            "type": "Private Non-Sectarian Stock",
+            "address": "Mc Arthur Highway, Urdaneta City, Pangasinan",
+        },
+        {
+            "name": "Example State University",
+            "code": "1001",
+            "type": "Chartered State College/University (Main)",
+            "address": "Batac, Ilocos Norte",
+        },
+    ]
+    serialized = json.dumps(rows)
+    assert "person@example.test" not in serialized
+    assert "075-000-0000" not in serialized
+    assert "Dr. Person Name" not in serialized
+
+
+def test_ched_heida_normalizes_public_private_and_unknown_types() -> None:
+    artifact = {
+        "directory_url": "https://heida.ched.gov.ph/hei-directory",
+        "retrieved_at": "2026-11-15T14:00:00+00:00",
+        "records": [
+            {
+                "region_id": "1",
+                "region": "Region I (Ilocos Region)",
+                "name": "Example Private College",
+                "code": "1122",
+                "type": "Private Non-Sectarian Stock",
+                "address": "Urdaneta City, Pangasinan",
+                "source_page": "https://heida.ched.gov.ph/hei-directory/1?page=1",
+            },
+            {
+                "region_id": "1",
+                "region": "Region I (Ilocos Region)",
+                "name": "Example State University",
+                "code": "1001",
+                "type": "Chartered State College/University (Main)",
+                "address": "Batac, Ilocos Norte",
+                "source_page": "https://heida.ched.gov.ph/hei-directory/1?page=1",
+            },
+            {
+                "region_id": "1",
+                "region": "Region I (Ilocos Region)",
+                "name": "Example Local College",
+                "code": "1156",
+                "type": "Local Government College/University",
+                "address": "Bayambang, Pangasinan",
+                "source_page": "https://heida.ched.gov.ph/hei-directory/1?page=2",
+            },
+            {
+                "region_id": "1",
+                "region": "Region I (Ilocos Region)",
+                "name": "Example Other Institution",
+                "code": None,
+                "type": "Others, please specify",
+                "address": "Laoag City, Ilocos Norte",
+                "source_page": "https://heida.ched.gov.ph/hei-directory/1?page=2",
+            },
+        ],
+    }
+    spec = _spec(
+        agency="ched",
+        slug="ched-heida-hei-directory",
+        filename="ched-heida.json",
+        content=json.dumps(artifact).encode("utf-8"),
+    )
+    adapter = ChedHeidaAdapter(spec)
+    parsed = adapter.parse(spec)
+    assert len(parsed.rows) == 4
+    assert "contact" not in parsed.rows[0].normalized_payload
+    assert "head" not in parsed.rows[0].normalized_payload
+    result = adapter.validate(parsed)
+    assert result.rejected_rows == 0
+    assert {issue.code for issue in result.issues} == {"ownership_not_established"}
+
+    candidates = {candidate.display_name: candidate for candidate in adapter.normalize(parsed)}
+    private = candidates["Example Private College"]
+    assert private.facility_type == "school"
+    assert private.facility_subtype == "HIGHER_EDUCATION_INSTITUTION"
+    assert private.inclusion_class == "PRIVATE_PUBLIC_SERVICE_PROVIDER"
+    assert private.ownership_type == "PRIVATE_CORPORATE"
+    assert private.operator_type == "PRIVATE_CORPORATE"
+    assert private.public_access_class == "UNKNOWN"
+    assert private.record_status == "active_in_registry"
+    assert private.location.latitude is None
+    assert private.location.precision == "unknown"
+    assert private.functions[0].function_code == "EDUCATION"
+    assert private.functions[0].evidence["institution_type"] == "Private Non-Sectarian Stock"
+
+    state = candidates["Example State University"]
+    assert state.inclusion_class == "GOVERNMENT_FACILITY"
+    assert state.ownership_type == "PUBLIC_EDUCATIONAL_INSTITUTION"
+    assert state.operator_type == "PUBLIC_EDUCATIONAL_INSTITUTION"
+
+    local = candidates["Example Local College"]
+    assert local.inclusion_class == "GOVERNMENT_FACILITY"
+    assert local.ownership_type == "LOCAL_GOVERNMENT"
+    assert local.operator_type == "LOCAL_GOVERNMENT"
+
+    other = candidates["Example Other Institution"]
+    assert other.inclusion_class == "DISCOVERY_CANDIDATE"
+    assert other.ownership_type == "UNKNOWN"
+    assert other.operator_type == "UNKNOWN"
+
+
+def test_ched_heida_rejects_duplicate_codes_and_missing_names() -> None:
+    artifact = {
+        "records": [
+            {
+                "region_id": "1",
+                "region": "Region I",
+                "name": "",
+                "code": "1001",
+                "type": "Private Non-Sectarian Stock",
+                "address": "Address",
+            },
+            {
+                "region_id": "1",
+                "region": "Region I",
+                "name": "Duplicate College",
+                "code": "2002",
+                "type": "Private Non-Sectarian Stock",
+                "address": "Address",
+            },
+            {
+                "region_id": "1",
+                "region": "Region I",
+                "name": "Duplicate College",
+                "code": "2002",
+                "type": "Private Non-Sectarian Stock",
+                "address": "Address",
+            },
+        ]
+    }
+    spec = _spec(
+        agency="ched",
+        slug="ched-heida-hei-directory",
+        filename="ched-heida.json",
+        content=json.dumps(artifact).encode("utf-8"),
+    )
+    adapter = ChedHeidaAdapter(spec)
+    parsed = adapter.parse(spec)
+    result = adapter.validate(parsed)
+    assert result.rejected_rows == 2
+    assert {issue.code for issue in result.issues} == {
+        "missing_institution_name",
+        "duplicate_institution_key",
+    }
+
+
+def test_blocker_detection_ignores_cdn_asset_hostnames() -> None:
+    normal = FetchResult(
+        url="https://example.gov.ph/",
+        final_url="https://example.gov.ph/",
+        status_code=200,
+        content=(
+            b'<html><link rel="stylesheet" '
+            b'href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome.css"></html>'
+        ),
+        headers={"content-type": "text/html"},
+    )
+    challenge = FetchResult(
+        url="https://example.gov.ph/",
+        final_url="https://example.gov.ph/",
+        status_code=403,
+        content=b"<html><title>Just a moment...</title><div id='cf-chl-widget'></div></html>",
+        headers={"content-type": "text/html"},
+    )
+    assert is_blocker_page(normal) is False
+    assert is_blocker_page(challenge) is True

@@ -11,17 +11,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ApiError,
   getFacility,
+  getFacilityAssertions,
   getFacilityChanges,
   getHealthDetail,
   getSchoolDetail,
+  type AttributeAssertionOut,
   type FacilityDetail,
   type HealthDetailResponse,
   type SchoolDetailResponse,
 } from "@/lib/api";
 import {
+  ACCESS_LABELS,
   formatDate,
   formatDateTime,
   formatNumber,
+  INCLUSION_CLASS_LABELS,
   isPreciseLocation,
   PRECISION_DESCRIPTIONS,
   PRECISION_LABELS,
@@ -101,11 +105,12 @@ export default async function FacilityPage({ params }: { params: Params }) {
     throw error;
   }
 
-  const [typed, changes] = await Promise.all([
+  const [typed, changes, assertions] = await Promise.all([
     facility.facility_type === "school"
       ? getSchoolDetail(id).catch(() => null)
       : getHealthDetail(id).catch(() => null),
     getFacilityChanges(id).catch(() => null),
+    getFacilityAssertions(id).catch(() => [] as AttributeAssertionOut[]),
   ]);
 
   const school = typed && "enrollment" in typed ? (typed as SchoolDetailResponse) : null;
@@ -135,10 +140,16 @@ export default async function FacilityPage({ params }: { params: Params }) {
       <header className="border-b border-[#d1d8e6] pb-8">
         <div className="flex flex-wrap gap-1.5">
           <Badge tone={facility.facility_type === "school" ? "default" : "outline"}>
-            {facility.facility_type === "school" ? "School" : "Health facility"}
+            {titleCase(facility.facility_type)}
           </Badge>
           {facility.facility_subtype ? <Badge tone="muted">{facility.facility_subtype}</Badge> : null}
-          <Badge tone="muted">{titleCase(facility.ownership)}</Badge>
+          <Badge tone={facility.inclusion_class === "GOVERNMENT_FACILITY" ? "default" : "outline"}>
+            {INCLUSION_CLASS_LABELS[facility.inclusion_class] ?? titleCase(facility.inclusion_class)}
+          </Badge>
+          <Badge tone="muted">{titleCase(facility.ownership_type)}</Badge>
+          {ACCESS_LABELS[facility.public_access_class] ? (
+            <Badge tone="outline">{ACCESS_LABELS[facility.public_access_class]}</Badge>
+          ) : null}
           {facility.is_synthetic ? <Badge tone="sun">Synthetic demo record</Badge> : null}
         </div>
         <h1 className="mt-3 max-w-4xl font-display text-4xl font-extrabold leading-[1.02] tracking-tight sm:text-5xl">
@@ -170,6 +181,94 @@ export default async function FacilityPage({ params }: { params: Params }) {
 
       <div className="mt-8 grid gap-10 lg:grid-cols-[1fr_20rem]">
         <div className="min-w-0 space-y-10">
+          <Section
+            title="Registry classification"
+            description="Inclusion class, ownership and access are separate facts. A licence, accreditation or public funding does not make a private provider government-owned."
+          >
+            <dl>
+              <DataRow label="Category">{titleCase(facility.facility_type)}</DataRow>
+              <DataRow label="Subtype">
+                {facility.facility_subtype ? titleCase(facility.facility_subtype) : "Not supplied"}
+              </DataRow>
+              <DataRow label="Facility kind">{titleCase(facility.facility_kind)}</DataRow>
+              <DataRow label="Inclusion class">
+                {INCLUSION_CLASS_LABELS[facility.inclusion_class] ?? titleCase(facility.inclusion_class)}
+              </DataRow>
+              <DataRow label="Ownership">
+                {titleCase(facility.ownership)}
+                <span className="ml-2 text-[#5a5a58]">({titleCase(facility.ownership_type)})</span>
+              </DataRow>
+              <DataRow label="Operator type">{titleCase(facility.operator_type)}</DataRow>
+              <DataRow label="Public access">
+                {ACCESS_LABELS[facility.public_access_class] ?? titleCase(facility.public_access_class)}
+                {facility.access_conditions ? (
+                  <p className="mt-1 text-[#5a5a58]">{facility.access_conditions}</p>
+                ) : null}
+              </DataRow>
+              <DataRow label="Functions">
+                {(facility.functions ?? []).length > 0
+                  ? (facility.functions ?? []).map((value) => titleCase(value)).join(", ")
+                  : "No function recorded"}
+              </DataRow>
+              <DataRow label="Registry status">
+                {titleCase(facility.record_status)} · {titleCase(facility.publication_status)}
+              </DataRow>
+            </dl>
+          </Section>
+
+          {(facility.roles ?? []).length > 0 || (facility.services ?? []).length > 0 ? (
+            <Section
+              title="Roles and services"
+              description="Owner, operator, host, funder, regulator and accreditor are recorded separately from the facility itself."
+            >
+              {(facility.roles ?? []).length > 0 ? (
+                <div>
+                  <h3 className="font-display text-xl font-bold">Roles</h3>
+                  <dl className="mt-3">
+                    {(facility.roles ?? []).map((role, index) => (
+                      <DataRow
+                        key={`${role.role_type}-${role.entity_name}-${index}`}
+                        label={titleCase(role.role_type)}
+                      >
+                        {role.entity_name}
+                        {role.entity_type ? (
+                          <span className="ml-2 text-[#5a5a58]">
+                            ({titleCase(role.entity_type)})
+                          </span>
+                        ) : null}
+                        {role.evidence?.basis ? (
+                          <p className="mt-1 text-xs text-[#5a5a58]">
+                            Evidence: {String(role.evidence.basis)}
+                          </p>
+                        ) : null}
+                      </DataRow>
+                    ))}
+                  </dl>
+                </div>
+              ) : null}
+              {(facility.services ?? []).length > 0 ? (
+                <div className="mt-6">
+                  <h3 className="font-display text-xl font-bold">Services</h3>
+                  <dl className="mt-3">
+                    {(facility.services ?? []).map((service, index) => (
+                      <DataRow
+                        key={`${service.service_code}-${service.source_field ?? "unknown"}-${index}`}
+                        label={service.service_name ?? titleCase(service.service_code)}
+                      >
+                        {service.service_code}
+                        {service.source_field ? (
+                          <span className="ml-2 text-xs text-[#5a5a58]">
+                            Source field: {service.source_field}
+                          </span>
+                        ) : null}
+                      </DataRow>
+                    ))}
+                  </dl>
+                </div>
+              ) : null}
+            </Section>
+          ) : null}
+
           <Section
             title="Location and geography"
             description="Coordinates are shown only with their source precision. A barangay centroid is an area reference, not a building pin."
@@ -444,6 +543,73 @@ export default async function FacilityPage({ params }: { params: Params }) {
               </Section>
             </>
           ) : null}
+
+          <Section
+            id="provenance"
+            title="Field-level source claims"
+            description="Each row is a claim one source record made about one canonical field. Claims can disagree; the registry does not silently merge them. This table is limited to the most recent claims."
+          >
+            {assertions.length > 0 ? (
+              <>
+                <div className="table-scroll border border-[#d1d8e6]" role="region" aria-label="Field-level source claims" tabIndex={0}>
+                  <table className="w-full min-w-[52rem] border-collapse text-left font-sans text-sm">
+                    <thead className="bg-[#f4f7fc] font-ui text-xs uppercase tracking-wide text-[#5a5a58]">
+                      <tr>
+                        <th className="border-b border-[#d1d8e6] p-3">Field</th>
+                        <th className="border-b border-[#d1d8e6] p-3">Claimed value</th>
+                        <th className="border-b border-[#d1d8e6] p-3">Source</th>
+                        <th className="border-b border-[#d1d8e6] p-3">Record / release</th>
+                        <th className="border-b border-[#d1d8e6] p-3">Asserted</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {assertions.slice(0, 50).map((claim) => (
+                        <tr key={claim.id}>
+                          <td className="border-b border-[#d1d8e6] p-3 font-mono text-xs">
+                            {claim.attribute}
+                            {claim.source_field && claim.source_field !== claim.attribute ? (
+                              <span className="mt-1 block text-[#5a5a58]">
+                                source field: {claim.source_field}
+                              </span>
+                            ) : null}
+                          </td>
+                          <td className="border-b border-[#d1d8e6] p-3">
+                            {claim.normalized_value ?? claim.raw_value ?? "Unknown"}
+                          </td>
+                          <td className="border-b border-[#d1d8e6] p-3">
+                            <span className="font-ui text-sm font-bold">{claim.source.agency}</span>
+                            <span className="mt-1 block text-xs text-[#5a5a58]">
+                              {claim.source.dataset}
+                            </span>
+                          </td>
+                          <td className="border-b border-[#d1d8e6] p-3 text-xs">
+                            <code>{claim.source.source_record_id}</code>
+                            <span className="mt-1 block text-[#5a5a58]">
+                              {claim.source.release_label}
+                            </span>
+                          </td>
+                          <td className="border-b border-[#d1d8e6] p-3 text-xs">
+                            {formatDateTime(claim.asserted_at)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {assertions.length > 50 ? (
+                  <p className="mt-3 font-sans text-xs text-[#5a5a58]">
+                    Showing 50 of {assertions.length} loaded claims. Use the API assertions
+                    endpoint with an attribute filter for the full set.
+                  </p>
+                ) : null}
+              </>
+            ) : (
+              <p className="font-sans text-sm text-[#5a5a58]">
+                No field-level claims are published for this record. The source table below still
+                lists the linked source records.
+              </p>
+            )}
+          </Section>
 
           <Section
             id="sources"

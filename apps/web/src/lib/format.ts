@@ -64,3 +64,21 @@ export function isPreciseLocation(precision: string | null | undefined): boolean
     precision ?? "",
   );
 }
+
+export const INCLUSION_CLASS_LABELS: Record<string, string> = {
+  GOVERNMENT_FACILITY: "Government facility",
+  PRIVATE_PUBLIC_SERVICE_PROVIDER: "Private public-service provider",
+  PUBLIC_ACCESS_VENUE: "Public-access venue",
+  DISCOVERY_CANDIDATE: "Discovery candidate",
+};
+
+export const ACCESS_LABELS: Record<string, string> = {
+  PUBLIC_FREE: "Public, free",
+  PUBLIC_PAID_OR_CONDITIONAL: "Public, paid or conditional",
+  SERVICE_USERS_ONLY: "Service users only",
+  APPOINTMENT_ONLY: "Appointment only",
+  MEMBERS_STUDENTS_ONLY: "Members or students only",
+  STAFF_ONLY: "Staff only",
+  RESTRICTED: "Restricted",
+  UNKNOWN: "Access unknown",
+};

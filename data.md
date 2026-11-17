@@ -185,7 +185,7 @@ Investigate those existing disclosures and the exact agreement applicable to eac
 
 Do not bypass Cloudflare.
 
-Do not assume an FOI response or a successful download authorizes unrestricted public redistribution.
+Do not assume an FOI response or an agreement-bound release authorizes unrestricted public redistribution. A verified public release with no explicit prohibition is a documented basis under `docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`; explicit restrictions and agreement conditions still control.
 
 ### C. PhilHealth
 
@@ -732,10 +732,10 @@ For every source listed above, establish:
 | Coordinates | Presence, source and precision |
 | Update pattern | Actual known release history |
 | Historical availability | Older source releases |
-| Data rights | Applicable use terms and agreements |
-| Storage rights | Permission to retain original records |
-| Processing rights | Permission to transform and normalize |
-| Redistribution rights | Permission to expose records through the public API |
+| Data rights | Applicable use terms, agreements, or verified-public-availability basis |
+| Storage rights | Recorded basis for retaining original records |
+| Processing rights | Recorded basis for transforming and normalizing |
+| Redistribution rights | Recorded basis for exposing records through the public API: permission, licence, agreement, or verified public availability with no explicit prohibition |
 | Status | Proposed, discovered, accessible, acquired, validated, approved, published |
 
 Do not mark a source as verified simply because its official homepage loads.
@@ -893,7 +893,9 @@ Use configuration rather than hardcoding schedules.
 
 Do not download unchanged large files repeatedly.
 
-Do not publish a dataset simply because a new file was detected.
+Do not publish a dataset simply because a new file was detected. Publication requires a verified
+release, reviewed fields, and a documented rights decision under
+`docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`.
 
 ---
 
@@ -1114,6 +1116,7 @@ Implement these rights states:
 - `review_required`
 - `approved_public_redistribution`
 - `approved_with_attribution`
+- `publicly_available_verified`
 - `restricted_non_redistributable`
 - `denied`
 - `expired`
@@ -1126,7 +1129,7 @@ Implement these publication states:
 - `approved`
 - `published`
 
-The public API must not expose records from a source whose rights do not explicitly permit publication.
+The public API must expose records only from a source whose recorded rights decision permits publication. `approved_public_redistribution`, `approved_with_attribution`, and `publicly_available_verified` are public-compatible; a release must also be approved or published. Verified public availability with no explicit prohibition is a sufficient basis under `docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`; explicit restrictions, access agreements, and personal or sensitive data still control.
 
 Support dataset-level and source-release-level approvals where necessary.
 

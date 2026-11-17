@@ -30,7 +30,23 @@
                 {
                   "enum": [
                     "school",
-                    "health_facility"
+                    "health_facility",
+                    "government_office",
+                    "community_facility",
+                    "emergency_facility",
+                    "library",
+                    "museum",
+                    "social_welfare_facility",
+                    "public_market",
+                    "transport_facility",
+                    "utility_facility",
+                    "environmental_monitoring",
+                    "public_space",
+                    "cultural_facility",
+                    "agricultural_facility",
+                    "justice_facility",
+                    "housing_service",
+                    "other_qualifying_facility"
                   ],
                   "type": "string"
                 },
@@ -39,6 +55,45 @@
                 }
               ],
               "title": "Type"
+            }
+          },
+          {
+            "name": "subtype",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Subtype"
+            }
+          },
+          {
+            "name": "inclusion_class",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "GOVERNMENT_FACILITY",
+                    "PRIVATE_PUBLIC_SERVICE_PROVIDER",
+                    "PUBLIC_ACCESS_VENUE",
+                    "DISCOVERY_CANDIDATE"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Inclusion Class"
             }
           },
           {
@@ -60,6 +115,137 @@
                 }
               ],
               "title": "Ownership"
+            }
+          },
+          {
+            "name": "ownership_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "NATIONAL_GOVERNMENT",
+                    "LOCAL_GOVERNMENT",
+                    "GOCC",
+                    "PUBLIC_EDUCATIONAL_INSTITUTION",
+                    "OTHER_PUBLIC_BODY",
+                    "GOVERNMENT_UNSPECIFIED",
+                    "PRIVATE_CORPORATE",
+                    "PRIVATE_INDIVIDUAL_OR_PARTNERSHIP",
+                    "NGO_NON_PROFIT",
+                    "COOPERATIVE",
+                    "RELIGIOUS_FAITH_BASED",
+                    "PUBLIC_PRIVATE_JOINT",
+                    "PRIVATE_UNSPECIFIED",
+                    "UNKNOWN"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ownership Type"
+            }
+          },
+          {
+            "name": "operator_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "NATIONAL_GOVERNMENT",
+                    "LOCAL_GOVERNMENT",
+                    "GOCC",
+                    "PUBLIC_EDUCATIONAL_INSTITUTION",
+                    "OTHER_PUBLIC_BODY",
+                    "GOVERNMENT_UNSPECIFIED",
+                    "PRIVATE_CORPORATE",
+                    "PRIVATE_INDIVIDUAL_OR_PARTNERSHIP",
+                    "NGO_NON_PROFIT",
+                    "COOPERATIVE",
+                    "RELIGIOUS_FAITH_BASED",
+                    "PUBLIC_PRIVATE_JOINT",
+                    "PRIVATE_UNSPECIFIED",
+                    "UNKNOWN"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Operator Type"
+            }
+          },
+          {
+            "name": "public_access_class",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "PUBLIC_FREE",
+                    "PUBLIC_PAID_OR_CONDITIONAL",
+                    "SERVICE_USERS_ONLY",
+                    "APPOINTMENT_ONLY",
+                    "MEMBERS_STUDENTS_ONLY",
+                    "STAFF_ONLY",
+                    "RESTRICTED",
+                    "UNKNOWN"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Public Access Class"
+            }
+          },
+          {
+            "name": "facility_kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "facility",
+                    "site",
+                    "building",
+                    "facility_unit",
+                    "infrastructure_asset",
+                    "project"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Facility Kind"
+            }
+          },
+          {
+            "name": "function",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 60
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Function"
             }
           },
           {
@@ -356,7 +542,23 @@
                 {
                   "enum": [
                     "school",
-                    "health_facility"
+                    "health_facility",
+                    "government_office",
+                    "community_facility",
+                    "emergency_facility",
+                    "library",
+                    "museum",
+                    "social_welfare_facility",
+                    "public_market",
+                    "transport_facility",
+                    "utility_facility",
+                    "environmental_monitoring",
+                    "public_space",
+                    "cultural_facility",
+                    "agricultural_facility",
+                    "justice_facility",
+                    "housing_service",
+                    "other_qualifying_facility"
                   ],
                   "type": "string"
                 },
@@ -365,6 +567,45 @@
                 }
               ],
               "title": "Type"
+            }
+          },
+          {
+            "name": "subtype",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Subtype"
+            }
+          },
+          {
+            "name": "inclusion_class",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "GOVERNMENT_FACILITY",
+                    "PRIVATE_PUBLIC_SERVICE_PROVIDER",
+                    "PUBLIC_ACCESS_VENUE",
+                    "DISCOVERY_CANDIDATE"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Inclusion Class"
             }
           },
           {
@@ -386,6 +627,137 @@
                 }
               ],
               "title": "Ownership"
+            }
+          },
+          {
+            "name": "ownership_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "NATIONAL_GOVERNMENT",
+                    "LOCAL_GOVERNMENT",
+                    "GOCC",
+                    "PUBLIC_EDUCATIONAL_INSTITUTION",
+                    "OTHER_PUBLIC_BODY",
+                    "GOVERNMENT_UNSPECIFIED",
+                    "PRIVATE_CORPORATE",
+                    "PRIVATE_INDIVIDUAL_OR_PARTNERSHIP",
+                    "NGO_NON_PROFIT",
+                    "COOPERATIVE",
+                    "RELIGIOUS_FAITH_BASED",
+                    "PUBLIC_PRIVATE_JOINT",
+                    "PRIVATE_UNSPECIFIED",
+                    "UNKNOWN"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ownership Type"
+            }
+          },
+          {
+            "name": "operator_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "NATIONAL_GOVERNMENT",
+                    "LOCAL_GOVERNMENT",
+                    "GOCC",
+                    "PUBLIC_EDUCATIONAL_INSTITUTION",
+                    "OTHER_PUBLIC_BODY",
+                    "GOVERNMENT_UNSPECIFIED",
+                    "PRIVATE_CORPORATE",
+                    "PRIVATE_INDIVIDUAL_OR_PARTNERSHIP",
+                    "NGO_NON_PROFIT",
+                    "COOPERATIVE",
+                    "RELIGIOUS_FAITH_BASED",
+                    "PUBLIC_PRIVATE_JOINT",
+                    "PRIVATE_UNSPECIFIED",
+                    "UNKNOWN"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Operator Type"
+            }
+          },
+          {
+            "name": "public_access_class",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "PUBLIC_FREE",
+                    "PUBLIC_PAID_OR_CONDITIONAL",
+                    "SERVICE_USERS_ONLY",
+                    "APPOINTMENT_ONLY",
+                    "MEMBERS_STUDENTS_ONLY",
+                    "STAFF_ONLY",
+                    "RESTRICTED",
+                    "UNKNOWN"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Public Access Class"
+            }
+          },
+          {
+            "name": "facility_kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "facility",
+                    "site",
+                    "building",
+                    "facility_unit",
+                    "infrastructure_asset",
+                    "project"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Facility Kind"
+            }
+          },
+          {
+            "name": "function",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 60
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Function"
             }
           },
           {
@@ -668,7 +1040,23 @@
                 {
                   "enum": [
                     "school",
-                    "health_facility"
+                    "health_facility",
+                    "government_office",
+                    "community_facility",
+                    "emergency_facility",
+                    "library",
+                    "museum",
+                    "social_welfare_facility",
+                    "public_market",
+                    "transport_facility",
+                    "utility_facility",
+                    "environmental_monitoring",
+                    "public_space",
+                    "cultural_facility",
+                    "agricultural_facility",
+                    "justice_facility",
+                    "housing_service",
+                    "other_qualifying_facility"
                   ],
                   "type": "string"
                 },
@@ -677,6 +1065,45 @@
                 }
               ],
               "title": "Type"
+            }
+          },
+          {
+            "name": "subtype",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Subtype"
+            }
+          },
+          {
+            "name": "inclusion_class",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "GOVERNMENT_FACILITY",
+                    "PRIVATE_PUBLIC_SERVICE_PROVIDER",
+                    "PUBLIC_ACCESS_VENUE",
+                    "DISCOVERY_CANDIDATE"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Inclusion Class"
             }
           },
           {
@@ -698,6 +1125,137 @@
                 }
               ],
               "title": "Ownership"
+            }
+          },
+          {
+            "name": "ownership_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "NATIONAL_GOVERNMENT",
+                    "LOCAL_GOVERNMENT",
+                    "GOCC",
+                    "PUBLIC_EDUCATIONAL_INSTITUTION",
+                    "OTHER_PUBLIC_BODY",
+                    "GOVERNMENT_UNSPECIFIED",
+                    "PRIVATE_CORPORATE",
+                    "PRIVATE_INDIVIDUAL_OR_PARTNERSHIP",
+                    "NGO_NON_PROFIT",
+                    "COOPERATIVE",
+                    "RELIGIOUS_FAITH_BASED",
+                    "PUBLIC_PRIVATE_JOINT",
+                    "PRIVATE_UNSPECIFIED",
+                    "UNKNOWN"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ownership Type"
+            }
+          },
+          {
+            "name": "operator_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "NATIONAL_GOVERNMENT",
+                    "LOCAL_GOVERNMENT",
+                    "GOCC",
+                    "PUBLIC_EDUCATIONAL_INSTITUTION",
+                    "OTHER_PUBLIC_BODY",
+                    "GOVERNMENT_UNSPECIFIED",
+                    "PRIVATE_CORPORATE",
+                    "PRIVATE_INDIVIDUAL_OR_PARTNERSHIP",
+                    "NGO_NON_PROFIT",
+                    "COOPERATIVE",
+                    "RELIGIOUS_FAITH_BASED",
+                    "PUBLIC_PRIVATE_JOINT",
+                    "PRIVATE_UNSPECIFIED",
+                    "UNKNOWN"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Operator Type"
+            }
+          },
+          {
+            "name": "public_access_class",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "PUBLIC_FREE",
+                    "PUBLIC_PAID_OR_CONDITIONAL",
+                    "SERVICE_USERS_ONLY",
+                    "APPOINTMENT_ONLY",
+                    "MEMBERS_STUDENTS_ONLY",
+                    "STAFF_ONLY",
+                    "RESTRICTED",
+                    "UNKNOWN"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Public Access Class"
+            }
+          },
+          {
+            "name": "facility_kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "facility",
+                    "site",
+                    "building",
+                    "facility_unit",
+                    "infrastructure_asset",
+                    "project"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Facility Kind"
+            }
+          },
+          {
+            "name": "function",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 60
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Function"
             }
           },
           {
@@ -1001,6 +1559,83 @@
                     "$ref": "#/components/schemas/SourceEvidence"
                   },
                   "title": "Response Get Facility Sources V1 Facilities  Facility Id  Sources Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/facilities/{facility_id}/assertions": {
+      "get": {
+        "tags": [
+          "facilities"
+        ],
+        "summary": "Field-level source claims behind a facility",
+        "operationId": "get_facility_assertions_v1_facilities__facility_id__assertions_get",
+        "parameters": [
+          {
+            "name": "facility_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Facility Id"
+            }
+          },
+          {
+            "name": "attribute",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only return claims for this canonical attribute.",
+              "title": "Attribute"
+            },
+            "description": "Only return claims for this canonical attribute."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 200,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AttributeAssertionOut"
+                  },
+                  "title": "Response Get Facility Assertions V1 Facilities  Facility Id  Assertions Get"
                 }
               }
             }
@@ -3042,6 +3677,27 @@
         }
       }
     },
+    "/v1/coverage": {
+      "get": {
+        "tags": [
+          "sources"
+        ],
+        "summary": "Registry coverage by class and source",
+        "operationId": "coverage_v1_coverage_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoverageOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/changes": {
       "get": {
         "tags": [
@@ -3390,7 +4046,23 @@
             "type": "string",
             "enum": [
               "school",
-              "health_facility"
+              "health_facility",
+              "government_office",
+              "community_facility",
+              "emergency_facility",
+              "library",
+              "museum",
+              "social_welfare_facility",
+              "public_market",
+              "transport_facility",
+              "utility_facility",
+              "environmental_monitoring",
+              "public_space",
+              "cultural_facility",
+              "agricultural_facility",
+              "justice_facility",
+              "housing_service",
+              "other_qualifying_facility"
             ],
             "title": "Facility Type"
           },
@@ -3716,6 +4388,85 @@
         ],
         "title": "AdministrativeUnitOut"
       },
+      "AttributeAssertionOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "attribute": {
+            "type": "string",
+            "title": "Attribute"
+          },
+          "source_field": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Field"
+          },
+          "raw_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw Value"
+          },
+          "normalized_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Normalized Value"
+          },
+          "transformation_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transformation Version"
+          },
+          "review_status": {
+            "type": "string",
+            "title": "Review Status"
+          },
+          "asserted_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Asserted At"
+          },
+          "source": {
+            "$ref": "#/components/schemas/SourceEvidence"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "attribute",
+          "review_status",
+          "asserted_at",
+          "source"
+        ],
+        "title": "AttributeAssertionOut",
+        "description": "One source's claim about one canonical field."
+      },
       "ChangeEventOut": {
         "properties": {
           "id": {
@@ -3830,6 +4581,185 @@
           "items"
         ],
         "title": "ChangeListResponse"
+      },
+      "CoverageOut": {
+        "properties": {
+          "as_of": {
+            "type": "string",
+            "format": "date-time",
+            "title": "As Of"
+          },
+          "registry_records": {
+            "type": "integer",
+            "title": "Registry Records"
+          },
+          "published_records": {
+            "type": "integer",
+            "title": "Published Records"
+          },
+          "by_inclusion_class": {
+            "items": {
+              "$ref": "#/components/schemas/CoverageRow"
+            },
+            "type": "array",
+            "title": "By Inclusion Class"
+          },
+          "by_category": {
+            "items": {
+              "$ref": "#/components/schemas/CoverageRow"
+            },
+            "type": "array",
+            "title": "By Category"
+          },
+          "by_subtype": {
+            "items": {
+              "$ref": "#/components/schemas/CoverageSubtypeRow"
+            },
+            "type": "array",
+            "title": "By Subtype"
+          },
+          "by_ownership_type": {
+            "items": {
+              "$ref": "#/components/schemas/CoverageRow"
+            },
+            "type": "array",
+            "title": "By Ownership Type"
+          },
+          "by_access_class": {
+            "items": {
+              "$ref": "#/components/schemas/CoverageRow"
+            },
+            "type": "array",
+            "title": "By Access Class"
+          },
+          "by_region": {
+            "items": {
+              "$ref": "#/components/schemas/CoverageRow"
+            },
+            "type": "array",
+            "title": "By Region"
+          },
+          "source_coverage": {
+            "items": {
+              "$ref": "#/components/schemas/SourceCoverageRow"
+            },
+            "type": "array",
+            "title": "Source Coverage"
+          },
+          "coverage_stale_after_days": {
+            "type": "integer",
+            "title": "Coverage Stale After Days",
+            "default": 365
+          },
+          "stale_source_count": {
+            "type": "integer",
+            "title": "Stale Source Count",
+            "default": 0
+          },
+          "caveats": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Caveats"
+          }
+        },
+        "type": "object",
+        "required": [
+          "as_of",
+          "registry_records",
+          "published_records",
+          "by_inclusion_class",
+          "by_category",
+          "by_ownership_type",
+          "by_access_class",
+          "by_region",
+          "source_coverage"
+        ],
+        "title": "CoverageOut"
+      },
+      "CoverageRow": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "facility_count": {
+            "type": "integer",
+            "title": "Facility Count"
+          },
+          "published_count": {
+            "type": "integer",
+            "title": "Published Count"
+          },
+          "with_coordinates": {
+            "type": "integer",
+            "title": "With Coordinates",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "facility_count",
+          "published_count"
+        ],
+        "title": "CoverageRow"
+      },
+      "CoverageSubtypeRow": {
+        "properties": {
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "subtype": {
+            "type": "string",
+            "title": "Subtype"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "facility_count": {
+            "type": "integer",
+            "title": "Facility Count"
+          },
+          "published_count": {
+            "type": "integer",
+            "title": "Published Count"
+          },
+          "with_coordinates": {
+            "type": "integer",
+            "title": "With Coordinates",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "category",
+          "subtype",
+          "facility_count",
+          "published_count"
+        ],
+        "title": "CoverageSubtypeRow"
       },
       "DatasetOut": {
         "properties": {
@@ -3950,6 +4880,39 @@
             "type": "string",
             "title": "Publication Status",
             "default": "blocked"
+          },
+          "coverage_scope": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "NATIONAL_OFFICIAL_INVENTORY",
+                  "NATIONAL_PARTIAL",
+                  "REGIONAL",
+                  "PARTICIPATING_LGUS",
+                  "SELECTED_LGUS",
+                  "SINGLE_LGU",
+                  "DIRECTORY_SUBSET",
+                  "DISCOVERY_LAYER",
+                  "UNKNOWN_COVERAGE"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage Scope"
+          },
+          "coverage_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage Note"
           },
           "update_pattern": {
             "anyOf": [
@@ -4104,7 +5067,23 @@
             "type": "string",
             "enum": [
               "school",
-              "health_facility"
+              "health_facility",
+              "government_office",
+              "community_facility",
+              "emergency_facility",
+              "library",
+              "museum",
+              "social_welfare_facility",
+              "public_market",
+              "transport_facility",
+              "utility_facility",
+              "environmental_monitoring",
+              "public_space",
+              "cultural_facility",
+              "agricultural_facility",
+              "justice_facility",
+              "housing_service",
+              "other_qualifying_facility"
             ],
             "title": "Facility Type"
           },
@@ -4119,6 +5098,29 @@
             ],
             "title": "Facility Subtype"
           },
+          "facility_kind": {
+            "type": "string",
+            "enum": [
+              "facility",
+              "site",
+              "building",
+              "facility_unit",
+              "infrastructure_asset",
+              "project"
+            ],
+            "title": "Facility Kind",
+            "default": "facility"
+          },
+          "inclusion_class": {
+            "type": "string",
+            "enum": [
+              "GOVERNMENT_FACILITY",
+              "PRIVATE_PUBLIC_SERVICE_PROVIDER",
+              "PUBLIC_ACCESS_VENUE",
+              "DISCOVERY_CANDIDATE"
+            ],
+            "title": "Inclusion Class"
+          },
           "ownership": {
             "type": "string",
             "enum": [
@@ -4127,6 +5129,63 @@
               "unknown"
             ],
             "title": "Ownership"
+          },
+          "ownership_type": {
+            "type": "string",
+            "enum": [
+              "NATIONAL_GOVERNMENT",
+              "LOCAL_GOVERNMENT",
+              "GOCC",
+              "PUBLIC_EDUCATIONAL_INSTITUTION",
+              "OTHER_PUBLIC_BODY",
+              "GOVERNMENT_UNSPECIFIED",
+              "PRIVATE_CORPORATE",
+              "PRIVATE_INDIVIDUAL_OR_PARTNERSHIP",
+              "NGO_NON_PROFIT",
+              "COOPERATIVE",
+              "RELIGIOUS_FAITH_BASED",
+              "PUBLIC_PRIVATE_JOINT",
+              "PRIVATE_UNSPECIFIED",
+              "UNKNOWN"
+            ],
+            "title": "Ownership Type",
+            "default": "UNKNOWN"
+          },
+          "operator_type": {
+            "type": "string",
+            "enum": [
+              "NATIONAL_GOVERNMENT",
+              "LOCAL_GOVERNMENT",
+              "GOCC",
+              "PUBLIC_EDUCATIONAL_INSTITUTION",
+              "OTHER_PUBLIC_BODY",
+              "GOVERNMENT_UNSPECIFIED",
+              "PRIVATE_CORPORATE",
+              "PRIVATE_INDIVIDUAL_OR_PARTNERSHIP",
+              "NGO_NON_PROFIT",
+              "COOPERATIVE",
+              "RELIGIOUS_FAITH_BASED",
+              "PUBLIC_PRIVATE_JOINT",
+              "PRIVATE_UNSPECIFIED",
+              "UNKNOWN"
+            ],
+            "title": "Operator Type",
+            "default": "UNKNOWN"
+          },
+          "public_access_class": {
+            "type": "string",
+            "enum": [
+              "PUBLIC_FREE",
+              "PUBLIC_PAID_OR_CONDITIONAL",
+              "SERVICE_USERS_ONLY",
+              "APPOINTMENT_ONLY",
+              "MEMBERS_STUDENTS_ONLY",
+              "STAFF_ONLY",
+              "RESTRICTED",
+              "UNKNOWN"
+            ],
+            "title": "Public Access Class",
+            "default": "UNKNOWN"
           },
           "record_status": {
             "type": "string",
@@ -4147,6 +5206,13 @@
             "type": "boolean",
             "title": "Is Synthetic",
             "default": false
+          },
+          "functions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Functions"
           },
           "location": {
             "$ref": "#/components/schemas/LocationOut"
@@ -4175,6 +5241,17 @@
             ],
             "title": "Official Name"
           },
+          "access_conditions": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Access Conditions"
+          },
           "school": {
             "anyOf": [
               {
@@ -4202,6 +5279,34 @@
             "type": "array",
             "title": "Accreditations"
           },
+          "function_details": {
+            "items": {
+              "$ref": "#/components/schemas/FacilityFunctionOut"
+            },
+            "type": "array",
+            "title": "Function Details"
+          },
+          "services": {
+            "items": {
+              "$ref": "#/components/schemas/FacilityServiceOut"
+            },
+            "type": "array",
+            "title": "Services"
+          },
+          "roles": {
+            "items": {
+              "$ref": "#/components/schemas/FacilityRoleOut"
+            },
+            "type": "array",
+            "title": "Roles"
+          },
+          "relationships": {
+            "items": {
+              "$ref": "#/components/schemas/FacilityRelationshipOut"
+            },
+            "type": "array",
+            "title": "Relationships"
+          },
           "sources": {
             "items": {
               "$ref": "#/components/schemas/SourceEvidence"
@@ -4223,6 +5328,7 @@
           "id",
           "display_name",
           "facility_type",
+          "inclusion_class",
           "ownership",
           "record_status",
           "publication_status",
@@ -4233,6 +5339,99 @@
           "created_at"
         ],
         "title": "FacilityDetail"
+      },
+      "FacilityFunctionOut": {
+        "properties": {
+          "function_code": {
+            "type": "string",
+            "title": "Function Code"
+          },
+          "source_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Value"
+          },
+          "source_record_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Record Id"
+          },
+          "valid_from": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid From"
+          },
+          "valid_to": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid To"
+          },
+          "capacity_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity Value"
+          },
+          "capacity_unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity Unit"
+          },
+          "designation_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Designation Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "function_code"
+        ],
+        "title": "FacilityFunctionOut"
       },
       "FacilityListResponse": {
         "properties": {
@@ -4349,6 +5548,195 @@
         "type": "object",
         "title": "FacilityQuality"
       },
+      "FacilityRelationshipOut": {
+        "properties": {
+          "relationship_type": {
+            "type": "string",
+            "title": "Relationship Type"
+          },
+          "related_facility_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Related Facility Id"
+          },
+          "related_facility_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Related Facility Name"
+          },
+          "related_facility_slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Related Facility Slug"
+          }
+        },
+        "type": "object",
+        "required": [
+          "relationship_type",
+          "related_facility_id"
+        ],
+        "title": "FacilityRelationshipOut"
+      },
+      "FacilityRoleOut": {
+        "properties": {
+          "role_type": {
+            "type": "string",
+            "title": "Role Type"
+          },
+          "entity_name": {
+            "type": "string",
+            "title": "Entity Name"
+          },
+          "entity_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entity Type"
+          },
+          "source_record_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Record Id"
+          },
+          "valid_from": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid From"
+          },
+          "valid_to": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid To"
+          },
+          "evidence": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence"
+          }
+        },
+        "type": "object",
+        "required": [
+          "role_type",
+          "entity_name"
+        ],
+        "title": "FacilityRoleOut"
+      },
+      "FacilityServiceOut": {
+        "properties": {
+          "service_code": {
+            "type": "string",
+            "title": "Service Code"
+          },
+          "service_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Service Name"
+          },
+          "source_field": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Field"
+          },
+          "source_record_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Record Id"
+          },
+          "valid_from": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid From"
+          },
+          "valid_to": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid To"
+          }
+        },
+        "type": "object",
+        "required": [
+          "service_code"
+        ],
+        "title": "FacilityServiceOut"
+      },
       "FacilitySummary": {
         "properties": {
           "id": {
@@ -4375,7 +5763,23 @@
             "type": "string",
             "enum": [
               "school",
-              "health_facility"
+              "health_facility",
+              "government_office",
+              "community_facility",
+              "emergency_facility",
+              "library",
+              "museum",
+              "social_welfare_facility",
+              "public_market",
+              "transport_facility",
+              "utility_facility",
+              "environmental_monitoring",
+              "public_space",
+              "cultural_facility",
+              "agricultural_facility",
+              "justice_facility",
+              "housing_service",
+              "other_qualifying_facility"
             ],
             "title": "Facility Type"
           },
@@ -4390,6 +5794,29 @@
             ],
             "title": "Facility Subtype"
           },
+          "facility_kind": {
+            "type": "string",
+            "enum": [
+              "facility",
+              "site",
+              "building",
+              "facility_unit",
+              "infrastructure_asset",
+              "project"
+            ],
+            "title": "Facility Kind",
+            "default": "facility"
+          },
+          "inclusion_class": {
+            "type": "string",
+            "enum": [
+              "GOVERNMENT_FACILITY",
+              "PRIVATE_PUBLIC_SERVICE_PROVIDER",
+              "PUBLIC_ACCESS_VENUE",
+              "DISCOVERY_CANDIDATE"
+            ],
+            "title": "Inclusion Class"
+          },
           "ownership": {
             "type": "string",
             "enum": [
@@ -4398,6 +5825,63 @@
               "unknown"
             ],
             "title": "Ownership"
+          },
+          "ownership_type": {
+            "type": "string",
+            "enum": [
+              "NATIONAL_GOVERNMENT",
+              "LOCAL_GOVERNMENT",
+              "GOCC",
+              "PUBLIC_EDUCATIONAL_INSTITUTION",
+              "OTHER_PUBLIC_BODY",
+              "GOVERNMENT_UNSPECIFIED",
+              "PRIVATE_CORPORATE",
+              "PRIVATE_INDIVIDUAL_OR_PARTNERSHIP",
+              "NGO_NON_PROFIT",
+              "COOPERATIVE",
+              "RELIGIOUS_FAITH_BASED",
+              "PUBLIC_PRIVATE_JOINT",
+              "PRIVATE_UNSPECIFIED",
+              "UNKNOWN"
+            ],
+            "title": "Ownership Type",
+            "default": "UNKNOWN"
+          },
+          "operator_type": {
+            "type": "string",
+            "enum": [
+              "NATIONAL_GOVERNMENT",
+              "LOCAL_GOVERNMENT",
+              "GOCC",
+              "PUBLIC_EDUCATIONAL_INSTITUTION",
+              "OTHER_PUBLIC_BODY",
+              "GOVERNMENT_UNSPECIFIED",
+              "PRIVATE_CORPORATE",
+              "PRIVATE_INDIVIDUAL_OR_PARTNERSHIP",
+              "NGO_NON_PROFIT",
+              "COOPERATIVE",
+              "RELIGIOUS_FAITH_BASED",
+              "PUBLIC_PRIVATE_JOINT",
+              "PRIVATE_UNSPECIFIED",
+              "UNKNOWN"
+            ],
+            "title": "Operator Type",
+            "default": "UNKNOWN"
+          },
+          "public_access_class": {
+            "type": "string",
+            "enum": [
+              "PUBLIC_FREE",
+              "PUBLIC_PAID_OR_CONDITIONAL",
+              "SERVICE_USERS_ONLY",
+              "APPOINTMENT_ONLY",
+              "MEMBERS_STUDENTS_ONLY",
+              "STAFF_ONLY",
+              "RESTRICTED",
+              "UNKNOWN"
+            ],
+            "title": "Public Access Class",
+            "default": "UNKNOWN"
           },
           "record_status": {
             "type": "string",
@@ -4418,6 +5902,13 @@
             "type": "boolean",
             "title": "Is Synthetic",
             "default": false
+          },
+          "functions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Functions"
           },
           "location": {
             "$ref": "#/components/schemas/LocationOut"
@@ -4441,6 +5932,7 @@
           "id",
           "display_name",
           "facility_type",
+          "inclusion_class",
           "ownership",
           "record_status",
           "publication_status",
@@ -6298,6 +7790,135 @@
         ],
         "title": "SourceCheckOut"
       },
+      "SourceCoverageRow": {
+        "properties": {
+          "dataset_slug": {
+            "type": "string",
+            "title": "Dataset Slug"
+          },
+          "dataset_name": {
+            "type": "string",
+            "title": "Dataset Name"
+          },
+          "agency_code": {
+            "type": "string",
+            "title": "Agency Code"
+          },
+          "coverage_scope": {
+            "type": "string",
+            "title": "Coverage Scope",
+            "default": "UNKNOWN_COVERAGE"
+          },
+          "coverage_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage Note"
+          },
+          "latest_release_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Release Label"
+          },
+          "source_published_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Published At"
+          },
+          "reference_period_end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference Period End"
+          },
+          "retrieved_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retrieved At"
+          },
+          "row_count_parsed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Row Count Parsed"
+          },
+          "publication_status": {
+            "type": "string",
+            "title": "Publication Status",
+            "default": "blocked"
+          },
+          "rights_status": {
+            "type": "string",
+            "title": "Rights Status",
+            "default": "unknown"
+          },
+          "freshness_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Freshness Days"
+          },
+          "is_stale": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Stale"
+          }
+        },
+        "type": "object",
+        "required": [
+          "dataset_slug",
+          "dataset_name",
+          "agency_code"
+        ],
+        "title": "SourceCoverageRow"
+      },
       "SourceEvidence": {
         "properties": {
           "id": {
@@ -6685,6 +8306,34 @@
             },
             "type": "array",
             "title": "By Region"
+          },
+          "by_inclusion_class": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "By Inclusion Class"
+          },
+          "by_ownership_type": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "By Ownership Type"
+          },
+          "by_category": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "By Category"
+          },
+          "by_access_class": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "By Access Class"
           },
           "source_releases": {
             "type": "integer",

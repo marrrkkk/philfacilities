@@ -23,20 +23,23 @@ Acquired and published with recorded rights:
 - HOT/OSM health and education GeoParquet: 70,234 linked facilities.
 - BetterGov PSGC Q2 2024 mirror: 43,760 geographic units.
 - PSA 2024 Census population via BetterGov: 134,748 observations.
+- NLP public-library directory: 1,752 institution-level rows.
+- NMP regional/area/site museums: official directory subset.
+- BIR Revenue Region and RDO list: 128 RDO rows and 19 region headings.
 
-Acquired internal-only:
+Acquired; source release published for institution-level fields, canonical rows internal:
 
-- DepEd EBEIS NCR: 5,055 school rows with school-head names and no explicit reuse licence.
+- DepEd EBEIS NCR: 5,055 school rows. The current source release applies the institution-level publication decision; school-head names are withheld. Canonical facility rows remain `internal` pending field-level mapping and privacy review.
 
 Blocked or unverified:
 
 - Official PSA PSGC workbook/API (HTTP 403 / token required).
 - DepEd Machine-Ready Files (HTTP 403 / human terms flow).
 - DOH NHFR/HFSRB (HTTP 403; agreement not reviewed).
-- CHED and TESDA bulk exports/reuse terms.
-- Hazard layers and additional agency facility exports.
+- CHED and TESDA bulk releases (no verified bulk export or public API).
+- Hazard layers and additional agency facility releases (no verified release).
 
-Exit gate: at least one school dataset and one healthcare source are schema-verified and publication scope is approved. The healthcare and OSM sides are met; official school data is not.
+Exit gate: at least one school dataset and one healthcare source are schema-verified and publication scope is approved. The healthcare and OSM sides are met; official school data is acquired, its source release is published for institution-level fields, and canonical-row publication still requires field-level mapping and privacy review.
 
 ## Phase 2 — Canonical data model and geography — DONE
 

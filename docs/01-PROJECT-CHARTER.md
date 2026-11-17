@@ -37,8 +37,8 @@ A new map alone does not solve this problem. The missing product is a maintainab
 
 1. Ingest a verified official PSGC release.
 2. Ingest at least one actual DepEd school-level file.
-3. Acquire and lawfully process a DOH NHFR extract; if its agreement does not permit public redistribution, keep it private for matching/validation or defer DOH publication until clarified.
-4. Ingest PhilHealth public provider-category records where terms permit, preserving package-specific status and source dates.
+3. Acquire and process a DOH NHFR extract under the applicable agreement; if the agreement does not permit public redistribution, keep it private for matching/validation or defer DOH publication until clarified.
+4. Ingest PhilHealth public provider-category records where the source permits, preserving package-specific status and source dates. Verified, publicly available records with no explicit prohibition may be published under [`docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`](14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md).
 5. Build canonical identities and retain original agency identifiers.
 6. Preserve raw files and source-release metadata.
 7. Publish a versioned read API with source/provenance fields.
@@ -47,7 +47,7 @@ A new map alone does not solve this problem. The missing product is a maintainab
 
 ### Longer-term goals
 
-- Expand to CHED and TESDA after source-level acquisition and terms validation.
+- Expand to CHED and TESDA after source-level acquisition and verification. A public directory with no explicit licence may be included when it meets the inclusion and publication policy; access-controlled or agreement-bound sources remain restricted.
 - Add facility-level historical changes, public corrections, and reviewed entity matching.
 - Add health-access and school-access analytical modules only when the input data supports defensible calculations.
 - Add facility-to-infrastructure-project and hazard-exposure relationships as separate, traceable datasets.
@@ -101,4 +101,4 @@ Every metric must include its denominator and reference period. A source with 10
 - Prefer deterministic matching and human review over aggressive fuzzy merging.
 - Display unknown values honestly.
 - Keep public APIs useful without the website.
-- Use open-source code while respecting source-specific data licenses and agreements.
+- Use open-source code while respecting source-specific data licenses, agreements, and the inclusion/publication policy in [`docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`](14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md).

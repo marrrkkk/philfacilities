@@ -6,7 +6,7 @@ Build PhilFacilities as an open, source-linked Philippine facilities data platfo
 
 ## Read before coding
 
-Start with `README.md`, then `docs/13-AGENT-WORKFLOW.md`, the relevant design/architecture/data documents, and `planning/TRACKER.md`.
+Start with `README.md`, then `docs/13-AGENT-WORKFLOW.md`, `docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`, the relevant design/architecture/data documents, and `planning/TRACKER.md`.
 
 ## Architecture
 
@@ -38,7 +38,7 @@ Never guess tokens if browser inspection is unavailable; request screenshots or 
 - Do not auto-merge ambiguous source records.
 - Do not infer operational status from registry presence.
 - Keep license/accreditation separate from real-time operational availability.
-- Do not publish data until its source terms/FOI agreement allow the intended publication.
+- Publish only after a documented rights decision under `docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`. A verified, publicly available dataset with no explicit prohibition may be published with reviewed institutional fields, provenance, attribution, and takedown-on-notice. Explicit restrictions, FOI/agreement conditions, and personal or sensitive data still control.
 - Never fabricate official records; synthetic data must be marked synthetic.
 
 ## Execution discipline

@@ -4,6 +4,7 @@ from datetime import date
 
 from philfacilities_api.rights import (
     RIGHTS_APPROVED_ATTRIBUTION,
+    RIGHTS_PUBLICLY_AVAILABLE_VERIFIED,
     RIGHTS_RESTRICTED,
     RIGHTS_REVIEW_REQUIRED,
     dataset_is_publishable,
@@ -127,12 +128,30 @@ def test_rights_vocabulary_is_explicit_and_conservative() -> None:
     assert normalize_rights("allowed_with_conditions") == RIGHTS_APPROVED_ATTRIBUTION
     assert normalize_rights("restricted") == RIGHTS_RESTRICTED
     assert normalize_rights("permission_required") == RIGHTS_REVIEW_REQUIRED
+    assert normalize_rights("publicly_available_verified") == RIGHTS_PUBLICLY_AVAILABLE_VERIFIED
     assert normalize_rights(None) == "unknown"
     assert normalize_rights("something_else") == "unknown"
 
     assert rights_allow_public(RIGHTS_APPROVED_ATTRIBUTION)
+    assert rights_allow_public(RIGHTS_PUBLICLY_AVAILABLE_VERIFIED)
     assert not rights_allow_public(RIGHTS_RESTRICTED)
     assert not rights_allow_public(RIGHTS_REVIEW_REQUIRED)
+
+
+def test_public_availability_still_requires_an_approved_gate() -> None:
+    assert dataset_is_publishable(
+        redistribution_status=RIGHTS_PUBLICLY_AVAILABLE_VERIFIED,
+        gate_status="approved",
+    )
+    assert not dataset_is_publishable(
+        redistribution_status=RIGHTS_PUBLICLY_AVAILABLE_VERIFIED,
+        gate_status="blocked",
+    )
+    assert not dataset_is_publishable(
+        redistribution_status=RIGHTS_PUBLICLY_AVAILABLE_VERIFIED,
+        gate_status="approved",
+        publication_status="internal_only",
+    )
 
 
 def test_publication_requires_both_permitted_rights_and_approved_gate() -> None:

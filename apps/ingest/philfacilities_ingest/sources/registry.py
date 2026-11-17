@@ -25,8 +25,10 @@ from philfacilities_api.rights import (
     PUBLICATION_BLOCKED,
     PUBLICATION_INTERNAL_ONLY,
     RIGHTS_APPROVED_ATTRIBUTION,
-    RIGHTS_RESTRICTED,
+    RIGHTS_PUBLICLY_AVAILABLE_VERIFIED,
     RIGHTS_REVIEW_REQUIRED,
+    normalize_rights,
+    rights_allow_public,
 )
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -93,14 +95,145 @@ OSM_RIGHTS_BASIS = (
 )
 OSM_ATTRIBUTION = "© OpenStreetMap contributors, via HOT and BetterGov.PH"
 DEPED_EBEIS_RIGHTS_BASIS = (
-    "The public EBEIS masterlist has no explicit reuse licence and includes school-head "
-    "personal names. It is stored privately for identity/provenance work and is "
-    "internal-only pending DepEd terms and privacy review."
+    "The EBEIS masterlist is a public result set of the Department of Education, a "
+    "government agency. RA 8293 section 176 provides that no copyright subsists in a "
+    "work of the Government of the Philippines, while prior approval may be required "
+    "for commercial use. PhilFacilities publishes institution-level school fields with "
+    "attribution for non-commercial public-interest use. School-head names and other "
+    "personal fields remain in the private source store and are not exposed by the "
+    "public API. This is a documented publication decision, not a legal opinion."
 )
 OFFICIAL_BLOCKED_BASIS = (
     "The official endpoint was reachable only through a human terms/access flow or "
     "returned an access-control challenge. No redistribution decision exists; the "
     "dataset remains blocked."
+)
+NLP_LIBRARIES_URL = (
+    "https://web.nlp.gov.ph/wp-content/uploads/2026/01/"
+    "OFFICIAL-Integrated-Directory-of-Public-Libraries-as-of-December-2025.pdf"
+)
+NLP_RIGHTS_BASIS = (
+    "The directory is a work of the Government of the Philippines. RA 8293 section 176 "
+    "provides that no copyright subsists in a government work, while prior approval may "
+    "be required for commercial use. PhilFacilities publishes the institutional library "
+    "fields with attribution for non-commercial public-interest use and excludes personal "
+    "librarian contact fields. This is a documented publication decision, not a legal "
+    "opinion."
+)
+NLP_ATTRIBUTION = (
+    "National Library of the Philippines, Public Libraries Division — Directory of "
+    "Affiliated Public Libraries in the Philippines, December 2025"
+)
+NATIONAL_MUSEUM_URL = (
+    "https://www.nationalmuseum.gov.ph/our-museums/regional-area-and-site-museums/"
+)
+NATIONAL_MUSEUM_RIGHTS_BASIS = (
+    "The National Museum directory and site pages are works of the Government of the "
+    "Philippines. RA 8293 section 176 provides that no copyright subsists in a government "
+    "work, while prior approval may be required for commercial use. PhilFacilities "
+    "publishes institutional museum fields with attribution for non-commercial "
+    "public-interest use. This is a documented publication decision, not a legal opinion."
+)
+NATIONAL_MUSEUM_ATTRIBUTION = (
+    "National Museum of the Philippines — Regional, Area and Site Museums directory"
+)
+PHLPOST_URL = "https://phlpost.gov.ph/post-office-locator/"
+PHLPOST_RIGHTS_BASIS = (
+    "PHLPost is a government-owned and controlled corporation. Its public locator page "
+    "carries an explicit copyright/all-rights-reserved notice. Under the product owner's "
+    "public-record inclusion decision, PhilFacilities publishes only the factual locator "
+    "fields needed for facility discovery (office name, province, address and listed "
+    "services) with attribution, and does not republish the page's expressive content. "
+    "This is a documented product decision, not a legal opinion; the source notice and a "
+    "takedown route remain recorded."
+)
+BIR_RAO_URL = "https://bir-cdn.bir.gov.ph/BIR/pdf/RAO%20No.%206-2025.pdf"
+BIR_RIGHTS_BASIS = (
+    "RAO No. 006-2025 is an official issuance of the Bureau of Internal Revenue, a "
+    "government agency. RA 8293 section 176 provides that no copyright subsists in a "
+    "work of the Government of the Philippines, while prior approval may be required "
+    "for commercial use. PhilFacilities publishes the institutional office list with "
+    "attribution for non-commercial public-interest use. The PDF is image-only; OCR "
+    "recovered text is stored alongside the original file and is not treated as a "
+    "replacement for the official document. This is a documented publication decision, "
+    "not a legal opinion."
+)
+BIR_ATTRIBUTION = (
+    "Bureau of Internal Revenue — Revenue Administrative Order No. 006-2025, "
+    "List of Revenue Regions and Revenue District Offices (9 December 2025)"
+)
+DSWD_CRCF_URL = "https://www.dswd.gov.ph/crcf/"
+DSWD_CRCF_RIGHTS_BASIS = (
+    "The DSWD Centers and Residential Care Facilities directory is a work of the "
+    "Department of Social Welfare and Development, a government agency. RA 8293 "
+    "section 176 provides that no copyright subsists in a work of the Government of "
+    "the Philippines, while prior approval may be required for commercial use. "
+    "PhilFacilities publishes institutional facility name, responsible field office "
+    "and postal address with attribution for non-commercial public-interest use. No "
+    "coordinates, admission rules or operational status are inferred. This is a "
+    "documented publication decision, not a legal opinion."
+)
+DSWD_CRCF_ATTRIBUTION = (
+    "Department of Social Welfare and Development — Centers and Residential Care "
+    "Facilities (CRCF) directory"
+)
+NMIS_NARIS_URL = "https://naris.nmis.gov.ph/"
+NMIS_NARIS_RIGHTS_BASIS = (
+    "NARIS is the National Meat Inspection Service's public accreditation directory. "
+    "The page carries an 'All rights reserved' notice but publishes factual "
+    "establishment name, LTO number, establishment type and postal address. Under "
+    "docs/14 and ADR 0008, PhilFacilities publishes only those factual fields with "
+    "attribution and takedown-on-notice; it does not copy expressive page content and "
+    "does not treat the notice as an automatic bar. The page currently returns a WAF "
+    "challenge or TLS failure on recheck, so the verified 15 November 2026 artifact is "
+    "the release of record. This is a documented product decision, not a legal opinion."
+)
+NMIS_NARIS_ATTRIBUTION = "National Meat Inspection Service — NARIS Accredited Meat Establishments"
+PPA_PORT_LIST_URL = (
+    "https://ppa.com.ph/sites/default/files/List%20of%20Ports%20covered%20in%20PPA%20Statistics.pdf"
+)
+PPA_RIGHTS_BASIS = (
+    "The List of Ports Covered in PPA Statistics is a published work of the Philippine "
+    "Ports Authority, a government-owned and controlled corporation. RA 8293 section "
+    "176 provides that no copyright subsists in a work of the Government of the "
+    "Philippines, while prior approval may be required for commercial use. "
+    "PhilFacilities publishes the factual port name, PMO/region hierarchy, RORO and "
+    "NON-RORO marks, remarks and private/government group with attribution for "
+    "non-commercial public-interest use. No coordinates, berth capacity, owner names "
+    "or operational status are inferred. This is a documented publication decision, "
+    "not a legal opinion."
+)
+PPA_ATTRIBUTION = "Philippine Ports Authority — List of Ports Covered in PPA Statistics"
+DTI_NEGOSYO_FINDER_URL = "https://negosyocenter.dti.gov.ph/negosyo-center-directory"
+DTI_NEGOSYO_API_URL = "https://negosyocenter.dti.gov.ph/api/negosyo-centers/regions-overview"
+DTI_NEGOSYO_TERMS_URL = "https://negosyocenter.dti.gov.ph/terms-and-conditions"
+DTI_NEGOSYO_RIGHTS_BASIS = (
+    "The DTI Negosyo Center finder and its public JSON endpoints publish the official "
+    "center directory. DTI's Terms and Conditions state that information posted on the "
+    "DTI Web may be quoted or reproduced in whole or in part provided that DTI is duly "
+    "informed/credited, while reselling, redistributing or creating derivative works for "
+    "commercial purposes requires DTI's written consent. PhilFacilities publishes the "
+    "factual center name, postal address, region/province/city labels and source active "
+    "flag for non-commercial public-interest use with attribution and takedown-on-notice. "
+    "Phone and email values are withheld from the public record. This is a documented "
+    "product decision, not a legal opinion."
+)
+DTI_NEGOSYO_ATTRIBUTION = "Department of Trade and Industry — Negosyo Center finder"
+CHED_HEIDA_DIRECTORY_URL = "https://heida.ched.gov.ph/hei-directory"
+CHED_HEIDA_RIGHTS_BASIS = (
+    "The CHED HEIDA public HEI directory is a publicly available, server-rendered "
+    "directory published by the Commission on Higher Education, a government agency. "
+    "No explicit prohibition, access control or terms-of-use restriction was found on "
+    "the directory pages. RA 8293 section 176 provides that no copyright subsists in a "
+    "work of the Government of the Philippines, while prior approval may be required "
+    "for commercial use. PhilFacilities publishes only reviewed institutional fields "
+    "(name, CHED code, institutional type, address and region) for non-commercial "
+    "public-interest use with attribution and takedown-on-notice. Contact details and "
+    "institutional-head names are discarded during acquisition. This is a documented "
+    "publication decision under the root inclusion policy, not a legal opinion."
+)
+CHED_HEIDA_ATTRIBUTION = (
+    "Commission on Higher Education — HEIDA Higher Education Institution Directory"
 )
 
 
@@ -121,6 +254,8 @@ class RealSource:
     requested_publication_status: str | None = None
     license_identifier: str | None = None
     terms_url: str | None = None
+    coverage_scope: str | None = None
+    coverage_note: str | None = None
     is_geography: bool = False
     note: str | None = None
 
@@ -257,13 +392,19 @@ REAL_SOURCES: dict[str, RealSource] = {
         source_url="https://ebeis.deped.gov.ph/beis/reports_info/masterlist",
         access_method="public_html_form",
         update_pattern="school year",
-        rights=RIGHTS_RESTRICTED,
+        rights=RIGHTS_APPROVED_ATTRIBUTION,
         rights_basis=DEPED_EBEIS_RIGHTS_BASIS,
-        personal_data_status="contains_school_head_names",
-        requested_publication_status=PUBLICATION_INTERNAL_ONLY,
+        attribution_text=(
+            "Department of Education — Enhanced Basic Education Information System "
+            "(EBEIS) school masterlist"
+        ),
+        personal_data_status="school_head_names_retained_privately_not_published",
+        requested_publication_status=PUBLICATION_APPROVED,
         note=(
-            "NCR is the verified result set (5,055 rows on 15 Nov 2026). The page has no "
-            "explicit reuse terms and contains school-head names."
+            "NCR is the verified result set (5,055 rows on 15 Nov 2026). The public "
+            "result page has no explicit reuse licence and contains school-head names; "
+            "only institution-level fields are published under the government-work "
+            "basis, while the raw acquisition artifact remains private."
         ),
     ),
     "deped-machine-ready": RealSource(
@@ -301,15 +442,34 @@ REAL_SOURCES: dict[str, RealSource] = {
         key="ched-heida",
         agency_code="ched",
         agency_name="Commission on Higher Education",
-        dataset_slug="ched-hei-directory",
-        dataset_name="CHED HEIDA higher-education institution directory",
-        source_url="https://heida.ched.gov.ph/hei-directory",
+        dataset_slug="ched-heida-hei-directory",
+        dataset_name="CHED HEIDA Higher Education Institution Directory",
+        source_url=CHED_HEIDA_DIRECTORY_URL,
         access_method="public_html_directory",
-        update_pattern="unknown",
-        rights=RIGHTS_REVIEW_REQUIRED,
-        rights_basis=OFFICIAL_BLOCKED_BASIS,
-        requested_publication_status=PUBLICATION_BLOCKED,
-        note="Public directory pages exist; no verified bulk export or documented API.",
+        update_pattern="irregular",
+        rights=RIGHTS_PUBLICLY_AVAILABLE_VERIFIED,
+        rights_basis=CHED_HEIDA_RIGHTS_BASIS,
+        attribution_text=CHED_HEIDA_ATTRIBUTION,
+        requested_publication_status=PUBLICATION_APPROVED,
+        terms_url=CHED_HEIDA_DIRECTORY_URL,
+        coverage_scope="NATIONAL_PARTIAL",
+        coverage_note=(
+            "CHED's public HEI directory lists recognized higher-education institutions "
+            "under each of the 18 regional offices. It does not state that every campus, "
+            "satellite, extension site or institution is included, and it supplies no "
+            "coordinates or PSGC codes. Ownership is classified only from the published "
+            "institutional type; 'Others', 'CHED-Supervised Institution' and unrecognised "
+            "types remain internal."
+        ),
+        note=(
+            "Server-rendered public directory with region pages and 10-row pagination. "
+            "The adapter retains only institutional name, CHED code, type, address and "
+            "region; contact details and institutional-head names are discarded. "
+            "Chartered state colleges/universities are classified as public educational "
+            "institutions, local government colleges/universities as local-government "
+            "facilities, and private institutions as private public-service providers. "
+            "Directory presence is not proof of current operation or public access."
+        ),
     ),
     "tesda-tvi": RealSource(
         key="tesda-tvi",
@@ -324,6 +484,227 @@ REAL_SOURCES: dict[str, RealSource] = {
         rights_basis=OFFICIAL_BLOCKED_BASIS,
         requested_publication_status=PUBLICATION_BLOCKED,
         note="Public directory exists; no verified bulk export or reuse terms recorded.",
+    ),
+    "nlp": RealSource(
+        key="nlp",
+        agency_code="nlp",
+        agency_name="National Library of the Philippines",
+        dataset_slug="nlp-public-libraries",
+        dataset_name="NLP Integrated Directory of Public Libraries",
+        source_url=NLP_LIBRARIES_URL,
+        access_method="public_pdf",
+        update_pattern="annual",
+        rights=RIGHTS_APPROVED_ATTRIBUTION,
+        rights_basis=NLP_RIGHTS_BASIS,
+        attribution_text=NLP_ATTRIBUTION,
+        requested_publication_status=PUBLICATION_APPROVED,
+        terms_url=NLP_LIBRARIES_URL,
+        coverage_scope="NATIONAL_PARTIAL",
+        coverage_note=(
+            "Nationwide directory of public libraries affiliated with the NLP Public "
+            "Libraries Division as of December 2025. It is not a census of every library "
+            "and excludes private and school libraries that are not affiliated."
+        ),
+        note=(
+            "Source PDF is the December 2025 edition (220 pages, 1,752 rows). It supplies "
+            "postal addresses but no coordinates or PSGC codes. Librarian contact fields "
+            "are preserved in the raw release but not published."
+        ),
+    ),
+    "national-museum": RealSource(
+        key="national-museum",
+        agency_code="nmp",
+        agency_name="National Museum of the Philippines",
+        dataset_slug="nmp-regional-area-site-museums",
+        dataset_name="NMP regional, area and site museums directory",
+        source_url=NATIONAL_MUSEUM_URL,
+        access_method="public_html_directory",
+        update_pattern="irregular",
+        rights=RIGHTS_APPROVED_ATTRIBUTION,
+        rights_basis=NATIONAL_MUSEUM_RIGHTS_BASIS,
+        attribution_text=NATIONAL_MUSEUM_ATTRIBUTION,
+        requested_publication_status=PUBLICATION_APPROVED,
+        terms_url=NATIONAL_MUSEUM_URL,
+        coverage_scope="DIRECTORY_SUBSET",
+        coverage_note=(
+            "Directory of NMP-run regional, area and site museums outside Metro Manila. "
+            "It is not a list of all museums in the Philippines."
+        ),
+        note=(
+            "Directory cards link to official detail pages. Postal addresses are published "
+            "where the detail page supplies them; the source supplies no coordinates."
+        ),
+    ),
+    "phlpost": RealSource(
+        key="phlpost",
+        agency_code="phlpost",
+        agency_name="Philippine Postal Corporation",
+        dataset_slug="phlpost-post-office-locator",
+        dataset_name="PHLPost post-office locator",
+        source_url=PHLPOST_URL,
+        access_method="public_html_table",
+        update_pattern="irregular",
+        rights=RIGHTS_APPROVED_ATTRIBUTION,
+        rights_basis=PHLPOST_RIGHTS_BASIS,
+        attribution_text=("Philippine Postal Corporation — Post Office Locator"),
+        requested_publication_status=PUBLICATION_APPROVED,
+        terms_url=PHLPOST_URL,
+        coverage_scope="NATIONAL_PARTIAL",
+        coverage_note=(
+            "Locator table of PHLPost offices and service counters. Completeness against "
+            "the agency's full office network has not been established."
+        ),
+        note=(
+            "Single HTML table with columns Provinces, Post Offices, Addresss and Services. "
+            "Only factual locator fields are published with attribution; the publisher's "
+            "copyright notice is recorded in the rights basis."
+        ),
+    ),
+    "bir": RealSource(
+        key="bir",
+        agency_code="bir",
+        agency_name="Bureau of Internal Revenue",
+        dataset_slug="bir-revenue-district-offices",
+        dataset_name="BIR Revenue Regions and Revenue District Offices",
+        source_url=BIR_RAO_URL,
+        access_method="public_scanned_pdf_local_ocr",
+        update_pattern="issuance-based",
+        rights=RIGHTS_APPROVED_ATTRIBUTION,
+        rights_basis=BIR_RIGHTS_BASIS,
+        attribution_text=BIR_ATTRIBUTION,
+        requested_publication_status=PUBLICATION_APPROVED,
+        terms_url=BIR_RAO_URL,
+        coverage_scope="NATIONAL_OFFICIAL_INVENTORY",
+        coverage_note=(
+            "RAO No. 006-2025 lists the Revenue Regions and Revenue District Offices "
+            "of the Bureau of Internal Revenue. It is an office/jurisdiction list, "
+            "not a street-address, coordinate or service-hours dataset."
+        ),
+        note=(
+            "Official 4-page image-only PDF dated 9 December 2025. Local OCR recovered "
+            "128 RDO rows and 19 revenue-region headings; raw OCR lines and confidence "
+            "are retained with each record. No addresses or coordinates are inferred. "
+            "The separate 523-page Citizen's Charter is not merged into this release."
+        ),
+    ),
+    "dswd-crcf": RealSource(
+        key="dswd-crcf",
+        agency_code="dswd",
+        agency_name="Department of Social Welfare and Development",
+        dataset_slug="dswd-crcf-directory",
+        dataset_name="DSWD Centers and Residential Care Facilities (CRCF) directory",
+        source_url=DSWD_CRCF_URL,
+        access_method="public_html_directory",
+        update_pattern="irregular",
+        rights=RIGHTS_APPROVED_ATTRIBUTION,
+        rights_basis=DSWD_CRCF_RIGHTS_BASIS,
+        attribution_text=DSWD_CRCF_ATTRIBUTION,
+        requested_publication_status=PUBLICATION_APPROVED,
+        terms_url=DSWD_CRCF_URL,
+        coverage_scope="NATIONAL_PARTIAL",
+        coverage_note=(
+            "Directory of DSWD-operated Centers and Residential Care Facilities. The "
+            "page states 77 CRCFs but exposes 76 unique facility cards after exact "
+            "desktop/mobile deduplication; the missing card is not invented."
+        ),
+        note=(
+            "Elementor directory with desktop and mobile accordion layouts. 152 raw "
+            "cards collapse to 76 unique facility cards by facility name and address. "
+            "Cards supply a facility name, DSWD Field Office and postal address only; "
+            "no coordinates, PSGC codes, walk-in access rules or operational status."
+        ),
+    ),
+    "nmis-naris": RealSource(
+        key="nmis-naris",
+        agency_code="nmis",
+        agency_name="National Meat Inspection Service",
+        dataset_slug="nmis-naris-accredited-meat-establishments",
+        dataset_name="NMIS NARIS accredited meat establishments",
+        source_url=NMIS_NARIS_URL,
+        access_method="public_html_directory",
+        update_pattern="irregular",
+        rights=RIGHTS_APPROVED_ATTRIBUTION,
+        rights_basis=NMIS_NARIS_RIGHTS_BASIS,
+        attribution_text=NMIS_NARIS_ATTRIBUTION,
+        requested_publication_status=PUBLICATION_APPROVED,
+        terms_url=NMIS_NARIS_URL,
+        coverage_scope="NATIONAL_PARTIAL",
+        coverage_note=(
+            "NARIS accredited-establishment list as rendered on 15 November 2026. The "
+            "page reports 362 rows but exposes 357 unique LTO numbers after grouping "
+            "five duplicate rows; completeness against all NMIS-issued LTOs and LTO "
+            "validity dates are not stated."
+        ),
+        note=(
+            "Server-rendered page with a 362-entry ltoLocations JSON array. Fields are "
+            "company name, LTO number, establishment type, address parts and optional "
+            "cached address geocode. No validity dates or operating status. 17 "
+            "municipal-named establishments are classified as local-government operated "
+            "from the source name; all other LTO holders remain private providers. The "
+            "live endpoint returned a WAF challenge or TLS failure on 15 November 2026 "
+            "recheck; the preserved public artifact is the release of record."
+        ),
+    ),
+    "ppa": RealSource(
+        key="ppa",
+        agency_code="ppa",
+        agency_name="Philippine Ports Authority",
+        dataset_slug="ppa-port-list",
+        dataset_name="PPA List of Ports Covered in PPA Statistics",
+        source_url=PPA_PORT_LIST_URL,
+        access_method="public_pdf",
+        update_pattern="irregular",
+        rights=RIGHTS_APPROVED_ATTRIBUTION,
+        rights_basis=PPA_RIGHTS_BASIS,
+        attribution_text=PPA_ATTRIBUTION,
+        requested_publication_status=PUBLICATION_APPROVED,
+        terms_url=PPA_PORT_LIST_URL,
+        coverage_scope="DIRECTORY_SUBSET",
+        coverage_note=(
+            "PPA's published statistics list of ports under its Port Management Offices, "
+            "other government ports and the separate private-port list. It is not a "
+            "census of every port, terminal, berth or landing place in the Philippines, "
+            "and it supplies no coordinates or public-access rules."
+        ),
+        note=(
+            "22-page PDF retrieved 15 November 2026. 574 source rows: 54 base ports, 94 "
+            "TMO/OTP entries, 155 other government ports and 271 private ports. RORO and "
+            "NON-RORO marks are preserved; blank marks remain unknown rather than false. "
+            "The separate MICT note outside the tables is retained as evidence and not "
+            "ingested because its hierarchy and ownership are not stated."
+        ),
+    ),
+    "dti-negosyo": RealSource(
+        key="dti-negosyo",
+        agency_code="dti",
+        agency_name="Department of Trade and Industry",
+        dataset_slug="dti-negosyo-centers",
+        dataset_name="DTI Negosyo Center directory",
+        source_url=DTI_NEGOSYO_FINDER_URL,
+        access_method="public_json_api",
+        update_pattern="irregular",
+        rights=RIGHTS_APPROVED_ATTRIBUTION,
+        rights_basis=DTI_NEGOSYO_RIGHTS_BASIS,
+        attribution_text=DTI_NEGOSYO_ATTRIBUTION,
+        requested_publication_status=PUBLICATION_APPROVED,
+        terms_url=DTI_NEGOSYO_TERMS_URL,
+        coverage_scope="NATIONAL_PARTIAL",
+        coverage_note=(
+            "The DTI Negosyo Center finder returned 1,427 active center records across "
+            "all 17 regions on 15 November 2026. The finder does not state that the list "
+            "is a complete census, does not identify each center's owner/operator/host, "
+            "and supplies no coordinates, PSGC codes, hours or public-access conditions. "
+            "Presence in the directory is not proof of current operation."
+        ),
+        note=(
+            "Two unauthenticated public JSON endpoints back the finder: regions-overview "
+            "and by-region. Records contain center name, postal address, region/province/"
+            "city labels, optional institutional phone/email and an is_active flag. The "
+            "adapter stores each center as a government facility unit under the DTI "
+            "business-advisory programme with unspecified ownership/operator; it does not "
+            "classify a host city hall, SUC or other premises. Contact fields stay in the "
+            "private raw artifact and out of the public record."
+        ),
     ),
 }
 
@@ -349,10 +730,74 @@ def source_spec(source: RealSource, **overrides: Any) -> ReleaseSpec:
         "access_method": source.access_method,
         "update_pattern": source.update_pattern,
         "license_identifier": source.license_identifier,
+        "coverage_scope": source.coverage_scope,
+        "coverage_note": source.coverage_note,
         "notes": source.note,
     }
     values.update(overrides)
     return ReleaseSpec(**values)
+
+
+def apply_publication_decisions(
+    session: Session, keys: Iterable[str] | None = None
+) -> dict[str, dict[str, Any]]:
+    """Apply the reviewed registry publication decision to stored datasets.
+
+    A rights review changes the code registry, but an existing database keeps its
+    old publication gate until an explicit action reconciles it. This function is
+    that action: it updates the dataset rights metadata and gate to match the
+    reviewed registry entry. It never ingests, publishes or deletes records by
+    itself; a release becomes public only when it is reprocessed under the updated
+    gate. Callers should name the sources they reviewed.
+    """
+
+    selected = list(keys) if keys else []
+    unknown = [key for key in selected if key not in REAL_SOURCES]
+    if unknown:
+        raise ValueError(f"Unknown source key(s): {', '.join(unknown)}")
+
+    results: dict[str, dict[str, Any]] = {}
+    if selected:
+        candidates = [REAL_SOURCES[key] for key in selected]
+    else:
+        # Do not create empty dataset rows merely to update a decision. An
+        # unqualified invocation reconciles only sources already registered in
+        # the database.
+        existing_slugs = set(session.scalars(select(Dataset.slug)).all())
+        candidates = [
+            source for source in REAL_SOURCES.values() if source.dataset_slug in existing_slugs
+        ]
+
+    for source in candidates:
+        spec = source_spec(source)
+        _agency, dataset, gate = ensure_source(session, spec)
+        rights = normalize_rights(spec.redistribution_status)
+        requested = spec.requested_publication_status or (
+            PUBLICATION_APPROVED if rights_allow_public(rights) else PUBLICATION_BLOCKED
+        )
+        if requested == PUBLICATION_APPROVED and rights_allow_public(rights):
+            gate_status = PUBLICATION_APPROVED
+            dataset_status = PUBLICATION_APPROVED
+        elif requested == PUBLICATION_INTERNAL_ONLY:
+            gate_status = PUBLICATION_INTERNAL_ONLY
+            dataset_status = PUBLICATION_INTERNAL_ONLY
+        else:
+            gate_status = PUBLICATION_BLOCKED
+            dataset_status = PUBLICATION_BLOCKED
+        dataset.redistribution_status = rights
+        dataset.publication_status = dataset_status
+        gate.status = gate_status
+        gate.reviewer = "registry-policy"
+        gate.reviewed_at = datetime.now(UTC)
+        gate.notes = spec.rights_basis or "Reviewed registry publication decision."
+        results[source.key] = {
+            "dataset": dataset.slug,
+            "rights": rights,
+            "dataset_publication_status": dataset_status,
+            "gate_status": gate_status,
+        }
+    session.commit()
+    return results
 
 
 def monitored_dataset(session: Session, source: RealSource) -> Dataset:
@@ -490,6 +935,40 @@ def check_sources(
                         session,
                         source,
                         url=f"{BETTERGOV_PSGC_URL}/Q2_2024/regions",
+                    )
+                elif key == "nlp" or key == "ppa":
+                    result, status = _check_url(client, session, source, expected_marker="%PDF")
+                elif key == "dti-negosyo":
+                    result, status = _check_url(
+                        client,
+                        session,
+                        source,
+                        url=DTI_NEGOSYO_API_URL,
+                        expected_marker="region",
+                    )
+                elif key == "ched-heida":
+                    result, status = _check_url(
+                        client,
+                        session,
+                        source,
+                        expected_marker="HEI Directory",
+                    )
+                elif key == "national-museum":
+                    result, status = _check_url(client, session, source, expected_marker="uk-card")
+                elif key == "phlpost":
+                    result, status = _check_url(
+                        client, session, source, expected_marker="Post Offices"
+                    )
+                elif key == "dswd-crcf":
+                    result, status = _check_url(
+                        client,
+                        session,
+                        source,
+                        expected_marker="Centers and Residential Care Facilities",
+                    )
+                elif key == "nmis-naris":
+                    result, status = _check_url(
+                        client, session, source, expected_marker="Accredited Meat Establishments"
                     )
                 elif key == "psa-psgc":
                     result, status = _check_url(

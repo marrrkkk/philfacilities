@@ -10,17 +10,63 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
 import { apiBaseUrl, type FacilitySummary } from "@/lib/api";
-import { PRECISION_LABELS, titleCase } from "@/lib/format";
+import {
+  ACCESS_LABELS,
+  INCLUSION_CLASS_LABELS,
+  PRECISION_LABELS,
+  titleCase,
+} from "@/lib/format";
 import { configureMapLibreWorker } from "@/lib/maplibre";
 import { BASEMAP_STYLE } from "@/lib/map-style";
 import { cn } from "@/lib/utils";
 
 const EMPTY: FeatureCollection = { type: "FeatureCollection", features: [] };
 
+const CATEGORY_OPTIONS = [
+  ["school", "Schools"],
+  ["health_facility", "Health"],
+  ["government_office", "Government offices"],
+  ["library", "Libraries"],
+  ["museum", "Museums"],
+  ["community_facility", "Community"],
+  ["emergency_facility", "Emergency"],
+  ["social_welfare_facility", "Social welfare"],
+  ["public_market", "Markets"],
+  ["transport_facility", "Transport"],
+  ["utility_facility", "Utilities"],
+  ["environmental_monitoring", "Environmental monitoring"],
+  ["public_space", "Public spaces"],
+  ["cultural_facility", "Cultural"],
+  ["agricultural_facility", "Agriculture"],
+  ["justice_facility", "Justice"],
+  ["housing_service", "Housing"],
+] as const;
+
+const OWNERSHIP_TYPE_OPTIONS = [
+  "NATIONAL_GOVERNMENT",
+  "LOCAL_GOVERNMENT",
+  "GOCC",
+  "PUBLIC_EDUCATIONAL_INSTITUTION",
+  "OTHER_PUBLIC_BODY",
+  "GOVERNMENT_UNSPECIFIED",
+  "PRIVATE_CORPORATE",
+  "PRIVATE_INDIVIDUAL_OR_PARTNERSHIP",
+  "NGO_NON_PROFIT",
+  "COOPERATIVE",
+  "RELIGIOUS_FAITH_BASED",
+  "PUBLIC_PRIVATE_JOINT",
+  "PRIVATE_UNSPECIFIED",
+  "UNKNOWN",
+] as const;
+
 export function MapExplorer({
   initialType = "",
   initialQuery = "",
+  initialInclusionClass = "",
   initialOwnership = "",
+  initialOwnershipType = "",
+  initialAccessClass = "",
+  initialKind = "",
   initialRegion = "",
   initialProvince = "",
   initialMunicipality = "",
@@ -34,7 +80,11 @@ export function MapExplorer({
 }: {
   initialType?: string;
   initialQuery?: string;
+  initialInclusionClass?: string;
   initialOwnership?: string;
+  initialOwnershipType?: string;
+  initialAccessClass?: string;
+  initialKind?: string;
   initialRegion?: string;
   initialProvince?: string;
   initialMunicipality?: string;
@@ -55,6 +105,10 @@ export function MapExplorer({
   const [facilities, setFacilities] = useState<FacilitySummary[]>([]);
   const [selected, setSelected] = useState<FacilitySummary | null>(null);
   const [type, setType] = useState(initialType);
+  const [inclusionClass, setInclusionClass] = useState(initialInclusionClass);
+  const [ownershipType, setOwnershipType] = useState(initialOwnershipType);
+  const [accessClass, setAccessClass] = useState(initialAccessClass);
+  const [kind, setKind] = useState(initialKind);
   const [query, setQuery] = useState(initialQuery);
   const [mobileView, setMobileView] = useState<"map" | "list">("map");
   const [truncated, setTruncated] = useState(false);
@@ -64,7 +118,11 @@ export function MapExplorer({
     if (initialHasCoordinates === "false") return [];
     return facilities.filter((facility) => {
       if (type && facility.facility_type !== type) return false;
+      if (inclusionClass && facility.inclusion_class !== inclusionClass) return false;
       if (initialOwnership && facility.ownership !== initialOwnership) return false;
+      if (ownershipType && facility.ownership_type !== ownershipType) return false;
+      if (accessClass && facility.public_access_class !== accessClass) return false;
+      if (kind && facility.facility_kind !== kind) return false;
       if (initialRegion && facility.geography.region_code !== initialRegion) return false;
       if (initialProvince && facility.geography.province_code !== initialProvince) return false;
       if (initialMunicipality && facility.geography.municipality_code !== initialMunicipality)
@@ -84,7 +142,9 @@ export function MapExplorer({
         .some((value) => String(value).toLowerCase().includes(needle));
     });
   }, [
+    accessClass,
     facilities,
+    inclusionClass,
     initialBarangay,
     initialHasCoordinates,
     initialMunicipality,
@@ -92,6 +152,8 @@ export function MapExplorer({
     initialPrecision,
     initialProvince,
     initialRegion,
+    kind,
+    ownershipType,
     query,
     type,
   ]);
@@ -166,9 +228,11 @@ export function MapExplorer({
           paint: {
             "circle-color": [
               "case",
-              ["==", ["get", "facility_type"], "school"],
+              ["==", ["get", "inclusion_class"], "GOVERNMENT_FACILITY"],
               "#0038a8",
+              ["==", ["get", "inclusion_class"], "PRIVATE_PUBLIC_SERVICE_PROVIDER"],
               "#0f766e",
+              "#9a6700",
             ],
             "circle-radius": [
               "case",
@@ -249,7 +313,11 @@ export function MapExplorer({
       for (const [key, value] of Object.entries({
         type: initialType,
         q: initialQuery,
+        inclusion_class: initialInclusionClass || undefined,
         ownership: initialOwnership,
+        ownership_type: initialOwnershipType || undefined,
+        public_access_class: initialAccessClass || undefined,
+        facility_kind: initialKind || undefined,
         region_code: initialRegion,
         province_code: initialProvince,
         municipality_code: initialMunicipality,
@@ -299,10 +367,14 @@ export function MapExplorer({
       mapRef.current = null;
     };
   }, [
+    initialAccessClass,
     initialBarangay,
     initialHasCoordinates,
+    initialInclusionClass,
+    initialKind,
     initialMunicipality,
     initialOwnership,
+    initialOwnershipType,
     initialPrecision,
     initialProvince,
     initialQuery,
@@ -332,6 +404,7 @@ export function MapExplorer({
             properties: {
               id: facility.id,
               facility_type: facility.facility_type,
+              inclusion_class: facility.inclusion_class,
               precision: facility.location.precision,
               name: facility.display_name,
             },
@@ -388,19 +461,90 @@ export function MapExplorer({
                 className="pl-8"
               />
             </div>
-            <label htmlFor="map-type" className="sr-only">
-              Facility type
-            </label>
-            <Select
-              id="map-type"
-              value={type}
-              onChange={(event) => setType(event.target.value)}
-              className="max-w-[9rem]"
-            >
-              <option value="">All</option>
-              <option value="school">Schools</option>
-              <option value="health_facility">Health</option>
-            </Select>
+          </div>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <div>
+              <label htmlFor="map-type" className="sr-only">
+                Facility category
+              </label>
+              <Select
+                id="map-type"
+                value={type}
+                onChange={(event) => setType(event.target.value)}
+              >
+                <option value="">All categories</option>
+                {CATEGORY_OPTIONS.map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div>
+              <label htmlFor="map-inclusion" className="sr-only">
+                Inclusion class
+              </label>
+              <Select
+                id="map-inclusion"
+                value={inclusionClass}
+                onChange={(event) => setInclusionClass(event.target.value)}
+              >
+                <option value="">All inclusion classes</option>
+                {Object.entries(INCLUSION_CLASS_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div>
+              <label htmlFor="map-ownership-type" className="sr-only">
+                Ownership type
+              </label>
+              <Select
+                id="map-ownership-type"
+                value={ownershipType}
+                onChange={(event) => setOwnershipType(event.target.value)}
+              >
+                <option value="">All ownership types</option>
+                {OWNERSHIP_TYPE_OPTIONS.map((value) => (
+                  <option key={value} value={value}>
+                    {titleCase(value)}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div>
+              <label htmlFor="map-access" className="sr-only">
+                Public access
+              </label>
+              <Select
+                id="map-access"
+                value={accessClass}
+                onChange={(event) => setAccessClass(event.target.value)}
+              >
+                <option value="">All access classes</option>
+                {Object.entries(ACCESS_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div className="col-span-2">
+              <label htmlFor="map-kind" className="sr-only">
+                Facility kind
+              </label>
+              <Select id="map-kind" value={kind} onChange={(event) => setKind(event.target.value)}>
+                <option value="">All facility kinds</option>
+                <option value="facility">Facility</option>
+                <option value="site">Site or compound</option>
+                <option value="building">Building</option>
+                <option value="facility_unit">Facility unit</option>
+                <option value="infrastructure_asset">Infrastructure asset</option>
+                <option value="project">Project</option>
+              </Select>
+            </div>
           </div>
           <p className="mt-2 flex items-center justify-between gap-2 font-ui text-xs text-[#5a5a58]">
             <span>
@@ -447,8 +591,15 @@ export function MapExplorer({
               </button>
             </div>
             <p className="mt-2 font-sans text-sm text-[#5a5a58]">
-              {titleCase(selected.facility_type)} · {PRECISION_LABELS[selected.location.precision]}
+              {titleCase(selected.facility_type)} ·{" "}
+              {INCLUSION_CLASS_LABELS[selected.inclusion_class] ??
+                titleCase(selected.inclusion_class)}{" "}
+              · {PRECISION_LABELS[selected.location.precision]}
               {selected.is_synthetic ? " · Synthetic" : ""}
+            </p>
+            <p className="mt-1 font-sans text-xs text-[#5a5a58]">
+              Ownership: {titleCase(selected.ownership_type)} · Access:{" "}
+              {ACCESS_LABELS[selected.public_access_class] ?? "Unknown"}
             </p>
             {selectedNeedsAreaLabel ? (
               <p className="mt-2 border-l-2 border-[#9a6700] pl-2 font-sans text-xs text-[#6b4a00]">
@@ -511,9 +662,17 @@ export function MapExplorer({
                       selected?.id === facility.id && "bg-[#e8f1ff]",
                     )}
                   >
-                    <span className="flex items-center gap-1.5">
-                      <Badge tone={facility.facility_type === "school" ? "default" : "outline"}>
-                        {facility.facility_type === "school" ? "School" : "Health"}
+                    <span className="flex flex-wrap items-center gap-1.5">
+                      <Badge tone="outline">{titleCase(facility.facility_type)}</Badge>
+                      <Badge
+                        tone={
+                          facility.inclusion_class === "GOVERNMENT_FACILITY"
+                            ? "default"
+                            : "outline"
+                        }
+                      >
+                        {INCLUSION_CLASS_LABELS[facility.inclusion_class] ??
+                          titleCase(facility.inclusion_class)}
                       </Badge>
                       {facility.is_synthetic ? <Badge tone="sun">Synthetic</Badge> : null}
                     </span>

@@ -1,6 +1,6 @@
 # 03 — Schema Report
 
-**Generated:** 2026-11-15T08:21:10.247010+00:00  
+**Generated:** 2026-11-15T14:28:56.207026+00:00  
 **Source of truth:** the configured PhilFacilities PostgreSQL database.  
 
 Original stored keys, types, presence, and missing-value counts by dataset.
@@ -22,7 +22,7 @@ Nested objects are reported as a JSON type rather than flattened. Counts are mea
 | DepEd EBEIS result pages | `School Name` | `core.facilities.display_name`, `core.facilities.official_name` | Original name retained; no cross-source rename is inferred. |
 | DepEd EBEIS result pages | `School Type` | `core.facilities.facility_subtype` | Stored as reported; school type is not a licensing status. |
 | DepEd EBEIS result pages | `Address` | `core.facility_locations.address_text` | No coordinates are inferred from the address. |
-| DepEd EBEIS result pages | `Head / Position` | No normalized field; retained in the internal raw record only | Personal data; the dataset is `internal_only`. |
+| DepEd EBEIS result pages | `Head / Position` | No normalized field; retained in the private raw record only | Personal data; never published. School-head names are withheld even though the source release is approved for institution-level publication. |
 | HOT/OSM GeoParquet | `id` | `source.records.source_record_key`, `source.records.source_entity_id` | Entity key is prefixed `osm:`. |
 | HOT/OSM GeoParquet | `name` / `name_en` | `core.facilities.display_name`, `core.facilities.official_name` | Unnamed features are rejected rather than invented. |
 | HOT/OSM GeoParquet | `healthcare` / `amenity` / `building` | `core.facilities.facility_subtype` | Domain-specific choice; the raw tags remain in the source record. |
@@ -38,26 +38,59 @@ Nested objects are reported as a JSON type rather than flattened. Counts are mea
 
 ## Per-dataset original schema
 
-### `ched-hei-directory`
-
-No source records are stored for this dataset, so no original schema can be reported.
-
-### `deped-ebeis-masterlist-ncr`
+### `bir-revenue-district-offices`
 
 - Declared schema version: `not recorded`
-- Stored source records: 5055
-- Distinct source-record keys: 5055
+- Stored source records: 124
+- Distinct source-record keys: 124
 - Duplicate source-record keys: 0
 - Blank source-record keys: 0
 
 | Original key | Present | Missing | Null/blank | JSON types | Sample value |
 |---|---|---|---|---|---|
-| Address | 5055 | 0 | 55 | string |  |
-| Head / Position | 5055 | 0 | 0 | string | - |
-| School ID | 5055 | 0 | 0 | string | 107975 |
-| School Name | 5055 | 0 | 0 | string | 15th Avenue Elementary School |
-| School Type | 5055 | 0 | 0 | string | Grade 11-12 |
-| _table_row | 5055 | 0 | 0 | number | 10 |
+| ocr_confidence | 124 | 0 | 0 | number | 0.951461254504689 |
+| page | 124 | 0 | 0 | number | 1 |
+| raw_ocr_text | 124 | 0 | 0 | string | RDONo.100-MisamisOccidental |
+| rdo_code | 124 | 0 | 0 | string | 1 |
+| rdo_name | 124 | 0 | 0 | string | Abra |
+| revenue_region_name | 124 | 0 | 0 | string | Bicol Region |
+| revenue_region_number | 124 | 0 | 0 | string | 1 |
+
+### `ched-heida-hei-directory`
+
+- Declared schema version: `not recorded`
+- Stored source records: 2711
+- Distinct source-record keys: 2711
+- Duplicate source-record keys: 0
+- Blank source-record keys: 0
+
+| Original key | Present | Missing | Null/blank | JSON types | Sample value |
+|---|---|---|---|---|---|
+| address | 2711 | 0 | 1 | null, string | #005 Maysan Road, Valenzuela City, Metro Manila |
+| code | 2711 | 0 | 0 | string | - |
+| name | 2711 | 0 | 0 | string | 1MRDA Academic Center |
+| region | 2711 | 0 | 0 | string | Bangsamoro Autonomous Region In Muslim Mindanao (BARMM) |
+| region_id | 2711 | 0 | 0 | string | 1 |
+| source_page | 2711 | 0 | 0 | string | https://heida.ched.gov.ph/hei-directory/10?page=1 |
+| source_row | 2711 | 0 | 0 | number | 1 |
+| type | 2711 | 0 | 0 | string | Chartered State College/University (Main) |
+
+### `deped-ebeis-masterlist-ncr`
+
+- Declared schema version: `not recorded`
+- Stored source records: 10110
+- Distinct source-record keys: 5055
+- Duplicate source-record keys: 5055
+- Blank source-record keys: 0
+
+| Original key | Present | Missing | Null/blank | JSON types | Sample value |
+|---|---|---|---|---|---|
+| Address | 10110 | 0 | 110 | string |  |
+| Head / Position | 10110 | 0 | 0 | string | - |
+| School ID | 10110 | 0 | 0 | string | 107975 |
+| School Name | 10110 | 0 | 0 | string | 15th Avenue Elementary School |
+| School Type | 10110 | 0 | 0 | string | Grade 11-12 |
+| _table_row | 10110 | 0 | 0 | number | 10 |
 
 ### `deped-machine-ready-files`
 
@@ -66,6 +99,110 @@ No source records are stored for this dataset, so no original schema can be repo
 ### `doh-nhfr`
 
 No source records are stored for this dataset, so no original schema can be reported.
+
+### `dswd-crcf-directory`
+
+- Declared schema version: `not recorded`
+- Stored source records: 76
+- Distinct source-record keys: 76
+- Duplicate source-record keys: 0
+- Blank source-record keys: 0
+
+| Original key | Present | Missing | Null/blank | JSON types | Sample value |
+|---|---|---|---|---|---|
+| accordion_block | 76 | 0 | 0 | number | 1 |
+| address | 76 | 0 | 0 | string | 19 San Isidro Ave, Cotabato City, Maguindanao |
+| card_index | 76 | 0 | 0 | number | 1 |
+| detail_url | 76 | 0 | 28 | null, string | http://Elsie%20Gaches%20Village |
+| facility_name | 76 | 0 | 0 | string | ACCELERATING MINOR'S OPPORTUNITY FOR RECOVERY(AMOR) VILLAGE |
+| field_office | 76 | 0 | 0 | string | Field Office 10 – Northern Mindanao |
+| region | 76 | 0 | 0 | string | CARAGA Region |
+| _row | 76 | 0 | 0 | number | 1 |
+| variant_count | 76 | 0 | 0 | number | 2 |
+
+### `dti-negosyo-centers`
+
+- Declared schema version: `not recorded`
+- Stored source records: 1427
+- Distinct source-record keys: 1427
+- Duplicate source-record keys: 0
+- Blank source-record keys: 0
+
+| Original key | Present | Missing | Null/blank | JSON types | Sample value |
+|---|---|---|---|---|---|
+| address | 1427 | 0 | 0 | string | 0171 P.M. Durias Bldg., Quezon Ave., Extn., Pala-o, Iligan City |
+| city | 1427 | 0 | 0 | string | Aborlan |
+| email | 1427 | 0 | 225 | null, string | ABR-NCBaayLicuan_LGU@dti.gov.ph |
+| id | 1427 | 0 | 0 | number | 1434 |
+| is_active | 1427 | 0 | 0 | boolean | true |
+| name | 1427 | 0 | 0 | string | Aborlan Negosyo Center |
+| phone | 1427 | 0 | 1427 | null | NULL |
+| province | 1427 | 0 | 0 | string | Abra |
+| region | 1427 | 0 | 0 | string | CAR - Cordillera Administrative Region |
+
+### `nlp-public-libraries`
+
+- Declared schema version: `not recorded`
+- Stored source records: 1752
+- Distinct source-record keys: 1752
+- Duplicate source-record keys: 0
+- Blank source-record keys: 0
+
+| Original key | Present | Missing | Null/blank | JSON types | Sample value |
+|---|---|---|---|---|---|
+| ADDRESS | 1752 | 0 | 0 | string | - |
+| DATE AFFILIATED | 1752 | 0 | 6 | string |  |
+| LOCATION | 1752 | 0 | 0 | string | Abra |
+| NAME OF LIBRARY | 1752 | 0 | 0 | string | 13 Leon Kilat Barangay Reading Center |
+| NO. | 1752 | 0 | 0 | string | 1 |
+| _page | 1752 | 0 | 0 | number | 1 |
+| PHILIPPINE PUBLIC LIBRARY ID | 1752 | 0 | 0 | string | PPLB-00001 |
+| REGION | 1752 | 0 | 0 | string | 1 |
+| _row | 1752 | 0 | 0 | string | 1 |
+| STATUS | 1752 | 0 | 0 | string | Active |
+| TELEPHONE NUMBER | 1752 | 0 | 0 | string | - |
+| TYPE OF PUBLIC LIBRARY | 1752 | 0 | 0 | string | Barangay Reading Center |
+
+### `nmis-naris-accredited-meat-establishments`
+
+- Declared schema version: `not recorded`
+- Stored source records: 357
+- Distinct source-record keys: 357
+- Duplicate source-record keys: 0
+- Blank source-record keys: 0
+
+| Original key | Present | Missing | Null/blank | JSON types | Sample value |
+|---|---|---|---|---|---|
+| address_variants | 357 | 0 | 0 | array | [{"cached_lat": 10.2921765, "cached_lng": 123.9034668, "full_address": "M. C.  Briones Street, San Roque, Cebu City", "barangay_name": "San Roque", "province_name": "Cebu", "municipality_name": "City of Cebu"}] |
+| barangay_name | 357 | 0 | 266 | null, string | Abella |
+| cached_lat | 357 | 0 | 269 | null, number | 10.2921765 |
+| cached_lng | 357 | 0 | 269 | null, number | 120.3826159 |
+| company_name | 357 | 0 | 0 | string | 2WHEELS ADVENTURES INC. |
+| establishment_type | 357 | 0 | 0 | string | coldstorage_warehouse |
+| full_address | 357 | 0 | 0 | string | 10320 PROVINCIAL ROAD,SITIO TABAY LAWOM,SAN VICENTE,LILOAN, CEBU |
+| lto_number | 357 | 0 | 0 | string | MCP-006-AA |
+| municipality_name | 357 | 0 | 263 | null, string | 031411000 |
+| province_name | 357 | 0 | 274 | null, string | 031400000 |
+| region_code | 357 | 0 | 0 | string | 010000000 |
+| _row | 357 | 0 | 0 | number | 1 |
+| variant_count | 357 | 0 | 0 | number | 1 |
+
+### `nmp-regional-area-site-museums`
+
+- Declared schema version: `not recorded`
+- Stored source records: 17
+- Distinct source-record keys: 17
+- Duplicate source-record keys: 0
+- Blank source-record keys: 0
+
+| Original key | Present | Missing | Null/blank | JSON types | Sample value |
+|---|---|---|---|---|---|
+| address | 17 | 0 | 5 | null, string | Aggugaddan, Peñablanca, Cagayan |
+| detail_status | 17 | 0 | 0 | number | 200 |
+| email | 17 | 0 | 4 | null, string | cebu@nationalmuseum.gov.ph |
+| name | 17 | 0 | 0 | string | National Museum of the Philippines – Batanes |
+| telephone | 17 | 0 | 17 | null | NULL |
+| url | 17 | 0 | 0 | string | https://www.nationalmuseum.gov.ph/nmp-cebu-2/ |
 
 ### `osm-education-facilities`
 
@@ -666,6 +803,47 @@ No source records are stored for this dataset, so no original schema can be repo
 | sec | 4138 | 0 | 0 | string | G |
 | street | 4138 | 0 | 8 | null, string | 001 MAYO ST. POB. II TIAONG, QUEZON |
 | tel_no | 4138 | 0 | 134 | null, string | 004 795 1622 |
+
+### `phlpost-post-office-locator`
+
+- Declared schema version: `not recorded`
+- Stored source records: 2544
+- Distinct source-record keys: 1272
+- Duplicate source-record keys: 1272
+- Blank source-record keys: 0
+
+| Original key | Present | Missing | Null/blank | JSON types | Sample value |
+|---|---|---|---|---|---|
+| Addresss | 2544 | 0 | 0 | string | 001 Valbuena, Pinili, Ilocos Norte |
+| Post Offices | 2544 | 0 | 0 | string | Aborlan Post Office |
+| Provinces | 2544 | 0 | 0 | string | Abra |
+| _row | 2544 | 0 | 0 | string | 10 |
+| Services | 2544 | 0 | 0 | string | Acceptance |
+
+### `ppa-port-list`
+
+- Declared schema version: `not recorded`
+- Stored source records: 574
+- Distinct source-record keys: 574
+- Duplicate source-record keys: 0
+- Blank source-record keys: 0
+
+| Original key | Present | Missing | Null/blank | JSON types | Sample value |
+|---|---|---|---|---|---|
+| group | 574 | 0 | 0 | string | BASEPORT |
+| name | 574 | 0 | 0 | string | 1590 EC-Pier (Bauang Private Power Corp. (BPPC)) |
+| non_roro | 574 | 0 | 284 | boolean, null | true |
+| _ordinal | 574 | 0 | 0 | number | 1 |
+| page | 574 | 0 | 0 | number | 1 |
+| pmo_code | 574 | 0 | 0 | string | AGS |
+| pmo_name | 574 | 0 | 0 | string | AGUSAN |
+| region | 574 | 0 | 0 | string | MANILA_NORTHERN_LUZON |
+| remarks | 574 | 0 | 574 | null | NULL |
+| roro | 574 | 0 | 498 | boolean, null | true |
+| row_reference | 574 | 0 | 0 | string | pdf:page:10:row:1 |
+| source_number | 574 | 0 | 0 | string | 1 |
+| source_record_key | 574 | 0 | 0 | string | PPA:AGS:BASEPORT:NASIPIT |
+| unregistered | 574 | 0 | 0 | boolean | false |
 
 ### `psa-census-2024-population`
 

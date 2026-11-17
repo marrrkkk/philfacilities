@@ -1,7 +1,7 @@
 # 05 — Ingestion and ETL
 
-**Status:** implemented for the sources that are accessible and rights-cleared. Official PSA, DepEd Machine-Ready, and DOH acquisition remain blocked.  
-**Current working database:** 88,824 canonical facilities, 83,769 public, 5,055 internal-only, 0 synthetic.
+**Status:** implemented for the sources that are accessible and have a documented publication decision. Official PSA, DepEd Machine-Ready, and DOH acquisition remain blocked. Verified, publicly available sources with no explicit prohibition may be published under `docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`.  
+**Current working database:** 92,422 canonical facilities, 61,806 public, 30,616 non-public (including 5,055 DepEd EBEIS rows), 0 synthetic.
 
 The ingestion system is a first-class product component. It is reproducible, observable, source-aware, and safe to rerun. Every pipeline follows:
 
@@ -91,7 +91,7 @@ uv run philfacilities-ingest load-osm --domain education
 - These records are explicitly labelled as crowd-sourced, non-official map features.
 - Open quality issues (`duplicate_osm_id`, `missing_facility_name`) remain visible instead of being silently merged or deleted.
 
-### 2.5 DepEd EBEIS NCR (internal only)
+### 2.5 DepEd EBEIS NCR (institution-level publication approved)
 
 ```bash
 uv run philfacilities-ingest load-deped-ebeis --region ncr
@@ -99,29 +99,36 @@ uv run philfacilities-ingest load-deped-ebeis --region ncr
 
 - Fetches the public EBEIS result set for a verified region key.
 - Stores the aggregated HTML payload and normalizes 5,055 school rows.
-- The result set includes school-head personal names and has no explicit reuse licence.
-- The dataset is `restricted_non_redistributable` / `internal_only`. Public endpoints, downloads, source evidence, statistics, and monitoring output exclude it.
-- Do not add this output to a public export without a documented rights change and a privacy review.
+- The result set includes school-head personal names. Those names stay in the private raw store and are not published.
+- The dataset is `approved_with_attribution`. The re-ingested 15 November 2026 release is `published` for institution-level fields; the earlier `restricted_non_redistributable` release is retained. Canonical facility rows remain `internal` pending field-level mapping and privacy review.
+- Do not add personal fields to a public export. A field-level privacy review is required for any new field.
 
-### 2.6 Official DepEd Machine-Ready Files (blocked)
+### 2.6 Public directories with no explicit licence
+
+- The National Library of the Philippines public-library directory, National Museum site-museum directory, PHLPost locator, and BIR office list are public sources with recorded publication decisions.
+- Institutional fields are published with attribution; personal and unnecessary contact fields are withheld.
+- A source with no explicit licence may be published under `publicly_available_verified` only after the exact release is verified, no explicit prohibition is found, and the evidence record is complete. See `docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`.
+
+### 2.7 Official DepEd Machine-Ready Files (blocked)
 
 - The Machine-Ready Files page returned HTTP 403 and requires a human download/terms flow.
 - No official enrollment, facilities, personnel, ICT, or WASH file has been acquired.
 - The adapters remain fixture-tested and must not be presented as real DepEd coverage.
 
-### 2.7 DOH NHFR / HFSRB (blocked)
+### 2.8 DOH NHFR / HFSRB (blocked)
 
 - `https://nhfr.doh.gov.ph/VActivefacilitiesList` returned HTTP 403 behind Cloudflare.
 - No DOH file has been acquired through an automated route.
 - A normal browser download or permitted FOI route may be imported by an authorized operator, but a signed Data Release and Use Agreement and a publication decision are required first.
 - The source gate must not be weakened to make a DOH file appear.
 
-### 2.8 CHED, TESDA, hazard, and additional agencies
+### 2.9 CHED, TESDA, hazard, and additional agencies
 
-- CHED HEIDA directory is reachable but no verified bulk export, public API, or reuse terms.
-- TESDA TVI is reachable but the monitor records an access challenge; no verified provider-level export or reuse terms.
-- GeoRiskPH has a local TLS validation failure, PHIVOLCS maps portal has a TLS failure, and DENR-MGB returns HTTP 403. No hazard layer or reuse permission has been acquired.
-- DILG, BFP, PNP, BJMP, DSWD, DPWH, NAMRIA, NHA, National Library, LWUA, DOTr/LTFRB, DICT, and Open Data Philippines were probed for discovery. No facility export or reuse permission is claimed.
+- CHED HEIDA directory is reachable but no verified bulk export or documented public API has been acquired.
+- TESDA TVI is reachable but the monitor records an access challenge; no verified provider-level bulk release has been acquired.
+- GeoRiskPH has a local TLS validation failure, PHIVOLCS maps portal has a TLS failure, and DENR-MGB returns HTTP 403. No hazard layer has been acquired.
+- DILG, BFP, PNP, BJMP, DSWD, DPWH, NAMRIA, NHA, LWUA, DOTr/LTFRB, DICT, and Open Data Philippines were probed for discovery. No facility release has been verified or published from those probes.
+- A future verified, publicly available release may be published under the policy, but access-controlled or agreement-bound sources remain blocked.
 - None of these is a dependency of the current release.
 
 ## 3. Raw and staging storage
@@ -156,7 +163,7 @@ No canonical merge happens during parsing. Ambiguous records remain separate unt
 - A changed file becomes a new immutable release; previous releases are retained.
 - A failed release stays unpublished; the previous published release remains public. A new failed release is marked `quarantined`; a previously published release keeps its `published` state so a failed re-ingestion cannot hide working data.
 - Re-running a killed command resumes the same release instead of creating a duplicate.
-- Publication is evaluated from the dataset and release rights state after validation.
+- Publication is evaluated from the dataset and release rights state after validation, under `docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`.
 - `compare-releases` compares two retained releases by stable source-record key, payload hash, and facility link without mutating either release.
 
 ## 5. Validation checks
@@ -224,7 +231,7 @@ The schedule is data-driven. Every source check writes `next_check_at`; `check-d
 
 - Daily: due-source checks through `.github/workflows/source-checks.yml` or an equivalent cron/systemd timer.
 - Monthly: `discover-sources` probes discovery-only official endpoints and uploads JSON evidence; it does not register a dataset, accept terms, download bulk files, or publish.
-- Weekly/manual: `scripts/refresh_approved_sources.sh` refreshes only BetterGov PSGC, PSA population, PhilHealth, and OSM health/education.
+- Weekly/manual: `scripts/refresh_approved_sources.sh` refreshes the sources enumerated in that script (currently BetterGov PSGC, PSA population, PhilHealth, and OSM health/education).
 - Blocked and internal-only sources are never refreshed automatically.
 - A successful check does not publish data. It only appends monitoring evidence. Publication still requires a new release, successful parsing/validation, and a satisfied rights gate.
 - No hosted scheduled run or alert channel has been observed; the workflow skips cleanly when `PHILFACILITIES_DATABASE_URL` is absent.

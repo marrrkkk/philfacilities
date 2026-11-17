@@ -19,10 +19,10 @@ The API is a standalone public product. It provides stable identifiers, filters,
 Every public endpoint applies the same gate:
 
 1. the canonical facility must have `publication_status = public`;
-2. it must link to a source release whose dataset rights are in the public set (`approved_public_redistribution` or `approved_with_attribution`);
+2. it must link to a source release whose dataset rights are in the public set (`approved_public_redistribution`, `approved_with_attribution`, or `publicly_available_verified`);
 3. the dataset and release publication states must be `approved` or `published`.
 
-Synthetic records are allowed only when explicitly labelled synthetic in a non-production environment. The working database currently has **0 synthetic facilities**. DepEd EBEIS NCR (5,055 rows) is `restricted_non_redistributable` / `internal_only` and is excluded from facility detail, source evidence, statistics, monitoring output, and downloads.
+Synthetic records are allowed only when explicitly labelled synthetic in a non-production environment. The working database currently has **0 synthetic facilities**. DepEd EBEIS NCR has 5,055 retained records. Its current source release is `published` for institution-level fields, but canonical facility rows remain `internal`/`DISCOVERY_CANDIDATE` pending field-level mapping and privacy review; school-head names are never public. `publicly_available_verified` is a public-compatible state for verified, publicly available datasets with no explicit prohibition; it does not bypass the publication gate.
 
 ## 3. Endpoint families
 
@@ -39,6 +39,7 @@ GET /v1
 GET /v1/facilities
 GET /v1/facilities/{facility_id}
 GET /v1/facilities/{facility_id}/sources
+GET /v1/facilities/{facility_id}/assertions
 GET /v1/facilities/{facility_id}/history
 GET /v1/facilities/{facility_id}/accreditations
 ```
@@ -59,6 +60,20 @@ Filters for `/v1/facilities`:
 The same geographic, source, location, and reference-period filters apply to
 `/v1/facilities/within`, `/v1/facilities/nearby`, `/v1/schools`, and
 `/v1/health-facilities`.
+
+`GET /v1/facilities/{facility_id}/assertions` returns the exact source claims behind
+canonical fields after the same publication gate as `/sources`: the facility must be
+public and the contributing dataset/release must be rights-cleared and published. Use
+`attribute=` to narrow to one field (for example `location.precision`). A field can have
+multiple claims from different sources; the endpoint does not pick a winner or erase a
+disagreement.
+
+`GET /v1/coverage` reports category/subtype counts, inclusion-class and ownership
+distributions, region counts, and per-dataset rights, reference period, retrieval date,
+parsed row count, freshness in days, and a stale flag. The default stale threshold is
+365 days and is returned in `coverage_stale_after_days`. Freshness is derived from the
+source reference/publication date, not from the download time. Stale means “recheck the
+source”, not “the facility closed”.
 
 ### Domain-specific
 
@@ -136,7 +151,7 @@ GET /v1/downloads/schools.csv
 GET /v1/downloads/health-facilities.csv
 ```
 
-Downloads use the same publication gate as the JSON endpoints. Measured against the working database: **83,769 rows**, CSV about **31 MB**, Parquet about **6.3 MB**. CSV cells are neutralized against spreadsheet-formula injection. Restricted and internal-only sources never enter an export.
+Downloads use the same publication gate as the JSON endpoints. The working database has **61,806 public facilities**. At the earlier 83,769-row benchmark, CSV was about **31 MB** and Parquet about **6.3 MB**; re-measure after the current release. CSV cells are neutralized against spreadsheet-formula injection. Restricted, internal-only, and review-pending sources never enter an export. A dataset with `publicly_available_verified` enters an export only after its release gate is approved or published and its fields have passed the policy review.
 
 ## 4. Pagination
 
@@ -199,7 +214,7 @@ Search is an uncorrelated `UNION` of indexed ID branches for name, official name
 ## 10. Launch gate
 
 - [x] OpenAPI schema generated, reviewed, and drift-tested.
-- [x] Public endpoints contain no private/restricted data; internal-only evidence is excluded.
+- [x] Public endpoints contain no private/restricted data; internal-only evidence is excluded; public-availability publication follows `docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`.
 - [x] Pagination, spatial limits, and large-export chunking tested.
 - [x] Provenance, quality, population, and monitoring fields documented.
 - [x] CORS, rate limits, error responses, and download gating tested.

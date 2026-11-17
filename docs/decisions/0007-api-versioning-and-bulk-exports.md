@@ -29,8 +29,9 @@ data, while source rights and dataset size limit what can be published.
 
 - Every API change requires a contract diff, client regeneration, and tests.
 - Bulk exports can lag the API while a source's rights are unresolved. The
-  current exports contain only rights-cleared public records (83,769 facilities);
-  restricted and internal-only sources never enter a download.
+  exports contain only public-compatible records whose release gate is approved
+  or published (83,769 facilities when this decision was recorded); restricted
+  and internal-only sources never enter a download.
 - Breaking changes require a new version rather than an in-place edit.
 
 ## Evidence

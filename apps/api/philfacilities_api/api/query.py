@@ -9,6 +9,7 @@ from ..models import (
     Agency,
     Dataset,
     Facility,
+    FacilityFunction,
     FacilityLocation,
     FacilitySourceLink,
     Release,
@@ -21,7 +22,14 @@ from ..services import public_facility_filter
 def facility_conditions(
     *,
     facility_type: str | None = None,
+    facility_subtype: str | None = None,
+    inclusion_class: str | None = None,
     ownership: str | None = None,
+    ownership_type: str | None = None,
+    operator_type: str | None = None,
+    public_access_class: str | None = None,
+    facility_kind: str | None = None,
+    function: str | None = None,
     q: str | None = None,
     psgc: str | None = None,
     region_code: str | None = None,
@@ -54,8 +62,32 @@ def facility_conditions(
         )
     if facility_type:
         conditions.append(Facility.facility_type == facility_type)
+    if facility_subtype:
+        conditions.append(Facility.facility_subtype == facility_subtype)
+    if inclusion_class:
+        conditions.append(Facility.inclusion_class == inclusion_class)
     if ownership:
         conditions.append(Facility.ownership == ownership)
+    if ownership_type:
+        conditions.append(Facility.ownership_type == ownership_type)
+    if operator_type:
+        conditions.append(Facility.operator_type == operator_type)
+    if public_access_class:
+        conditions.append(Facility.public_access_class == public_access_class)
+    if facility_kind:
+        conditions.append(Facility.facility_kind == facility_kind)
+    if function:
+        conditions.append(
+            exists(
+                select(1)
+                .select_from(FacilityFunction)
+                .where(
+                    FacilityFunction.facility_id == Facility.id,
+                    FacilityFunction.function_code == function,
+                )
+                .correlate(Facility)
+            )
+        )
     if q and q.strip():
         from ..services import facility_search_condition
 

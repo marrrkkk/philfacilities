@@ -23,13 +23,16 @@ Blocked or internal-only sources are **not** refreshed automatically:
 
 - Official PSA PSGC workbook: blocked by a Cloudflare challenge.
 - DepEd Machine-Ready Files: blocked by a human terms/download flow.
-- DepEd EBEIS: acquired only as a manually requested internal-only result set.
+- DepEd EBEIS: the current source release is published for institution-level fields with personal fields withheld; canonical facility rows remain internal pending field-level mapping and privacy review.
 - DOH NHFR/HFSRB: blocked by Cloudflare and an unreviewed data-use agreement.
-- CHED/TESDA: no verified bulk export or reuse permission.
+- CHED/TESDA: no verified bulk release or documented public API.
 
 An operator must not enable an approved-refresh job for a source until its rights and
-publication state permit it. Never bypass a CAPTCHA, Cloudflare challenge, login, or
-agreement, and never accept an agreement on another person's behalf.
+publication state permit it. A verified, publicly available source with no explicit
+prohibition may qualify under `publicly_available_verified`; see
+[`docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`](../14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md).
+Never bypass a CAPTCHA, Cloudflare challenge, login, or agreement, and never accept an
+agreement on another person's behalf.
 
 ## 2. One-time configuration
 

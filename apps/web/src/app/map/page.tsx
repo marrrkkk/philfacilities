@@ -5,7 +5,7 @@ import { MapExplorer } from "@/components/map/map-explorer";
 export const metadata: Metadata = {
   title: "Map",
   description:
-    "Explore source-linked Philippine schools and health facilities with precision-aware map markers and an accessible text list.",
+    "Explore the source-linked PhilFacilities registry with ownership-aware filters, precision-aware map markers and an accessible text list.",
 };
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -20,7 +20,11 @@ export default async function MapPage({ searchParams }: { searchParams: SearchPa
     <MapExplorer
       initialType={first(raw.type)}
       initialQuery={first(raw.q)}
+      initialInclusionClass={first(raw.inclusion_class)}
       initialOwnership={first(raw.ownership)}
+      initialOwnershipType={first(raw.ownership_type)}
+      initialAccessClass={first(raw.public_access_class)}
+      initialKind={first(raw.facility_kind)}
       initialRegion={first(raw.region_code)}
       initialProvince={first(raw.province_code)}
       initialMunicipality={first(raw.municipality_code)}

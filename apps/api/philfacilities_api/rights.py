@@ -2,9 +2,12 @@
 
 The values here are the enforced contract between the ingestion pipeline and the
 public API. A dataset is only publishable when its redistribution status is one of
-``PUBLIC_RIGHTS`` *and* its publication gate has been approved. Ingestion may still
-store, parse, and validate restricted or review-pending records; those records stay
-internal and are never returned by public endpoints.
+``PUBLIC_RIGHTS`` *and* its publication gate has been approved. ``PUBLIC_RIGHTS``
+includes verified, publicly available sources for which no explicit prohibition was
+found; that policy requires reviewed, non-personal fields, provenance, attribution,
+and takedown-on-notice. Ingestion may still store, parse, and validate restricted or
+review-pending records; those records stay internal and are never returned by public
+endpoints.
 """
 
 from __future__ import annotations
@@ -13,11 +16,18 @@ RIGHTS_UNKNOWN = "unknown"
 RIGHTS_REVIEW_REQUIRED = "review_required"
 RIGHTS_APPROVED_PUBLIC = "approved_public_redistribution"
 RIGHTS_APPROVED_ATTRIBUTION = "approved_with_attribution"
+RIGHTS_PUBLICLY_AVAILABLE_VERIFIED = "publicly_available_verified"
 RIGHTS_RESTRICTED = "restricted_non_redistributable"
 RIGHTS_DENIED = "denied"
 RIGHTS_EXPIRED = "expired"
 
-PUBLIC_RIGHTS = frozenset({RIGHTS_APPROVED_PUBLIC, RIGHTS_APPROVED_ATTRIBUTION})
+PUBLIC_RIGHTS = frozenset(
+    {
+        RIGHTS_APPROVED_PUBLIC,
+        RIGHTS_APPROVED_ATTRIBUTION,
+        RIGHTS_PUBLICLY_AVAILABLE_VERIFIED,
+    }
+)
 NON_PUBLIC_RIGHTS = frozenset(
     {
         RIGHTS_UNKNOWN,

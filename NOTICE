@@ -1,0 +1,22 @@
+PhilFacilities
+==============
+
+Copyright the PhilFacilities contributors.
+
+The Apache License, Version 2.0, in the LICENSE file applies to the project's
+source code, documentation authored by the project, and other material that the
+project has authority to license. It does not apply to third-party source data,
+agency records, maps, logos, photographs, or other material owned by a publisher.
+
+Source-data rights and publication decisions are recorded per dataset and release
+in DATA-LICENSES.md and docs/03-SOURCE-REGISTER.md. The project's data-inclusion
+policy is in docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md. A dataset may be
+published when it is verified and publicly available and no explicit prohibition
+applies, or under a recorded licence, terms statement, or agreement. That policy
+is a documented product decision, not a claim of public domain and not legal
+advice. Explicit restrictions, privacy limits, and takedown requests control.
+
+Attribution required by a source remains with the published data. See the dataset
+metadata, the public source pages, and the rights register for the exact wording.
+
+SPDX-License-Identifier for project code: Apache-2.0

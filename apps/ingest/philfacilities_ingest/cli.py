@@ -29,6 +29,7 @@ from .acquisition import (
     send_failure_alert,
     validate_signature,
 )
+from .assertions import backfill_assertions
 from .compare import ReleaseComparisonError, compare_releases
 from .config import get_settings
 from .contracts import ReleaseSpec
@@ -44,6 +45,7 @@ from .fixtures import (
     philhealth_pdf,
     psgc_workbook,
 )
+from .manifest import write_release_manifest
 from .matching import (
     MatchingError,
     accept_match_candidate,
@@ -59,19 +61,34 @@ from .pipeline import (
     run_psgc_ingestion,
     session_factory,
 )
+from .source_candidates import (
+    load_source_candidates,
+    summarize_source_candidates,
+    validate_source_candidates,
+)
 from .sources.bettergov import OSMParquetAdapter, load_psgc_release_payload
 from .sources.bettergov_stats import (
     CENSUS_2024_DATASET_IDS,
     fetch_population_snapshot,
     load_population_snapshot,
 )
+from .sources.bir import BirRevenueDistrictOfficeAdapter
+from .sources.ched_heida import ChedHeidaAdapter, fetch_heida_directory
 from .sources.deped import DepEdEnrollmentAdapter, DepEdMasterlistAdapter, DepEdResourceAdapter
 from .sources.deped_ebeis import DepEdEBEISAdapter
 from .sources.doh import DOHNHFRAdapter
+from .sources.dswd_crcf import DswdCrcfDirectoryAdapter
+from .sources.dti_negosyo import DtiNegosyoCenterAdapter, fetch_negosyo_centers
+from .sources.national_museum import NationalMuseumDirectoryAdapter, fetch_national_museum_directory
+from .sources.nlp import NlpPublicLibraryPdfAdapter
+from .sources.nmis_naris import NmisNarisDirectoryAdapter
 from .sources.philhealth import PhilHealthPdfAdapter
+from .sources.phlpost import PhlPostLocatorAdapter
+from .sources.ppa import PpaPortListAdapter
 from .sources.registry import (
     EBEIS_REGIONS,
     REAL_SOURCES,
+    apply_publication_decisions,
     check_sources,
     due_source_keys,
     fetch_ebeis_region,
@@ -101,8 +118,14 @@ REAL_AGENCY_METADATA = {
     "ched": ("Commission on Higher Education", "government"),
     "deped": ("Department of Education", "government"),
     "doh": ("Department of Health", "government"),
+    "dswd": ("Department of Social Welfare and Development", "government"),
+    "nlp": ("National Library of the Philippines", "government"),
+    "nmp": ("National Museum of the Philippines", "government"),
+    "nmis": ("National Meat Inspection Service", "government"),
     "osm": ("OpenStreetMap contributors (via HOT and BetterGov.PH)", "community"),
     "philhealth": ("Philippine Health Insurance Corporation", "government"),
+    "phlpost": ("Philippine Postal Corporation", "government"),
+    "ppa": ("Philippine Ports Authority", "government"),
     "psa": ("Philippine Statistics Authority", "government"),
     "tesda": ("Technical Education and Skills Development Authority", "government"),
 }
@@ -466,6 +489,64 @@ def status() -> None:
         engine.dispose()
 
 
+@app.command("source-candidates")
+def source_candidates_command(
+    path: Annotated[
+        Path | None,
+        typer.Option(
+            "--path",
+            help="Candidate registry JSON. Defaults to expand/source-candidates.json.",
+        ),
+    ] = None,
+    as_json: Annotated[
+        bool, typer.Option("--json", help="Print the validation summary as JSON.")
+    ] = False,
+) -> None:
+    """Validate the researched source-candidate inventory.
+
+    This does not acquire, register, or publish a source. It catches duplicate
+    IDs, missing custodians/URLs, and invalid state values before the register
+    is used for acquisition decisions.
+    """
+
+    payload = load_source_candidates(path)
+    errors = validate_source_candidates(payload)
+    summary = summarize_source_candidates(payload)
+    if as_json:
+        typer.echo(json.dumps({"summary": summary, "errors": errors}, indent=2))
+    else:
+        typer.echo(f"source candidates: {summary['total']}")
+        typer.echo(f"evidence: {summary['by_evidence_state']}")
+        typer.echo(f"access: {summary['by_access_state']}")
+        typer.echo(f"rights: {summary['by_rights_state']}")
+        typer.echo(f"coverage: {summary['by_coverage_scope']}")
+        if errors:
+            for error in errors:
+                typer.echo(f"ERROR: {error}", err=True)
+        else:
+            typer.echo("validation: ok")
+    if errors:
+        raise typer.Exit(code=1)
+
+
+@app.command("backfill-assertions")
+def backfill_assertions_command() -> None:
+    """Reconstruct exact field claims from existing source-linked child rows.
+
+    This does not re-download a source and does not guess provenance for
+    facility-level fields that several sources could have supplied.
+    """
+
+    engine, session = _session()
+    try:
+        stats = backfill_assertions(session)
+        session.commit()
+        typer.echo(json.dumps(stats.as_dict(), indent=2))
+    finally:
+        session.close()
+        engine.dispose()
+
+
 @app.command("match-candidates-generate")
 def match_candidates_generate() -> None:
     """Scan existing source links and queue deterministic duplicate candidates."""
@@ -604,6 +685,35 @@ def check_sources_command(
         engine.dispose()
 
 
+@app.command("apply-publication-decisions")
+def apply_publication_decisions_command(
+    source: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--source",
+            "-s",
+            help=(
+                "Repeat to reconcile selected source keys. Omit to reconcile existing "
+                "datasets only."
+            ),
+        ),
+    ] = None,
+) -> None:
+    """Reconcile stored dataset rights/gates with the reviewed source registry.
+
+    This does not ingest or publish records. Reprocess the affected releases
+    afterwards so their records inherit the updated gate.
+    """
+
+    engine, session = _session()
+    try:
+        results = apply_publication_decisions(session, keys=source)
+        typer.echo(json.dumps(results, indent=2, default=str))
+    finally:
+        session.close()
+        engine.dispose()
+
+
 @app.command("check-due-sources")
 def check_due_sources_command(
     source: Annotated[
@@ -719,6 +829,31 @@ def compare_releases_command(
     ):
         if keys:
             typer.echo(f"sample_{label}: {', '.join(keys)}")
+
+
+@app.command("release-manifest")
+def release_manifest_command(
+    output: Annotated[
+        Path,
+        typer.Option("--output", "-o", help="Write the release manifest to this JSON path."),
+    ] = Path("var/reports/release-manifest.json"),
+) -> None:
+    """Write a versioned manifest of published source releases and known gaps."""
+
+    engine, session = _session()
+    try:
+        manifest = write_release_manifest(session, output)
+    finally:
+        session.close()
+        engine.dispose()
+    totals = manifest["totals"]
+    typer.echo(f"wrote {output}")
+    typer.echo(
+        f"datasets_included={totals['datasets_included']} "
+        f"datasets_excluded={totals['datasets_excluded']} "
+        f"published_facilities={totals['published_facilities']}"
+    )
+    typer.echo(f"checksum={manifest['checksum']}")
 
 
 @app.command("discover-sources")
@@ -1107,6 +1242,13 @@ def load_osm(
 @app.command("load-deped-ebeis")
 def load_deped_ebeis(
     region: Annotated[str, typer.Option(help="Verified EBEIS region key; default ncr.")] = "ncr",
+    reprocess: Annotated[
+        bool,
+        typer.Option(
+            "--reprocess",
+            help="Reprocess an already-preserved release instead of skipping its checksum.",
+        ),
+    ] = False,
 ) -> None:
     """Acquire the public EBEIS masterlist and store it internal-only.
 
@@ -1139,6 +1281,7 @@ def load_deped_ebeis(
             adapter=DepEdEBEISAdapter(spec),
             session=session,
             settings=settings,
+            reprocess=reprocess,
         )
         typer.echo(
             json.dumps(
@@ -1147,6 +1290,491 @@ def load_deped_ebeis(
                 default=str,
             )
         )
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("load-nlp")
+def load_nlp() -> None:
+    """Acquire the NLP public-library directory PDF and ingest it.
+
+    Records carry postal addresses only. No coordinates or PSGC codes are inferred.
+    """
+
+    settings = get_settings()
+    engine, session = _session()
+    try:
+        with HttpAcquirer(settings, timeout_seconds=180.0) as acquirer:
+            result = acquirer.fetch(REAL_SOURCES["nlp"].source_url, max_bytes=100 * 1024 * 1024)
+        status = classify_response(result)
+        if status != "ok":
+            raise AcquisitionError(
+                f"NLP directory returned HTTP {result.status_code}; no release was accepted.",
+                result=result,
+            )
+        validate_signature(result, filename="nlp-public-libraries.pdf")
+        spec = source_spec(
+            REAL_SOURCES["nlp"],
+            release_label="NLP-PUBLIC-LIBRARIES-2025-12",
+            filename="nlp-public-libraries-2025-12.pdf",
+            content=result.content,
+            retrieved_at=datetime.now(UTC),
+            reference_period_start=date(2025, 12, 1),
+            reference_period_end=date(2025, 12, 31),
+            enqueue_cross_source_matches=False,
+            notes=(
+                "NLP Integrated Directory of Public Libraries, December 2025 edition. "
+                "Institutional fields published with attribution; librarian contact fields "
+                "are not published."
+            ),
+        )
+        outcome = run_ingestion(
+            spec=spec,
+            adapter=NlpPublicLibraryPdfAdapter(spec),
+            session=session,
+            settings=settings,
+        )
+        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("load-national-museum")
+def load_national_museum() -> None:
+    """Acquire the NMP regional/area/site museum directory and ingest it."""
+
+    settings = get_settings()
+    engine, session = _session()
+    try:
+        with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
+            content, metadata = fetch_national_museum_directory(acquirer)
+        spec = source_spec(
+            REAL_SOURCES["national-museum"],
+            release_label=f"NMP-MUSEUMS-{date.today().isoformat()}",
+            filename=f"nmp-regional-area-site-museums-{date.today().isoformat()}.json",
+            content=content,
+            retrieved_at=datetime.now(UTC),
+            enqueue_cross_source_matches=False,
+            notes=(
+                f"Acquisition artifact: {metadata['museums']} museum cards, "
+                f"{metadata['detail_pages_fetched']} detail pages fetched. "
+                "Postal addresses only; no coordinates were added."
+            ),
+        )
+        outcome = run_ingestion(
+            spec=spec,
+            adapter=NationalMuseumDirectoryAdapter(spec),
+            session=session,
+            settings=settings,
+        )
+        typer.echo(
+            json.dumps(
+                {**outcome.__dict__, "acquisition": metadata},
+                indent=2,
+                default=str,
+            )
+        )
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("load-phlpost")
+def load_phlpost(
+    reprocess: Annotated[
+        bool,
+        typer.Option(
+            "--reprocess",
+            help="Reprocess an already-preserved release instead of skipping its checksum.",
+        ),
+    ] = False,
+) -> None:
+    """Acquire the PHLPost locator and store it internal-only.
+
+    The site carries an explicit copyright notice. No record is published until a
+    documented reuse decision exists.
+    """
+
+    settings = get_settings()
+    engine, session = _session()
+    try:
+        with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
+            result = acquirer.fetch(REAL_SOURCES["phlpost"].source_url)
+        status = classify_response(result)
+        if status != "ok":
+            raise AcquisitionError(
+                f"PHLPost locator returned HTTP {result.status_code}; no release was accepted.",
+                result=result,
+            )
+        spec = source_spec(
+            REAL_SOURCES["phlpost"],
+            release_label=f"PHLPOST-LOCATOR-{date.today().isoformat()}",
+            filename=f"phlpost-post-office-locator-{date.today().isoformat()}.html",
+            content=result.content,
+            retrieved_at=datetime.now(UTC),
+            enqueue_cross_source_matches=False,
+            notes=(
+                "PHLPost public locator table. Stored internal-only because the publisher "
+                "displays an explicit copyright/all-rights-reserved notice."
+            ),
+        )
+        outcome = run_ingestion(
+            spec=spec,
+            adapter=PhlPostLocatorAdapter(spec),
+            session=session,
+            settings=settings,
+            reprocess=reprocess,
+        )
+        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("load-bir")
+def load_bir() -> None:
+    """Acquire and OCR the BIR RAO 006-2025 Revenue District Office list."""
+
+    settings = get_settings()
+    engine, session = _session()
+    try:
+        with HttpAcquirer(settings, timeout_seconds=180.0) as acquirer:
+            result = acquirer.fetch(REAL_SOURCES["bir"].source_url, max_bytes=50 * 1024 * 1024)
+        status = classify_response(result)
+        if status != "ok":
+            raise AcquisitionError(
+                f"BIR RAO returned HTTP {result.status_code}; no release was accepted.",
+                result=result,
+            )
+        validate_signature(result, filename="bir-rao-006-2025.pdf")
+        spec = source_spec(
+            REAL_SOURCES["bir"],
+            release_label="BIR-RAO-006-2025",
+            filename="bir-rao-006-2025.pdf",
+            content=result.content,
+            retrieved_at=datetime.now(UTC),
+            reference_period_start=date(2025, 12, 9),
+            reference_period_end=date(2025, 12, 9),
+            enqueue_cross_source_matches=False,
+            notes=(
+                "Official scanned RAO No. 006-2025. Local OCR recovered the Revenue "
+                "Region/RDO list; no addresses or coordinates were inferred."
+            ),
+        )
+        outcome = run_ingestion(
+            spec=spec,
+            adapter=BirRevenueDistrictOfficeAdapter(spec),
+            session=session,
+            settings=settings,
+        )
+        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("load-ppa")
+def load_ppa(
+    input_path: Annotated[
+        Path | None,
+        typer.Option(
+            "--input",
+            help="Preserved PPA port-list PDF for controlled import when the live file is unreachable.",  # noqa: E501
+        ),
+    ] = None,
+    reprocess: Annotated[
+        bool,
+        typer.Option(
+            "--reprocess",
+            help="Reprocess an already-preserved release instead of skipping its checksum.",
+        ),
+    ] = False,
+) -> None:
+    """Acquire or import the PPA list of ports covered in PPA statistics.
+
+    The source supplies port hierarchy and RORO/NON-RORO marks only. No
+    coordinates, berth capacity, owner names, public access or operational status
+    are inferred.
+    """
+
+    settings = get_settings()
+    engine, session = _session()
+    try:
+        if input_path is not None:
+            content = input_path.read_bytes()
+            retrieved_at = datetime.fromtimestamp(input_path.stat().st_mtime, UTC)
+            notes = (
+                "Controlled import of the preserved public PPA port-list PDF. "
+                "Source hierarchy, RORO/NON-RORO marks and remarks are preserved."
+            )
+        else:
+            with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
+                result = acquirer.fetch(REAL_SOURCES["ppa"].source_url, max_bytes=50 * 1024 * 1024)
+            status = classify_response(result)
+            if status != "ok":
+                raise AcquisitionError(
+                    f"PPA port list returned HTTP {result.status_code}; no release was accepted.",
+                    result=result,
+                )
+            validate_signature(result, filename="ppa-port-list.pdf")
+            content = result.content
+            retrieved_at = datetime.now(UTC)
+            notes = (
+                "PPA List of Ports Covered in PPA Statistics. Base, TMO/OTP, other "
+                "government and private ports remain separate. No coordinates, owners, "
+                "public access or operational status were inferred."
+            )
+        spec = source_spec(
+            REAL_SOURCES["ppa"],
+            release_label=f"PPA-PORT-LIST-{retrieved_at.date().isoformat()}",
+            filename=f"ppa-port-list-{retrieved_at.date().isoformat()}.pdf",
+            content=content,
+            retrieved_at=retrieved_at,
+            enqueue_cross_source_matches=False,
+            notes=notes,
+        )
+        outcome = run_ingestion(
+            spec=spec,
+            adapter=PpaPortListAdapter(spec),
+            session=session,
+            settings=settings,
+            reprocess=reprocess,
+        )
+        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("load-dti-negosyo")
+def load_dti_negosyo(
+    input_path: Annotated[
+        Path | None,
+        typer.Option(
+            "--input",
+            help="Preserved DTI Negosyo Center JSON artifact for controlled import.",
+        ),
+    ] = None,
+    reprocess: Annotated[
+        bool,
+        typer.Option(
+            "--reprocess",
+            help="Reprocess an already-preserved release instead of skipping its checksum.",
+        ),
+    ] = False,
+) -> None:
+    """Acquire the public DTI Negosyo Center directory and ingest its centers.
+
+    The finder supplies names, postal addresses and geographic labels only. No
+    coordinates, ownership, operator, hours or access conditions are inferred.
+    """
+
+    settings = get_settings()
+    engine, session = _session()
+    try:
+        if input_path is not None:
+            content = input_path.read_bytes()
+            retrieved_at = datetime.fromtimestamp(input_path.stat().st_mtime, UTC)
+            notes = "Controlled import of a preserved public DTI Negosyo Center JSON artifact."
+        else:
+            with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
+                content, metadata = fetch_negosyo_centers(acquirer)
+            retrieved_at = datetime.now(UTC)
+            notes = f"Acquisition metadata: {json.dumps(metadata, default=str)}"
+        spec = source_spec(
+            REAL_SOURCES["dti-negosyo"],
+            release_label=f"DTI-NEGOSYO-{retrieved_at.date().isoformat()}",
+            filename=f"dti-negosyo-centers-{retrieved_at.date().isoformat()}.json",
+            content=content,
+            retrieved_at=retrieved_at,
+            enqueue_cross_source_matches=False,
+            notes=notes,
+        )
+        outcome = run_ingestion(
+            spec=spec,
+            adapter=DtiNegosyoCenterAdapter(spec),
+            session=session,
+            settings=settings,
+            reprocess=reprocess,
+        )
+        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("load-ched-heida")
+def load_ched_heida(
+    input_path: Annotated[
+        Path | None,
+        typer.Option(
+            "--input",
+            help="Preserved CHED HEIDA JSON artifact for controlled import.",
+        ),
+    ] = None,
+    reprocess: Annotated[
+        bool,
+        typer.Option(
+            "--reprocess",
+            help="Reprocess an already-preserved release instead of skipping its checksum.",
+        ),
+    ] = False,
+) -> None:
+    """Acquire the public CHED HEIDA HEI directory and ingest its institutions.
+
+    The directory supplies institutional name, CHED code, type, address and region
+    only. Contact details and institutional-head names are discarded. No
+    coordinates, PSGC codes, campus counts or operational status are inferred.
+    """
+
+    settings = get_settings()
+    engine, session = _session()
+    try:
+        if input_path is not None:
+            content = input_path.read_bytes()
+            retrieved_at = datetime.fromtimestamp(input_path.stat().st_mtime, UTC)
+            notes = "Controlled import of a preserved public CHED HEIDA JSON artifact."
+        else:
+            with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
+                content, metadata = fetch_heida_directory(acquirer)
+            retrieved_at = datetime.now(UTC)
+            notes = f"Acquisition metadata: {json.dumps(metadata, default=str)}"
+        spec = source_spec(
+            REAL_SOURCES["ched-heida"],
+            release_label=f"CHED-HEIDA-{retrieved_at.date().isoformat()}",
+            filename=f"ched-heida-hei-directory-{retrieved_at.date().isoformat()}.json",
+            content=content,
+            retrieved_at=retrieved_at,
+            enqueue_cross_source_matches=False,
+            notes=notes,
+        )
+        outcome = run_ingestion(
+            spec=spec,
+            adapter=ChedHeidaAdapter(spec),
+            session=session,
+            settings=settings,
+            reprocess=reprocess,
+        )
+        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("load-dswd-crcf")
+def load_dswd_crcf(
+    reprocess: Annotated[
+        bool,
+        typer.Option(
+            "--reprocess",
+            help="Reprocess an already-preserved release instead of skipping its checksum.",
+        ),
+    ] = False,
+) -> None:
+    """Acquire the DSWD CRCF directory and ingest unique facility cards."""
+
+    settings = get_settings()
+    engine, session = _session()
+    try:
+        with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
+            result = acquirer.fetch(REAL_SOURCES["dswd-crcf"].source_url)
+        status = classify_response(result)
+        if status != "ok":
+            raise AcquisitionError(
+                f"DSWD CRCF directory returned HTTP {result.status_code}; no release was accepted.",
+                result=result,
+            )
+        spec = source_spec(
+            REAL_SOURCES["dswd-crcf"],
+            release_label=f"DSWD-CRCF-{date.today().isoformat()}",
+            filename=f"dswd-crcf-directory-{date.today().isoformat()}.html",
+            content=result.content,
+            retrieved_at=datetime.now(UTC),
+            enqueue_cross_source_matches=False,
+            notes=(
+                "DSWD CRCF public directory. Desktop and mobile accordion layouts are "
+                "deduplicated by facility name and address; postal addresses only."
+            ),
+        )
+        outcome = run_ingestion(
+            spec=spec,
+            adapter=DswdCrcfDirectoryAdapter(spec),
+            session=session,
+            settings=settings,
+            reprocess=reprocess,
+        )
+        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("load-nmis-naris")
+def load_nmis_naris(
+    input_path: Annotated[
+        Path | None,
+        typer.Option(
+            "--input",
+            help=(
+                "Preserved NARIS HTML artifact for controlled import when the live page is blocked."
+            ),
+        ),
+    ] = None,
+    reprocess: Annotated[
+        bool,
+        typer.Option(
+            "--reprocess",
+            help="Reprocess an already-preserved release instead of skipping its checksum.",
+        ),
+    ] = False,
+) -> None:
+    """Acquire or import the NMIS NARIS accredited meat-establishment directory."""
+
+    settings = get_settings()
+    engine, session = _session()
+    try:
+        if input_path is not None:
+            content = input_path.read_bytes()
+            retrieved_at = datetime.fromtimestamp(input_path.stat().st_mtime, UTC)
+            notes = (
+                "Controlled import of a preserved public NARIS directory artifact. "
+                "The live endpoint returned a WAF challenge or TLS failure on recheck; "
+                "the artifact is the release of record."
+            )
+        else:
+            with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
+                result = acquirer.fetch(REAL_SOURCES["nmis-naris"].source_url)
+            status = classify_response(result)
+            if status != "ok":
+                raise AcquisitionError(
+                    f"NARIS returned HTTP {result.status_code}; no release was accepted.",
+                    result=result,
+                )
+            content = result.content
+            retrieved_at = datetime.now(UTC)
+            notes = (
+                "Public NARIS accredited-establishment directory. Duplicate LTO rows "
+                "are grouped; no validity dates or operating status are inferred."
+            )
+        spec = source_spec(
+            REAL_SOURCES["nmis-naris"],
+            release_label=f"NMIS-NARIS-{retrieved_at.date().isoformat()}",
+            filename=f"nmis-naris-accredited-establishments-{retrieved_at.date().isoformat()}.html",
+            content=content,
+            retrieved_at=retrieved_at,
+            enqueue_cross_source_matches=False,
+            notes=notes,
+        )
+        outcome = run_ingestion(
+            spec=spec,
+            adapter=NmisNarisDirectoryAdapter(spec),
+            session=session,
+            settings=settings,
+            reprocess=reprocess,
+        )
+        typer.echo(json.dumps(outcome.__dict__, indent=2, default=str))
     finally:
         session.close()
         engine.dispose()
@@ -1193,6 +1821,22 @@ def load_real(
         bool, typer.Option(help="Skip the PSA 2024 Census snapshots.")
     ] = False,
     skip_deped: Annotated[bool, typer.Option(help="Skip the internal-only EBEIS extract.")] = False,
+    skip_libraries: Annotated[
+        bool, typer.Option(help="Skip the NLP public-library directory.")
+    ] = False,
+    skip_museums: Annotated[bool, typer.Option(help="Skip the National Museum directory.")] = False,
+    skip_phlpost: Annotated[
+        bool, typer.Option(help="Skip the internal-only PHLPost locator.")
+    ] = False,
+    skip_bir: Annotated[
+        bool, typer.Option(help="Skip the scanned BIR Revenue District Office list.")
+    ] = False,
+    skip_ppa: Annotated[bool, typer.Option(help="Skip the PPA port list.")] = False,
+    skip_dti: Annotated[bool, typer.Option(help="Skip the DTI Negosyo Center directory.")] = False,
+    skip_ched: Annotated[
+        bool, typer.Option(help="Skip the CHED HEIDA higher-education directory.")
+    ] = False,
+    skip_crcf: Annotated[bool, typer.Option(help="Skip the DSWD CRCF directory.")] = False,
     purge: Annotated[bool, typer.Option(help="Purge synthetic records first.")] = True,
 ) -> None:
     """Run the documented real-data acquisition sequence end to end."""
@@ -1291,6 +1935,174 @@ def load_real(
                 settings=settings,
             )
             typer.echo(f"DepEd EBEIS: {deped_result.status} {deped_result.stats}")
+
+        if not skip_libraries:
+            with HttpAcquirer(settings, timeout_seconds=180.0) as acquirer:
+                nlp_payload = acquirer.fetch(
+                    REAL_SOURCES["nlp"].source_url, max_bytes=100 * 1024 * 1024
+                )
+            validate_signature(nlp_payload, filename="nlp-public-libraries.pdf")
+            nlp_spec = source_spec(
+                REAL_SOURCES["nlp"],
+                release_label="NLP-PUBLIC-LIBRARIES-2025-12",
+                filename="nlp-public-libraries-2025-12.pdf",
+                content=nlp_payload.content,
+                retrieved_at=datetime.now(UTC),
+                reference_period_start=date(2025, 12, 1),
+                reference_period_end=date(2025, 12, 31),
+                enqueue_cross_source_matches=False,
+            )
+            nlp_result = run_ingestion(
+                spec=nlp_spec,
+                adapter=NlpPublicLibraryPdfAdapter(nlp_spec),
+                session=session,
+                settings=settings,
+            )
+            typer.echo(f"NLP public libraries: {nlp_result.status} {nlp_result.stats}")
+
+        if not skip_museums:
+            with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
+                museum_content, museum_metadata = fetch_national_museum_directory(acquirer)
+            museum_spec = source_spec(
+                REAL_SOURCES["national-museum"],
+                release_label=f"NMP-MUSEUMS-{date.today().isoformat()}",
+                filename=f"nmp-regional-area-site-museums-{date.today().isoformat()}.json",
+                content=museum_content,
+                retrieved_at=datetime.now(UTC),
+                enqueue_cross_source_matches=False,
+                notes=f"Acquisition metadata: {json.dumps(museum_metadata, default=str)}",
+            )
+            museum_result = run_ingestion(
+                spec=museum_spec,
+                adapter=NationalMuseumDirectoryAdapter(museum_spec),
+                session=session,
+                settings=settings,
+            )
+            typer.echo(f"National Museum: {museum_result.status} {museum_result.stats}")
+
+        if not skip_phlpost:
+            with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
+                phlpost_payload = acquirer.fetch(REAL_SOURCES["phlpost"].source_url)
+            phlpost_spec = source_spec(
+                REAL_SOURCES["phlpost"],
+                release_label=f"PHLPOST-LOCATOR-{date.today().isoformat()}",
+                filename=f"phlpost-post-office-locator-{date.today().isoformat()}.html",
+                content=phlpost_payload.content,
+                retrieved_at=datetime.now(UTC),
+                enqueue_cross_source_matches=False,
+            )
+            phlpost_result = run_ingestion(
+                spec=phlpost_spec,
+                adapter=PhlPostLocatorAdapter(phlpost_spec),
+                session=session,
+                settings=settings,
+            )
+            typer.echo(f"PHLPost: {phlpost_result.status} {phlpost_result.stats}")
+
+        if not skip_bir:
+            with HttpAcquirer(settings, timeout_seconds=180.0) as acquirer:
+                bir_payload = acquirer.fetch(
+                    REAL_SOURCES["bir"].source_url, max_bytes=50 * 1024 * 1024
+                )
+            validate_signature(bir_payload, filename="bir-rao-006-2025.pdf")
+            bir_spec = source_spec(
+                REAL_SOURCES["bir"],
+                release_label="BIR-RAO-006-2025",
+                filename="bir-rao-006-2025.pdf",
+                content=bir_payload.content,
+                retrieved_at=datetime.now(UTC),
+                reference_period_start=date(2025, 12, 9),
+                reference_period_end=date(2025, 12, 9),
+                enqueue_cross_source_matches=False,
+            )
+            bir_result = run_ingestion(
+                spec=bir_spec,
+                adapter=BirRevenueDistrictOfficeAdapter(bir_spec),
+                session=session,
+                settings=settings,
+            )
+            typer.echo(f"BIR RDOs: {bir_result.status} {bir_result.stats}")
+
+        if not skip_ppa:
+            with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
+                ppa_payload = acquirer.fetch(
+                    REAL_SOURCES["ppa"].source_url, max_bytes=50 * 1024 * 1024
+                )
+            validate_signature(ppa_payload, filename="ppa-port-list.pdf")
+            ppa_spec = source_spec(
+                REAL_SOURCES["ppa"],
+                release_label=f"PPA-PORT-LIST-{date.today().isoformat()}",
+                filename=f"ppa-port-list-{date.today().isoformat()}.pdf",
+                content=ppa_payload.content,
+                retrieved_at=datetime.now(UTC),
+                enqueue_cross_source_matches=False,
+            )
+            ppa_result = run_ingestion(
+                spec=ppa_spec,
+                adapter=PpaPortListAdapter(ppa_spec),
+                session=session,
+                settings=settings,
+            )
+            typer.echo(f"PPA ports: {ppa_result.status} {ppa_result.stats}")
+
+        if not skip_dti:
+            with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
+                dti_content, dti_metadata = fetch_negosyo_centers(acquirer)
+            dti_spec = source_spec(
+                REAL_SOURCES["dti-negosyo"],
+                release_label=f"DTI-NEGOSYO-{date.today().isoformat()}",
+                filename=f"dti-negosyo-centers-{date.today().isoformat()}.json",
+                content=dti_content,
+                retrieved_at=datetime.now(UTC),
+                enqueue_cross_source_matches=False,
+                notes=f"Acquisition metadata: {json.dumps(dti_metadata, default=str)}",
+            )
+            dti_result = run_ingestion(
+                spec=dti_spec,
+                adapter=DtiNegosyoCenterAdapter(dti_spec),
+                session=session,
+                settings=settings,
+            )
+            typer.echo(f"DTI Negosyo Centers: {dti_result.status} {dti_result.stats}")
+
+        if not skip_ched:
+            with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
+                ched_content, ched_metadata = fetch_heida_directory(acquirer)
+            ched_spec = source_spec(
+                REAL_SOURCES["ched-heida"],
+                release_label=f"CHED-HEIDA-{date.today().isoformat()}",
+                filename=f"ched-heida-hei-directory-{date.today().isoformat()}.json",
+                content=ched_content,
+                retrieved_at=datetime.now(UTC),
+                enqueue_cross_source_matches=False,
+                notes=f"Acquisition metadata: {json.dumps(ched_metadata, default=str)}",
+            )
+            ched_result = run_ingestion(
+                spec=ched_spec,
+                adapter=ChedHeidaAdapter(ched_spec),
+                session=session,
+                settings=settings,
+            )
+            typer.echo(f"CHED HEIs: {ched_result.status} {ched_result.stats}")
+
+        if not skip_crcf:
+            with HttpAcquirer(settings, timeout_seconds=120.0) as acquirer:
+                crcf_payload = acquirer.fetch(REAL_SOURCES["dswd-crcf"].source_url)
+            crcf_spec = source_spec(
+                REAL_SOURCES["dswd-crcf"],
+                release_label=f"DSWD-CRCF-{date.today().isoformat()}",
+                filename=f"dswd-crcf-directory-{date.today().isoformat()}.html",
+                content=crcf_payload.content,
+                retrieved_at=datetime.now(UTC),
+                enqueue_cross_source_matches=False,
+            )
+            crcf_result = run_ingestion(
+                spec=crcf_spec,
+                adapter=DswdCrcfDirectoryAdapter(crcf_spec),
+                session=session,
+                settings=settings,
+            )
+            typer.echo(f"DSWD CRCF: {crcf_result.status} {crcf_result.stats}")
 
         session.commit()
         typer.echo("Real-data acquisition sequence complete.")

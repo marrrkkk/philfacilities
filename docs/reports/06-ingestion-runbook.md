@@ -29,12 +29,13 @@ uv run philfacilities-ingest --help
 | `check-due-sources [--force]` | Run only checks whose recorded `next_check_at` is due; exit 2 on actionable failure. | No |
 | `monitoring` | Print the latest check per dataset. | No |
 | `compare-releases <dataset> [--from LABEL --to LABEL] [--json]` | Compare two retained releases by source-record key and facility link. Read-only. | No |
+| `release-manifest [--output PATH]` | Write a checksummed JSON manifest of published source releases, counts, rights state and known coverage gaps. Read-only. | No |
 | `discover-sources [--target KEY] [--json] [--output PATH]` | Probe discovery-only official endpoints and write evidence. Never registers or publishes a dataset. | No |
 | `load-psgc-bettergov` | Acquire and load the BetterGov Q2 2024 PSGC mirror as supplementary geography. | Geography only |
 | `load-philhealth [--file NAME] [--reprocess]` | Acquire every current PhilHealth provider-category PDF, or named files, and ingest them. `--reprocess` reparses an already-published release after an explicit parser repair. | Yes, if the source gate permits |
 | `load-osm [--domain health\|education]` | Acquire HOT/OSM GeoParquet extracts and ingest named features. | Yes, if the source gate permits |
 | `load-population [--dataset ID]` | Acquire saved PSA 2024 Census population snapshots from BetterGov and store statistical observations. | Yes, observations are published with attribution |
-| `load-deped-ebeis [--region ncr]` | Acquire a public EBEIS result set and store it `internal_only`. | No |
+| `load-deped-ebeis [--region ncr]` | Acquire a public EBEIS result set and apply the registry publication decision; school-head names stay private. | Per the dataset's recorded decision |
 | `purge-synthetic` | Remove synthetic demonstration records and their derived rows. | Removes synthetic rows only |
 | `load-real` | Run the documented real-data sequence end to end. | Yes, subject to gates |
 | `status` | Show current database counts and source status. | No |
@@ -130,9 +131,9 @@ uv run philfacilities-ingest load-deped-ebeis --region ncr
 
 - Fetches the public EBEIS result set for a verified region key.
 - Stores the aggregated HTML payload and normalizes school rows.
-- The result set includes school-head personal names and has no explicit reuse licence.
-- The dataset is `restricted_non_redistributable` / `internal_only`. Public endpoints, downloads, source evidence, and statistics exclude it.
-- Do not add the adapter output to a public export without a documented rights change and a privacy review.
+- The result set includes school-head personal names; those names stay private and are not published.
+- The current source release is `published` for institution-level fields under `approved_with_attribution`. Canonical facility rows remain `internal` pending field-level mapping and privacy review.
+- Do not add personal fields to a public export without a field-level privacy review.
 
 The official DepEd Machine-Ready Files remain blocked by an HTTP 403 / human terms flow. No official enrollment, facilities, personnel, ICT, or WASH file has been acquired.
 
@@ -143,11 +144,36 @@ The official DepEd Machine-Ready Files remain blocked by an HTTP 403 / human ter
 - A normal browser download or permitted FOI route may be imported by an authorized operator, but a signed Data Release and Use Agreement and a publication decision are required first.
 - Do not weaken the source gate to make a DOH file appear.
 
-### 3.8 CHED and TESDA (not acquired)
+### 3.8 CHED HEIDA and TESDA
 
-- CHED HEIDA and the public HEI directory were investigated; the directory is reachable (HTTP 200) but no complete bulk export, documented public API, or reuse terms were verified.
-- TESDA TVI is reachable (HTTP 200) but the source monitor classifies the response as an access challenge (`access_blocked`); no provider-level bulk export or reuse terms were verified.
-- Neither source is a dependency of the current release, and neither is refreshed by the approved-source script.
+CHED HEIDA is acquired and published:
+
+```bash
+# Acquire the public HEI directory and ingest the institution records
+uv run philfacilities-ingest load-ched-heida
+
+# Re-run the controlled import from a preserved artifact
+uv run philfacilities-ingest load-ched-heida --input /tmp/opencode/ched-heida-hei-directory-2026-11-15.json
+```
+
+- The public directory is server-rendered HTML with 18 regional directories and 10-row pagination.
+- The adapter reads only public pages, discards contact details and institutional-head names, and retains institutional name, CHED code, type, address and region.
+- Ownership comes only from the published institutional type. `Others, please specify`, `CHED-Supervised Institution` and unrecognised types remain `DISCOVERY_CANDIDATE`/`UNKNOWN` and internal.
+- Release `CHED-HEIDA-2026-11-15` is published under `publicly_available_verified`; coverage is `NATIONAL_PARTIAL`, not a census or campus-level inventory.
+
+TESDA TVI is reachable (HTTP 200) but the source monitor classifies the response as an access challenge (`access_blocked`); no provider-level bulk export or reuse terms were verified. It remains blocked and is not refreshed by the approved-source script.
+
+### 3.9 Release manifest
+
+```bash
+uv run philfacilities-ingest release-manifest --output docs/reports/08-release-manifest.json
+```
+
+- Builds the manifest from the database, not from a hand-maintained list.
+- Includes only publication-approved datasets and their latest published release; blocked, internal and synthetic-only datasets are listed under `excluded_datasets` with a reason.
+- Records source/release labels, reference and retrieval dates, rights/publication/coverage states, counts, linked facilities, coordinate coverage, attribution and parser version.
+- Writes a SHA-256 checksum over the canonical manifest body. Changing any included value changes the checksum.
+- `docs/reports/08-release-manifest.json` is a generated snapshot; regenerate it after a data release instead of editing it by hand.
 
 ### 3.9 Release comparison and recurring discovery
 

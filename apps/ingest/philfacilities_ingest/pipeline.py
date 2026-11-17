@@ -12,11 +12,15 @@ from typing import Any
 from philfacilities_api.models import (
     AdministrativeUnit,
     Agency,
+    AttributeAssertion,
     Dataset,
     EnrollmentObservation,
     Facility,
     FacilityChangeEvent,
+    FacilityFunction,
     FacilityLocation,
+    FacilityRole,
+    FacilityService,
     FacilitySourceLink,
     GeographicRelease,
     HealthAccreditation,
@@ -41,6 +45,16 @@ from philfacilities_api.rights import (
     dataset_is_publishable,
     normalize_rights,
     rights_allow_public,
+)
+from philfacilities_api.taxonomy import (
+    DISCOVERY_CANDIDATE,
+    GOVERNMENT_FACILITY,
+    GOVERNMENT_UNSPECIFIED,
+    PRIVATE_PUBLIC_SERVICE_PROVIDER,
+    PRIVATE_UNSPECIFIED,
+    PUBLIC_INCLUSION_CLASSES,
+    UNKNOWN,
+    derive_inclusion_class,
 )
 from sqlalchemy import create_engine, select, update
 from sqlalchemy.orm import Session, sessionmaker
@@ -162,6 +176,8 @@ def ensure_source(session: Session, spec: ReleaseSpec) -> tuple[Agency, Dataset,
             attribution_text=spec.attribution_text,
             personal_data_status=spec.personal_data_status,
             publication_status=requested_publication,
+            coverage_scope=spec.coverage_scope,
+            coverage_note=spec.coverage_note,
             update_pattern=spec.update_pattern,
             is_public_source=True,
             is_synthetic=spec.is_synthetic,
@@ -184,6 +200,10 @@ def ensure_source(session: Session, spec: ReleaseSpec) -> tuple[Agency, Dataset,
             dataset.personal_data_status = spec.personal_data_status
         if spec.update_pattern:
             dataset.update_pattern = spec.update_pattern
+        if spec.coverage_scope:
+            dataset.coverage_scope = spec.coverage_scope
+        if spec.coverage_note:
+            dataset.coverage_note = spec.coverage_note
         if requested_publication in (PUBLICATION_BLOCKED, PUBLICATION_INTERNAL_ONLY):
             dataset.publication_status = requested_publication
     gate = session.scalars(
@@ -335,21 +355,154 @@ def _add_assertion(
     raw_value: Any,
     normalized_value: Any,
     version: str,
+    source_field: str | None = None,
+    existing: set[tuple[str, str]] | None = None,
 ) -> None:
-    from philfacilities_api.models import AttributeAssertion
-
+    normalized = None if normalized_value is None else str(normalized_value)
+    if existing is not None:
+        key = (attribute, normalized or "")
+        if key in existing:
+            return
+        existing.add(key)
     session.add(
         AttributeAssertion(
             facility_id=facility_id,
             attribute_name=attribute,
             source_record_id=source_record_id,
-            source_field=attribute,
+            source_field=source_field or attribute,
             raw_value=None if raw_value is None else str(raw_value),
-            normalized_value=None if normalized_value is None else str(normalized_value),
+            normalized_value=normalized,
             transformation_version=version,
             review_status="source_supplied",
         )
     )
+
+
+def _assert_facility_fields(
+    session: Session,
+    *,
+    facility: Facility,
+    candidate: FacilityCandidate,
+    record: SourceRecord,
+    inclusion_class: str,
+    version: str,
+    existing: set[tuple[str, str]] | None = None,
+) -> None:
+    """Record the source's claim for every canonical field it supplies.
+
+    The pipeline currently preserves typed source rows and links them to a
+    facility, but only a handful of fields had explicit assertions.  These
+    claims are what the facility profile exposes as field-level provenance, so
+    they must be written for the values actually applied rather than inferred
+    later from the canonical row.
+    """
+
+    claims = (
+        ("display_name", candidate.display_name),
+        ("facility_type", candidate.facility_type),
+        ("facility_subtype", candidate.facility_subtype),
+        ("facility_kind", candidate.facility_kind),
+        ("ownership", candidate.ownership),
+        ("ownership_type", candidate.ownership_type),
+        ("operator_type", candidate.operator_type),
+        ("public_access_class", candidate.public_access_class),
+        ("access_conditions", candidate.access_conditions),
+        ("record_status", candidate.record_status),
+        ("inclusion_class", inclusion_class),
+    )
+    for attribute, value in claims:
+        if value in (None, "", "unknown", "UNKNOWN"):
+            continue
+        _add_assertion(
+            session,
+            facility_id=facility.id,
+            source_record_id=record.id,
+            attribute=attribute,
+            raw_value=value,
+            normalized_value=value,
+            version=version,
+            existing=existing,
+        )
+
+
+def _apply_sector_ownership(
+    session: Session,
+    *,
+    facility: Facility,
+    candidate: FacilityCandidate,
+    record: SourceRecord,
+    dataset: Dataset,
+    gate: PublicationGate,
+    parser_version: str,
+    stats: dict[str, Any],
+    sector_by_facility: dict[uuid.UUID, set[str]] | None,
+) -> None:
+    """Resolve ownership from the source's explicit government/private sector code.
+
+    PhilHealth's provider directory publishes a ``SEC`` value per accreditation. It
+    is source-supplied sector evidence, not an inference from accreditation itself.
+    A facility is only classified when every known accreditation agrees; a mixed
+    facility stays ``unknown`` and internal. An explicit ownership value from a
+    stronger source is never overwritten.
+    """
+
+    if (candidate.ownership or "").strip().lower() != "unknown":
+        return
+    if not candidate.accreditations or sector_by_facility is None:
+        return
+    sectors = sector_by_facility.setdefault(facility.id, set())
+    for accreditation in candidate.accreditations:
+        value = (accreditation.sector_code or "").strip().upper()
+        if value in {"G", "P"}:
+            sectors.add(value)
+    if sectors == {"G"}:
+        ownership, ownership_type, inclusion_class = (
+            "government",
+            GOVERNMENT_UNSPECIFIED,
+            GOVERNMENT_FACILITY,
+        )
+    elif sectors == {"P"}:
+        ownership, ownership_type, inclusion_class = (
+            "private",
+            PRIVATE_UNSPECIFIED,
+            PRIVATE_PUBLIC_SERVICE_PROVIDER,
+        )
+    else:
+        ownership, ownership_type, inclusion_class = UNKNOWN.lower(), UNKNOWN, DISCOVERY_CANDIDATE
+    if (
+        facility.ownership == ownership
+        and facility.ownership_type == ownership_type
+        and facility.inclusion_class == inclusion_class
+    ):
+        return
+    old = {
+        "ownership": facility.ownership,
+        "ownership_type": facility.ownership_type,
+        "inclusion_class": facility.inclusion_class,
+    }
+    facility.ownership = ownership
+    facility.ownership_type = ownership_type
+    facility.inclusion_class = inclusion_class
+    publication = (
+        "public"
+        if _dataset_is_public(dataset, gate) and inclusion_class in PUBLIC_INCLUSION_CLASSES
+        else "internal"
+    )
+    facility.publication_status = publication
+    facility.updated_at = datetime.now(UTC)
+    stats["facilities_updated"] += 1
+    for attribute in ("ownership", "ownership_type", "inclusion_class"):
+        session.add(
+            FacilityChangeEvent(
+                facility_id=facility.id,
+                change_type="attribute_updated",
+                attribute_name=attribute,
+                old_value={"value": old[attribute]},
+                new_value={"value": getattr(facility, attribute)},
+                source_record_id=record.id,
+                changed_by=f"ingest:{parser_version}",
+            )
+        )
 
 
 def _apply_candidate(
@@ -367,12 +520,19 @@ def _apply_candidate(
     enqueue_matches: bool = True,
     used_slugs: set[str] | None = None,
     facility_by_entity: dict[str, uuid.UUID] | None = None,
+    sector_by_facility: dict[uuid.UUID, set[str]] | None = None,
 ) -> Facility | None:
     entity_id = candidate.source_entity_id or candidate.source_record_key
     facility = _find_facility_for_entity(
         session, agency.id, entity_id, facility_by_entity=facility_by_entity
     )
     created = False
+    inclusion_class = candidate.inclusion_class or derive_inclusion_class(candidate.ownership)
+    if inclusion_class not in (*PUBLIC_INCLUSION_CLASSES, DISCOVERY_CANDIDATE):
+        raise ValueError(f"Unsupported inclusion class {inclusion_class!r}")
+    can_be_public = (
+        _dataset_is_public(dataset, gate) and inclusion_class in PUBLIC_INCLUSION_CLASSES
+    )
 
     if facility is None:
         if not candidate.display_name:
@@ -404,9 +564,15 @@ def _apply_candidate(
             official_name=candidate.display_name,
             facility_type=candidate.facility_type,
             facility_subtype=candidate.facility_subtype,
+            facility_kind=candidate.facility_kind or "facility",
+            inclusion_class=inclusion_class,
             ownership=candidate.ownership,
+            ownership_type=candidate.ownership_type,
+            operator_type=candidate.operator_type,
+            public_access_class=candidate.public_access_class,
+            access_conditions=candidate.access_conditions,
             record_status=candidate.record_status,
-            publication_status="public" if _dataset_is_public(dataset, gate) else "internal",
+            publication_status="public" if can_be_public else "internal",
             is_synthetic=dataset.is_synthetic,
             updated_at=datetime.now(UTC),
         )
@@ -433,10 +599,20 @@ def _apply_candidate(
         )
     else:
         changed = {}
+        # Enrichment-only releases (enrollment totals, resources) carry no ownership
+        # evidence. They must never demote an identified school or hospital to an
+        # internal discovery candidate merely because their own row says "unknown".
+        has_classification_evidence = candidate.inclusion_class is not None or (
+            candidate.ownership or ""
+        ).strip().lower() not in ("", "unknown")
         updates = {
             "display_name": candidate.display_name,
             "facility_subtype": candidate.facility_subtype,
+            "inclusion_class": inclusion_class if has_classification_evidence else None,
             "ownership": candidate.ownership,
+            "ownership_type": candidate.ownership_type,
+            "operator_type": candidate.operator_type,
+            "public_access_class": candidate.public_access_class,
             "record_status": candidate.record_status,
         }
         for attribute, new_value in updates.items():
@@ -444,12 +620,30 @@ def _apply_candidate(
             # Enrichment-only releases (enrollment/resource observations) carry no
             # facility name or sector. Never let a blank/unknown placeholder erase a
             # value already established by an identifying source release.
-            if new_value in (None, "", "unknown"):
+            if new_value in (None, "", "unknown", "UNKNOWN"):
                 continue
             if new_value != old_value:
                 setattr(facility, attribute, new_value)
                 changed[attribute] = {"old": old_value, "new": new_value}
-        if _dataset_is_public(dataset, gate) and facility.publication_status != "public":
+        if (
+            candidate.access_conditions
+            and candidate.access_conditions != facility.access_conditions
+        ):
+            old_conditions = facility.access_conditions
+            facility.access_conditions = candidate.access_conditions
+            changed["access_conditions"] = {
+                "old": old_conditions,
+                "new": candidate.access_conditions,
+            }
+        if (
+            has_classification_evidence
+            and inclusion_class == DISCOVERY_CANDIDATE
+            and facility.publication_status != "internal"
+        ):
+            old_publication = facility.publication_status
+            facility.publication_status = "internal"
+            changed["publication_status"] = {"old": old_publication, "new": "internal"}
+        elif can_be_public and facility.publication_status != "public":
             old_publication = facility.publication_status
             facility.publication_status = "public"
             changed["publication_status"] = {"old": old_publication, "new": "public"}
@@ -468,6 +662,28 @@ def _apply_candidate(
                         changed_by=f"ingest:{parser_version}",
                     )
                 )
+
+    assertion_keys = {
+        (attribute, normalized or "")
+        for attribute, normalized in session.execute(
+            select(
+                AttributeAssertion.attribute_name,
+                AttributeAssertion.normalized_value,
+            ).where(
+                AttributeAssertion.facility_id == facility.id,
+                AttributeAssertion.source_record_id == record.id,
+            )
+        )
+    }
+    _assert_facility_fields(
+        session,
+        facility=facility,
+        candidate=candidate,
+        record=record,
+        inclusion_class=inclusion_class,
+        version=parser_version,
+        existing=assertion_keys,
+    )
 
     link = None
     if not created:
@@ -553,7 +769,139 @@ def _apply_candidate(
                 raw_value=location.psgc_code,
                 normalized_value=location.psgc_code,
                 version=parser_version,
+                existing=assertion_keys,
             )
+        for attribute, value in (
+            ("location.latitude", location.latitude),
+            ("location.longitude", location.longitude),
+            ("location.precision", location.precision),
+            ("location.method", location.method),
+            ("location.address_text", location.address_text),
+        ):
+            if value in (None, ""):
+                continue
+            _add_assertion(
+                session,
+                facility_id=facility.id,
+                source_record_id=record.id,
+                attribute=attribute,
+                raw_value=value,
+                normalized_value=value,
+                version=parser_version,
+                existing=assertion_keys,
+            )
+
+    for function in candidate.functions:
+        existing_function = session.scalars(
+            select(FacilityFunction).where(
+                FacilityFunction.facility_id == facility.id,
+                FacilityFunction.function_code == function.function_code,
+                FacilityFunction.source_record_id == record.id,
+            )
+        ).first()
+        if existing_function is None:
+            session.add(
+                FacilityFunction(
+                    facility_id=facility.id,
+                    function_code=function.function_code,
+                    source_record_id=record.id,
+                    source_value=function.source_value,
+                    valid_from=function.valid_from,
+                    valid_to=function.valid_to,
+                    capacity_value=(
+                        Decimal(str(function.capacity_value))
+                        if function.capacity_value is not None
+                        else None
+                    ),
+                    capacity_unit=function.capacity_unit,
+                    designation_status=function.designation_status,
+                    evidence=function.evidence,
+                )
+            )
+            stats["functions"] += 1
+            _add_assertion(
+                session,
+                facility_id=facility.id,
+                source_record_id=record.id,
+                attribute="function_code",
+                raw_value=function.source_value or function.function_code,
+                normalized_value=function.function_code,
+                version=parser_version,
+                existing=assertion_keys,
+            )
+
+    for service in candidate.services:
+        existing_service = session.scalars(
+            select(FacilityService).where(
+                FacilityService.facility_id == facility.id,
+                FacilityService.service_code == service.service_code,
+                FacilityService.source_record_id == record.id,
+            )
+        ).first()
+        if existing_service is None:
+            session.add(
+                FacilityService(
+                    facility_id=facility.id,
+                    service_code=service.service_code,
+                    service_name=service.service_name,
+                    source_record_id=record.id,
+                    source_field=service.source_field,
+                    valid_from=service.valid_from,
+                    valid_to=service.valid_to,
+                    details=service.details,
+                )
+            )
+            stats["services"] += 1
+            _add_assertion(
+                session,
+                facility_id=facility.id,
+                source_record_id=record.id,
+                attribute="service_code",
+                raw_value=service.source_field or service.service_code,
+                normalized_value=service.service_code,
+                version=parser_version,
+                existing=assertion_keys,
+            )
+
+    for role in candidate.roles:
+        existing_role = session.scalars(
+            select(FacilityRole).where(
+                FacilityRole.facility_id == facility.id,
+                FacilityRole.role_type == role.role_type,
+                FacilityRole.entity_name == role.entity_name,
+                FacilityRole.source_record_id == record.id,
+            )
+        ).first()
+        if existing_role is None:
+            session.add(
+                FacilityRole(
+                    facility_id=facility.id,
+                    role_type=role.role_type,
+                    entity_name=role.entity_name,
+                    entity_type=role.entity_type,
+                    source_record_id=record.id,
+                    valid_from=role.valid_from,
+                    valid_to=role.valid_to,
+                    evidence=role.evidence,
+                )
+            )
+            stats["roles"] += 1
+            for attribute, value in (
+                ("role_type", role.role_type),
+                ("role_entity_name", role.entity_name),
+            ):
+                if not value:
+                    continue
+                _add_assertion(
+                    session,
+                    facility_id=facility.id,
+                    source_record_id=record.id,
+                    attribute=attribute,
+                    raw_value=value,
+                    normalized_value=value,
+                    version=parser_version,
+                    existing=assertion_keys,
+                )
 
     if candidate.school:
         school = candidate.school
@@ -581,6 +929,17 @@ def _apply_candidate(
             value = getattr(school, attribute)
             if value is not None:
                 setattr(profile, attribute, value)
+                _add_assertion(
+                    session,
+                    facility_id=facility.id,
+                    source_record_id=record.id,
+                    attribute=f"school.{attribute}",
+                    raw_value=value,
+                    normalized_value=value,
+                    version=parser_version,
+                    existing=assertion_keys,
+                    source_field=attribute,
+                )
         profile.source_record_id = record.id
         for observation in school.enrollment:
             exists = session.scalars(
@@ -636,6 +995,7 @@ def _apply_candidate(
                 raw_value=school.deped_school_id,
                 normalized_value=school.deped_school_id,
                 version=parser_version,
+                existing=assertion_keys,
             )
 
     if candidate.health:
@@ -661,6 +1021,17 @@ def _apply_candidate(
             value = getattr(health, attribute)
             if value is not None:
                 setattr(profile, attribute, value)
+                _add_assertion(
+                    session,
+                    facility_id=facility.id,
+                    source_record_id=record.id,
+                    attribute=f"health.{attribute}",
+                    raw_value=value,
+                    normalized_value=value,
+                    version=parser_version,
+                    existing=assertion_keys,
+                    source_field=attribute,
+                )
         profile.source_record_id = record.id
         if health.doh_facility_id:
             _add_assertion(
@@ -671,6 +1042,7 @@ def _apply_candidate(
                 raw_value=health.doh_facility_id,
                 normalized_value=health.doh_facility_id,
                 version=parser_version,
+                existing=assertion_keys,
             )
 
     for license_data in candidate.licenses:
@@ -729,6 +1101,18 @@ def _apply_candidate(
                 )
             )
             stats["accreditations"] += 1
+
+    _apply_sector_ownership(
+        session,
+        facility=facility,
+        candidate=candidate,
+        record=record,
+        dataset=dataset,
+        gate=gate,
+        parser_version=parser_version,
+        stats=stats,
+        sector_by_facility=sector_by_facility,
+    )
 
     if enqueue_matches:
         _maybe_flag_cross_source(session, candidate, facility, agency, record, release, stats)
@@ -955,6 +1339,9 @@ def run_ingestion(
         "resource_observations": 0,
         "licenses": 0,
         "accreditations": 0,
+        "functions": 0,
+        "services": 0,
+        "roles": 0,
         "candidate_matches": 0,
         "reprocess_skipped_unchanged": 0,
     }
@@ -1212,6 +1599,19 @@ def run_ingestion(
         for entity_id, facility_id in entity_rows:
             if entity_id:
                 facility_by_entity.setdefault(entity_id, facility_id)
+        # PhilHealth's explicit SEC field is the only sector evidence currently
+        # ingested. Load the accumulated values once so a facility appearing in
+        # several provider categories is classified consistently, and never by
+        # last-writer-wins.
+        sector_by_facility: dict[uuid.UUID, set[str]] = {}
+        for facility_id, sector_code in session.execute(
+            select(HealthAccreditation.facility_id, HealthAccreditation.sector_code).where(
+                HealthAccreditation.sector_code.is_not(None)
+            )
+        ).all():
+            value = (sector_code or "").strip().upper()
+            if value in {"G", "P"}:
+                sector_by_facility.setdefault(facility_id, set()).add(value)
         applied_candidate_keys: set[str] = set()
         known_psgc: set[str] = set()
         if latest_geo:
@@ -1323,29 +1723,12 @@ def run_ingestion(
                 enqueue_matches=spec.enqueue_cross_source_matches,
                 used_slugs=used_slugs,
                 facility_by_entity=facility_by_entity,
+                sector_by_facility=sector_by_facility,
             )
-            # Attribute assertions for user-facing fields; use the applied facility directly
-            # because sessions are configured with autoflush disabled.
+            # Attribute assertions are written by _apply_candidate for every
+            # source-supplied field, including display_name and ownership.
             facility_id = applied_facility.id if applied_facility else None
             if facility_id:
-                _add_assertion(
-                    session,
-                    facility_id=facility_id,
-                    source_record_id=record.id,
-                    attribute="display_name",
-                    raw_value=candidate.display_name,
-                    normalized_value=candidate.display_name,
-                    version=adapter.parser_version,
-                )
-                _add_assertion(
-                    session,
-                    facility_id=facility_id,
-                    source_record_id=record.id,
-                    attribute="ownership",
-                    raw_value=candidate.ownership,
-                    normalized_value=candidate.ownership,
-                    version=adapter.parser_version,
-                )
                 if candidate.location.latitude is None and candidate.location.longitude is None:
                     _record_issues(
                         session,

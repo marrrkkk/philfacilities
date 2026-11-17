@@ -1,6 +1,6 @@
 # 02 — Acquisition Report
 
-**Generated:** 2026-11-15T08:21:10.247010+00:00  
+**Generated:** 2026-11-15T14:28:56.207026+00:00  
 **Source of truth:** the configured PhilFacilities PostgreSQL database.  
 
 Actual retained releases, checksums, counts, formats, and access failures.
@@ -29,7 +29,15 @@ This report records actual acquired releases and their immutable file identity. 
 | psa-census-2024-population | PSA-2024-CENSUS-Central-Luzon-2024-07-01 | 2026-08-12T09:17:53+00:00 | 2024-07-01 to 2024-07-01 | 2026-09-09T18:49:18.402000+00:00 | json | 1202568 | ce9253837eabbd010e16b147a944295c68712744730b3f454a7ffc4c6cc4625b | 9729 | published | published | var/raw/bettergov/psa-census-2024-population/PSA-2024-CENSUS-Central-Luzon-2024-07-01/ce9253837eabbd01-psa-2024-census-central-luzon.json |
 | psa-census-2024-population | PSA-2024-CENSUS-Cagayan-Valley-2024-07-01 | 2026-08-12T09:17:53+00:00 | 2024-07-01 to 2024-07-01 | 2026-09-09T18:49:18.394000+00:00 | json | 887663 | 1b1cea5da487810ff3e05ac84f0e03576cdb727ad386e13731369c9407839893 | 7230 | published | published | var/raw/bettergov/psa-census-2024-population/PSA-2024-CENSUS-Cagayan-Valley-2024-07-01/1b1cea5da487810f-psa-2024-census-cagayan-valley.json |
 | psa-census-2024-population | PSA-2024-CENSUS-Ilocos-Region-2024-07-01 | 2026-08-12T09:17:53+00:00 | 2024-07-01 to 2024-07-01 | 2026-09-09T18:49:18.387000+00:00 | json | 1254503 | 6bebc7e8674f67a5e5c56b8384ffb04a2a3f4bbcbf72e21fa81a356fd9b73ddc | 10191 | published | published | var/raw/bettergov/psa-census-2024-population/PSA-2024-CENSUS-Ilocos-Region-2024-07-01/6bebc7e8674f67a5-psa-2024-census-ilocos-region.json |
+| bir-revenue-district-offices | BIR-RAO-006-2025 | NULL | 2025-12-09 to 2025-12-09 | 2026-11-15T12:25:49.446956+00:00 | pdf | 737658 | 1a22960c7043043eaf5bd4a68f0ef43d4c7274705df845667529d0ee30e9eb3f | 124 | published | published | var/raw/bir/bir-revenue-district-offices/BIR-RAO-006-2025/1a22960c7043043e-bir-rao-006-2025.pdf |
+| ched-heida-hei-directory | CHED-HEIDA-2026-11-15 | NULL | NULL | 2026-11-15T14:13:26.253688+00:00 | json | 991751 | abe288429833c855d818b3b68ece9bed383a1627d8c8c6a51e43958f77cee334 | 2716 | published | published | var/raw/ched/ched-heida-hei-directory/CHED-HEIDA-2026-11-15/abe288429833c855-ched-heida-hei-directory-2026-11-15.json |
+| deped-ebeis-masterlist-ncr | DEPED-EBEIS-NCR-2026-11-15 | NULL | NULL | 2026-11-15T12:46:12.688765+00:00 | html | 998059 | 29383079e7ffdc001738deab3a9b0f5883c4d8265d75aa91b7410b266d5ede0e | 5055 | published | published | var/raw/deped/deped-ebeis-masterlist-ncr/DEPED-EBEIS-NCR-2026-11-15/29383079e7ffdc00-deped-ebeis-masterlist-ncr-2026-11-15.html |
 | deped-ebeis-masterlist-ncr | DEPED-EBEIS-NCR-2026-11-15 | NULL | NULL | 2026-11-15T05:58:33.800809+00:00 | html | 998059 | f972cde8c01597a6b7cf064b4735b9d073b7c4746e8d505bd09abe1cbc0e218b | 5055 | published | internal_only | var/raw/deped/deped-ebeis-masterlist-ncr/DEPED-EBEIS-NCR-2026-11-15/f972cde8c01597a6-deped-ebeis-masterlist-ncr-2026-11-15.html |
+| dswd-crcf-directory | DSWD-CRCF-2026-11-15 | NULL | NULL | 2026-11-15T12:42:35.005693+00:00 | html | 686840 | d78ea19327fc8b826679f32627cdc68c59a2a75cf6fed32ae19875f1b950c7b4 | 76 | published | published | var/raw/dswd/dswd-crcf-directory/DSWD-CRCF-2026-11-15/d78ea19327fc8b82-dswd-crcf-directory-2026-11-15.html |
+| dti-negosyo-centers | DTI-NEGOSYO-2026-11-15 | NULL | NULL | 2026-11-15T13:45:19.148562+00:00 | json | 490810 | beac844a0f977e490912e616c77e633736df2114a242c41b69ff5f493824b6e8 | 1427 | published | published | var/raw/dti/dti-negosyo-centers/DTI-NEGOSYO-2026-11-15/beac844a0f977e49-dti-negosyo-centers-2026-11-15.json |
+| nlp-public-libraries | NLP-PUBLIC-LIBRARIES-2025-12 | NULL | 2025-12-01 to 2025-12-31 | 2026-11-15T11:43:23.862354+00:00 | pdf | 1302536 | 45cb64ee6ca567c80e0c98a31b86ab2ec350db7fff2ff10fecad8a5c23f25574 | 1752 | published | published | var/raw/nlp/nlp-public-libraries/NLP-PUBLIC-LIBRARIES-2025-12/45cb64ee6ca567c8-nlp-public-libraries-2025-12.pdf |
+| nmis-naris-accredited-meat-establishments | NMIS-NARIS-2026-11-15 | NULL | NULL | 2026-11-15T12:25:12.420903+00:00 | html | 540677 | 28df89484a5aa14e76093f6d54763ebdb0e455dd773871967f9b10423a2a957f | 357 | published | published | var/raw/nmis/nmis-naris-accredited-meat-establishments/NMIS-NARIS-2026-11-15/28df89484a5aa14e-nmis-naris-accredited-establishments-2026-11-15.html |
+| nmp-regional-area-site-museums | NMP-MUSEUMS-2026-11-15 | NULL | NULL | 2026-11-15T11:45:41.134109+00:00 | json | 5843 | 263f6ceb18acabe1f8be6cef70c5ed0881c2deac341cc9b4829c713e5132d2bb | 17 | published | published | var/raw/nmp/nmp-regional-area-site-museums/NMP-MUSEUMS-2026-11-15/263f6ceb18acabe1-nmp-regional-area-site-museums-2026-11-15.json |
 | osm-education-facilities | HOT-OSM-PHL-EDUCATION-2026-11-15 | NULL | NULL | 2026-11-15T05:02:30.586639+00:00 | parquet | 34784703 | f83ffcd492d83dfc071efe0d9c118ad8266b5e0bfd26f8adba043fc309989ba1 | 55824 | published | published | var/raw/osm/osm-education-facilities/HOT-OSM-PHL-EDUCATION-2026-11-15/f83ffcd492d83dfc-education_facilities.parquet |
 | osm-health-facilities | HOT-OSM-PHL-HEALTH-2026-11-15 | NULL | NULL | 2026-11-15T04:19:25.639168+00:00 | parquet | 2234739 | 73a35e9c877fc0fbdf7de837818009309b416b481c8f64ead99f9b5765a23013 | 18008 | published | published | var/raw/osm/osm-health-facilities/HOT-OSM-PHL-HEALTH-2026-11-15/73a35e9c877fc0fb-health_facilities.parquet |
 | philhealth-abpp | PHILHEALTH-ABPP_093026-2026-09-30 | 2026-09-30T00:00:00+00:00 | 2026-09-30 to 2026-09-30 | 2026-11-15T03:17:33.010665+00:00 | pdf | 3690448 | eda0249c0b5401ab640b8917332617668a980f3e18ea79d488d3ad3226096994 | 1670 | published | published | var/raw/philhealth/philhealth-abpp/PHILHEALTH-ABPP_093026-2026-09-30/eda0249c0b5401ab-ABPP_093026.pdf |
@@ -58,6 +66,9 @@ This report records actual acquired releases and their immutable file identity. 
 | philhealth-opto | PHILHEALTH-OPTO_093026-2026-09-30 | 2026-09-30T00:00:00+00:00 | 2026-09-30 to 2026-09-30 | 2026-11-15T03:36:25.714516+00:00 | pdf | 2243882 | 97a4bdf7ded0e6cf4e8614591a047cbd566cc059e270d553e29e27ebc760574a | 125 | published | published | var/raw/philhealth/philhealth-opto/PHILHEALTH-OPTO_093026-2026-09-30/97a4bdf7ded0e6cf-OPTO_093026.pdf |
 | philhealth-sam | PHILHEALTH-SAM_093026-2026-09-30 | 2026-09-30T00:00:00+00:00 | 2026-09-30 to 2026-09-30 | 2026-11-15T03:36:55.518243+00:00 | pdf | 2395762 | 55886ae6c3e63fb92271618c24e33c6c7400880f481fbefbb816db9cea716d32 | 209 | published | published | var/raw/philhealth/philhealth-sam/PHILHEALTH-SAM_093026-2026-09-30/55886ae6c3e63fb9-SAM_093026.pdf |
 | philhealth-yakap | PHILHEALTH-YAKAP-UNDATED | NULL | NULL | 2026-11-15T08:08:07.434929+00:00 | pdf | 5755769 | 2b288424cff77a37f2a31a02470165469be9877b021011966eceea52eceabf55 | 4138 | published | published | var/raw/philhealth/philhealth-yakap/PHILHEALTH-YAKAP-UNDATED/2b288424cff77a37-YAKAP.pdf |
+| phlpost-post-office-locator | PHLPOST-LOCATOR-2026-11-15 | NULL | NULL | 2026-11-15T12:48:21.640248+00:00 | html | 520936 | ca48746bda1e61971d5d55210c6d4533d4ad99e0a89ae3c2d545bdd405db914d | 1272 | published | published | var/raw/phlpost/phlpost-post-office-locator/PHLPOST-LOCATOR-2026-11-15/ca48746bda1e6197-phlpost-post-office-locator-2026-11-15.html |
+| phlpost-post-office-locator | PHLPOST-LOCATOR-2026-11-15 | NULL | NULL | 2026-11-15T11:47:11.349099+00:00 | html | 520936 | bda2e8701387867e57d9be117e8d97312facf04f5bb40bcb2554819f995b12a3 | 1272 | published | internal_only | var/raw/phlpost/phlpost-post-office-locator/PHLPOST-LOCATOR-2026-11-15/bda2e8701387867e-phlpost-post-office-locator-2026-11-15.html |
+| ppa-port-list | PPA-PORT-LIST-2026-11-15 | NULL | NULL | 2026-11-15T13:15:42.727486+00:00 | pdf | 363019 | bf069922f40d5b02e95376bcf8dd94611aa87563b7b58ff16089d77b5c2a3fe8 | 574 | published | published | var/raw/ppa/ppa-port-list/PPA-PORT-LIST-2026-11-15/bf069922f40d5b02-ppa-port-list-2026-11-15.pdf |
 
 ## Latest ingestion run per release
 
@@ -81,7 +92,15 @@ This report records actual acquired releases and their immutable file identity. 
 | psa-census-2024-population | PSA-2024-CENSUS-Central-Luzon-2024-07-01 | published | 9729 | 9729 | 0 | NULL | NULL | NULL | NULL | NULL |
 | psa-census-2024-population | PSA-2024-CENSUS-Cagayan-Valley-2024-07-01 | published | 7230 | 7230 | 0 | NULL | NULL | NULL | NULL | NULL |
 | psa-census-2024-population | PSA-2024-CENSUS-Ilocos-Region-2024-07-01 | published | 10191 | 10191 | 0 | NULL | NULL | NULL | NULL | NULL |
+| bir-revenue-district-offices | BIR-RAO-006-2025 | published | 124 | 124 | 0 | 0 | 0 | 0 | 0 | NULL |
+| ched-heida-hei-directory | CHED-HEIDA-2026-11-15 | published | 2716 | 2711 | 5 | 0 | 0 | 0 | 0 | NULL |
 | deped-ebeis-masterlist-ncr | DEPED-EBEIS-NCR-2026-11-15 | published | 5055 | 5055 | 0 | 0 | 0 | 0 | 0 | NULL |
+| deped-ebeis-masterlist-ncr | DEPED-EBEIS-NCR-2026-11-15 | published | 5055 | 5055 | 0 | 0 | 0 | 0 | 0 | NULL |
+| dswd-crcf-directory | DSWD-CRCF-2026-11-15 | published | 76 | 76 | 0 | 0 | 0 | 0 | 0 | NULL |
+| dti-negosyo-centers | DTI-NEGOSYO-2026-11-15 | published | 1427 | 1427 | 0 | 0 | 0 | 0 | 0 | NULL |
+| nlp-public-libraries | NLP-PUBLIC-LIBRARIES-2025-12 | published | 1752 | 1752 | 0 | 0 | 0 | 0 | 0 | NULL |
+| nmis-naris-accredited-meat-establishments | NMIS-NARIS-2026-11-15 | published | 357 | 357 | 0 | 88 | 0 | 0 | 0 | NULL |
+| nmp-regional-area-site-museums | NMP-MUSEUMS-2026-11-15 | published | 17 | 17 | 0 | 0 | 0 | 0 | 0 | NULL |
 | osm-education-facilities | HOT-OSM-PHL-EDUCATION-2026-11-15 | published | 55824 | 52824 | 3000 | 52824 | 52576 | 44814 | 0 | NULL |
 | osm-health-facilities | HOT-OSM-PHL-HEALTH-2026-11-15 | published | 18008 | 17410 | 598 | 17410 | 17402 | 11202 | 0 | NULL |
 | philhealth-abpp | PHILHEALTH-ABPP_093026-2026-09-30 | published | 1670 | 1670 | 0 | 0 | 0 | 0 | 0 | NULL |
@@ -110,6 +129,9 @@ This report records actual acquired releases and their immutable file identity. 
 | philhealth-opto | PHILHEALTH-OPTO_093026-2026-09-30 | published | 125 | 125 | 0 | 0 | 0 | 0 | 0 | NULL |
 | philhealth-sam | PHILHEALTH-SAM_093026-2026-09-30 | published | 209 | 209 | 0 | 0 | 0 | 0 | 0 | NULL |
 | philhealth-yakap | PHILHEALTH-YAKAP-UNDATED | published | 4138 | 4138 | 0 | 0 | 0 | 0 | 0 | NULL |
+| phlpost-post-office-locator | PHLPOST-LOCATOR-2026-11-15 | published | 1272 | 1272 | 0 | 0 | 0 | 0 | 0 | NULL |
+| phlpost-post-office-locator | PHLPOST-LOCATOR-2026-11-15 | published | 1272 | 1272 | 0 | 0 | 0 | 0 | 0 | NULL |
+| ppa-port-list | PPA-PORT-LIST-2026-11-15 | published | 574 | 574 | 0 | 0 | 0 | 0 | 0 | NULL |
 
 ## Recorded access failures and blockers
 

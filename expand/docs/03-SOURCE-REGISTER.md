@@ -1,0 +1,323 @@
+# 03 — Government Sources and Authoritative Facility-Provider Resource Register
+
+**Research baseline:** 15 November 2026  
+**Scope:** Official Philippine government datasets, directories, APIs, GIS layers, public portals, FOI disclosures, and LGU inventory channels that identify government facilities, private regulated/public-service providers, and qualifying public-access venues.  
+**Important:** This is a researched starting inventory, not a claim that every resource is nationally complete, machine-readable, downloadable, current, or redistributable. The agent must continue discovering sources and verify the underlying records before implementation.
+
+## How to read this register
+
+A source may be useful in different ways. The register distinguishes:
+
+- **Facility-of-record source** — the agency is responsible for a facility, register, or official list.
+- **Official directory** — a public directory or locator exposes individual facility/service-location records, but may not provide bulk export or API access.
+- **Project/inventory source** — records describe projects, inventories, assets, or participating-LGU submissions; they are not automatically a current facility register.
+- **GIS catalogue/layer** — a spatial layer is listed in a government catalogue. Its source date, owner, downloadability, and terms must be checked separately.
+- **Enrichment/context source** — geography, population, hazard, environmental, or statistical information that can be linked to facilities but is not itself a facility record.
+- **Discovery/request target** — an agency is a likely custodian, but a usable source dataset has not been verified.
+
+Evidence grade and publication rights are separate. A verified public release with no explicit prohibition may be published under the root [data inclusion and publication policy](../../docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md); an explicit restriction, access control, agreement, or privacy limit still blocks or narrows publication.
+
+### Evidence labels
+
+| Label | Meaning |
+|---|---|
+| `FILE/DOCUMENT VERIFIED` | A specific official file or document URL was reached and its contents/fields could be inspected in this research pass. |
+| `DIRECTORY CONTENT VERIFIED` | An official live page visibly lists individual named facilities or service locations. This does not prove a bulk API exists. |
+| `OFFICIAL PORTAL VERIFIED` | An official interactive portal/map exists and exposes relevant records or categories; bulk extraction may remain unavailable. |
+| `FOI ACCESS CONFIRMED` | An official FOI response confirms data was supplied or identifies an access route. It does not automatically grant redistribution rights; FOI conditions still control. |
+| `FOI LIMITATION CONFIRMED` | An official FOI response says the agency does not hold a consolidated file, refers to another custodian, or limits the scope. |
+| `CATALOGUE CANDIDATE` | A government GIS/data catalogue lists a relevant layer, but current records, download, and rights still need layer-level verification. |
+| `DISCOVERY ONLY` | Only an agency or system candidate has been identified; no usable facility records have been verified. |
+
+### Required status fields in the implementation
+
+Never compress all progress into one `verified` boolean. Track each separately:
+
+`DISCOVERED` → `ENDPOINT_TESTED` → `RECORDS_OBSERVED` → `ACQUIRED` → `SCHEMA_VERIFIED` → `QUALITY_REVIEWED` → `RIGHTS_REVIEWED` → `PUBLISHABLE` → `PUBLISHED`.
+
+Also record independent blockers such as `ACCESS_BLOCKED`, `HUMAN_DOWNLOAD_REQUIRED`, `FOI_REQUIRED`, `AGREEMENT_REQUIRED`, `RIGHTS_UNKNOWN`, `PARTIAL_COVERAGE`, and `STALE_SOURCE`.
+
+A homepage loading is not proof that its data endpoint works. A directory listing is not proof of an API. A file being publicly downloadable is not proof that it can be republished.
+
+### Machine-readable candidate registry
+
+[`expand/source-candidates.json`](../source-candidates.json) is the normalized inventory of
+the candidates in this register. Each entry records a stable source ID, custodian, title, one
+or more official URLs, normalized evidence/access/rights/coverage states, priority, next
+action, related tracker IDs, and the last verification date. The prose rows below remain the
+evidence narrative; the JSON is an index, not a second interpretation of the source.
+
+The inventory is intentionally separate from `source.datasets`. A candidate has not been
+acquired, schema-verified, rights-reviewed, or published, and must not appear in the public
+source catalogue just because it is listed here. Promotion to a dataset remains an explicit
+ingestion decision with a release, checksum, parser, tests, and publication decision.
+
+Validate it with:
+
+```bash
+uv run philfacilities-ingest source-candidates --json
+```
+
+The command fails on duplicate IDs, missing custodians/URLs, malformed URLs, or values outside
+the declared state vocabularies. Tests: `tests/test_source_candidates.py`.
+
+---
+
+# A. Primary facility registries and agency directories
+
+These are the first places to obtain facility identities and attributes. Sources may identify government facilities or private providers. Integrate actual source records, preserve the ownership/operator relationship, and do not treat private listings as government-owned facilities.
+
+| Source ID / custodian | Resource and direct official links | Facility/resource coverage and known fields | Evidence and access reality | Priority / next action |
+|---|---|---|---|---|
+| `deped.school_masterlist` — DepEd | [Machine-Ready Files](https://www.deped.gov.ph/machine-ready-files/) · [EBEIS Masterlist](https://ebeis.deped.gov.ph/beis/reports_info/masterlist) · [Project Bukas](https://projectbukas.deped.gov.ph/) | Basic education schools, school IDs, names, sector/management, education levels, administrative location, enrollment, school characteristics, facilities, personnel, ICT, WASH/utilities, and assessment datasets. Exact fields differ by release. | `DIRECTORY CONTENT VERIFIED`. DepEd publishes downloadable data families, but its file acquisition has a human download/terms or feedback flow. Do not assume an official API. Earlier source page listed enrollment through SY2024–25 and several characteristics files at SY2023–24; recheck latest release. | **P0.** Obtain original official files, inspect exact workbooks/sheets/headers, save the accepted terms and reference period, then automate parsing and any permitted future download. |
+| `doh.nhfr` — DOH | [National Health Facility Registry](https://nhfr.doh.gov.ph/VActivefacilitiesList) · [HFSRB licensed health facilities](https://hfsrb.doh.gov.ph/list-of-licensed-health-facilities/) · [DOH](https://doh.gov.ph/) | Hospitals, infirmaries, clinics, rural health units, barangay health stations and other facility types, as available. DOH form/documentation identifies facility name/type, ownership, service capability, bed capacity, licensing information, address, region/province/municipality/barangay, contact fields, coordinates and coordinate collection method. Exact CSV headers must be inspected. | `FOI ACCESS CONFIRMED` and prior `ACCESS_BLOCKED`. DOH FOI disclosures in 2025/2026 describe CSV/Excel and shapefile releases. The public export returned 403 in prior tests. DOH disclosed missing coordinates, barangay centroids, map-derived coordinates, and incomplete registry coverage. Certain releases use a signed Data Release and Use Agreement. | **P0.** Recheck permitted browser export; obtain current official file via authorized route/FOI; review exact agreement before public use; preserve coordinate provenance. |
+| `doh.licensed_facilities` — DOH/HFSRB | [List of Licensed Health Facilities](https://hfsrb.doh.gov.ph/list-of-licensed-health-facilities/) | Facility licensing and regulatory status for health establishments; potentially facility name, type, address, licence/status and validity details depending on list. | `OFFICIAL DIRECTORY VERIFIED`; exact current downloadable file and schema must be checked per page/release. A license is not the same as operational availability or PhilHealth accreditation. | **P0/P1.** Inspect current lists and connect only on verified identity. |
+| `philhealth.accredited_providers` — PhilHealth | [Accredited Health Facilities](https://www.philhealth.gov.ph/partners/providers/facilities/accredited/) · [Accreditation Status](https://www.philhealth.gov.ph/partners/providers/facilities/status.php) | Separate downloadable provider-category files: hospitals/infirmaries, dialysis, birthing/maternity, YAKAP, TB-DOTS, HIV, cancer, laboratories, animal-bite, family-planning, oral-health, optometry and other benefit-package providers. A previously inspected hospital PDF exposed facility name, beds, category/level, telephone, email, street, municipality, expiry date and sector code. | `FILE/DOCUMENT VERIFIED`. The 30 Sep 2026 hospital PDF was parsed locally in prior project work (75 pages, 1,934 rows). The public site disclaimer permits use/reproduction for educational or informative purposes; 25 provider-category releases are published with attribution. The acquired Antenatal release remains blocked pending a validated re-ingestion. Category accreditation is not real-time service availability. | **P0/P1.** Reuse existing parser; inspect every category separately; keep personal contact fields out of the public record; match to DOH with evidence and confidence. |
+| `ched.heida` — CHED | [HEIDA](https://heida.ched.gov.ph/) · [Public HEI Directory](https://heida.ched.gov.ph/hei-directory) · [CHED](https://ched.gov.ph/) | Higher-education institutions: name, CHED code, institutional type, address and region. Campus/programme records are not exposed by the public directory. | `ACQUIRED AND PUBLISHED`. Public server-rendered directory read on 15 Nov 2026: 18 regional directories, 280 pages, 2,716 rows, 2,711 unique after duplicate rejection. No login/CAPTCHA/prohibition encountered. Institutional fields published under `PUBLICLY_AVAILABLE_VERIFIED`; contact details and head names discarded; 123 `Others`/CHED-supervised/unrecognised rows remain internal; no coordinates or PSGC codes. | **P1.** Seek a campus-level or complete export; retain regional-directory scope and `NATIONAL_PARTIAL` coverage. |
+| `tesda.providers` — TESDA | [TVI directory](https://www.tesda.gov.ph/TVI) · [Assessment Centers](https://www.tesda.gov.ph/AssessmentCenters) · [TVET Statistics](https://www.tesda.gov.ph/About/TESDA/53) · [TESDA](https://www.tesda.gov.ph/) | Registered training institutions, registered courses/qualifications, assessment centres, and published enrollment/graduation/assessment/certification statistics. | `DIRECTORY CONTENT VERIFIED` for searchable public directory and statistics. National bulk export/public API and exact provider-level schema remain unverified. Aggregate provincial counts are not provider records. | **P1.** Find permitted provider-level export or request it. Keep statistics as enrichment only. |
+| `dswd.crcf` — DSWD | [Centers and Residential Care Facilities](https://www.dswd.gov.ph/crcf/) · [Standards Bureau directories](https://standards.dswd.gov.ph/directories-3/) · [DSWD directory](https://eodb.dswd.gov.ph/directory/) | DSWD-operated Centres and Residential Care Facilities (CRCFs); separate lists for LGU CRCFs with valid accreditation, senior citizens centres, private social welfare agencies, and other regulated/accredited entities. Current DSWD CRCF page states that DSWD operates/manages 77 CRCFs. | `DIRECTORY CONTENT VERIFIED`. DSWD Standards Bureau lists dated files, including CRCF and LGU-accredited CRCF directories as of 24 Sep 2026. The public website may be dynamic and not provide a documented API. Separate DSWD-owned/operated, LGU-owned/accredited, and private entities. 76 facilities are `PUBLISHED` with attribution; only institutional name, field office, and postal address are exposed. | **P0/P1.** Acquire dated directories; inspect actual files; do not count private/merely accredited providers as government-owned. |
+| `nlp.public_libraries` — National Library of the Philippines | [Integrated Directory of Public Libraries — December 2025](https://web.nlp.gov.ph/wp-content/uploads/2026/01/OFFICIAL-Integrated-Directory-of-Public-Libraries-as-of-December-2025.pdf) · [January 2025 directory](https://web.nlp.gov.ph/wp-content/uploads/2025/02/Directory-of-Affiliated-Public-Libraries-in-the-Philippines-As-of-January-2025-Rhodora-Valdez.pdf) · [NLP](https://web.nlp.gov.ph/) | Public library ID, region, location, library type, name, address, status, affiliation date; PDF also contains librarian/in-charge names, job titles, telephone/mobile and email. | `FILE/DOCUMENT VERIFIED`. January 2025 PDF was directly inspected. December 2025 official PDF is identified at the linked URL. Institution-level fields are published with attribution; librarian names and personal contact details stay private. | **P0/P1.** Acquire the latest official PDF, parse tables, compare releases, and keep personal-data minimization in the publication field list. |
+| `nationalmuseum.museums` — National Museum of the Philippines | [Regional, Area and Site Museums](https://www.nationalmuseum.gov.ph/our-museums/regional-area-and-site-museums/) · [National Museum](https://www.nationalmuseum.gov.ph/) | The official page links regional, area and site museums including Batanes, Cagayan, Ilocos, Cordillera, Kabayan, Rizal, Marinduque, Bicol, Tabon Caves, Iloilo, Dumaguete, Bohol, Cebu, Davao, Butuan, Zamboanga and Sulu, alongside central museums. | `DIRECTORY CONTENT VERIFIED`. Current official page exposes the location list and individual museum links. No national bulk API/export verified. Institutional museum fields are published with attribution; this is a directory subset, not all Philippine museums. | **P1.** Maintain an official-link-backed directory from individual museum pages; verify address, operator, open/closed status and dates. |
+| `eccd.ncdc_cdc` — ECCD Council | [National Child Development Center](https://eccdcouncil.gov.ph/ncdc/) · [Resources and community mapping forms](https://eccdcouncil.gov.ph/resources/) · [NCDC list, Annual Report 2023](https://eccdcouncil.gov.ph/wp-content/uploads/2024/10/AR-2023-051024-2_compressed.pdf) · [Annual Report 2025](https://eccdcouncil.gov.ph/wp-content/uploads/2025/10/ECCD_AR2025_7.21.pdf) | National Child Development Centers (NCDCs) and Child Development Centers (CDCs). 2023 report annex provides a list of NCDCs with province, city/municipality and project location. ECCD Council states 1,057 NCDCs established as of 31 Dec 2025. Its resources page provides Day Care Center and Child Development Center profile forms. | `FILE/DOCUMENT VERIFIED` for the 2023 NCDC list and official forms; `OFFICIAL PORTAL/REPORT VERIFIED` for 2025 NCDC count and a screenshot of the ECCD MIS list interface (Province, City/Municipality, Address, Status). The complete CDC registry is not proven as a public export/API. CDCs can be public, private, LGU, NGO or workplace-based; ownership must be distinguished. | **P0/P1.** Acquire NCDC list first; contact ECCD Council/DSWD/LGUs for permitted CDC registry. Do not interpret 1,057 NCDCs as the total number of all CDCs. |
+
+# B. Local-government and community-facility sources
+
+These sources are central to barangay halls, multipurpose halls, covered courts, markets, parks, plazas, local offices and community facilities. No single complete national machine-readable LGU facility inventory has been verified.
+
+| Source ID / custodian | Resource and direct official links | What it contributes | Evidence and limitations | Priority / next action |
+|---|---|---|---|---|
+| `dilg.drrm_pulse` — DILG-NCR | [DRRM-PULSE portal](https://drrm.ncr.dilg.gov.ph/) · [About/methodology](https://drrm.ncr.dilg.gov.ph/about) · [Facilities map](https://drrm.ncr.dilg.gov.ph/map) · [Participating LGUs](https://drrm.ncr.dilg.gov.ph/lgus) | Validated DRRM facility records such as evacuation centres, command centres, warehouses, barangay halls, health centres, fire stations and police stations; also DRRM resources, equipment, vehicles and systems. | `PUBLIC FEED INSPECTED — NOT USABLE FOR BULK INGEST`. The map states that only DILG-validated records are shown and the portal lists participating LGUs, but `/api/facilities.geojson` returned exactly one feature (Marikina Rescue 161 / MCDRRMO Command Center, with exact coordinates) regardless of query parameters; `/api/map-layers.geojson` returned an empty collection. Coverage is participating LGUs, not nationwide, and emergency coordinates require security review. | **BLOCKED pending broader validated export and written terms.** Ask DILG-NCR for an authorized export/API; do not infer a national inventory or publish operational coordinates without security review. Evidence: `docs/03-SOURCE-REGISTER.md` §6A. |
+| `dilg.subaybayan_evacuation_projects` — DILG | [Subaybayan portal](https://subaybayan.dilg.gov.ph/) · [DILG FOI response, 12 Feb 2026](https://www.foi.gov.ph/agencies/dilg/updated-list-of-evacuation-center-in-the-philippines/) · [Second response describing no consolidated master file](https://www.foi.gov.ph/agencies/dilg/updated-master-list-of-evacuation-center-in-the-philippines-dilg-902947380736/) | DILG FOI response directs users to Projects → LGU Infrastructure Monitoring and Evaluation – 20% Development Fund (LIME 20), filter Project Type = Evacuation Center and select status/year. | `FOI ACCESS CONFIRMED` for a project-data route. The response is about evacuation-centre projects, not a complete census of all existing evacuation sites. A separate DILG response says it does not maintain a consolidated master file in the requested format and says coordinates/PSGC are not held at that office. Direct portal fetch returned 403 in this research pass. Do not conflate completed project status with current facility operation. | **P0.** Test access in normal browser, inspect actual project rows/fields and download capability. Use only as project/asset evidence, not the sole evacuation-centre register. |
+| `dilg.evacuation_ncr_foi` — DILG-NCR | [FOI response: NCR evacuation-centre inventory](https://www.foi.gov.ph/agencies/dilg/lists-of-existing-evacuation-centers/) | DILG provided a list limited to evacuation centres in NCR in response to an Aug/Sep 2025 request. | `FOI ACCESS CONFIRMED`, but only NCR scope. DILG said detailed nationwide information was held by OCD/NDRRMC; subsequent OCD FOI response in Feb 2026 said the requested list was not available at OCD and referred requester to DILG/LGUs. Custodian referrals are inconsistent. | **P0.** Obtain the NCR attachment and investigate individual LGU inventories. Record the inconsistent national custodianship; do not claim a national complete register. |
+| `dilg.barangay_halls` — DILG / LGUs / NAMRIA | [DILG FOI response: Barangay Halls](https://www.foi.gov.ph/agencies/dilg/list-of-barangay-halls/) · [DILG Masterlist of Barangays](https://dilg.gov.ph/page/Masterlist-of-Barangays/77) · [NAMRIA](https://www.namria.gov.ph/) | The DILG FOI response referred the requester to the DILG Masterlist of Barangays and recommended contacting NAMRIA for barangay-hall addresses and coordinates. | `FOI LIMITATION CONFIRMED`. The Masterlist of Barangays is a barangay reference, not a hall inventory. No nationwide hall-address/coordinate file was verified. | **P0.** Use barangay list only for geography. Acquire halls from LGU asset inventories, NAMRIA if a specific layer exists, or official LGU directories. |
+| `dilg.public_markets` — LGUs | [DILG FOI response: public markets](https://www.foi.gov.ph/agencies/dilg/list-of-public-markets-in-the-philippines-dilg-905479402880/) · [Second public-market FOI response](https://www.foi.gov.ph/agencies/dilg/public-market-list-area-and-population/) · [DILG LGU201 directory](https://lgu201.dilg.gov.ph/) | Identifies LGUs as primary jurisdiction for establishment, management and operation of public markets; provides an LGU contact route. | `FOI LIMITATION CONFIRMED`. DILG says it does not maintain the requested national market list and recommends asking concerned LGUs. LGU201 is a contact/discovery directory, not the market dataset itself. | **P0.** Build LGU-specific source connectors and requests; do not create a fake central DILG market dataset. |
+| `lgu.community_facility_inventory` — each LGU | [RA 7160 / Local Government Code, §17 and §524](https://lawphil.net/statutes/repacts/ra1991/ra_7160_1991.html) · [LGU201 contacts](https://lgu201.dilg.gov.ph/) | Legal basis and source-acquisition route for LGU records. RA 7160 §17 describes devolved basic services/facilities (including barangay health centres/day-care, multipurpose halls, plazas/sports centres, municipal parks, libraries, public markets, slaughterhouses, cemeteries, police/fire station sites, provincial buildings and others). §524 requires each LGU to conduct periodic inventory of infrastructure and other community facilities. | `OFFICIAL LAW VERIFIED`; `NO CENTRAL DATASET VERIFIED`. The law does not itself create a centralized open database or prove that every LGU has published a digitized inventory. | **P0.** Ask LGUs for their actual existing inventories and previous releases; capture responsible office, format, scope, date and rights. |
+| `dpwh.ngob_inventory` — DPWH / national agencies | [DPWH Department Order 247 s.2024](https://www.dpwh.gov.ph/dpwh/sites/default/files/issuances/do_247_s2024.pdf) | Standardized process/forms for national government-owned building inventory, maintenance, appraisal, condition, area, agency, location and geotagged photos. | `FILE/DOCUMENT VERIFIED` for the order/forms. It establishes a standardized inventory process but is not proof of a public downloadable nationwide inventory. | **P0/P1.** Request the resulting inventory or an authorized/redacted export; identify the actual building-owning agencies. |
+| `dpwh.infrastructure_projects` — DPWH | [DPWH Transparency Portal](https://transparency.dpwh.gov.ph/) · [DPWH](https://www.dpwh.gov.ph/) | Construction/repair projects for public buildings, covered courts, multipurpose buildings, evacuation-centre projects and related infrastructure; project descriptions, implementing office, contractors, costs, accomplishment and dates where published. | `OFFICIAL PORTAL VERIFIED`. Project records are not a facility masterlist and do not prove the facility exists/operates today. Use to connect a project to a physical facility only with identity evidence. | **P1.** Inspect current project fields/download access; preserve project-vs-facility distinction. |
+| `lgu.market_and_abattoir_directories` — individual LGUs | [Example: Quezon City Market Development and Administration Department](https://quezoncity.gov.ph/departments/market-development-and-administration-department-mdad/) | City-level market management and facility information; each LGU may maintain public market, slaughterhouse, cemetery, park, sports facility and hall directories. | `DIRECTORY EXAMPLE VERIFIED`; not a national source. DILG FOI says market records are at LGU level. | **P0.** Use as a connector pattern, not a nationwide dataset. Search LGU domains systematically. |
+
+# C. Emergency, public safety and response facilities
+
+| Source ID / custodian | Resource and direct official links | Coverage | Evidence and limitations | Priority / next action |
+|---|---|---|---|---|
+| `bfp.fire_stations` — Bureau of Fire Protection | [BFP FOI response and attachments](https://www.foi.gov.ph/agencies/bfp/list-of-all-fire-stations/) · [Example BFP Region III contacts](https://region3.bfp.gov.ph/contact-us/) | BFP fire-station/logistical information; regional station/contact pages; fire statistics. | `FOI ACCESS CONFIRMED`. The 15 Oct 2025 FOI response links a Google Drive folder named “LOGISTICAL REPORT as of August 2025” and a Fire Stats folder. The response explicitly says volunteer brigade fire-station data was not held in the delivered material. The actual attachment scope/schema must be downloaded and inspected; the request was for Manila, so do not assume nationwide coverage. | **P0.** Download the linked attachment through normal public access, inspect its geographic scope/fields, ask BFP about national completeness and refresh frequency. |
+| `pnp.police_stations` — PNP | [PNP](https://pnp.gov.ph/) · [Geoportal](https://geoportal.gov.ph/) | Police stations, precincts and other public police service locations. | `CATALOGUE CANDIDATE` only for the Geoportal Police precinct/station layer. A verified nationwide PNP bulk directory/API was not found in this research pass. Third-party police directories are not source-of-record. | **P1.** Request the official station list from PNP/DIDM or regional offices; ask for permitted public fields and exclude sensitive operational information. |
+| `ocd.evacuation_centres` — OCD / NDRRMC / LGUs | [OCD](https://ocd.gov.ph/) · [NDRRMC](https://ndrrmc.gov.ph/) · [OCD FOI: updated evacuation-centre list](https://www.foi.gov.ph/agencies/ocd/updated-list-of-evacuation-center-in-the-philippines-ocd-397929143969/) · [DILG Subaybayan response](https://www.foi.gov.ph/agencies/dilg/updated-list-of-evacuation-center-in-the-philippines/) | Evacuation centre names, type of hosting facility, barangay/municipality/province, temporary/permanent designation, capacity, status, coordinates where held. | `FOI LIMITATION / ROUTING CONFLICT`. OCD's Feb 2026 FOI response said it did not have the requested updated list and referred requester to DILG and LGUs. DILG has project-type evacuation-centre records on Subaybayan and limited NCR lists. No complete nationwide masterlist was verified. | **P0.** Combine only independently sourced LGU and DILG project records with clear source type; request current authoritative scope from LGUs. |
+| `drrm.lgu_offices_and_resources` — DILG/LGUs | [DRRM-PULSE](https://drrm.ncr.dilg.gov.ph/map) · [DILG](https://dilg.gov.ph/) | Local DRRM offices, command centres, response vehicles, equipment and designated facilities. | Participating-LGU and validated-data limitations apply. Resource inventory is not automatically a public facility record. | **P0/P1.** Import public facility subset; do not expose sensitive equipment/resource details without review. |
+| `bjmp.facilities` — BJMP | [BJMP official website](https://bjmp.gov.ph/) | City/municipal jails and BJMP district/regional facilities. | `DISCOVERY ONLY`. No verified national public bulk list/schema in this pass. Sensitive security and capacity information may be restricted. | **P2/conditional.** Verify a public facility-only directory; avoid operational/security details. |
+| `bucor.facilities` — BuCor | [BuCor official website](https://bucor.gov.ph/) | National correctional institutions and public-facing administrative facilities. | `DISCOVERY ONLY`. No verified reusable facility dataset in this pass. Security-sensitive attributes must be excluded. | **P2/conditional.** Include only publicly acknowledged locations and safe fields. |
+
+# D. Public-facing government service offices and institutional sites
+
+These are government-operated service locations, but the government may lease or host them inside private buildings/malls. Store operator and physical owner/host separately.
+
+| Source ID / custodian | Resource and direct official links | Actual content discovered | Evidence / limitation | Priority / next action |
+|---|---|---|---|---|
+| `bir.revenue_district_offices` — BIR | [Revenue Administrative Order 006-2025](https://bir-cdn.bir.gov.ph/BIR/pdf/RAO%20No.%206-2025.pdf) · [BIR Citizen's Charter 2025 directory](https://bir-cdn.bir.gov.ph/BIR/pdf/BIR%20Citizen%27s%20Charter%20%282025-Edition%29.pdf) | RAO dated 9 Dec 2025 lists revenue regions and RDO numbers/names/jurisdictions. The 2025 Citizen's Charter directory includes RDO names, addresses and phone contacts. | `FILE/DOCUMENT VERIFIED`. RAO is a current official office/jurisdiction list, not a full coordinate file. The image-only PDF was processed with local OCR; 128 RDO rows and 19 region headings are published with attribution. OCR text is not a substitute for the official document. | **P1.** Keep OCR evidence and confidence; validate physical operating addresses against current BIR pages before adding address fields. |
+| `dti.negosyo_centers` — DTI | [Negosyo Center locator](https://negosyocenter.dti.gov.ph/negosyo-center-directory) · [regions-overview API](https://negosyocenter.dti.gov.ph/api/negosyo-centers/regions-overview) · [by-region API](https://negosyocenter.dti.gov.ph/api/negosyo-centers/by-region) · [Terms and Conditions](https://negosyocenter.dti.gov.ph/terms-and-conditions) | Official “Find a Negosyo Center Near You” search; the public JSON endpoints expose center name, postal address, region/province/city labels, optional institutional phone/email and an `is_active` flag. | `DIRECTORY CONTENT VERIFIED`. On 15 November 2026 the endpoints returned 1,427 unique active center records across all 17 regions. The finder does not state ownership, operator, host, hours, public-access conditions or coordinates. Centers are often co-located in city halls, SUCs or partner premises; a center is a government service unit, not proof about the host building. Phone/email are withheld from the public record. | **DONE (directory subset).** Published with attribution and takedown-on-notice; do not infer coordinates, host ownership, operator or current operation. Verify each center's host/operator only from an additional official source. |
+| `phlpost.post_offices` — PHLPost | [Post Office Locator](https://phlpost.gov.ph/post-office-locator/) | Live public table with `Provinces`, `Post Offices`, `Address`, and `Services`. Actual entries include post offices and service counters in municipal halls, markets, malls, campuses, airports and other host sites. | `DIRECTORY CONTENT VERIFIED`. Public records are visible in page text. No formal public API/bulk download was identified. The page carries a copyright/all-rights-reserved notice; the recorded product decision publishes 1,272 factual locator facilities with attribution and takedown-on-notice. An earlier review-required release is retained internally. | **P1.** Preserve service-location type and host/owner distinction; record the notice and keep expressive page content out of the public record. |
+| `prc.offices_and_service_centers` — PRC | [PRC Offices and Offsite Service Centers](https://www.prc.gov.ph/prc-offices-and-offsite-service-centers-contact-information) · [Regional office contacts](https://www.prc.gov.ph/regional-offices-contact-information) · [PRC interactive location map](https://www.prc.gov.ph/InteractiveMap-v2-37.html) · [PRC Digital Kiosk locator](https://info.prc.gov.ph/prc-office-locator/regional-offices) | Regional offices, satellite offices and offsite service centres. Pages show centre names, regions, addresses, emails/phones and service hours where available. | `DIRECTORY CONTENT VERIFIED`. The interactive location map enumerates many service centres, including mall/LGU-hosted points. These are PRC-operated service locations, not necessarily PRC-owned real estate. No public API verified. | **P1.** Inspect current map/detail pages and data payload; preserve facility-vs-host location distinction and opening-hour freshness. |
+| `dti.shared_service_facilities` — DTI / Geoportal | [Geoportal](https://geoportal.gov.ph/) catalogue entries “Shared Service Facilities by Region” and “Shared Service Facility by Province”; [DTI](https://www.dti.gov.ph/) | DTI-supported shared service facilities (equipment/production hubs) by region/province, where the Geoportal layer records them. | `CATALOGUE CANDIDATE`. Verify whether each is government-owned, DTI-funded, LGU-hosted, cooperative- or privately operated. Funding support alone does not make it government-owned. | **P2.** Include qualifying public-service facility records regardless of owner/operator when the source establishes the site and public-interest role; funding/ownership/operator must remain separate. A DTI-funded private/cooperative facility is not automatically government-owned. |
+
+# E. Transport, ports, aviation and fisheries facilities
+
+| Source ID / custodian | Resource and direct official links | Actual content discovered | Evidence / limitation | Priority / next action |
+|---|---|---|---|---|
+| `ppa.ports` — Philippine Ports Authority | [PPA List of Ports covered in PPA Statistics](https://ppa.com.ph/sites/default/files/List%20of%20Ports%20covered%20in%20PPA%20Statistics.pdf) · [PPA statistics and references](https://ppa.com.ph/) · [PPA MC 005-2026 / revised statistics manual](https://www.ppa.com.ph/sites/default/files/issuances_docs/PPA_MC_No005_2026_03032026.pdf) | Port names by Port Management Office, base port/TMO/terminal-port groupings, RORO/non-RORO flags and remarks. PPA's 2026 manual lists PMOs, base ports, TMOs and terminal ports; the PPA site separately links private-port lists and PMO permit-to-operate pages. | `FILE/DOCUMENT VERIFIED` and `DIRECTORY CONTENT VERIFIED`. The 22-page PDF was acquired on 15 November 2026 and parsed into 574 rows: 54 base ports, 94 TMO/OTP entries, 155 other government ports and 271 private ports. PPA-managed base ports and TMO/OTP entries are classified as government facilities, other government ports keep an unspecified owner, and private ports are private public-service providers with no inferred owner/operator. Blank RORO/NON-RORO marks remain unknown. The separate MICT note is retained as evidence and not ingested because its hierarchy and ownership are not stated. | **DONE (directory subset).** Published with attribution; verify coordinates, berth capacity, public access and current operator only from additional official sources. Do not treat the list as a census of every port or landing place. |
+| `caap.airports` — CAAP | [CAAP Area Centers](https://www.caap.gov.ph/area-centers/) · [CAAP-operated airports news/reference](https://www.caap.gov.ph/17950-2/) · [CAAP](https://www.caap.gov.ph/) | Official Area Center page lists airports assigned to 12 area centres and links aerodrome summaries; entries include airports and some navigation facilities such as DVOR/DME stations. | `DIRECTORY CONTENT VERIFIED`. Area-centre page was indexed with airport names; direct page access may be restricted to some clients. Not a downloadable national API. CAAP regulatory oversight does not prove CAAP owns/operates every airport. | **P1/P2.** Acquire current aerodrome directory/AIP or authorized list; verify operator/owner, identifier, coordinates and active status airport by airport. |
+| `pfda.fish_ports` — Philippine Fisheries Development Authority | [PFDA](https://www.pfda.gov.ph/) · [PFDA quality-system document identifying regional fish ports](https://www.pfda.gov.ph/images/ISO_/CO/QMS/PFDA_QMS_2023_09.pdf) · [DA/BFAR fish infrastructure source](https://fishcore.bfar.da.gov.ph/) | Regional fish port complexes and municipal fish-port programme facilities. PFDA documents identify nine regional fish ports and describe municipal ports that may be turned over to LGUs or co-managed. | `FILE/DOCUMENT VERIFIED` for source descriptions and named regional fish ports; not a current complete geospatial masterlist. Municipal fish-port status/ownership changes on turnover. | **P1/P2.** Request PFDA current inventory with port ID, status, coordinates, owner/operator and turnover date. |
+| `nmis.meat_establishments` — NMIS | [National Meat Inspection Service NARIS](https://naris.nmis.gov.ph/) · [Example licensed slaughterhouse list PDF, 4 Nov 2025](https://www.nmis.gov.ph/images/pdf/accredited_list/2025/sh20251104.pdf) | NARIS public accredited list/map. At research time page displayed 362 accredited establishments: 164 cold-storage warehouses, 51 slaughterhouses, 51 poultry dressing plants, 55 meat-cutting plants and 41 meat-distribution centres. Visible records include company name, LTO number, establishment type and address; individual locations are pinned from saved addresses. | `DIRECTORY CONTENT VERIFIED` and `FILE/DOCUMENT VERIFIED` for the dated slaughterhouse list. This is an accreditation/licensing registry of establishments, many private. Eligible facility-level records may qualify as `PRIVATE_PUBLIC_SERVICE_PROVIDER`; they are not government-owned merely because NMIS licenses them. 357 establishments are `PUBLISHED` with attribution using factual establishment fields only; the page currently returns a WAF/TLS failure, so the verified 15 November 2026 artifact is the release of record. | **P2 / regulated-provider candidate.** Assess facility-level identity and public-interest use case. Classify qualifying private establishments as `PRIVATE_PUBLIC_SERVICE_PROVIDER`; keep private counts distinct from government facilities. |
+
+# F. Environmental, land and geospatial reference sources
+
+| Source ID / custodian | Resource and direct official links | Data/resource coverage | Evidence / limitation | Priority / next action |
+|---|---|---|---|---|
+| `geoportal.facility_layers` — NAMRIA / Philippine Geoportal / originating agencies | [Geoportal](https://geoportal.gov.ph/) · [Data inventory PDF](https://www.geoportal.gov.ph/gpresources/GP_DataInventory.pdf) · [Download guide](https://www.geoportal.gov.ph/gpresources/How%20to%20Download%20data%20from%20Geoportal%20Philippines.pdf) · [NAMRIA downloads](https://www.namria.gov.ph/Downloads.aspx) | Catalogue includes Fire station; Fire Hydrants (2003); Government Offices (2003); Market Place (2003); Police precinct/station; Public Office; Hospital and Health Facilities; Health Station (LGU-Impasug-ong); DTI NCR Office; DTI offices; Negosyo Center; Shared Service Facilities by Region/Province; National Airport; Nautical Port; and other agency layers. | `CATALOGUE CANDIDATE`. Geoportal is a discovery/catalogue/map service. Its guide says only layers enabled in the Download window can be downloaded; otherwise contact the data owner. The inventory identifies layer-specific metadata/restrictions. Several layers are clearly old (e.g. 2003). A visible map layer is not automatically a current data file or reuse licence. On 15 Nov 2026 the public catalogue response was acquired (HTTP 200, 1,887,823 bytes, 3,532 leaf entries, 54 agency nodes) and normalized into [`expand/data/geoportal-layers.csv`](../data/geoportal-layers.csv) with a 20-layer candidate assessment in [`expand/docs/GEOPORTAL-LAYER-INVENTORY.md`](GEOPORTAL-LAYER-INVENTORY.md). `getlayerdetails` returned 404 on recheck for five tested layers, so the catalogue is not a stable per-layer metadata API; WFS access remains 401 and the bulk download remains a human form. | **P0.** Request layer metadata and written reuse terms from the originating agencies; only a permitted, dated release with a checksum, schema, feature count and rights decision can be ingested. Do not ingest stale/unknown layers as current truth. |
+| `emb.air_quality_stations` — DENR Environmental Management Bureau | [EMB national air-quality monitoring page](https://air.emb.gov.ph/ambient-air-quality-monitoring/) · [EMB-NCR real-time station page](https://ncr.emb.gov.ph/realtimeairmonitoring/) · [EMB Region XI station/download page](https://r11.emb.gov.ph/air-quality-management-2/) | Government ambient air monitoring stations and measurement feeds/reports. NCR page names station locations; Region XI page lists stations, dates and file attachments for downloadable updates (e.g. Tagum, Calinan, Digos). | `DIRECTORY CONTENT VERIFIED`. Pages are region-specific and some live/download links exist. A complete nationwide station inventory and coordinate export were not verified. A monitoring station is a public/environmental asset, not necessarily a public walk-in facility. | **P2.** Collect station metadata and coordinates if officially available; store station as a monitoring/asset subtype; keep sensor observations in a separate related dataset. |
+| `bmb.protected_areas` — DENR Biodiversity Management Bureau | [Protected Area Information System](https://pais.bmb.gov.ph/index.php) · [BMB](https://bmb.gov.ph/) | National protected-area dashboard, boundaries, protected-area information, visitors, wildlife species and GIS information. At page's stated 11 Sep 2026 data date, dashboard showed 251 protected areas (121 legislated, 13 proclaimed, 117 initial components). | `OFFICIAL PORTAL VERIFIED`. Dashboard warns current system data may not fully reflect actual/real-time conditions while updates and validation continue. Protected areas are geographic sites/areas, not individual public-facility points. | **P2 / contextual geography.** Use to associate a facility/site with a protected area only when useful; do not count each protected-area polygon as a facility. |
+| `nha.maps` — National Housing Authority | [NHA MAPS Portal](https://maps.nha.gov.ph/) | Comprehensive maps integrating other national-agency layers, NHA project locations/lots, occupancy verification maps, landholding maps and commercial/industrial/institutional properties. | `OFFICIAL PORTAL VERIFIED`. Actual map portal sections were visible. Layer-specific records, downloads and rights still require inspection. Many records are project/land/occupancy sites, not facility identities. | **P2.** Use as project/site/context source; do not turn parcels or all NHA project polygons into point facilities without evidence. |
+| `phivolcs.hazards` — PHIVOLCS | [PHIVOLCS Maps Portal](https://maps.phivolcs.dost.gov.ph/) · [PHIVOLCS](https://www.phivolcs.dost.gov.ph/) | Fault, earthquake, volcano and geohazard layers that may be used for facility exposure context. | `OFFICIAL MAP/PORTAL DISCOVERED`. Source layers, download routes and reuse restrictions must be checked individually. Not a facility register. | **P2 / enrichment.** Do not put hazard layers into the core facility entity table. |
+| `pagasa.climate` — PAGASA | [CliMap v2](https://climgridph.pagasa.dost.gov.ph/climapv2/) · [PAGASA](https://www.pagasa.dost.gov.ph/) | Historical climate and climate-projection grids, useful for context around public facilities. | `OFFICIAL PORTAL VERIFIED` in prior research. Download may require request/affiliation/purpose and acceptance of terms. Not a facility register. | **P2 / enrichment.** Preserve grid release, resolution, baseline and scenario. |
+| `denr_mgb.geohazards` — MGB | [MGB](https://mgb.gov.ph/) | Flood susceptibility, rain-induced landslide susceptibility, geohazard maps and related spatial layers. | `DISCOVERY/CATALOGUE TARGET`. Do not assume all layers have downloadable national coverage or permissive terms. | **P2 / enrichment.** Verify each layer, source date, CRS, spatial coverage and reuse terms. |
+
+# G. National government facility/process inventories and project crosswalk sources
+
+| Source ID | Resource | Useful for | What it is not | Priority |
+|---|---|---|---|---|
+| `dpwh.transparency_projects` | DPWH Transparency Portal | Link public building/covered-court/evacuation-centre projects to facilities when identifiers/location establish the relationship | Not proof that a completed contract is still an operational facility | P1 |
+| `dilg.subaybayan_lime20` | DILG Subaybayan LIME 20 project list | Evacuation-centre project records and completion/project status | Not a complete inventory of all evacuation centres | P0 |
+| `open_data_philippines` | [Open Data Philippines](https://data.gov.ph/) | Discover agency-published datasets and links | Not the original publisher unless the dataset itself is agency-issued; file rights remain source-specific | P1 discovery |
+| `bettergov.open_data` | [BetterGov Open Data Portal](https://bettergov.ph/) and [BetterGov GitHub](https://github.com/bettergovph) | Discover previously published government source data and developer resources | Not a substitute for original agency provenance or rights; no need to mirror without added value | P1 discovery |
+
+# H. Geographic/statistical enrichment (not facility registries)
+
+| Source ID | Official resource | Useful information | Limitations / integration rule |
+|---|---|---|---|
+| `psa.psgc` | [PSA PSGC releases](https://psa.gov.ph/classification/psgc) · [PSA Classification API](https://classification.psa.gov.ph/psgc) · [API guide](https://psa.gov.ph/content/classification-api-guide) | Regions, provinces, cities, municipalities, barangays, codes, hierarchy and release history. Q3 2026 workbook link previously returned HTTP 403; API token/access guidance needs live verification. | Use official PSA version as geographic source of record. Keep each release. Do not rely on old third-party snapshots. |
+| `psa.openstat` | [PSA OpenSTAT](https://openstat.psa.gov.ph/) · [API documentation](https://openstat.psa.gov.ph/API-Documentation) | Population, households, demographics and statistics for facility-access analysis. | Not facility-level data. Use exact table dimensions, reference periods, units and geographic level. |
+| `bettergov.statistics` | [Statistics API](https://statistics.bettergov.ph/api) · [Coverage endpoint](https://statistics.bettergov.ph/api/v1/coverage) | Saved PSA OpenSTAT statistics and BetterGov classification data. | Supplementary snapshot service, not original PSA publisher or a facility registry. Preserve its snapshot date and original PSA table IDs. |
+| `dilg.barangay_masterlist` | [DILG Masterlist of Barangays](https://dilg.gov.ph/page/Masterlist-of-Barangays/77) | Barangay reference/discovery. | Does not provide a verified barangay-hall facility address or coordinate inventory. Prefer PSA PSGC as canonical geography. |
+
+---
+
+# I. Explicit Geoportal candidate-layer checklist
+
+The current Geoportal catalogue/index exposed the following facility or facility-adjacent names during this research pass. These must be treated as individual layer candidates, not as one approved dataset.
+
+| Layer/catalogue name | Possible use | Required validation |
+|---|---|---|
+| Fire station | Fire-service location cross-check | Source agency, year, station scope, currentness, downloadable geometry, rights |
+| Fire Hydrants (2003) | Fire infrastructure context | Very old vintage; do not publish as current without refresh |
+| Government Offices (2003) | Government office candidate locations | Very old vintage; verify each office and current location |
+| Market Place (2003) | Public/market-place candidate locations | Very old; ownership and market status unclear |
+| Police precinct/station | Police service-location candidates | Source owner, security review, date, coordinate accuracy |
+| Public Office | Government office candidates | Determine whether it duplicates other office layers; identify publisher |
+| Hospital and Health Facilities | Health facility spatial reference | Compare against current DOH NHFR; do not assume newer than NHFR |
+| Health Station (LGU-Impasug-ong) | Local health station example | Single-LGU layer; not national coverage |
+| DTI NCR Office / Department of Trade and Industry Offices | DTI offices | Verify if active and whether office-level records are already in DTI directory |
+| Negosyo Center | DTI service centres | Verify operator, host, current status and scope |
+| Shared Service Facilities by Region / Province | DTI-supported production/service facilities | Funding/support does not prove government ownership; verify operator |
+| National Airport | Airport candidate layer | Verify operator, active status, coordinates and current authoritative source |
+| Nautical Port | Port candidate layer | Reconcile to PPA; distinguish private and government port operators |
+| EMB air quality monitoring station | Monitoring-site layer | Sensor/site metadata, operating status and coordinates |
+| Tourism attraction / tourism development area | Public visitor site or attraction | Only include if publicly operated/designated facility or site; distinguish natural attraction polygons from buildings |
+| National Bridge / roads / engineering district | Infrastructure assets and offices | Separate linear/bridge assets from the facilities registry |
+
+**Geoportal rule:** A layer's existence in the catalogue is only discovery evidence. Its downloadability, terms, data owner, date, CRS, geometry type, completeness and currentness must be recorded separately. The download guide states that only layers offered in the Download window can be downloaded directly; otherwise contact the data owner.
+
+---
+
+# J. Additional agency discovery queue (not yet verified as usable facility datasets)
+
+Research these official custodians because they may hold facility records. Do not write a connector until a usable source is found.
+
+| Agency / custodian | Candidate facility groups | Required verification |
+|---|---|---|
+| DILG / LGUs | Barangay halls, city/municipal halls, satellite offices, multipurpose halls, covered courts, civic centres, parks, plazas, public toilets, public markets, slaughterhouses, cemeteries, local libraries | Find actual inventory/directory per LGU; determine owner/operator, source date, addresses, coordinates and permissions. |
+| Bureau of Fire Protection | Fire stations, substations, training centres | Obtain national/regional current lists and clarify volunteer brigade coverage. |
+| Philippine National Police | Police stations, precincts, community assistance centres | Obtain authoritative public station list; security review. |
+| Office of Civil Defense / NDRRMC | Evacuation centres, warehouses, command centres | Resolve custodian referrals; request current source from LGUs; avoid sensitive preparedness details. |
+| DSWD / ECCD Council | CRCFs, day-care/child-development centres, senior citizens centres, social-welfare facilities | Distinguish public, LGU, private-accredited, NCDC and other CDC types. |
+| Department of Tourism | Government tourism facilities, visitor centres, cultural/tourism sites | Tourism attractions and private venues are not automatically qualifying facilities; verify operator, public-access conditions and a documented public-interest function. |
+| National Commission for Culture and the Arts / National Museum | Cultural centres, museums, heritage sites | Check direct institution/site directory and operator. |
+| National Library / LGUs | Public libraries, barangay reading centres, learning/resource centres | NLP directory is a starting point; acquire LGU/library branch updates. |
+| Department of Agriculture / BFAR / PFDA / NMIS / NFA | Fish ports, agri extension centres, research farms, hatcheries, laboratories, warehouses, public slaughterhouses, grain facilities | Separate government-owned from licensed private operators; find official location files. |
+| Department of Transportation / PPA / CAAP / MARINA / LTFRB | Ports, airports, ferry terminals, transport terminals, government-operated stations | Verify physical facility versus route/service; owner/operator; current operating status. |
+| DENR / EMB / MGB / BMB / FMB | Air/water monitoring stations, ranger stations, nurseries, protected-area visitor/management centres | Distinguish monitoring assets and land polygons from public-facing facilities. |
+| LWUA / MWSS / NWRB / water districts | Water treatment plants, pumping stations, reservoirs, service centres | Utility directory is not a physical facility inventory; verify site-level records and critical-infrastructure disclosure limits. |
+| DPWH / national agencies | National agency buildings, district engineering offices, bridges and public structures | Use DO 247 inventory forms; ask for actual asset register. Separate offices/buildings from infrastructure assets. |
+| PRC / BIR / DTI / PHLPost / SSS / GSIS / Pag-IBIG / LTO / PhilHealth | Public-facing government service offices, branches and offsite service centres | Search official office locators and Citizen's Charter files; distinguish government operator from leased/private host. |
+| BJMP / BuCor / DOJ / Judiciary | Jails, correctional institutions, courts, prosecution offices | Only publicly acknowledged locations; exclude sensitive security/operational attributes. |
+
+---
+
+# K. Source conflicts and known gaps the agent must preserve
+
+1. **Barangay halls:** DILG's FOI response did not provide a hall coordinate list; it pointed to the barangay masterlist and suggested NAMRIA for addresses/coordinates. A barangay list is not a hall inventory.
+2. **Public markets:** DILG stated that LGUs have primary jurisdiction and it did not hold a central list. Build LGU-specific acquisition.
+3. **Evacuation centres:** DILG Subaybayan provides project records filterable by project type; DILG also said it did not maintain a consolidated master file in requested format. DILG's 2025 FOI response had only NCR inventory and referred nationwide data to OCD; OCD's Feb 2026 response said it did not have the requested list and referred to DILG/LGUs. Do not claim a single confirmed national custodian or complete masterlist.
+4. **DRRM-PULSE:** Data is encoded by participating LGUs and validated by DILG field officers; the public portal is a DILG-NCR project with limited participating-LGU coverage, not nationwide.
+5. **BFP:** The 2025 FOI page links a logistical report and Fire Stats, but explicitly says volunteer brigade station data is unavailable in the delivered material. The exact file coverage must be inspected.
+6. **Police stations:** A Geoportal layer is a candidate; no verified PNP national bulk directory/API was found in this pass. Third-party NCR directories are not authoritative.
+7. **Geoportal:** Some layers are old, restricted, or merely catalogued. Do not automatically ingest them.
+8. **NLP library directory:** It contains named librarians and personal contact fields. Use data minimization and avoid exposing personal mobile/email unless necessary and permitted.
+9. **NMIS / PhilHealth / DSWD accreditation:** A private provider's accreditation does not make it government-owned. Keep regulated/private providers separate from government-facility counts.
+10. **PHLPost / PRC / DTI service locations:** The government may operate a counter inside an LGU building, mall or private property. Record operator, host/owner and public-service function separately.
+11. **PPA/CAAP:** Regulators, operators, port authorities and airport owners may differ. Verify each facility's owner/operator before classifying it as government-owned/operated.
+12. **Protected areas, roads, bridges, land parcels and project records:** These are areas/assets/projects, not automatically facility records. Link them to facilities only when identity and relationship are evidenced.
+
+---
+
+# L. Research evidence links
+
+The following direct sources were checked in the 15 November 2026 research pass. These links are also the starting point for further agent research.
+
+- [DILG DRRM-PULSE home](https://drrm.ncr.dilg.gov.ph/)
+- [DILG DRRM-PULSE methodology and validation](https://drrm.ncr.dilg.gov.ph/about)
+- [DILG DRRM-PULSE facilities map](https://drrm.ncr.dilg.gov.ph/map)
+- [DILG DRRM-PULSE participating LGUs](https://drrm.ncr.dilg.gov.ph/lgus)
+- [DILG Subaybayan evacuation-centre project route (FOI response)](https://www.foi.gov.ph/agencies/dilg/updated-list-of-evacuation-center-in-the-philippines/)
+- [DILG no consolidated evacuation masterlist / coordinates limitation](https://www.foi.gov.ph/agencies/dilg/updated-master-list-of-evacuation-center-in-the-philippines-dilg-902947380736/)
+- [OCD updated evacuation-list FOI response](https://www.foi.gov.ph/agencies/ocd/updated-list-of-evacuation-center-in-the-philippines-ocd-397929143969/)
+- [DILG limited NCR evacuation-centre inventory response](https://www.foi.gov.ph/agencies/dilg/lists-of-existing-evacuation-centers/)
+- [DILG barangay-hall FOI response](https://www.foi.gov.ph/agencies/dilg/list-of-barangay-halls/)
+- [DILG public-market FOI response](https://www.foi.gov.ph/agencies/dilg/list-of-public-markets-in-the-philippines-dilg-905479402880/)
+- [RA 7160, Local Government Code](https://lawphil.net/statutes/repacts/ra1991/ra_7160_1991.html)
+- [DPWH DO 247 s.2024](https://www.dpwh.gov.ph/dpwh/sites/default/files/issuances/do_247_s2024.pdf)
+- [Philippine Geoportal](https://geoportal.gov.ph/)
+- [Geoportal data inventory](https://www.geoportal.gov.ph/gpresources/GP_DataInventory.pdf)
+- [Geoportal download guide](https://www.geoportal.gov.ph/gpresources/How%20to%20Download%20data%20from%20Geoportal%20Philippines.pdf)
+- [BFP fire-station FOI response and attachments](https://www.foi.gov.ph/agencies/bfp/list-of-all-fire-stations/)
+- [DSWD CRCF directory](https://www.dswd.gov.ph/crcf/)
+- [DSWD Standards Bureau directories](https://standards.dswd.gov.ph/directories-3/)
+- [NLP public libraries directory, January 2025](https://web.nlp.gov.ph/wp-content/uploads/2025/02/Directory-of-Affiliated-Public-Libraries-in-the-Philippines-As-of-January-2025-Rhodora-Valdez.pdf)
+- [NLP public libraries directory, December 2025](https://web.nlp.gov.ph/wp-content/uploads/2026/01/OFFICIAL-Integrated-Directory-of-Public-Libraries-as-of-December-2025.pdf)
+- [National Museum regional/area/site museums](https://www.nationalmuseum.gov.ph/our-museums/regional-area-and-site-museums/)
+- [ECCD Council NCDC page](https://eccdcouncil.gov.ph/ncdc/)
+- [ECCD Council 2023 NCDC list](https://eccdcouncil.gov.ph/wp-content/uploads/2024/10/AR-2023-051024-2_compressed.pdf)
+- [ECCD Council resources and CDC profile forms](https://eccdcouncil.gov.ph/resources/)
+- [DTI Negosyo Center locator](https://negosyocenter.dti.gov.ph/)
+- [BIR RAO 006-2025](https://bir-cdn.bir.gov.ph/BIR/pdf/RAO%20No.%206-2025.pdf)
+- [BIR Citizen's Charter 2025](https://bir-cdn.bir.gov.ph/BIR/pdf/BIR%20Citizen%27s%20Charter%20%282025-Edition%29.pdf)
+- [PHLPost Post Office Locator](https://phlpost.gov.ph/post-office-locator/)
+- [PRC office and offsite service-centre contacts](https://www.prc.gov.ph/prc-offices-and-offsite-service-centers-contact-information)
+- [PRC regional office contacts](https://www.prc.gov.ph/regional-offices-contact-information)
+- [PPA list of ports covered in statistics](https://www.ppa.com.ph/sites/default/files/List%20of%20Ports%20covered%20in%20PPA%20Statistics.pdf)
+- [PPA MC 005-2026 / revised statistics manual](https://www.ppa.com.ph/sites/default/files/issuances_docs/PPA_MC_No005_2026_03032026.pdf)
+- [CAAP Area Centers](https://www.caap.gov.ph/area-centers/)
+- [PFDA quality-system source identifying fish-port network](https://www.pfda.gov.ph/images/ISO_/CO/QMS/PFDA_QMS_2023_09.pdf)
+- [NMIS NARIS public accredited directory](https://naris.nmis.gov.ph/)
+- [NMIS licensed slaughterhouse PDF, 4 Nov 2025](https://www.nmis.gov.ph/images/pdf/accredited_list/2025/sh20251104.pdf)
+- [EMB national ambient air quality monitoring](https://air.emb.gov.ph/ambient-air-quality-monitoring/)
+- [EMB-NCR live station page](https://ncr.emb.gov.ph/realtimeairmonitoring/)
+- [EMB Region XI monitoring reports](https://r11.emb.gov.ph/air-quality-management-2/)
+- [BMB Protected Area Information System](https://pais.bmb.gov.ph/index.php)
+- [NHA MAPS](https://maps.nha.gov.ph/)
+- [CAAP official site](https://www.caap.gov.ph/)
+- [PPA official site](https://ppa.com.ph/)
+- [Open Data Philippines](https://data.gov.ph/)
+
+**Research rule:** If an additional official source is discovered, add it here with its exact access evidence and limitations. Never delete a blocked/negative finding merely because a new candidate URL was found.
+
+
+# I. Ownership-inclusive source interpretation
+
+The source register is used for a unified registry of **qualifying government and private facilities**, not just government-owned buildings. A source may be authoritative for a private facility even though the government agency does not own or operate it. Examples include DepEd-recognized private schools, CHED-listed private higher-education institutions, DOH-licensed/private health facilities, PhilHealth-accredited private providers, TESDA-registered private training institutions, DSWD-accredited private social-welfare providers, NMIS-licensed private establishments, and private ports/airports listed in authoritative transport records.
+
+## How to classify source records
+
+For every facility record, determine and store separately:
+
+- `inclusion_class`: `GOVERNMENT_FACILITY`, `PRIVATE_PUBLIC_SERVICE_PROVIDER`, `PUBLIC_ACCESS_VENUE`, or internal-only `DISCOVERY_CANDIDATE`;
+- `ownership_type`: national government, LGU, GOCC, public institution, private corporate, private individual/partnership, NGO/non-profit, cooperative, religious/faith-based, joint, or unknown;
+- `operator_type` and operator entity;
+- `manager_type` and managing entity;
+- `host_type` and host/site owner where co-located;
+- `regulator`, `licensor`, `accreditor`, and their source-backed scope;
+- `public_access_class` and access conditions.
+
+A private facility in a government directory is **not automatically a government facility**. It may be included in the same registry as a `PRIVATE_PUBLIC_SERVICE_PROVIDER` if it provides a relevant service, has authoritative facility-level evidence, passes source-rights review, and satisfies `docs/12-INCLUSION-AND-OWNERSHIP-POLICY.md`.
+
+## Private and non-government source families to investigate
+
+| Source family | Examples of qualifying records | Classification rule | Key caution |
+|---|---|---|---|
+| Education | Private DepEd-recognized schools, private HEIs, private TESDA-registered TVIs | `PRIVATE_PUBLIC_SERVICE_PROVIDER` | Verify school/institution/provider identifiers and current registration; do not infer operating status from an old directory. |
+| Healthcare | Private DOH-licensed hospitals/clinics, PhilHealth-accredited hospitals, dialysis, birthing, laboratory and other providers | `PRIVATE_PUBLIC_SERVICE_PROVIDER` | License, accreditation, service package and operational status are different fields. |
+| Social welfare | Private/NGO-accredited CRCFs and social-welfare agencies | `PRIVATE_PUBLIC_SERVICE_PROVIDER` | Exclude personal data about residents/beneficiaries; verify accreditation scope and validity. |
+| Training and assessment | Private TVIs and assessment centres | `PRIVATE_PUBLIC_SERVICE_PROVIDER` | Aggregate TVET counts are not provider-level records; obtain official individual provider evidence. |
+| Transport | Private ports, airports and terminals listed in authoritative agency sources | `PRIVATE_PUBLIC_SERVICE_PROVIDER` or `PUBLIC_ACCESS_VENUE` depending on service role | Regulator/authority status does not establish ownership or operation. |
+| Utilities and sanitation | Private regulated water, wastewater, power, waste and sanitation facilities | `PRIVATE_PUBLIC_SERVICE_PROVIDER` | Do not expose sensitive critical-infrastructure details; distinguish service area/network from a physical facility. |
+| Food/agriculture/fisheries | Private licensed meat establishments, fish facilities and regulated agricultural service providers | Conditional `PRIVATE_PUBLIC_SERVICE_PROVIDER` | A licensed company is not automatically a public facility; require facility-level identity and clear public-interest role. |
+| Community/cultural/recreation | Private or non-profit library, museum, sports, community or cultural venue | `PUBLIC_ACCESS_VENUE` or provider class | Require authoritative listing/designation and documented public-access conditions; exclude ordinary businesses. |
+| Co-located government services | Government service counters hosted in malls, private campuses or other premises | Government service unit + private host relationship | Do not automatically add the entire host building as a facility. |
+
+## Counting and API rules
+
+- All qualifying classes belong to the same canonical facility registry and can be searched through the same API/map.
+- Filters must expose inclusion class, ownership, operator and access class.
+- Publish separate government-facility, private-provider and public-access-venue counts.
+- A combined registry count must identify exactly which classes it includes.
+- Never call private providers “government facilities”, and never omit them from the full registry merely because they are privately owned when they meet the inclusion policy.
+- Do not create a private-provider record from an organization-only listing unless an actual physical site/facility can be identified.
+- Every private-provider source has its own rights review. Government publication of a private provider's details does not automatically authorize PhilFacilities to republish the details.

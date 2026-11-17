@@ -4,7 +4,13 @@
 **Actual acquisition/probe status:** 15 November 2026.  
 **Purpose:** A controlled register of actual source locations, access mechanisms, observed fields, limitations, and next acquisition actions.
 
-> Reachability is not permission to republish. A source may be viewable or downloadable but governed by a data-use agreement, website terms, privacy restrictions, or specific attribution requirements. A registered source is not evidence that a complete national dataset exists.
+> Reachability is not, by itself, a rights decision. A source may be viewable or downloadable while
+> governed by a data-use agreement, website terms, privacy restrictions, or specific attribution
+> requirements. Equally, the absence of an explicit licence is not automatically a prohibition:
+> verified, publicly available records may be published under
+> [`docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`](14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md)
+> when no explicit restriction applies and only reviewed institutional fields are exposed. A
+> registered source is not evidence that a complete national dataset exists.
 
 ## 0. Actual acquisition outcomes (15 November 2026)
 
@@ -17,11 +23,13 @@ Measured counts, checksums, release IDs, and rights states are in `docs/reports/
 | HOT/OSM health extract | 17,421 source records; 17,410 linked facilities; named features only, `map_geocoded` bbox-centre coordinates, `record_status=unknown` | `published` with ODbL attribution; not a DOH registry |
 | HOT/OSM education extract | 52,839 source records; 52,824 linked facilities; same coordinate/status caveats | `published` with ODbL attribution; not a DepEd masterlist |
 | PSA 2024 Census population via BetterGov | 134,748 observations across 18 regional releases; 43,768 distinct PSGC codes | `published` with CC BY-SA 4.0 compilation attribution; PSA remains authoritative |
-| DepEd EBEIS masterlist (NCR) | 5,055 records acquired from 169 result pages | `internal_only`; contains school-head names and has no explicit reuse licence |
+| DepEd EBEIS masterlist (NCR) | 5,055 records acquired from 169 result pages | Current source release `published` for institution-level fields; canonical rows remain `internal` pending field-level mapping/privacy review |
 | Official PSA PSGC workbook | HTTP 403 Cloudflare challenge; no file acquired | `blocked` |
 | DepEd Machine-Ready Files | HTTP 403 / human terms flow; no file acquired | `blocked` |
 | DOH NHFR / HFSRB | HTTP 403 Cloudflare challenge; no file or agreement accepted | `blocked` |
-| CHED / TESDA | Directory pages reachable, but no verified bulk export or reuse terms | `blocked` (discovery only) |
+| CHED HEIDA | 2,716 institution rows read from 280 pages across 18 regional directories; 2,711 unique records published after 5 duplicate rows were rejected; 0 coordinates | `published` under `publicly_available_verified` with attribution; 123 unknown/CHED-supervised rows remain internal |
+| DILG DRRM-PULSE | Public facility GeoJSON returned one validated command-centre feature; map-layers returned an empty collection | `blocked`; not a usable bulk inventory |
+| TESDA TVI | Directory page reachable, but no verified bulk export or reuse terms | `blocked` (discovery only) |
 | GeoRiskPH, HazardHunterPH, PHIVOLCS, PAGASA, DENR-MGB | Discovery probes only; no layer acquired | `blocked` |
 
 The exact unauthenticated GET probe results, including TLS failures and HTTP statuses, are preserved in `docs/operations/evidence/2026-11-15-source-access/source-probes-2026-11-15.txt`.
@@ -31,7 +39,7 @@ The exact unauthenticated GET probe results, including TLS failures and HTTP sta
 | Source | Official entry point | Observed access | Register status | Important caveat |
 |---|---|---|---|---|
 | DepEd Machine-Ready Files | https://www.deped.gov.ph/machine-ready-files/ | HTTP 403; human download/terms flow | Blocked | No official file acquired; no enrollment, facilities, personnel, ICT, or WASH schema verified |
-| DepEd EBEIS masterlist | https://ebeis.deped.gov.ph/beis/reports_info/masterlist | HTTP 200 server-rendered result pages | Internal only | NCR result set acquired; contains school-head names; no explicit reuse licence |
+| DepEd EBEIS masterlist | https://ebeis.deped.gov.ph/beis/reports_info/masterlist | HTTP 200 server-rendered result pages | Current source release published for institution-level fields; canonical rows internal | NCR result set acquired; contains school-head names that are withheld from publication |
 | DOH NHFR | https://nhfr.doh.gov.ph/VActivefacilitiesList | HTTP 403 Cloudflare | Blocked | FOI disclosures may carry a Data Release and Use Agreement; no agreement reviewed or accepted |
 | DOH HFSRB licensed facilities | https://hfsrb.doh.gov.ph/list-of-licensed-health-facilities/ | HTTP 403 Cloudflare | Blocked | Licensing semantics and reuse terms not established |
 | PhilHealth accredited facilities | https://www.philhealth.gov.ph/partners/providers/facilities/accredited/ | HTTP 200; category-specific PDFs | Published | Accreditation is benefit-package-specific and time-bound; one linked PDF is 404 |
@@ -40,14 +48,22 @@ The exact unauthenticated GET probe results, including TLS failures and HTTP sta
 | BetterGov Classification API | https://statistics.bettergov.ph/api/classification/psgc | HTTP 200 JSON | Published supplement | CC BY-SA 4.0; Q2 2024 snapshot, not the latest PSA release |
 | BetterGov Statistics API | https://statistics.bettergov.ph/api/v1 | HTTP 200 JSON | Published supplement | Saved PSA OpenSTAT snapshots; only the 2024 Census population tables are used |
 | HOT/OSM via BetterGov | https://production-raw-data-api.s3.amazonaws.com/ISO3/PHL/_layers/osm/ | HTTP 200 GeoParquet | Published crowd-sourced facilities | ODbL; bbox-centre geocodes; operational status unknown |
-| CHED HEIDA | https://heida.ched.gov.ph/hei-directory | HTTP 200 HTML | Later expansion | No complete bulk national export or documented public API verified |
+| NLP public libraries | https://web.nlp.gov.ph/wp-content/uploads/2026/01/OFFICIAL-Integrated-Directory-of-Public-Libraries-as-of-December-2025.pdf | HTTP 200 PDF; 1,752 rows | Published | Institutional fields published; personal librarian contacts withheld |
+| NMP museums | https://www.nationalmuseum.gov.ph/our-museums/regional-area-and-site-museums/ | HTTP 200 HTML directory | Published | NMP-run sites only; not all Philippine museums |
+| PHLPost locator | https://phlpost.gov.ph/post-office-locator/ | HTTP 200 HTML table | Published; 1,272 factual locator facilities | Factual locator fields only; copyright notice recorded; earlier release retained internally |
+| BIR RDOs | https://bir-cdn.bir.gov.ph/BIR/pdf/RAO%20No.%206-2025.pdf | HTTP 200 image-only PDF; local OCR | Published | Office/jurisdiction list, not street addresses or coordinates |
+| DSWD CRCF directory | https://www.dswd.gov.ph/crcf/ | HTTP 200 HTML directory | Published; 76 facilities | Institutional name, field office, postal address only |
+| NMIS NARIS | https://naris.nmis.gov.ph/ | Public accreditation directory; current recheck hits a WAF/TLS failure | Published; 357 establishments | Factual establishment fields only; many operators are private; licence is not operational status |
+| PPA ports | https://ppa.com.ph/sites/default/files/List%20of%20Ports%20covered%20in%20PPA%20Statistics.pdf | HTTP 200 PDF, 22 pages | Published; 574 port rows | 303 government and 271 private providers; hierarchy and RORO marks preserved; no coordinates, owner names or operational status inferred |
+| DTI Negosyo Centers | https://negosyocenter.dti.gov.ph/negosyo-center-directory | HTTP 200 JSON API | Published; 1,427 active center records | Government service units with unspecified ownership/operator; contact fields withheld; no coordinates, host classification or operational status inferred |
+| CHED HEIDA | https://heida.ched.gov.ph/hei-directory | HTTP 200 server-rendered HTML; 280 pages across 18 regional directories | Published; 2,711 unique institution records | Institutional fields only; no coordinates, PSGC codes, campus-level precision or operational status; 123 unknown/CHED-supervised rows internal |
 | TESDA TVI | https://www.tesda.gov.ph/TVI | HTTP 200 HTML; monitor records an access challenge | Later expansion | No public JSON API or verified bulk export |
 | TESDA Assessment Centers | https://www.tesda.gov.ph/AssessmentCenters | Not independently acquired | Later expansion | Terms and programmatic access not verified |
-| HazardHunterPH | https://hazardhunter.georisk.gov.ph/ | HTTP 200 HTML | Discovery only | No hazard layer or reuse permission acquired |
+| HazardHunterPH | https://hazardhunter.georisk.gov.ph/ | HTTP 200 HTML | Discovery only | No hazard layer or publication decision acquired |
 | GeoRiskPH | https://georisk.gov.ph/ | Local TLS certificate verification failure | Discovery only | Not bypassed; no data acquired |
-| PHIVOLCS | https://www.phivolcs.dost.gov.ph/ | HTTP 200 HTML; maps portal TLS failure | Discovery only | No layer or reuse permission acquired |
-| PAGASA / Climgrid | https://www.pagasa.dost.gov.ph/ and https://climgridph.pagasa.dost.gov.ph/climapv2/ | HTTP 200 HTML | Discovery only | No climate layer or reuse permission acquired |
-| DENR-MGB | https://mgb.gov.ph/ | HTTP 403 | Discovery only | No geohazard layer or reuse permission acquired |
+| PHIVOLCS | https://www.phivolcs.dost.gov.ph/ | HTTP 200 HTML; maps portal TLS failure | Discovery only | No layer or publication decision acquired |
+| PAGASA / Climgrid | https://www.pagasa.dost.gov.ph/ and https://climgridph.pagasa.dost.gov.ph/climapv2/ | HTTP 200 HTML | Discovery only | No climate layer or publication decision acquired |
+| DENR-MGB | https://mgb.gov.ph/ | HTTP 403 | Discovery only | No geohazard layer or publication decision acquired |
 | Open Data Philippines | https://data.gov.ph/ | HTTP 200 SPA; queried public API search returned 404 | Discovery only | No dataset from this catalogue was registered or published |
 
 ## 2. DepEd — schools
@@ -77,7 +93,8 @@ The Machine-Ready Files page advertises these families, but the actual files wer
 - The NCR result set contained **5,055 rows across 169 result pages**.
 - Observed columns: `School ID`, `School Name`, `Head / Position`, `Address`, `School Type`.
 - The parser created 5,055 internal school records with zero coordinates and zero PSGC assignments. It did not guess geography or coordinates.
-- The dataset is `restricted_non_redistributable` / `internal_only` because it contains school-head names and has no explicit reuse licence.
+- The dataset is `approved_with_attribution` in the source registry. The re-ingested 15 November 2026 release is `published` for institution-level fields; the earlier `restricted_non_redistributable` release is retained. School-head names and other personal fields are withheld.
+- Canonical DepEd facilities remain `internal`/`DISCOVERY_CANDIDATE` (5,055 records) until field-level mapping and privacy review. The absence of an explicit reuse licence is not the reason for keeping them internal.
 - Evidence: `docs/reports/02-acquisition-report.md`, `docs/reports/03-schema-report.md`, and `var/reports/deped-ebeis-masterlist-ncr-*`.
 
 ### Acquisition tasks
@@ -88,8 +105,8 @@ The Machine-Ready Files page advertises these families, but the actual files wer
 - [ ] Inspect every workbook sheet, header row, types, null markers, encoding, and reference period.
 - [ ] Record the official school ID format and test uniqueness.
 - [ ] Verify whether original files contain coordinates; do not infer them from administrative geography.
-- [ ] Review DepEd terms and obtain written clarification if normalized-row redistribution is unclear.
-- [ ] Keep EBEIS internal until terms and privacy review permit a narrower publication scope.
+- [ ] Review DepEd terms and record the publication basis; ask for written clarification if normalized-row redistribution is unclear.
+- [ ] Complete field-level mapping and privacy review so canonical EBEIS rows can move from `internal` to an approved public state; keep school-head names excluded.
 
 ## 3. DOH — NHFR and licensed health facilities
 
@@ -241,16 +258,65 @@ verified until the workbook is acquired.
 - Directory: https://heida.ched.gov.ph/hei-directory
 - Portal: https://heida.ched.gov.ph/
 
-The public directory returned HTTP 200 on 15 November 2026. A complete national machine-readable
-dataset and documented public REST API were not verified. The portal describes API/developer
-capabilities as upcoming HEIDA v2 features. Do not scrape behind a login or invent an API.
+### Acquired public directory (15 November 2026)
+
+- The public directory returned HTTP 200. It is server-rendered HTML with 18 regional directories
+  and 10-row pagination; 280 pages were read and 2,716 institution rows were parsed.
+- No login, CAPTCHA, access control or explicit prohibition was encountered. The portal's HEIDA v2
+  materials describe API/developer support as future functionality, so the adapter uses only the
+  public directory and does not invent or probe an administrative API.
+- Observed institutional fields: institution name, CHED code, institutional type, address and
+  region. Contact details and institutional-head names are discarded during acquisition and never
+  stored in the public artifact.
+- Five duplicate source rows were rejected; 2,711 unique institutions were created with 0
+  coordinates and 0 PSGC assignments. No geography or campus-level precision is inferred.
+- Ownership is classified only from the published institutional type: `Chartered State
+  College/University` → `PUBLIC_EDUCATIONAL_INSTITUTION`; `Local Government College/University` →
+  `LOCAL_GOVERNMENT`; private sectarian → `RELIGIOUS_FAITH_BASED`; private non-sectarian stock →
+  `PRIVATE_CORPORATE`; private non-stock/foundation/non-profit → `NGO_NON_PROFIT`.
+  `Others, please specify`, `CHED-Supervised Institution` and unrecognised types remain
+  `DISCOVERY_CANDIDATE`/`UNKNOWN` and internal (123 rows).
+- Published distribution: 527 chartered state colleges/universities, 159 local-government
+  colleges/universities (160 parsed before duplicate rejection), 868 NGO/non-profit, 616 private
+  corporate and 418 religious/faith-based institutions. Private institutions are first-class
+  `PRIVATE_PUBLIC_SERVICE_PROVIDER` records and are never counted as government facilities.
+- Release: `CHED-HEIDA-2026-11-15`, dataset `ched-heida-hei-directory`, SHA-256
+  `abe288429833c855d818b3b68ece9bed383a1627d8c8c6a51e43958f77cee334`.
+- The directory lists recognised institutions under each regional office. It does not state that
+  every campus, satellite, extension site or institution is included, so coverage is
+  `NATIONAL_PARTIAL`, not a census. Presence is not proof of current operation or public access.
 
 Acquisition tasks:
 
-- [ ] Inspect public HTML/network responses for permitted structured data.
-- [ ] Contact CHED or use a formal request for a public institution export.
-- [ ] Record official institution identifiers and address fields.
+- [x] Inspect public HTML/network responses for permitted structured data.
+- [x] Record official institution identifiers and address fields.
+- [ ] Contact CHED for a campus-level or complete export where the public directory is insufficient.
 - [ ] Do not automate behind login or bypass access restrictions.
+
+## 6A. DILG — DRRM-PULSE (partial public feed)
+
+- Portal: https://drrm.ncr.dilg.gov.ph/
+- Map: https://drrm.ncr.dilg.gov.ph/map
+- Participating LGUs: https://drrm.ncr.dilg.gov.ph/lgus
+
+The portal describes a DILG-NCR project where LGU staff encode DRRM facilities and DILG field
+officers validate records before publication. Public endpoints were inspected through normal
+unauthenticated access on 15 November 2026:
+
+- `https://drrm.ncr.dilg.gov.ph/api/facilities.geojson` returned exactly one feature
+  (`Marikina Rescue 161 / MCDRRMO Command Center`, id 13, coordinates
+  `[121.1214673, 14.6627424]`, subcategory `command_center`) regardless of query parameters.
+- `https://drrm.ncr.dilg.gov.ph/api/map-layers.geojson` returned an empty feature collection.
+- The `/map` page states that only DILG-validated records are shown; the Marikina support tab
+  listed the same single command-centre record.
+
+This public feed is **not** a usable bulk facility inventory and does not demonstrate the
+participating-LGU coverage implied by the portal. The one exact coordinate is an emergency
+command-centre location; public release of operational emergency coordinates also requires a
+security review. The source remains `blocked` pending a broader validated export, written terms,
+and that review. No bulk request, bypass, or inference was performed. Evidence:
+`/tmp/opencode/drrm.geojson` and `/tmp/opencode/drrm_marikina_support.html` (local probe
+artifacts; not published).
 
 ## 7. TESDA — training providers
 
@@ -272,8 +338,8 @@ Acquisition tasks:
 ## 8. Hazard and environmental discovery
 
 These sources are not facility identity registries and are not part of the current public release.
-Do not implement hazard exposure without an acquired layer, a documented CRS/version, and reuse
-permission.
+Do not implement hazard exposure without an acquired layer, a documented CRS/version, and a
+documented rights decision under `docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`.
 
 | Source | Probe result | What was verified | Next action |
 |---|---|---|---|
@@ -290,10 +356,11 @@ permission.
 `https://data.gov.ph/` returned HTTP 200 as an Angular single-page application. The queried public
 dataset search endpoint `https://api.data.gov.ph/api/public/dataset/search` returned HTTP 404
 unauthenticated on 15 November 2026. No catalogue dataset was registered, acquired, or published.
-A publicly listed dataset must still be traced to its original agency and reuse terms.
+A publicly listed dataset must still be traced to its original agency and a recorded publication
+decision.
 
 Homepage reachability was probed for the following discovery targets. Reachability of a homepage is
-**not** evidence that a facility dataset, schema, or reuse permission exists. None was registered
+**not** evidence that a facility dataset, schema, or publication decision exists. None was registered
 or ingested:
 
 | Agency | Probe | Discovery status |

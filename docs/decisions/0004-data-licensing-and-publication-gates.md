@@ -1,6 +1,6 @@
 # 0004 — Separate code and data rights with publication gates
 
-- **Status:** Accepted
+- **Status:** Accepted; amended by [0008](0008-publicly-available-data-inclusion.md) for verified, publicly available datasets with no explicit prohibition
 - **Date:** 2026-11-14
 
 ## Context

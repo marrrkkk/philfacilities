@@ -5,7 +5,7 @@
 **Status date:** 15 November 2026  
 **Implementation state:** real-data pipeline operational; coverage is partial and not nationwide-complete. Synthetic records are absent from the working production database.
 
-PhilFacilities acquires government and permitted open data, preserves every original release, normalizes records without destroying source values, enforces source-rights publication gates, and exposes the result through a versioned read API, searchable directory, map, and bulk downloads.
+PhilFacilities acquires publicly available and permitted data, preserves every original release, normalizes records without destroying source values, enforces source-rights publication gates, and exposes the result through a versioned read API, searchable directory, map, and bulk downloads.
 
 ## Current data state
 
@@ -13,19 +13,19 @@ Measured from the configured PostgreSQL/PostGIS database on 15 November 2026:
 
 | Measure | Actual state |
 |---|---|
-| Canonical facilities | **88,824** |
-| Public facilities | **83,769** (API-gated; three source-less status rows were removed) |
-| Internal-only facilities | **5,055** DepEd EBEIS records |
+| Canonical facilities | **92,422** |
+| Public facilities | **61,806** (API-gated) |
+| Non-public facilities | **30,616** (DepEd internal, blocked, review-pending, or otherwise not publication-approved) |
 | Synthetic facilities in the working database | **0** |
-| Registered datasets | **38** |
-| Retained source releases | **47** |
+| Registered datasets | **44** |
+| Retained source releases | **55** |
 | Published geographic units | **43,760** (BetterGov PSGC Q2 2024 mirror) |
 | Published population observations | **134,748** across 18 PSA 2024 Census regional releases |
 | Published health accreditations | **24,986** across 25 PhilHealth provider categories |
-| Public facilities with coordinates | **70,223**, all `map_geocoded` |
-| Public facilities without coordinates | **13,546** (kept in text search; never given invented coordinates) |
+| Public facilities with coordinates | **44,751**, all `map_geocoded` |
+| Public facilities without coordinates | **17,055** (kept in text search; never given invented coordinates) |
 
-These counts describe processed source records, not the complete national facility universe. OSM/HOT records are crowd-sourced map features, not official DOH or DepEd registries. The DepEd EBEIS NCR extract is retained only for identity work because it contains school-head names and has no explicit reuse licence.
+These counts describe processed source records, not the complete national facility universe. OSM/HOT records are crowd-sourced map features, not official DOH or DepEd registries. The DepEd EBEIS NCR extract contains school-head names; the current source release is approved for institution-level publication with those names withheld, while the canonical DepEd facility records remain `internal`/`DISCOVERY_CANDIDATE` pending field-level mapping and privacy review. See [`docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`](docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md).
 
 ### Published sources
 
@@ -36,20 +36,26 @@ These counts describe processed source records, not the complete national facili
 | HOT/OSM education extract | 52,839 source records; 52,824 linked facilities | `approved_with_attribution` (ODbL) / `published` | Crowd-sourced; not a DepEd masterlist; same coordinate/status caveats. |
 | BetterGov PSGC Q2 2024 mirror | 43,760 geographic units | `approved_with_attribution` (CC BY-SA 4.0) / `published` | Supplementary snapshot; **not** the latest official PSA release. Codes are stored as strings with leading zeros. |
 | PSA 2024 Census population via BetterGov | 134,748 observations; 18 regional releases | `approved_with_attribution` (CC BY-SA 4.0 compilation) / `published` | Saved PSA OpenSTAT snapshots, not live PSA data; counts are persons/households as labelled, never facility capacity. |
+| NLP public-library directory | Official December 2025 PDF; 1,752 rows | `approved_with_attribution` / `published` | Institutional library fields only; named librarian contacts withheld. |
+| NMP regional, area and site museums | Official directory subset | `approved_with_attribution` / `published` | NMP-run sites only; not a census of all Philippine museums. |
+| BIR Revenue District Offices | RAO No. 006-2025; 128 RDO rows and 19 region headings | `approved_with_attribution` / `published`; 124 linked facilities | Image-only PDF processed with local OCR; office/jurisdiction list, not addresses or coordinates. |
+| DSWD Centers and Residential Care Facilities | Official CRCF directory; 76 facilities | `approved_with_attribution` / `published` | Institutional name, field office and postal address only; no coordinates, admission rules, or inferred operational status. |
+| NMIS NARIS accredited meat establishments | Public accreditation directory; 357 facilities | `approved_with_attribution` / `published` | Factual establishment name, LTO number, type and postal address. Many operators are private; a licence is not proof of current operation. Recheck currently returns a WAF/TLS failure, so the verified 15 November 2026 artifact is the release of record. |
+| PHLPost post-office locator | Public locator table; 1,272 facilities | `approved_with_attribution` / `published` | Factual locator fields only, with attribution and takedown-on-notice; the page's copyright notice is recorded. |
 
 ### Internal-only and blocked sources
 
 | Source | State | Why |
 |---|---|---|
-| DepEd EBEIS school masterlist (NCR) | `restricted_non_redistributable` / `internal_only` | Public result set contains school-head names and has no explicit reuse licence. Never exposed by the public API or downloads. |
+| DepEd EBEIS school masterlist (NCR) | `approved_with_attribution` / release `published`; canonical facilities `internal` | Public result set. The current source release is approved for institution-level publication with attribution and a recorded takedown route, and withholds school-head names. The canonical facility rows remain `internal`/`DISCOVERY_CANDIDATE` until field-level mapping and privacy review; 5,055 rows are retained. |
 | Official PSA PSGC workbook/API data | `review_required` / `blocked` | Workbook and page return HTTP 403 behind Cloudflare; the classification index returns 200 but collection endpoints require a token. No bypass attempted. |
 | DepEd Machine-Ready Files | `review_required` / `blocked` | HTTP 403 and a human download/terms flow that was not completed. |
 | DOH NHFR and HFSRB licensed facilities | `review_required` / `blocked` | HTTP 403 behind Cloudflare; applicable data-use agreement has not been reviewed or accepted. |
-| CHED HEIDA | `review_required` / `blocked` | Public directory reachable (HTTP 200), but no verified bulk export, documented public API, or reuse terms. |
-| TESDA TVI | `review_required` / `blocked` | Directory page reachable, but the monitor classifies the response as an access challenge; no verified provider-level bulk export or reuse terms. |
-| Hazard and additional agency sources | `unknown` / `blocked` | Discovery only; no layer, facility export, or reuse permission acquired. |
+| CHED HEIDA | `review_required` / `blocked` | Public directory reachable (HTTP 200), but no verified bulk export or documented public API. A verified public release with no explicit prohibition can be published under `publicly_available_verified`. |
+| TESDA TVI | `review_required` / `blocked` | Directory page reachable, but the monitor classifies the response as an access challenge; no verified provider-level bulk release. |
+| Hazard and additional agency sources | `unknown` / `blocked` | Discovery only; no verified layer or facility release acquired. |
 
-No formal legal review has been completed for any source. Rights states record collected terms evidence and the enforced technical gate; they are not legal advice. The exact probe results are in [`docs/operations/evidence/2026-11-15-source-access/source-probes-2026-11-15.txt`](docs/operations/evidence/2026-11-15-source-access/source-probes-2026-11-15.txt).
+No formal legal review has been completed for any source. Rights states record the collected terms/source evidence and the enforced technical gate; they are not legal advice. The governing policy is [`docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`](docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md). The exact probe results are in [`docs/operations/evidence/2026-11-15-source-access/source-probes-2026-11-15.txt`](docs/operations/evidence/2026-11-15-source-access/source-probes-2026-11-15.txt).
 
 ## Architecture
 
@@ -119,7 +125,7 @@ Live examples captured from the running API are in [`docs/reports/07-real-api-ex
 3. **Unknown is not zero or false.** Missing coordinates, status, capacity, and dates remain null/unknown.
 4. **No destructive merges.** Exact identifiers link records; ambiguous candidates require review and retain evidence.
 5. **No misleading freshness.** Source publication date, reference period, retrieval time, and processing time are separate.
-6. **Rights are enforced in code.** Viewability is not permission to redistribute.
+6. **Rights are enforced in code.** Verified public availability can support publication when no explicit prohibition applies; explicit restrictions, privacy limits, and agreements control.
 7. **A map is not the only product.** Every map result is also discoverable through text search and list views.
 8. **No invented coverage.** Counts describe ingested records, not the national facility universe.
 
@@ -143,7 +149,7 @@ Prerequisites: Docker with Compose, Node.js 22+ (24 tested), pnpm 12+, Python 3.
      uv run alembic -c apps/api/alembic.ini upgrade head
    ```
 
-3. Load the real, rights-cleared sources. This purges any synthetic demo records, records source checks, and loads BetterGov PSGC, PSA 2024 Census population, PhilHealth PDFs, and OSM health/education extracts.
+3. Load the real sources that have recorded publication decisions. This purges any synthetic demo records, records source checks, and loads BetterGov PSGC, PSA 2024 Census population, PhilHealth PDFs, OSM health/education extracts, and the additional published directories.
 
    ```bash
    uv run philfacilities-ingest load-real --skip-deped
@@ -160,7 +166,7 @@ Prerequisites: Docker with Compose, Node.js 22+ (24 tested), pnpm 12+, Python 3.
    uv run philfacilities-ingest load-osm --domain education
    ```
 
-   DepEd EBEIS is deliberately separate and internal-only:
+   DepEd EBEIS is deliberately separate. Its current source release is approved for institution-level publication with personal fields withheld, while the canonical rows remain `internal` pending field-level mapping and privacy review:
 
    ```bash
    uv run philfacilities-ingest load-deped-ebeis --region ncr
@@ -190,7 +196,7 @@ Prerequisites: Docker with Compose, Node.js 22+ (24 tested), pnpm 12+, Python 3.
 ## Scheduled maintenance
 
 `.github/workflows/source-checks.yml` runs due-source checks daily and, weekly or on manual
-dispatch, refreshes only rights-cleared sources through
+dispatch, refreshes only sources with a recorded publication decision through
 `scripts/refresh_approved_sources.sh`. A monthly job runs `discover-sources`, which probes
 discovery-only official endpoints and uploads JSON evidence without registering or publishing a
 dataset. Loaders skip unchanged checksums and never overwrite a retained release. Blocked and
@@ -245,7 +251,8 @@ Start with:
 9. [Quality and testing](docs/10-QUALITY-TESTING.md)
 10. [Deployment and operations](docs/11-DEPLOYMENT-OPERATIONS.md)
 11. [Source monitoring runbook](docs/operations/source-monitoring-runbook.md)
-12. [Tracker](planning/TRACKER.md)
+12. [Data inclusion and publication policy](docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md)
+13. [Tracker](planning/TRACKER.md)
 
 Required data reports are under [`docs/reports/`](docs/reports/):
 
@@ -256,18 +263,19 @@ Required data reports are under [`docs/reports/`](docs/reports/):
 - `05-source-rights-report.md`
 - `06-ingestion-runbook.md`
 - `07-real-api-examples.md`
+- `08-release-manifest.json`
 
 ## Known limitations
 
-- Coverage is partial. There is no complete official DepEd, DOH, PSA PSGC, CHED, or TESDA dataset in the public release.
+- Coverage is partial. CHED HEIDA institution records are published under `publicly_available_verified`, but there is no complete official DepEd, DOH, PSA PSGC, or TESDA dataset in the public release; CHED coverage is `NATIONAL_PARTIAL` and not campus-level.
 - No official PSA PSGC workbook has been acquired; the BetterGov Q2 2024 mirror is a labelled supplement, not a substitute for the latest official release.
-- Public coordinates are all OSM bounding-box centres. There are no GPS-verified or field-verified public coordinates.
-- 13,546 public facilities have no current coordinates and remain searchable without map placement.
-- 14,216 located public facilities lack a PSGC assignment; no geography was guessed.
+- Public coordinates are `map_geocoded` (44,663) or `geocoded` (88); there are no GPS-verified or field-verified public coordinates.
+- 21,644 public facilities have no current coordinates and remain searchable without map placement.
+- 5,036 located public facilities lack a PSGC assignment; no geography was guessed.
 - OSM duplicate identifiers and missing names are reported as open quality issues rather than silently merged or dropped.
 - The Antenatal PhilHealth PDF is retained but blocked. Its first successful parse recorded 6,562 rows, then a post-ingestion review found that the two-up PDF's expiry/sector annex (pages 121–240) had been counted as provider rows. All derived records were withdrawn, 3,178 facilities were restored from the parse's `EMCB-ANTE` subtype to their recorded prior values, and 3,184 source-less history events were exported and removed; the corrected parser re-reads 3,221 provider rows, and the release awaits validated re-ingestion. The linked Birthing Homes PDF returns HTTP 404. Neither gap is filled with invented data.
 - Hosted CI, a hosted scheduled run, production monitoring/paging, a licensed production basemap, production backups/PITR, and external security/legal review remain external release gates.
 
 ## License
 
-Application code is Apache-2.0. Data rights vary by source and are recorded in [`DATA-LICENSES.md`](DATA-LICENSES.md); the code licence does not license source data.
+Application code is Apache-2.0. Data rights vary by source and are recorded in [`DATA-LICENSES.md`](DATA-LICENSES.md); the code licence does not license source data. The data-inclusion policy is in [`docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`](docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md), and the code/data separation is restated in [`NOTICE`](NOTICE).

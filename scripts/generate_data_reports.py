@@ -282,7 +282,7 @@ def build_source_directory(connection: Connection, generated_at: str) -> str:
             "DOH HFSRB licensed health facilities",
             "https://hfsrb.doh.gov.ph/list-of-licensed-health-facilities/",
             "HTTP 403 Cloudflare challenge; no file or agreement acquired",
-            "blocked; licensing semantics and reuse terms not established",
+            "blocked; no verified public release or agreement-based publication decision",
         ),
         (
             "PSA classification API",
@@ -294,13 +294,13 @@ def build_source_directory(connection: Connection, generated_at: str) -> str:
             "TESDA Assessment Centers",
             "https://www.tesda.gov.ph/AssessmentCenters",
             "not independently acquired",
-            "blocked; terms and programmatic access not verified",
+            "blocked; no verified public release and no agreement-based decision",
         ),
         (
             "HazardHunterPH",
             "https://hazardhunter.georisk.gov.ph/",
             "HTTP 200 HTML; no hazard layer requested",
-            "blocked; no reuse permission acquired",
+            "blocked; no hazard layer acquired",
         ),
         (
             "GeoRiskPH",
@@ -312,13 +312,13 @@ def build_source_directory(connection: Connection, generated_at: str) -> str:
             "PHIVOLCS",
             "https://www.phivolcs.dost.gov.ph/",
             "main site HTTP 200; maps portal TLS failure",
-            "blocked; no layer or reuse permission acquired",
+            "blocked; no layer acquired",
         ),
         (
             "PAGASA / Climgrid",
             "https://www.pagasa.dost.gov.ph/",
             "HTTP 200 HTML; no climate layer requested",
-            "blocked; no layer or reuse permission acquired",
+            "blocked; no layer acquired",
         ),
         (
             "DENR-MGB",
@@ -365,6 +365,12 @@ def build_source_directory(connection: Connection, generated_at: str) -> str:
         "This directory lists every dataset registered in the platform and the "
         "discovery-only sources that were probed but not registered. A listed row is not "
         "evidence that a dataset is accessible, current, complete, or legally publishable.\n\n"
+        "**Snapshot note:** this report is generated from the configured database. "
+        "Publication decisions, source releases, and canonical facility flags can move at "
+        "different times. The governing policy is\n"
+        "[docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md]"
+        "(../14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md); where this snapshot conflicts "
+        "with the current database or registry, the database and registry control.\n\n"
         "## Registered sources\n\n"
         f"{table}\n\n"
         "## Versioned geographic releases\n\n"
@@ -381,13 +387,17 @@ def build_source_directory(connection: Connection, generated_at: str) -> str:
         "is complete; none is available to the public API.\n\n"
         f"{discovery_table}\n\n"
         "## Reading this directory\n\n"
-        "- `approved_with_attribution` records collected terms evidence, not a completed "
-        "legal review.\n"
+        "- `approved_with_attribution`, `approved_public_redistribution`, and "
+        "`publicly_available_verified` are public-compatible rights states; publication "
+        "still requires an approved or published release.\n"
+        "- `publicly_available_verified` means the exact release is verified and publicly "
+        "available, no explicit prohibition was found, and only reviewed non-personal "
+        "fields are published with provenance, attribution, and takedown-on-notice.\n"
         "- `review_required` and `blocked` sources remain unavailable to the public API.\n"
         "- `internal_only` releases may be retained for validation but are excluded from "
         "public endpoints and downloads.\n"
         "- Reachability checks record what an endpoint returned at a point in time; they "
-        "do not grant permission to republish.\n"
+        "do not by themselves establish a rights decision.\n"
         "- Original field names, types, and missing-value statistics are in report 03. "
         "Per-source coverage, acquisition procedure, and evidence notes are in "
         "`docs/03-SOURCE-REGISTER.md`.\n"
@@ -687,8 +697,9 @@ def build_schema_report(connection: Connection, generated_at: str) -> str:
             (
                 "DepEd EBEIS result pages",
                 "`Head / Position`",
-                "No normalized field; retained in the internal raw record only",
-                "Personal data; the dataset is `internal_only`.",
+                "No normalized field; retained in the private raw record only",
+                "Personal data; never published. School-head names are withheld even though "
+                "the source release is approved for institution-level publication.",
             ),
             (
                 "HOT/OSM GeoParquet",
@@ -1334,8 +1345,15 @@ def build_rights_report(connection: Connection, generated_at: str) -> str:
     )
     return (
         "**This is an evidence register, not a legal opinion.** No source has a completed "
-        "formal legal review. Rights states record the terms evidence collected and the "
-        "technical gate applied by the platform.\n\n"
+        "formal legal review. Rights states record the terms and source evidence collected "
+        "and the technical gate applied by the platform. Publication decisions follow "
+        "`docs/14-DATA-INCLUSION-AND-PUBLICATION-POLICY.md`.\n\n"
+        "**Snapshot note:** this report is generated from the configured database. A source "
+        "registry or release decision and the canonical facility publication flag can move "
+        "at different times; a re-ingestion or field-level review is required before every "
+        "surface reflects the same state. For example, the current DepEd EBEIS release is "
+        "published for institution-level fields, while its canonical facility rows remain "
+        "`internal`.\n\n"
         "## Dataset-level rights and publication gates\n\n"
         f"{dataset_table}\n\n"
         "## Release-level gates\n\n"
@@ -1348,10 +1366,21 @@ def build_rights_report(connection: Connection, generated_at: str) -> str:
         "status is public-compatible and whose release is approved or published.\n"
         "- `restricted_non_redistributable`, `review_required`, `unknown`, `denied`, and "
         "`expired` sources are excluded, even if their records are stored.\n"
-        "- DepEd EBEIS is `internal_only` because it contains school-head names and has no "
-        "explicit reuse licence.\n"
-        "- Official PSA PSGC, official DepEd files, DOH NHFR/HFSRB, CHED, and TESDA are not "
-        "published because access or reuse evidence is incomplete.\n"
+        "- `publicly_available_verified` is public-compatible when the exact release is "
+        "verified, publicly available, and not subject to an explicit prohibition, and only "
+        "reviewed institutional fields are published with provenance, attribution, and "
+        "takedown-on-notice.\n"
+        "- DepEd EBEIS contains school-head names. The current source release is published "
+        "for institution-level fields with those names withheld; canonical facility rows "
+        "remain `internal` until field-level mapping and privacy review.\n"
+        "- PHLPost publishes 1,272 factual locator facilities under a recorded product "
+        "decision; an earlier review-required release is retained internally.\n"
+        "- CHED HEIDA is published under `publicly_available_verified` for institutional "
+        "fields only; contact details and institutional-head names are discarded and 123 "
+        "unknown/CHED-supervised rows remain internal.\n"
+        "- Official PSA PSGC, official DepEd Machine-Ready Files, DOH NHFR/HFSRB, TESDA, and "
+        "DILG DRRM-PULSE are not published because no verified public release, broader "
+        "validated export, or agreement-based publication decision exists.\n"
         "- OSM-derived records carry ODbL attribution and are labelled non-official.\n"
     )
 

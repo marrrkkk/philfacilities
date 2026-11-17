@@ -22,7 +22,11 @@ export const metadata: Metadata = {
 };
 
 function rightsTone(status: string): "success" | "warning" | "danger" | "muted" {
-  if (status === "approved_public_redistribution" || status === "approved_with_attribution") {
+  if (
+    status === "approved_public_redistribution" ||
+    status === "approved_with_attribution" ||
+    status === "publicly_available_verified"
+  ) {
     return "success";
   }
   if (status === "restricted_non_redistributable" || status === "denied" || status === "expired") {
