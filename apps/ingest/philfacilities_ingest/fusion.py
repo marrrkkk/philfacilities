@@ -48,7 +48,7 @@ from philfacilities_api.models import (
     SourceRecord,
 )
 from philfacilities_api.publication import (
-    latest_published_release_id,
+    latest_public_release_cte,
     public_dataset_release_condition,
 )
 from philfacilities_api.taxonomy import (
@@ -504,6 +504,7 @@ def build_attribute_fusions(
     """
 
     stats = FusionStats()
+    latest_release = latest_public_release_cte()
     for batch in _facility_ids(session, facility_ids, multi_source_only=multi_source_only):
         stats.facilities_scanned += len(batch)
         rows = session.execute(
@@ -517,7 +518,7 @@ def build_attribute_fusions(
                 # Only current public claims may select or corroborate a value.
                 # A restricted dataset, an unpublished release, or a superseded
                 # snapshot must not override the public canonical record.
-                Release.id == latest_published_release_id(Dataset.id),
+                Release.id.in_(select(latest_release.c.id)),
                 public_dataset_release_condition(),
             )
         ).all()

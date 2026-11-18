@@ -687,6 +687,9 @@ class FacilityLocation(Base):
             postgresql_where=text("is_current"),
         ),
         Index("ix_core_facility_locations_psgc", "psgc_code"),
+        # The unique current-location index is partial, so every merge, undo,
+        # and profile read still scanned the whole table by facility_id.
+        Index("ix_core_facility_locations_facility", "facility_id"),
         Index(
             "ix_core_facility_locations_address_trgm",
             "address_text",
@@ -1058,6 +1061,7 @@ class QualityIssue(Base):
     __table_args__ = (
         Index("ix_quality_issues_status_severity", "status", "severity"),
         Index("ix_quality_issues_release_code_status", "release_id", "issue_code", "status"),
+        Index("ix_quality_issues_facility", "facility_id"),
         {"schema": "quality"},
     )
 

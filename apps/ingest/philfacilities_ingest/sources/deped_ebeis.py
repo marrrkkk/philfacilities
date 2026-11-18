@@ -22,6 +22,7 @@ from ..contracts import (
     ValidationIssue,
     ValidationResult,
 )
+from ..identity import deped_prefixed_school_id, school_name_key
 from .common import clean_text, normalise_code
 
 
@@ -106,8 +107,8 @@ def school_levels(value: str | None) -> tuple[bool | None, bool | None, bool | N
 
 class DepEdEBEISAdapter:
     source_code = "deped"
-    parser_version = "deped-ebeis-html-1.1.0"
-    schema_version = "deped-ebeis-masterlist-html-v2"
+    parser_version = "deped-ebeis-html-1.2.0"
+    schema_version = "deped-ebeis-masterlist-html-v3"
 
     def __init__(self, spec: ReleaseSpec) -> None:
         self.spec = spec
@@ -163,6 +164,7 @@ class DepEdEBEISAdapter:
         seen: set[str] = set()
         rejected = 0
         duplicates = 0
+        aliases = self._prefixed_aliases(parsed)
         for row in parsed.rows:
             payload = row.normalized_payload
             school_id = normalise_code(payload.get("School ID"))
@@ -201,11 +203,65 @@ class DepEdEBEISAdapter:
                     )
                 )
             seen.add(school_id)
+        if aliases:
+            issues.append(
+                ValidationIssue(
+                    "prefixed_school_id_alias",
+                    "warning",
+                    (
+                        f"{len(aliases)} EBEIS rows use a seven-digit prefixed school ID; "
+                        "the six-digit BEIS ID is used as the canonical identifier."
+                    ),
+                    {
+                        "count": len(aliases),
+                        "examples": [
+                            {
+                                "source_record_key": row.source_record_key,
+                                "prefixed_id": row.normalized_payload.get("School ID"),
+                                "canonical_id": canonical_id,
+                            }
+                            for row, canonical_id in list(aliases.values())[:10]
+                        ],
+                    },
+                )
+            )
         return ValidationResult(
             issues=issues, accepted_rows=len(parsed.rows) - rejected, rejected_rows=rejected
         )
 
+    @staticmethod
+    def _prefixed_aliases(
+        parsed: ParsedRelease,
+    ) -> dict[str, tuple[ParsedRow, str]]:
+        """Map prefixed EBEIS rows to their six-digit BEIS identity.
+
+        The prefix is only folded when the six-digit base row is present in the
+        same release and its normalized school name agrees. A missing or
+        conflicting base is left as its own row rather than guessed.
+        """
+
+        six_digit_names: dict[str, str] = {}
+        for row in parsed.rows:
+            school_id = normalise_code(row.normalized_payload.get("School ID"))
+            if school_id and len(school_id) == 6:
+                six_digit_names[school_id] = (
+                    clean_text(row.normalized_payload.get("School Name")) or ""
+                )
+        aliases: dict[str, tuple[ParsedRow, str]] = {}
+        for row in parsed.rows:
+            source_id = normalise_code(row.normalized_payload.get("School ID"))
+            base_id = deped_prefixed_school_id(source_id)
+            if not base_id or base_id not in six_digit_names:
+                continue
+            source_key = school_name_key(row.normalized_payload.get("School Name"))
+            base_key = school_name_key(six_digit_names[base_id])
+            if not source_key or source_key != base_key:
+                continue
+            aliases[row.source_record_key] = (row, base_id)
+        return aliases
+
     def normalize(self, parsed: ParsedRelease) -> list[FacilityCandidate]:
+        aliases = self._prefixed_aliases(parsed)
         candidates: list[FacilityCandidate] = []
         for row in parsed.rows:
             payload = row.normalized_payload
@@ -213,11 +269,13 @@ class DepEdEBEISAdapter:
             name = clean_text(payload.get("School Name"))
             if not school_id or not name:
                 continue
+            alias = aliases.get(row.source_record_key)
+            canonical_id = alias[1] if alias else school_id
             offers_es, offers_jhs, offers_shs = school_levels(payload.get("School Type"))
             candidates.append(
                 FacilityCandidate(
                     source_record_key=row.source_record_key,
-                    source_entity_id=school_id,
+                    source_entity_id=canonical_id,
                     row_reference=row.row_reference,
                     display_name=name,
                     facility_type="school",
@@ -225,15 +283,23 @@ class DepEdEBEISAdapter:
                     facility_subtype="OTHER_SCHOOL",
                     ownership="unknown",
                     record_status="active_in_registry",
+                    # A prefixed row is the same school as its six-digit base and
+                    # often carries a less complete address. It may fill a gap but
+                    # must not overwrite the canonical row's values.
+                    enrichment_only=alias is not None,
                     location=LocationData(
                         address_text=clean_text(payload.get("Address")),
                     ),
                     school=SchoolData(
-                        deped_school_id=school_id,
+                        deped_school_id=canonical_id,
                         offers_es=offers_es,
                         offers_jhs=offers_jhs,
                         offers_shs=offers_shs,
                     ),
                 )
             )
+        # Canonical six-digit rows are applied first so a prefixed alias can
+        # only enrich an established record, never create it under a different
+        # identity. The sort is stable, so source order is preserved otherwise.
+        candidates.sort(key=lambda candidate: candidate.enrichment_only)
         return candidates

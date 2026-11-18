@@ -402,7 +402,11 @@ def test_accepted_candidate_can_be_merged_with_audit_history(client, db_session)
         assert body["resolution"]["source_facility_after"]["record_status"] == "merged"
         assert "reviewer" not in body["resolution"]
 
-        assert client.get(f"/v1/facilities/{newer['facility'].slug}").status_code == 404
+        # A merged duplicate keeps its slug as an alias and resolves to the
+        # facility that now holds its evidence, so old links do not break.
+        alias_detail = client.get(f"/v1/facilities/{newer['facility'].slug}")
+        assert alias_detail.status_code == 200
+        assert alias_detail.json()["id"] == str(older["facility"].id)
         target_detail = client.get(f"/v1/facilities/{older['facility'].slug}")
         assert target_detail.status_code == 200
         assert target_detail.json()["source_count"] == 2

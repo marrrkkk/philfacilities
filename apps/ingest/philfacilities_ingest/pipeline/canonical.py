@@ -673,11 +673,21 @@ def _apply_candidate(
                     )
                 ).first()
             )
+        # An enrichment-only row may fill a missing location but must not
+        # replace an established address with a less complete duplicate. It may
+        # still promote coordinates over an address-only claim.
+        fills_missing_location = current_location is not None and current_location.latitude is None
+        may_replace_current = (
+            not candidate.enrichment_only
+            or current_location is None
+            or (has_coordinates and fills_missing_location)
+        )
         if current_location is not None and current_location.source_record_id == record.id:
             existing_location = current_location
         elif (
             current_location is not None
             and not protect_public
+            and may_replace_current
             and (has_coordinates or current_location.latitude is None)
         ):
             # Only one current location is allowed per facility. The earlier
@@ -705,9 +715,11 @@ def _apply_candidate(
                 is_current=(
                     not protect_public
                     and (
-                        has_coordinates
-                        or current_location is None
-                        or current_location.latitude is None
+                        current_location is None
+                        or (
+                            may_replace_current
+                            and (has_coordinates or current_location.latitude is None)
+                        )
                     )
                 ),
             )

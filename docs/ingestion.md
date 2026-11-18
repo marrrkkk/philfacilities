@@ -46,7 +46,9 @@ discover → acquire → preserve → parse → validate → normalize
 | `pipeline/stats.py` | Population observations |
 | `pipeline/runner.py` | The single facility-release orchestration path |
 | `validators.py` | Shared coordinate, PSGC-shape, required-field, duplicate-key checks |
-| `matching.py` | Deterministic identity candidates; never auto-merges |
+| `identity.py` | Pure name folding, name keys, address tokens, PSGC helpers for identity evidence |
+| `matching.py` | Deterministic identity candidates, reviewed merges, EBEIS prefixed-ID merges, undo |
+| `aggregation.py` | Whole-registry evidence clustering, strong-bridge auto-merge, location promotion |
 | `fusion.py` | Attribute assertions/fusions and safe allowlisted application |
 | `release_rollback.py` | Pre-release canonical snapshots and conservative rollback |
 | `cli.py` | Typer command tree |
@@ -188,23 +190,44 @@ Sources may override the policy in `sources/registry.py` when their verified row
 
 ## 8. Identity resolution
 
-Deterministic matching only, in this order:
+One canonical facility represents one real-world facility. Directory, map, and detail views all read that record; source rows stay attached as evidence. A duplicate is retired as an internal `merged` tombstone, never deleted.
+
+Evidence is ranked, strongest first:
 
 1. exact source-specific stable ID within the same source system;
 2. explicit official crosswalk or shared identifier;
 3. exact normalized name + current PSGC unit + compatible subtype + different source agency;
-4. similar name + locality + address evidence → candidate only;
+4. independent agreement of name, city/barangay/address, and coordinates → candidate only;
 5. conflicting IDs or distant coordinates → unmerged candidate, retained and retried automatically.
 
+Names are folded for comparison only: case, punctuation, whitespace, `St.`/`Saint`/`Sta.`/`Sto.`, and optional legal forms such as `Inc.` and `Corporation`. School names additionally expand uppercase school-type abbreviations (`ES`, `IS`, `NHS`, `SHS`, `SPED`, …). Folding never rewrites `display_name` or `official_name`, and a name match alone never merges two records: two different places can share a name.
+
+Subtype labels come from independent agency vocabularies and are compared as families, not raw strings. OSM `college`, CHED `HIGHER_EDUCATION_INSTITUTION` and DepEd `OTHER_SCHOOL` can describe one school; `elementary school` and `college` cannot. A vague label such as `school` or `other …` carries no level information and never blocks a pair by itself. City is taken from the location PSGC, or resolved from the address by preferring an explicit city/municipality segment, so a trailing province name that matches another city (`Lucena City, Quezon`) does not erase the city. Subtype families and address-derived city codes are identity evidence only; the stored subtype, address and PSGC claims are never rewritten.
+
+Aggregation (`aggregation.py`) blocks candidate pairs by facility type + name key + city, or by a spatial cell when the city is unknown, then scores independent evidence inside each block. A cluster is merged only when it is complete and mutually compatible: the names agree, the place/address/coordinate evidence agrees, and no official identifier conflicts. Every automatic merge needs a strong bridge — a shared official ID or a location score of at least `0.9`. Exact name plus the same city is not enough; the conflict rules and the complete-cluster requirement still apply.
+
+The surviving record is chosen deterministically: official source first, then the most official identifiers, then the most source links, then the oldest record. After the merge the most precise documented location becomes current; the previous current location is closed as history rather than discarded, and `resolution["location_promotion"]` records the change. Incomplete or ambiguous clusters stay as pending candidates for review. A rejected pair is retained so the same evidence does not re-queue it.
+
 ```bash
+uv run philfacilities-ingest consolidate-facilities                 # dry run
+uv run philfacilities-ingest consolidate-facilities --apply --limit 100
+uv run philfacilities-ingest merge-deped-prefixed-ids               # dry run
+uv run philfacilities-ingest merge-deped-prefixed-ids --apply --limit 100
 uv run philfacilities-ingest match-candidates-generate
 uv run philfacilities-ingest match-candidates --status pending
 uv run philfacilities-ingest match-candidates-accept <id> --reviewer <name> --note "..."
 uv run philfacilities-ingest match-candidates-reject <id> --reviewer <name> --note "..."
 uv run philfacilities-ingest match-candidates-merge <id> --reviewer <name> --note "..."
+uv run philfacilities-ingest match-candidates-undo-merge <id> --reviewer <name> --note "..."
 ```
 
-Accepting is separate from merging. A merge is transactional, moves evidence, retires the duplicate as a `merged` tombstone, and writes change events. Contacts move with the facility; a contact that duplicates the target's `(contact_type, value, source_record)` stays on the source tombstone so `uq_facility_contact_source` is never violated, and the merge resolution records the retained count. Undo restores only the contacts that actually moved. Rejected candidates are retained so the same pair is not re-queued for the same algorithm version.
+Accepting is separate from merging. A merge is transactional, moves evidence, retires the duplicate as a `merged` tombstone, and writes change events. Contacts move with the facility; a contact that duplicates the target's `(contact_type, value, source_record)` stays on the source tombstone so `uq_facility_contact_source` is never violated, and the merge resolution records the retained count. School and utility profiles behave the same way when the survivor already holds the same official code: the duplicate profile stays on the tombstone as evidence. Undo restores only the rows that actually moved. Rejected candidates are retained so the same pair is not re-queued for the same algorithm version.
+
+The merge resolution stores the undo data: facility snapshots before and after, moved counts and IDs per child table, and the previous current-location state. Undo refuses rather than guesses when moved evidence has changed since the merge. A merged facility keeps its slug as an alias: `GET /v1/facilities/<old-slug>` resolves to the survivor and the web profile redirects to the canonical URL. UUIDs never change.
+
+The EBEIS masterlist can list the same school under its official six-digit BEIS ID and a seven-digit level-prefixed variant (for example `403263` and `1403263`). The prefixed ID is treated as an alias only when the six-digit base row exists in the same release and the school-name keys match. The six-digit facility is the target; the prefixed row is kept as source evidence. Each twin merge is recorded as an accepted `deped_prefixed_school_id` candidate (`confidence 0.999`, reviewer `system:deped-prefixed-id`), and a merged profile backfill is recorded in `resolution["profile_backfill"]` so undo can reverse it or refuse if a later edit changed the value. Adapters mark prefixed rows `enrichment_only=True`, so the canonical row is always applied first.
+
+`auto-merge-duplicates` is the older, narrower rule (exact normalized name plus a precise address/coordinate match). Use `consolidate-facilities` for whole-registry aggregation; it applies the strong-bridge and cluster-completeness rules above.
 
 ## 9. Field-level fusion
 
@@ -227,8 +250,6 @@ uv run philfacilities-ingest fusion-report --json
 ```
 
 Fusion is fully automatic; there is no review queue or review command. `fusion-report --json` reports status counts, unresolved equal-authority conflicts and samples. Every applied change is recorded as an `attribute_fused` change event with the algorithm version and supporting source record, while the raw claims and all alternatives remain unchanged.
-
-`auto-merge-duplicates` is narrower: exact normalized name + compatible type, plus either exact address in the same PSGC (`confidence >= 0.900`) or an exact-name geo match at `<= 25 m` with official-side evidence. It is a dry run unless `--apply` is passed; 25–50 m matches remain pending.
 
 ### Enrichment-only releases
 

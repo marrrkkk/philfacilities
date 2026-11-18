@@ -27,6 +27,7 @@ from .acquisition import (
     send_failure_alert,
     send_ingestion_failure_alert,
 )
+from .aggregation import consolidate_facilities
 from .assertions import backfill_assertions
 from .compare import ReleaseComparisonError, compare_releases
 from .config import get_settings
@@ -57,6 +58,7 @@ from .matching import (
     MatchingError,
     accept_match_candidate,
     generate_match_candidates,
+    merge_deped_prefixed_duplicates,
     merge_match_candidate,
     reject_match_candidate,
     undo_match_merge,
@@ -1125,6 +1127,115 @@ def auto_merge_duplicates_command(
         stats = auto_merge_exact_duplicates(session, dry_run=not apply, limit=limit)
         if apply:
             build_attribute_fusions(session)
+            session.commit()
+        else:
+            session.rollback()
+        typer.echo(json.dumps(stats, indent=2, default=str))
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("consolidate-facilities")
+def consolidate_facilities_command(
+    apply: Annotated[
+        bool,
+        typer.Option(
+            "--apply/--dry-run",
+            help="Apply the evidence-backed merges. The default is a dry run.",
+        ),
+    ] = False,
+    limit: Annotated[
+        int,
+        typer.Option(min=1, help="Maximum facilities to merge in this run."),
+    ] = 100,
+    include_synthetic: Annotated[
+        bool,
+        typer.Option(help="Include synthetic demo facilities."),
+    ] = False,
+    examples: Annotated[
+        int,
+        typer.Option(min=0, help="Maximum merge examples to include in the output."),
+    ] = 20,
+) -> None:
+    """Aggregate every facility type from independent identity evidence.
+
+    Names are compared with saint and legal-form folding (``St.``/``Saint``,
+    optional ``Inc.``), but a name never decides identity by itself. A cluster
+    is merged only when name, city/barangay/address or coordinate evidence, and
+    official identifiers all agree, with no conflicting identifiers or places.
+    Incomplete clusters and weaker pairs stay as pending match candidates.
+
+    This handles all facility types. The DepEd prefixed-ID repair remains a
+    separate deterministic step because it is an identifier rule, not a name
+    similarity decision.
+    """
+
+    engine, session = _session()
+    try:
+        affected: set[uuid.UUID] = set()
+        stats = consolidate_facilities(
+            session,
+            dry_run=not apply,
+            limit=limit,
+            include_synthetic=include_synthetic,
+            example_limit=examples,
+            affected_facility_ids=affected,
+        )
+        if apply:
+            if affected:
+                build_attribute_fusions(session, facility_ids=affected)
+            session.commit()
+        else:
+            session.rollback()
+        typer.echo(json.dumps(stats, indent=2, default=str))
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("merge-deped-prefixed-ids")
+def merge_deped_prefixed_ids_command(
+    apply: Annotated[
+        bool,
+        typer.Option(
+            "--apply/--dry-run",
+            help="Apply the verified merges. The default is a dry run.",
+        ),
+    ] = False,
+    limit: Annotated[
+        int,
+        typer.Option(min=1, help="Maximum merges to apply in this run."),
+    ] = 1000,
+) -> None:
+    """Merge EBEIS seven-digit prefixed IDs into their six-digit school.
+
+    The EBEIS result set can list the same school under its official six-digit
+    BEIS ID and a seven-digit level-prefixed variant (for example 403263 and
+    1403263). The prefixed row is retained as source evidence but is not a
+    second real-world school. Each merge is recorded as an accepted
+    ``deped_prefixed_school_id`` candidate and can be undone with
+    ``match-candidates-undo-merge``.
+    """
+
+    engine, session = _session()
+    try:
+        affected: set[uuid.UUID] = set()
+        stats = merge_deped_prefixed_duplicates(
+            session,
+            dry_run=not apply,
+            limit=limit,
+            affected_facility_ids=affected,
+        )
+        if apply:
+            if affected:
+                build_attribute_fusions(session, facility_ids=affected)
             session.commit()
         else:
             session.rollback()

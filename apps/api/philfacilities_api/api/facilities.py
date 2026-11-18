@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-import contextlib
 import csv
 import io
 import math
-import uuid
 from datetime import date, datetime
 from typing import Annotated, Literal
 
@@ -47,11 +45,11 @@ from ..schemas import (
 from ..services import (
     build_facility_detail,
     build_summaries,
-    facility_is_public,
     load_attribute_assertions,
     load_source_evidence,
     public_source_record_condition,
 )
+from .common import get_public_facility
 from .query import facility_conditions
 
 router = APIRouter(prefix="/facilities", tags=["facilities"])
@@ -62,17 +60,6 @@ OwnershipFilter = Literal["government", "private", "unknown"]
 PrecisionFilter = Literal[
     "gps_verified", "field_verified", "source_gps", "map_geocoded", "barangay_centroid", "unknown"
 ]
-
-
-def _get_public_facility(db: Session, identifier: str) -> Facility:
-    facility = None
-    with contextlib.suppress(ValueError):
-        facility = db.get(Facility, uuid.UUID(identifier))
-    if facility is None:
-        facility = db.scalars(select(Facility).where(Facility.slug == identifier)).first()
-    if facility is None or not facility_is_public(db, facility):
-        raise ApiError(404, "facility_not_found", "No published facility exists with that ID.")
-    return facility
 
 
 def _parse_bbox(raw: str, *, max_area: float | None = None) -> tuple[float, float, float, float]:
@@ -523,7 +510,7 @@ def facilities_nearby(
 
 @router.get("/{facility_id}", response_model=FacilityDetail, summary="Facility detail")
 def get_facility(facility_id: str, db: Annotated[Session, Depends(get_db)]):
-    facility = _get_public_facility(db, facility_id)
+    facility = get_public_facility(db, facility_id)
     return build_facility_detail(db, facility)
 
 
@@ -533,7 +520,7 @@ def get_facility(facility_id: str, db: Annotated[Session, Depends(get_db)]):
     summary="Source records behind a facility",
 )
 def get_facility_sources(facility_id: str, db: Annotated[Session, Depends(get_db)]):
-    facility = _get_public_facility(db, facility_id)
+    facility = get_public_facility(db, facility_id)
     return load_source_evidence(db, [facility.id]).get(facility.id, [])
 
 
@@ -550,7 +537,7 @@ def get_facility_assertions(
     ),
     limit: int = Query(200, ge=1, le=1000),
 ):
-    facility = _get_public_facility(db, facility_id)
+    facility = get_public_facility(db, facility_id)
     return load_attribute_assertions(db, facility.id, attribute=attribute, limit=limit)
 
 
@@ -560,7 +547,7 @@ def get_facility_assertions(
     summary="Dated accreditation assertions",
 )
 def get_facility_accreditations(facility_id: str, db: Annotated[Session, Depends(get_db)]):
-    facility = _get_public_facility(db, facility_id)
+    facility = get_public_facility(db, facility_id)
     rows = db.scalars(
         select(HealthAccreditation)
         .where(
@@ -603,7 +590,7 @@ def get_facility_history(
     db: Annotated[Session, Depends(get_db)],
     limit: int = Query(20, ge=1, le=100),
 ):
-    facility = _get_public_facility(db, facility_id)
+    facility = get_public_facility(db, facility_id)
     rows = db.scalars(
         select(FacilityChangeEvent)
         .where(FacilityChangeEvent.facility_id == facility.id)
@@ -630,7 +617,7 @@ def get_facility_history(
 
 @router.get("/{facility_id}/export.csv", include_in_schema=False)
 def export_facility_csv(facility_id: str, db: Annotated[Session, Depends(get_db)]):
-    facility = _get_public_facility(db, facility_id)
+    facility = get_public_facility(db, facility_id)
     detail = build_facility_detail(db, facility)
     buffer = io.StringIO()
     writer = csv.writer(buffer)

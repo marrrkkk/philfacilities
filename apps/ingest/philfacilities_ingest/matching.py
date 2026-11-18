@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import hashlib
 import math
-import re
 import uuid
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -38,12 +37,21 @@ from philfacilities_api.models import (
     ResourceObservation,
     SchoolProfile,
     SourceRecord,
+    UtilityProfile,
 )
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
+
+from .identity import (
+    deped_prefixed_school_id,
+    normalize_name,
+    school_name_key,
+    subtypes_compatible,
+)
 
 MATCH_METHOD = "exact_normalized_name_psgc_type"
 GEO_MATCH_METHOD = "exact_normalized_name_geo"
+DEPED_PREFIXED_MATCH_METHOD = "deped_prefixed_school_id"
 ALGORITHM_VERSION = "1"
 PENDING = "pending"
 ACCEPTED = "accepted"
@@ -84,17 +92,24 @@ GENERIC_FACILITY_NAMES = frozenset(
 )
 
 # Child tables that follow a facility when a human-confirmed merge is applied.
+# School, health and utility profiles all use a ``profiles`` table in their own
+# schema, so audit keys must be schema-qualified to stay unambiguous.
 _MERGE_MODELS = (
     AttributeAssertion,
     SchoolProfile,
     EnrollmentObservation,
     ResourceObservation,
     HealthProfile,
+    UtilityProfile,
     HealthLicense,
     HealthAccreditation,
     FacilityContact,
     QualityIssue,
 )
+
+
+def _audit_key(model: type) -> str:
+    return model.__table__.fullname
 
 
 class MatchingError(Exception):
@@ -117,14 +132,6 @@ class _FacilityRef:
                 continue
             return link, record, agency, release
         return None
-
-
-def normalize_name(value: str | None) -> str:
-    """Case-fold and collapse punctuation/whitespace for deterministic comparison."""
-
-    if not value:
-        return ""
-    return " ".join(re.sub(r"[^a-z0-9]+", " ", value.casefold()).split())
 
 
 def candidate_key(
@@ -181,9 +188,11 @@ def _facility_snapshot(facility: Facility) -> dict[str, Any]:
 
 
 def _subtypes_compatible(source: Facility, candidate: Facility) -> bool:
-    if not source.facility_subtype or not candidate.facility_subtype:
-        return True
-    return normalize_name(source.facility_subtype) == normalize_name(candidate.facility_subtype)
+    return subtypes_compatible(
+        source.facility_type,
+        source.facility_subtype,
+        candidate.facility_subtype,
+    )
 
 
 def _confidence(
@@ -777,6 +786,26 @@ def merge_match_candidate(
         "facility_locations": len(locations),
     }
     retained_on_source: dict[str, int] = {}
+
+    # Profile tables are unique per (facility, official code). If the target
+    # already holds the same code, keep the duplicate profile on the tombstone
+    # instead of tripping the constraint; it remains queryable source evidence.
+    retained_ids: set[uuid.UUID] = set()
+    for model, field_name in (
+        (SchoolProfile, "deped_school_id"),
+        (UtilityProfile, "doe_facility_code"),
+    ):
+        field = getattr(model, field_name)
+        for row in session.scalars(select(model).where(model.facility_id == source.id)).all():
+            code = getattr(row, field_name)
+            if code is None:
+                continue
+            duplicate = session.scalar(
+                select(model.id).where(model.facility_id == target.id, field == code)
+            )
+            if duplicate is not None:
+                retained_ids.add(row.id)
+
     for model in _MERGE_MODELS:
         if model is FacilityContact:
             contacts = list(
@@ -807,27 +836,22 @@ def merge_match_candidate(
                     continue
                 contact.facility_id = target.id
                 moved.append(contact)
-            table = model.__tablename__
+            table = model.__table__.fullname
             counts[table] = len(moved)
             moved_ids[table] = [str(contact.id) for contact in moved]
             if len(moved) != len(contacts):
                 retained_on_source[table] = len(contacts) - len(moved)
             continue
-        ids = list(session.scalars(select(model.id).where(model.facility_id == source.id)).all())
-        if ids:
-            session.execute(
-                model.__table__.update()
-                .where(model.__table__.c.facility_id == source.id)
-                .values(facility_id=target.id)
-            )
-        table = model.__tablename__
-        counts[table] = len(ids)
-        moved_ids[table] = [str(value) for value in ids]
-    if any(counts[model.__tablename__] for model in _MERGE_MODELS):
-        # Bulk updates bypass the identity map; persist pending link/location moves
-        # first, then drop stale child instances.
-        session.flush()
-        session.expire_all()
+        rows = list(session.scalars(select(model).where(model.facility_id == source.id)).all())
+        kept = [row for row in rows if row.id in retained_ids]
+        rows = [row for row in rows if row.id not in retained_ids]
+        for row in rows:
+            row.facility_id = target.id
+        table = model.__table__.fullname
+        counts[table] = len(rows)
+        moved_ids[table] = [str(row.id) for row in rows]
+        if kept:
+            retained_on_source[table] = len(kept)
 
     source.publication_status = "internal"
     source.record_status = "merged"
@@ -886,6 +910,306 @@ def merge_match_candidate(
     return candidate
 
 
+_SCHOOL_PROFILE_FIELDS = (
+    "sector",
+    "school_management",
+    "division",
+    "district",
+    "legislative_district",
+    "settlement_type",
+    "offering_classification",
+    "offers_es",
+    "offers_jhs",
+    "offers_shs",
+)
+
+
+def _school_profile_snapshot(profile: SchoolProfile) -> dict[str, Any]:
+    return {
+        "id": str(profile.id),
+        "facility_id": str(profile.facility_id),
+        "deped_school_id": profile.deped_school_id,
+        **{field: getattr(profile, field) for field in _SCHOOL_PROFILE_FIELDS},
+        "source_record_id": str(profile.source_record_id) if profile.source_record_id else None,
+    }
+
+
+def consolidate_school_profiles(
+    session: Session,
+    facility_id: uuid.UUID,
+    *,
+    canonical_school_id: str | None = None,
+) -> dict[str, dict[str, dict[str, Any]]]:
+    """Fill the canonical school profile from duplicate profiles after a merge.
+
+    A merged facility can carry both the six-digit BEIS profile and a prefixed
+    seven-digit profile. The six-digit profile remains the primary one; missing
+    values are copied from the duplicate without replacing established values
+    or changing the primary profile's source record. The returned audit maps
+    the canonical profile id to the fields that changed and their previous
+    values so an undo can reverse the backfill.
+    """
+
+    profiles = list(
+        session.scalars(
+            select(SchoolProfile)
+            .where(SchoolProfile.facility_id == facility_id)
+            .order_by(SchoolProfile.valid_from.desc().nullslast(), SchoolProfile.id)
+        ).all()
+    )
+    if len(profiles) < 2:
+        return {}
+    canonical = next(
+        (profile for profile in profiles if profile.deped_school_id == canonical_school_id),
+        None,
+    )
+    if canonical is None:
+        canonical = min(
+            profiles,
+            key=lambda profile: (len(profile.deped_school_id or ""), str(profile.id)),
+        )
+    changes: dict[str, dict[str, dict[str, Any]]] = {}
+    for profile in profiles:
+        if profile.id == canonical.id:
+            continue
+        for attribute_name in _SCHOOL_PROFILE_FIELDS:
+            old_value = getattr(canonical, attribute_name)
+            new_value = getattr(profile, attribute_name)
+            if old_value is None and new_value is not None:
+                changes.setdefault(str(canonical.id), {})[attribute_name] = {
+                    "old": old_value,
+                    "new": new_value,
+                }
+                setattr(canonical, attribute_name, new_value)
+    return changes
+
+
+def merge_deped_prefixed_duplicates(
+    session: Session,
+    *,
+    dry_run: bool = True,
+    limit: int = 100,
+    prefixed_school_ids: set[str] | None = None,
+    affected_facility_ids: set[uuid.UUID] | None = None,
+) -> dict[str, Any]:
+    """Merge EBEIS prefixed-ID twin records into the six-digit canonical school.
+
+    The EBEIS result set can emit one school twice: once with the official
+    six-digit BEIS ID and once with a one-digit level/school-type prefix (``1``,
+    ``2`` or ``3``) in front of that same ID. The prefix is not a separate
+    school. Each verified pair gets an explicit accepted match candidate and the
+    standard audited merge, so both source records remain linked to the survivor
+    and the prefixed twin is retained as a ``merged`` tombstone.
+    """
+
+    profiles = list(
+        session.scalars(
+            select(SchoolProfile).where(
+                SchoolProfile.deped_school_id.is_not(None),
+                func.length(SchoolProfile.deped_school_id).in_((6, 7)),
+            )
+        ).all()
+    )
+    by_id: dict[str, list[SchoolProfile]] = defaultdict(list)
+    for profile in profiles:
+        if profile.deped_school_id:
+            by_id[profile.deped_school_id].append(profile)
+
+    pairs: list[tuple[SchoolProfile, SchoolProfile]] = []
+    skipped_ambiguous_base = 0
+    for profile in profiles:
+        school_id = profile.deped_school_id or ""
+        base_id = deped_prefixed_school_id(school_id)
+        if not base_id:
+            continue
+        if prefixed_school_ids is not None and school_id not in prefixed_school_ids:
+            continue
+        base_profiles = by_id.get(base_id, [])
+        if len(base_profiles) != 1:
+            skipped_ambiguous_base += 1
+            continue
+        base_profile = base_profiles[0]
+        if base_profile.facility_id == profile.facility_id:
+            continue
+        pairs.append((profile, base_profile))
+    pairs.sort(key=lambda pair: (pair[0].deped_school_id or "", str(pair[0].facility_id)))
+
+    stats: dict[str, Any] = {
+        "prefixed_profiles": sum(
+            1 for profile in profiles if deped_prefixed_school_id(profile.deped_school_id)
+        ),
+        "pairs_considered": 0,
+        "would_merge": 0,
+        "merged": 0,
+        "skipped_ambiguous_base": skipped_ambiguous_base,
+        "skipped_missing_facility": 0,
+        "skipped_not_public": 0,
+        "skipped_name_mismatch": 0,
+        "skipped_no_source_record": 0,
+        "skipped_existing_candidate": 0,
+        "skipped_error": 0,
+        "errors": [],
+        "examples": [],
+        "dry_run": dry_run,
+        "algorithm_version": ALGORITHM_VERSION,
+    }
+
+    facility_ids = {profile.facility_id for pair in pairs for profile in pair}
+    facilities = (
+        {
+            facility.id: facility
+            for facility in session.scalars(select(Facility).where(Facility.id.in_(facility_ids)))
+        }
+        if facility_ids
+        else {}
+    )
+
+    verified: list[tuple[SchoolProfile, SchoolProfile, Facility, Facility]] = []
+    for source_profile, target_profile in pairs:
+        source = facilities.get(source_profile.facility_id)
+        target = facilities.get(target_profile.facility_id)
+        if source is None or target is None:
+            stats["skipped_missing_facility"] += 1
+            continue
+        if (
+            source.facility_type != "school"
+            or target.facility_type != "school"
+            or source.publication_status != "public"
+            or target.publication_status != "public"
+            or source.record_status == "merged"
+        ):
+            stats["skipped_not_public"] += 1
+            continue
+        source_name = school_name_key(source.display_name)
+        target_name = school_name_key(target.display_name)
+        if not source_name or source_name != target_name:
+            stats["skipped_name_mismatch"] += 1
+            continue
+        verified.append((source_profile, target_profile, source, target))
+
+    source_facility_ids = {source.id for _sp, _tp, source, _target in verified}
+    link_rows = (
+        session.execute(
+            select(FacilitySourceLink, SourceRecord, Release.retrieved_at)
+            .join(SourceRecord, SourceRecord.id == FacilitySourceLink.source_record_id)
+            .join(Release, Release.id == SourceRecord.release_id)
+            .join(Dataset, Dataset.id == Release.dataset_id)
+            .where(
+                FacilitySourceLink.facility_id.in_(source_facility_ids),
+                Dataset.slug.like("deped-ebeis-masterlist-%"),
+            )
+            .order_by(FacilitySourceLink.facility_id, Release.retrieved_at.desc())
+        ).all()
+        if source_facility_ids
+        else []
+    )
+    source_record_by_facility: dict[uuid.UUID, SourceRecord] = {}
+    for link, record, _retrieved_at in link_rows:
+        source_record_by_facility.setdefault(link.facility_id, record)
+
+    reviewer = "system:deped-prefixed-id"
+    note = (
+        "EBEIS seven-digit prefixed school ID resolves to the official six-digit "
+        "BEIS ID with the same normalized school name."
+    )
+    for source_profile, target_profile, source, target in verified:
+        record = source_record_by_facility.get(source.id)
+        if record is None:
+            stats["skipped_no_source_record"] += 1
+            continue
+        stats["pairs_considered"] += 1
+        key = candidate_key(
+            record.id,
+            target.id,
+            method=DEPED_PREFIXED_MATCH_METHOD,
+        )
+        existing = session.scalars(
+            select(MatchCandidate).where(MatchCandidate.candidate_key == key)
+        ).first()
+        if existing is not None:
+            stats["skipped_existing_candidate"] += 1
+            continue
+        if dry_run:
+            stats["would_merge"] += 1
+            if len(stats["examples"]) < 20:
+                stats["examples"].append(
+                    {
+                        "prefixed_school_id": source_profile.deped_school_id,
+                        "canonical_school_id": target_profile.deped_school_id,
+                        "source_facility_id": str(source.id),
+                        "target_facility_id": str(target.id),
+                        "source_name": source.display_name,
+                        "target_name": target.display_name,
+                    }
+                )
+            continue
+        if stats["merged"] >= limit:
+            break
+        evidence = {
+            "reason": note,
+            "algorithm": DEPED_PREFIXED_MATCH_METHOD,
+            "algorithm_version": ALGORITHM_VERSION,
+            "prefixed_school_id": source_profile.deped_school_id,
+            "canonical_school_id": target_profile.deped_school_id,
+            "normalized_name": school_name_key(source.display_name),
+            "source_agency_code": "deped",
+            "candidate_agency_code": "deped",
+            "name_match": True,
+            "source_profile_snapshot": _school_profile_snapshot(source_profile),
+            "candidate_profile_snapshot": _school_profile_snapshot(target_profile),
+            "source_facility_snapshot": _facility_snapshot(source),
+            "candidate_facility_snapshot": _facility_snapshot(target),
+        }
+        now = datetime.now(UTC)
+        candidate = MatchCandidate(
+            candidate_key=key,
+            source_record_id=record.id,
+            source_facility_id=source.id,
+            candidate_facility_id=target.id,
+            source_agency_code="deped",
+            candidate_agency_code="deped",
+            match_method=DEPED_PREFIXED_MATCH_METHOD,
+            algorithm_version=ALGORITHM_VERSION,
+            match_confidence=Decimal("0.999"),
+            match_status=ACCEPTED,
+            reviewer=reviewer,
+            reviewed_at=now,
+            review_note=note,
+            evidence=evidence,
+        )
+        session.add(candidate)
+        session.flush()
+        try:
+            merge_match_candidate(session, candidate.id, reviewer=reviewer, note=note)
+            backfill = consolidate_school_profiles(
+                session,
+                target.id,
+                canonical_school_id=target_profile.deped_school_id,
+            )
+            if backfill:
+                resolution = dict(candidate.resolution or {})
+                resolution["profile_backfill"] = backfill
+                candidate.resolution = resolution
+            stats["merged"] += 1
+            if affected_facility_ids is not None:
+                affected_facility_ids.add(target.id)
+            if len(stats["examples"]) < 20:
+                stats["examples"].append(
+                    {
+                        "candidate_id": str(candidate.id),
+                        "prefixed_school_id": source_profile.deped_school_id,
+                        "canonical_school_id": target_profile.deped_school_id,
+                        "source_facility_id": str(source.id),
+                        "target_facility_id": str(target.id),
+                    }
+                )
+        except MatchingError as exc:
+            stats["skipped_error"] += 1
+            if len(stats["errors"]) < 20:
+                stats["errors"].append(f"{candidate.id}: {exc}")
+    return stats
+
+
 def undo_match_merge(
     session: Session,
     candidate_id: uuid.UUID,
@@ -928,6 +1252,24 @@ def undo_match_merge(
 
     _verify_moved_rows(session, target.id, moved_ids)
 
+    # A prefixed-ID merge may have backfilled missing values onto the canonical
+    # profile from the duplicate. Reverse only the fields the merge itself
+    # changed, and refuse if a later edit has already replaced that value.
+    profile_backfill = resolution.get("profile_backfill") or {}
+    restored_backfill: dict[str, list[str]] = {}
+    for raw_profile_id, fields in profile_backfill.items():
+        profile = session.get(SchoolProfile, uuid.UUID(raw_profile_id))
+        if profile is None:
+            raise MatchingError("A school profile changed after the merge; refusing to restore.")
+        for attribute_name, values in fields.items():
+            current_value = getattr(profile, attribute_name)
+            if current_value != values.get("new"):
+                raise MatchingError(
+                    "A school profile changed after the merge; refusing to restore."
+                )
+            setattr(profile, attribute_name, values.get("old"))
+            restored_backfill.setdefault(raw_profile_id, []).append(attribute_name)
+
     now = datetime.now(UTC)
     source_before = _facility_snapshot(source)
     target_before = _facility_snapshot(target)
@@ -939,29 +1281,111 @@ def undo_match_merge(
     restored["facility_source_links"] = len(moved_ids.get("facility_source_links", []))
 
     location_state = resolution.get("location_state_before") or {}
+    promotion = resolution.get("location_promotion") or {}
+    promoted: FacilityLocation | None = None
+    previous: FacilityLocation | None = None
+    if promotion:
+        promoted = session.get(FacilityLocation, uuid.UUID(promotion["promoted_location_id"]))
+        previous = (
+            session.get(FacilityLocation, uuid.UUID(promotion["current_location_id"]))
+            if promotion.get("current_location_id")
+            else None
+        )
+        if promoted is None or promoted.facility_id != target.id or not promoted.is_current:
+            raise MatchingError(
+                "The promoted location changed after the merge; refusing to restore."
+            )
+        if previous is None or previous.facility_id != target.id:
+            raise MatchingError(
+                "The previous current location moved after the merge; refusing to restore."
+            )
+
+    moved_locations: list[tuple[str, FacilityLocation]] = []
     for raw_id in moved_ids.get("facility_locations", []):
         location = session.get(FacilityLocation, uuid.UUID(raw_id))
+        if location is None:
+            raise MatchingError("A merged location no longer exists; refusing to restore.")
         location.facility_id = source.id
-        state = location_state.get(raw_id)
-        if state:
-            location.is_current = bool(state.get("is_current"))
-            valid_to = state.get("valid_to")
-            location.valid_to = date.fromisoformat(valid_to) if valid_to else None
-    restored["facility_locations"] = len(moved_ids.get("facility_locations", []))
+        moved_locations.append((raw_id, location))
+    restored["facility_locations"] = len(moved_locations)
 
+    resolved_children, unresolved_children = _resolve_moved_children(session, moved_ids)
+    if unresolved_children:
+        raise MatchingError(
+            "The merge resolution references child rows that no longer exist; refusing to restore."
+        )
     for model in _MERGE_MODELS:
-        table = model.__tablename__
-        ids = [uuid.UUID(raw_id) for raw_id in moved_ids.get(table, [])]
-        if ids:
-            session.execute(
-                model.__table__.update()
-                .where(model.__table__.c.id.in_(ids))
-                .values(facility_id=source.id)
-            )
+        table = _audit_key(model)
+        ids = resolved_children.get(model, [])
+        for row_id in ids:
+            row = session.get(model, row_id)
+            if row is None:  # verified above, but stay defensive
+                raise MatchingError(
+                    "The merge resolution references child rows that no longer exist; "
+                    "refusing to restore."
+                )
+            row.facility_id = source.id
         restored[table] = len(ids)
-    if any(restored[model.__tablename__] for model in _MERGE_MODELS):
+
+    # Restore current-location flags in two passes. A moved source location and
+    # the survivor's previous current location can both end up current on
+    # different facilities, but updating them one at a time can transiently put
+    # two current rows on the survivor and trip the partial unique index. Close
+    # every involved row first, then apply the recorded states together.
+    final_states: dict[uuid.UUID, tuple[bool, date | None]] = {}
+    for raw_id, location in moved_locations:
+        state = location_state.get(raw_id) or {}
+        valid_to = state.get("valid_to")
+        final_states[location.id] = (
+            bool(state.get("is_current", location.is_current)),
+            date.fromisoformat(valid_to) if valid_to else None,
+        )
+    if promotion and promoted is not None and previous is not None:
+        # A promoted row that came from the source already has its pre-merge
+        # state above; only a target-owned promoted row needs the recorded
+        # pre-promotion state.
+        if promoted.id not in final_states:
+            valid_to = promotion.get("promoted_valid_to")
+            final_states[promoted.id] = (
+                bool(promotion.get("promoted_is_current")),
+                date.fromisoformat(valid_to) if valid_to else None,
+            )
+        valid_to = promotion.get("current_valid_to")
+        final_states[previous.id] = (
+            bool(promotion.get("current_is_current")),
+            date.fromisoformat(valid_to) if valid_to else None,
+        )
+        restored["location_promotion"] = 1
+    if final_states:
+        involved = list(
+            session.scalars(
+                select(FacilityLocation)
+                .where(FacilityLocation.id.in_(final_states))
+                .order_by(FacilityLocation.id)
+            ).all()
+        )
+        for location in involved:
+            location.is_current = False
         session.flush()
-        session.expire_all()
+        for location in involved:
+            is_current, valid_to = final_states[location.id]
+            location.is_current = is_current
+            location.valid_to = valid_to
+        # Refuse to create a second current location for any facility.
+        current_counts: dict[uuid.UUID, int] = defaultdict(int)
+        for location in involved:
+            if location.is_current:
+                current_counts[location.facility_id] += 1
+        duplicate = next(
+            (facility_id for facility_id, count in current_counts.items() if count > 1),
+            None,
+        )
+        if duplicate is not None:
+            raise MatchingError(
+                "Undo would leave more than one current location for a facility; "
+                "resolve the location history before retrying."
+            )
+        session.flush()
 
     source_snapshot = resolution.get("source_facility_snapshot") or {}
     source.publication_status = source_snapshot.get("publication_status", "internal")
@@ -1004,6 +1428,8 @@ def undo_match_merge(
     resolution["undone_by"] = reviewer.strip()
     resolution["undo_note"] = note
     resolution["restored_counts"] = restored
+    if restored_backfill:
+        resolution["restored_profile_backfill"] = restored_backfill
     history = list(resolution.get("undo_history") or [])
     history.append(
         {
@@ -1027,6 +1453,46 @@ def undo_match_merge(
     return candidate
 
 
+def _resolve_moved_children(
+    session: Session,
+    moved_ids: dict[str, list[str]],
+) -> tuple[dict[type, list[uuid.UUID]], list[str]]:
+    """Resolve audit keys to model classes, accepting legacy bare table names.
+
+    Earlier merges keyed the audit by ``__tablename__`` only. School, health and
+    utility profiles share the ``profiles`` table name in different schemas, so
+    a legacy key is resolved per row when more than one model matches it.
+    """
+
+    by_table: dict[str, list[type]] = defaultdict(list)
+    for model in _MERGE_MODELS:
+        by_table[model.__tablename__].append(model)
+    resolved: dict[type, list[uuid.UUID]] = defaultdict(list)
+    unresolved: list[str] = []
+    for key, raw_ids in moved_ids.items():
+        if key in {"facility_source_links", "facility_locations"}:
+            continue
+        models = [model for model in _MERGE_MODELS if _audit_key(model) == key]
+        if not models:
+            models = by_table.get(key, [])
+        if not models:
+            unresolved.extend(f"{key}:{raw_id}" for raw_id in raw_ids)
+            continue
+        remaining = [uuid.UUID(raw_id) for raw_id in raw_ids]
+        if len(models) == 1:
+            resolved[models[0]].extend(remaining)
+            continue
+        for model in models:
+            if not remaining:
+                break
+            found = set(session.scalars(select(model.id).where(model.id.in_(remaining))).all())
+            if found:
+                resolved[model].extend(found)
+                remaining = [row_id for row_id in remaining if row_id not in found]
+        unresolved.extend(f"{key}:{row_id}" for row_id in remaining)
+    return dict(resolved), unresolved
+
+
 def _verify_moved_rows(
     session: Session,
     target_id: uuid.UUID,
@@ -1036,11 +1502,15 @@ def _verify_moved_rows(
         ("facility_source_links", FacilitySourceLink),
         ("facility_locations", FacilityLocation),
     ]
-    checks.extend((model.__tablename__, model) for model in _MERGE_MODELS)
-    missing: list[str] = []
+    resolved, unresolved = _resolve_moved_children(session, moved_ids)
+    checks.extend((_audit_key(model), model) for model in _MERGE_MODELS)
+    missing: list[str] = list(unresolved)
     misplaced: list[str] = []
     for table, model in checks:
-        ids = moved_ids.get(table, [])
+        if model in _MERGE_MODELS:
+            ids = [str(row_id) for row_id in resolved.get(model, [])]
+        else:
+            ids = moved_ids.get(table, [])
         if not ids:
             continue
         parsed = [uuid.UUID(raw_id) for raw_id in ids]

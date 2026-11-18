@@ -14,8 +14,12 @@ from philfacilities_api.models import (
     FacilityContact,
     FacilityLocation,
     FacilitySourceLink,
+    HealthProfile,
+    MatchCandidate,
     Release,
+    SchoolProfile,
     SourceRecord,
+    UtilityProfile,
 )
 from sqlalchemy import select
 
@@ -254,8 +258,8 @@ def test_merge_moves_unique_contacts_and_retains_duplicate_contacts(db_session) 
         assert source_contact.facility_id == source.id
         assert duplicate_contact.facility_id == target.id
         assert unique_contact.facility_id == target.id
-        assert candidate.resolution["retained_on_source"] == {"facility_contacts": 1}
-        assert candidate.resolution["moved_counts"]["facility_contacts"] == 1
+        assert candidate.resolution["retained_on_source"] == {"core.facility_contacts": 1}
+        assert candidate.resolution["moved_counts"]["core.facility_contacts"] == 1
 
         undo_match_merge(db_session, candidate.id, reviewer="reviewer-2")
         db_session.flush()
@@ -263,6 +267,287 @@ def test_merge_moves_unique_contacts_and_retains_duplicate_contacts(db_session) 
         assert unique_contact.facility_id == source.id
         assert source_contact.facility_id == source.id
         assert duplicate_contact.facility_id == target.id
+    finally:
+        db_session.rollback()
+
+
+def test_merge_retains_duplicate_profile_code_on_the_tombstone(db_session) -> None:
+    """Two profiles for the same official code cannot both move to one facility."""
+
+    from philfacilities_ingest.matching import (
+        accept_match_candidate,
+        merge_match_candidate,
+        undo_match_merge,
+    )
+
+    try:
+        data = _fixture(db_session)
+        source = data["source"]
+        target = data["target"]
+        candidate = data["candidate"]
+        record_id = db_session.scalar(
+            select(FacilitySourceLink.source_record_id).where(
+                FacilitySourceLink.facility_id == source.id
+            )
+        )
+        source_profile = SchoolProfile(
+            facility_id=source.id,
+            deped_school_id="123456",
+            source_record_id=record_id,
+            sector="public",
+        )
+        target_profile = SchoolProfile(
+            facility_id=target.id,
+            deped_school_id="123456",
+            sector="private",
+        )
+        db_session.add_all([source_profile, target_profile])
+        db_session.flush()
+
+        accept_match_candidate(db_session, candidate.id, reviewer="reviewer-1")
+        merge_match_candidate(db_session, candidate.id, reviewer="reviewer-1")
+        db_session.flush()
+
+        assert source_profile.facility_id == source.id
+        assert target_profile.facility_id == target.id
+        assert candidate.resolution["retained_on_source"] == {"school.profiles": 1}
+        assert candidate.resolution["moved_counts"]["school.profiles"] == 0
+
+        undo_match_merge(db_session, candidate.id, reviewer="reviewer-2")
+        db_session.flush()
+
+        assert source_profile.facility_id == source.id
+        assert target_profile.facility_id == target.id
+    finally:
+        db_session.rollback()
+
+
+def test_merge_audits_profile_tables_that_share_a_name(db_session) -> None:
+    """School, health and utility profiles all live in a ``profiles`` table.
+
+    The audit must key them by schema so one model's empty move list cannot
+    overwrite another's and leave rows unrestorable on undo.
+    """
+
+    from philfacilities_ingest.matching import (
+        accept_match_candidate,
+        merge_match_candidate,
+        undo_match_merge,
+    )
+
+    try:
+        data = _fixture(db_session)
+        source = data["source"]
+        target = data["target"]
+        candidate = data["candidate"]
+        health_profile = HealthProfile(
+            facility_id=source.id,
+            doh_facility_id="DOH-TEST-1",
+            bed_capacity=10,
+        )
+        utility_profile = UtilityProfile(
+            facility_id=source.id,
+            doe_facility_code="DOE-TEST-1",
+            resource_type="solar",
+        )
+        db_session.add_all([health_profile, utility_profile])
+        db_session.flush()
+
+        accept_match_candidate(db_session, candidate.id, reviewer="reviewer-1")
+        merge_match_candidate(db_session, candidate.id, reviewer="reviewer-1")
+        db_session.flush()
+
+        counts = candidate.resolution["moved_counts"]
+        assert counts["health.profiles"] == 1
+        assert counts["utility.profiles"] == 1
+        assert health_profile.facility_id == target.id
+        assert utility_profile.facility_id == target.id
+
+        undo_match_merge(db_session, candidate.id, reviewer="reviewer-2")
+        db_session.flush()
+
+        assert health_profile.facility_id == source.id
+        assert utility_profile.facility_id == source.id
+    finally:
+        db_session.rollback()
+
+
+def _prefixed_school_fixture(session) -> dict[str, object]:
+    suffix = uuid.uuid4().hex[:10]
+    base_id = f"9{uuid.uuid4().int % 100000:05d}"
+    prefixed_id = f"1{base_id}"
+    agency = Agency(name=f"EBEIS merge test {suffix}", short_code=f"EB-{suffix}")
+    session.add(agency)
+    session.flush()
+    dataset = Dataset(
+        agency_id=agency.id,
+        slug=f"deped-ebeis-masterlist-test-{suffix}",
+        name="Synthetic EBEIS merge test",
+        publication_status="public",
+        redistribution_status="publicly_available_verified",
+        coverage_scope="selected_lgu",
+    )
+    session.add(dataset)
+    session.flush()
+    release = Release(
+        dataset_id=dataset.id,
+        source_release_label=f"EBEIS-MERGE-TEST-{suffix}",
+        retrieved_at=datetime.now(UTC),
+        sha256=uuid.uuid4().hex * 2,
+        ingestion_status="published",
+        publication_status="public",
+        terms_review_status="approved_with_attribution",
+    )
+    session.add(release)
+    session.flush()
+    record = SourceRecord(
+        release_id=release.id,
+        source_record_key=f"{prefixed_id}:row:2-{suffix}",
+        raw_payload={"School ID": prefixed_id, "School Name": "Saint Test Academy"},
+        raw_record_hash=uuid.uuid4().hex * 2,
+        validation_status="valid",
+    )
+    session.add(record)
+    session.flush()
+
+    source = Facility(
+        slug=f"prefixed-test-academy-{suffix}",
+        display_name="Saint Test Academy",
+        official_name="Saint Test Academy",
+        facility_type="school",
+        facility_subtype="OTHER_SCHOOL",
+        ownership="unknown",
+        record_status="active_in_registry",
+        publication_status="public",
+        is_synthetic=True,
+    )
+    target = Facility(
+        slug=f"canonical-test-academy-{suffix}",
+        display_name="St. Test Academy, Inc.",
+        official_name="St. Test Academy, Inc.",
+        facility_type="school",
+        facility_subtype="OTHER_SCHOOL",
+        ownership="unknown",
+        record_status="active_in_registry",
+        publication_status="public",
+        is_synthetic=True,
+    )
+    session.add_all([source, target])
+    session.flush()
+    session.add(
+        FacilitySourceLink(
+            facility_id=source.id,
+            source_record_id=record.id,
+            source_entity_id=prefixed_id,
+            match_method="new_canonical_record",
+            match_status="automatic_high_confidence",
+            match_confidence=1,
+        )
+    )
+    source_location = FacilityLocation(
+        facility_id=source.id,
+        precision="unknown",
+        address_text="Source address",
+        review_status="source_supplied",
+        is_current=True,
+    )
+    target_location = FacilityLocation(
+        facility_id=target.id,
+        precision="unknown",
+        address_text="Target address",
+        review_status="source_supplied",
+        is_current=True,
+    )
+    session.add_all([source_location, target_location])
+    source_profile = SchoolProfile(
+        facility_id=source.id,
+        deped_school_id=prefixed_id,
+        sector="private",
+        offers_jhs=True,
+        source_record_id=record.id,
+    )
+    target_profile = SchoolProfile(
+        facility_id=target.id,
+        deped_school_id=base_id,
+        division="Test City",
+        offers_es=True,
+    )
+    session.add_all([source_profile, target_profile])
+    session.flush()
+    return {
+        "agency": agency,
+        "dataset": dataset,
+        "release": release,
+        "record": record,
+        "source": source,
+        "target": target,
+        "source_profile": source_profile,
+        "target_profile": target_profile,
+        "base_id": base_id,
+        "prefixed_id": prefixed_id,
+    }
+
+
+def test_deped_prefixed_school_id_merge_is_audited_and_reversible(db_session) -> None:
+    from philfacilities_ingest.matching import (
+        DEPED_PREFIXED_MATCH_METHOD,
+        merge_deped_prefixed_duplicates,
+        undo_match_merge,
+    )
+
+    try:
+        data = _prefixed_school_fixture(db_session)
+        source = data["source"]
+        target = data["target"]
+        source_profile = data["source_profile"]
+        target_profile = data["target_profile"]
+        base_id = data["base_id"]
+        prefixed_id = data["prefixed_id"]
+
+        stats = merge_deped_prefixed_duplicates(
+            db_session,
+            dry_run=False,
+            prefixed_school_ids={prefixed_id},
+        )
+        db_session.flush()
+
+        assert stats["merged"] == 1
+        assert source.record_status == "merged"
+        assert source.publication_status == "internal"
+        assert source_profile.facility_id == target.id
+        assert target_profile.facility_id == target.id
+        # Missing canonical values are backfilled from the duplicate, while an
+        # established value is never replaced.
+        assert target_profile.sector == "private"
+        assert target_profile.division == "Test City"
+
+        candidate = db_session.scalars(
+            select(MatchCandidate).where(
+                MatchCandidate.source_facility_id == source.id,
+                MatchCandidate.candidate_facility_id == target.id,
+            )
+        ).one()
+        assert candidate.match_method == DEPED_PREFIXED_MATCH_METHOD
+        assert candidate.match_status == "merged"
+        assert candidate.resolution["profile_backfill"]
+        assert candidate.resolution["moved_counts"]["school.profiles"] == 1
+        assert candidate.evidence["prefixed_school_id"] == prefixed_id
+        assert candidate.evidence["canonical_school_id"] == base_id
+
+        undone = undo_match_merge(
+            db_session,
+            candidate.id,
+            reviewer="reviewer-2",
+            note="undo prefixed-id merge",
+        )
+        db_session.flush()
+
+        assert undone.match_status == "accepted"
+        assert source.record_status == "active_in_registry"
+        assert source.publication_status == "public"
+        assert source_profile.facility_id == source.id
+        assert target_profile.sector is None
+        assert target_profile.division == "Test City"
     finally:
         db_session.rollback()
 

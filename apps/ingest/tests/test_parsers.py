@@ -1945,6 +1945,63 @@ def test_ebeis_withholds_head_names_and_maps_grade_bands():
     assert "JUAN DELA CRUZ" not in repr(first)
 
 
+def test_ebeis_prefixed_school_ids_use_the_six_digit_beis_identity():
+    html = """
+    <table>
+      <tr><th>School ID</th><th>School Name</th><th>Head / Position</th>
+          <th>Address</th><th>School Type</th></tr>
+      <tr><td>403263</td><td>St. Anne College Lucena, Inc.</td>
+          <td>JUAN DELA CRUZ - Principal</td>
+          <td>Diversion Road, Brgy. Gulang-gulang, Lucena City</td>
+          <td>Kinder, Grade 1-6, Grade 7-10 &amp; Grade 11-12</td></tr>
+      <tr><td>1403263</td><td>Saint Anne College Lucena</td>
+          <td>JUAN DELA CRUZ - Principal</td>
+          <td>Diversion Road, Brgy. Gulang-gulang Lucena City</td>
+          <td>Kinder, Grade 1-6, Grade 7-10 &amp; Grade 11-12</td></tr>
+      <tr><td>777777</td><td>Alpha Elementary School</td>
+          <td>MARIA SANTOS - Head Teacher</td>
+          <td>Alpha Street</td><td>Kinder &amp; Grade 1-6</td></tr>
+      <tr><td>1777777</td><td>Beta Elementary School</td>
+          <td>MARIA SANTOS - Head Teacher</td>
+          <td>Beta Street</td><td>Kinder &amp; Grade 1-6</td></tr>
+    </table>
+    """
+    spec = _spec(
+        agency="deped",
+        slug="deped-ebeis-masterlist-ncr",
+        filename="ebeis.html",
+        content=html.encode("utf-8"),
+    )
+    adapter = DepEdEBEISAdapter(spec)
+    parsed = adapter.parse(spec)
+    validation = adapter.validate(parsed)
+    alias_issue = next(
+        issue for issue in validation.issues if issue.code == "prefixed_school_id_alias"
+    )
+    assert alias_issue.details["count"] == 1
+    assert validation.rejected_rows == 0
+
+    candidates = adapter.normalize(parsed)
+    by_key = {candidate.source_record_key: candidate for candidate in candidates}
+    canonical = by_key["403263:row:2"]
+    alias = by_key["1403263:row:3"]
+    assert canonical.source_entity_id == "403263"
+    assert canonical.school.deped_school_id == "403263"
+    assert canonical.enrichment_only is False
+    assert alias.source_entity_id == "403263"
+    assert alias.school.deped_school_id == "403263"
+    assert alias.enrichment_only is True
+    # The canonical row is applied first even when the prefixed row appears
+    # before it in the acquisition table.
+    assert candidates.index(canonical) < candidates.index(alias)
+
+    # A prefixed ID whose base row has a different name is not folded.
+    different = by_key["1777777:row:5"]
+    assert different.source_entity_id == "1777777"
+    assert different.school.deped_school_id == "1777777"
+    assert different.enrichment_only is False
+
+
 def test_ebeis_school_levels_does_not_guess():
     assert school_levels("Kinder, Grade 1-6") == (True, None, None)
     assert school_levels("Grade 7-10 & Grade 11-12") == (None, True, True)

@@ -147,6 +147,17 @@ For every dataset and release, record at least:
 - redistribution state and publication gate;
 - reviewer, decision date, next review date, and takedown route.
 
+### Facility identity
+
+- One public facility record represents one real-world facility. Source rows remain attached as evidence; they are not deleted when records are aggregated.
+- Records are aggregated only on independent evidence: a shared official identifier, or a precise location bridge plus a consistent name and place. A similar name alone never merges two facilities, because two places can share a name.
+- Conflicting official identifiers or contradictory places block an automatic merge; the pair stays as a pending candidate for review.
+- A retired duplicate is an internal `merged` tombstone, not a public record. Its links, locations, profiles, observations, assertions, and history move to the survivor, and change events record the merge.
+- The surviving record is chosen deterministically: official source first, then the most official identifiers, then the most source links, then the oldest record.
+- The survivor keeps the most precise documented location. The promoted point keeps its recorded precision and method; the previous current location stays as history rather than being deleted.
+- A duplicate profile only fills a survivor's missing values. The backfill is recorded so undo can reverse it, and undo refuses when a later edit changed the value.
+- Every automatic merge is reversible with `match-candidates-undo-merge`. A merged facility's slug remains an alias to the survivor, so previously published links do not break.
+
 [`DATA-LICENSES.md`](../DATA-LICENSES.md) is the rights register. [Sources](sources.md) records the acquisition evidence. The enforced code gate is authoritative for public exposure.
 
 ## 8. Attribution and provenance

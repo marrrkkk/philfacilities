@@ -16,6 +16,7 @@ from .models import (
     AttributeAssertion,
     Dataset,
     Facility,
+    FacilityChangeEvent,
     FacilityFunction,
     FacilityLocation,
     FacilityRelationship,
@@ -124,6 +125,44 @@ def facility_is_public(session: Session, facility: Facility) -> bool:
         )
         is not None
     )
+
+
+def resolve_merged_facility(session: Session, facility: Facility) -> Facility:
+    """Follow a merged tombstone to the facility that now holds its evidence.
+
+    A merge retires the duplicate as an internal tombstone but keeps its slug,
+    so an old link, export, or bookmark must still resolve. The surviving
+    facility is recorded on the ``facility_merged_into`` change event. The walk
+    is bounded and stops when a facility is not currently merged, which also
+    makes an undone merge resolve to the restored record.
+    """
+
+    current = facility
+    seen: set[uuid.UUID] = set()
+    for _ in range(8):
+        if current.record_status != "merged" or current.id in seen:
+            return current
+        seen.add(current.id)
+        event = session.scalars(
+            select(FacilityChangeEvent)
+            .where(
+                FacilityChangeEvent.facility_id == current.id,
+                FacilityChangeEvent.change_type == "facility_merged_into",
+            )
+            .order_by(FacilityChangeEvent.changed_at.desc())
+            .limit(1)
+        ).first()
+        target_id = (event.new_value or {}).get("target_facility_id") if event else None
+        if not target_id:
+            return current
+        try:
+            target = session.get(Facility, uuid.UUID(str(target_id)))
+        except ValueError:
+            return current
+        if target is None:
+            return current
+        current = target
+    return current
 
 
 def load_current_locations(
@@ -614,7 +653,15 @@ def build_facility_detail(
                 SchoolProfile.facility_id == facility.id,
                 public_source_record_condition(SchoolProfile.source_record_id),
             )
-            .order_by(SchoolProfile.valid_from.desc().nullslast())
+            # A merged facility can retain both the official six-digit BEIS
+            # profile and a prefixed seven-digit duplicate profile. Prefer the
+            # shorter (official) identifier deterministically, then the most
+            # recent validity period.
+            .order_by(
+                func.length(SchoolProfile.deped_school_id).asc().nullslast(),
+                SchoolProfile.deped_school_id.asc().nullslast(),
+                SchoolProfile.valid_from.desc().nullslast(),
+            )
         ).first()
         if profile:
             latest_year = session.scalar(

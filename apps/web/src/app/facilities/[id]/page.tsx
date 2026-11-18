@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { AlertTriangle, ExternalLink, MapPin } from "lucide-react";
 
 import { Breadcrumbs } from "@/components/breadcrumbs";
@@ -103,6 +103,13 @@ export default async function FacilityPage({ params }: { params: Params }) {
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) notFound();
     throw error;
+  }
+
+  // The API resolves a merged duplicate's old slug to the surviving facility.
+  // Send the browser to the canonical URL so the address bar and shared links
+  // match the facility that now holds the evidence.
+  if (id !== facility.slug && id !== facility.id) {
+    permanentRedirect(`/facilities/${facility.slug}`);
   }
 
   const [typed, changes, assertions] = await Promise.all([

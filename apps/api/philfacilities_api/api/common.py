@@ -10,7 +10,7 @@ from ..errors import ApiError
 from ..models import Facility
 from ..pagination import decode_cursor, encode_cursor
 from ..schemas import FacilityListResponse
-from ..services import build_summaries, facility_is_public
+from ..services import build_summaries, facility_is_public, resolve_merged_facility
 
 
 def get_public_facility(db: Session, identifier: str) -> Facility:
@@ -19,6 +19,10 @@ def get_public_facility(db: Session, identifier: str) -> Facility:
         facility = db.get(Facility, uuid.UUID(identifier))
     if facility is None:
         facility = db.scalars(select(Facility).where(Facility.slug == identifier)).first()
+    if facility is not None:
+        # A merged duplicate keeps its slug as an alias; follow it so old links
+        # and exports keep resolving to the facility that holds the evidence.
+        facility = resolve_merged_facility(db, facility)
     if facility is None or not facility_is_public(db, facility):
         raise ApiError(404, "facility_not_found", "No published facility exists with that ID.")
     return facility

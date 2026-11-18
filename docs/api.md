@@ -70,7 +70,7 @@ GET /v1/facilities/{facility_id}/history
 GET /v1/facilities/{facility_id}/export.csv   (not in OpenAPI)
 ```
 
-`{facility_id}` accepts a UUID or a public slug. Detail endpoints return `404 facility_not_found` for a non-public or unknown facility.
+`{facility_id}` accepts a UUID or a public slug. A merged facility's slug is an alias: it resolves to the surviving facility so old links keep working. Detail endpoints return `404 facility_not_found` for a non-public or unknown facility.
 
 `/v1/facilities/map` is the browser map's viewport endpoint. It returns only the fields needed to draw and label a marker: `id`, `slug`, `name`, `facility_type`, `inclusion_class`, `precision`, `latitude`, and `longitude`. While the viewport contains at most 500 published facilities it returns `mode=points`; above that threshold it returns `mode=clusters` with grid-cell count circles, average coordinates, and a human-readable label. The viewport is never rejected for being wide: a national or multi-region view returns a bounded set of large count circles rather than failing. `total` is the number of mapped records represented by the response. Use `/v1/facilities/within` only when full `FacilitySummary` rows are required; it keeps the older 25°² viewport limit.
 
