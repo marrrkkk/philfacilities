@@ -266,7 +266,6 @@ class DepEdMasterlistAdapter:
                         school_management=clean_text(
                             first_present(payload, ["school_management", "management"])
                         ),
-                        annex_status=clean_text(first_present(payload, ["annex_status", "annex"])),
                         offers_es=parse_bool(first_present(payload, ["offers_es", "elementary"])),
                         offers_jhs=parse_bool(
                             first_present(payload, ["offers_jhs", "junior_high_school"])

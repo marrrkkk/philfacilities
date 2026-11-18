@@ -41,6 +41,8 @@ discover → acquire → preserve → parse → validate → normalize
 | `pipeline/staging.py` | Source-record staging and row-count anomaly checks |
 | `pipeline/canonical.py` | Canonical facility writes, source links, locations, assertions, quality issues |
 | `pipeline/geography.py` | PSGC releases and administrative units |
+| `osm_boundaries.py` | Preserve OSM administrative boundary polygons and resolve their `ref`/name to the current PSGC release |
+| `psgc_spatial_fill.py` | Point-in-polygon PSGC fill/refinement for coordinate-bearing current locations |
 | `pipeline/stats.py` | Population observations |
 | `pipeline/runner.py` | The single facility-release orchestration path |
 | `validators.py` | Shared coordinate, PSGC-shape, required-field, duplicate-key checks |
@@ -79,6 +81,9 @@ uv run philfacilities-ingest source run deped-ebeis --region ncr
 # Fresh reachability evidence and rebuild pack
 uv run philfacilities-ingest probe-sources
 uv run philfacilities-ingest fill-locations-from-osm --apply --report var/reports/rebuild/osm-location-fills.json
+uv run philfacilities-ingest fill-location-psgc --apply --report var/reports/rebuild/psgc-location-fills.json
+uv run philfacilities-ingest import-osm-boundaries --apply --report var/reports/rebuild/osm-boundaries.json
+uv run philfacilities-ingest fill-location-psgc-from-map --prefer-map --apply --report var/reports/rebuild/map-psgc-location-fills.json
 uv run philfacilities-ingest rebuild-report
 
 # Validate without canonical writes
@@ -164,6 +169,12 @@ A source row that publishes an address or PSGC code but no coordinate is stored 
 
 When a facility has no current point, `fill-locations-from-osm` may add a deterministic OSM gap-fill: exact normalized name plus the same city/municipality, a unique OSM candidate, and a point inside the Philippine plausibility box. The accepted point is stored with `precision=map_geocoded`, `method=openstreetmap_match`, `review_status=community_fallback`, the OSM id/snapshot and ODbL attribution. It never overwrites an official coordinate, and ambiguous candidates remain unlocated. The fill report records matched, ambiguous and unmatched counts.
 
+`fill-location-psgc` resolves a missing current-location PSGC code from the location's own linked source payload, then from other linked records. It accepts an exact code from the current release, the release's `correspondence_code` for a legacy 9-digit code, or an exact normalized administrative-name hierarchy. Name matches require a unique candidate; a same-level conflict stays unresolved. A stale region or province label does not invalidate a deeper city/barangay code after a PSGC reorganization, and an independent city wins over its geographic province; a conflicting city-level name drops back to the city rather than guessing the barangay. A non-null `FacilityLocation.psgc_code` is never overwritten. Each accepted value is written with a source-linked `AttributeAssertion` (`attribute_name=psgc_code`, `review_status=derived`, `transformation_version=psgc-resolution-v1`) and the command is idempotent. Without `--apply` it is a dry run; `--report` writes the per-location evidence and method counts to JSON.
+
+`import-osm-boundaries` extracts administrative boundary polygons from the same preserved Geofabrik PBF snapshot used for the OSM facility extract. The filtered Parquet artifact and its JSON sidecar (source URL, SHA-256, retrieval time, parser version, counts) are the reproducible release; `geo.osm_admin_boundaries` is derived from it. Boundaries resolve by an exact current PSGC `ref`, a legacy `correspondence_code`, or an exact normalized name under a spatially containing parent. Unresolved, ambiguous or level-incompatible boundaries keep a null `psgc_code` and are not used for facility resolution.
+
+`fill-location-psgc-from-map` intersects coordinate-bearing current locations with the resolved boundary layer. It takes the deepest unambiguous containing unit and verifies that every other containing boundary is its ancestor; inconsistent overlaps are skipped. A null code is filled. `--refine` upgrades a non-null code only when the map unit is a descendant of the current code, so a source municipality can become its barangay but a same-level or different-branch value is never replaced. `--prefer-map` makes the map point authoritative for the administrative location: it refines as above and also replaces same-level or different-branch source codes, including a source code that is absent from the current geography release. The original source claim remains in its source-linked `AttributeAssertion`; the override only changes which claim the location uses. A map result that is less specific than the source code (`current_more_specific`) is not downgraded, and points with no deterministic containing unit, inconsistent overlaps or a missing source record are left unchanged. Every write is a source-linked `AttributeAssertion` with `transformation_version=psgc-spatial-v1` and `review_status=derived`; without `--apply` the command is a dry run and reruns are idempotent.
+
 ### Release acceptance floor
 
 A release-level policy catches broad schema drift that row-level checks miss. The defaults are `minimum_acceptance_rate = 0.90` and `minimum_acceptance_rows = 20`:
@@ -219,6 +230,19 @@ Fusion is fully automatic; there is no review queue or review command. `fusion-r
 
 `auto-merge-duplicates` is narrower: exact normalized name + compatible type, plus either exact address in the same PSGC (`confidence >= 0.900`) or an exact-name geo match at `<= 25 m` with official-side evidence. It is a dry run unless `--apply` is passed; 25–50 m matches remain pending.
 
+### Enrichment-only releases
+
+An adapter may set `FacilityCandidate.enrichment_only=True` when its rows add evidence to an existing facility rather than identify it. The pipeline then:
+
+- matches by the adapter's stable agency entity ID (`source_entity_id`), never by name;
+- may also match a health row by an exact DOH facility code already stored on another agency's health profile, so a second official health source links to the established facility instead of creating a duplicate; the link is recorded as `exact_doh_facility_code` with the matched code in its evidence;
+- records source links, attribute assertions, release snapshots, and change events as usual;
+- fills canonical `ownership`, `ownership_type`, `inclusion_class`, `facility_subtype`, and similar fields only when the current value is null/empty/`unknown`/`UNKNOWN`/`DISCOVERY_CANDIDATE`;
+- never updates `display_name`;
+- creates a missing school, health, or utility profile, but fills only missing or placeholder profile attributes and never changes an existing profile's `source_record_id`. A utility profile is keyed by facility and DOE facility code, so replaying the same release updates the same row.
+
+The DepEd SY 2020-2021 Masterlist uses this mode to add sector evidence to 60,924 exact BEIS IDs without creating or renaming facilities. The DOH National Health Facility Registry uses the same mode for 29,779 existing DOH codes and creates new official facilities for its 15,020 unmatched codes. A contradictory non-placeholder value cannot downgrade an established classification. The NHFR load does not auto-merge by name or barangay; an official row without a matching DOH code becomes a new facility, and any same-name collision stays available for the separate match-candidate review workflow.
+
 ## 10. Idempotency and failure behaviour
 
 | Situation | Result |
@@ -234,7 +258,10 @@ Fusion is fully automatic; there is no review queue or review command. `fusion-r
 | Second worker for the same dataset | Fails fast with `IngestionLockError`; retry after the first run finishes |
 | Killed run | Resumes the same release on retry; the advisory lock is released with the connection |
 | `--reprocess` | Rebuilds derived rows from the preserved artifact; does not duplicate unchanged links |
+| `--force-reapply` | Reapplies every parsed row even when its raw payload is unchanged; implies `--reprocess` |
 | `source replay` | Verifies the preserved SHA-256 and reprocesses the existing release through the current parser |
+
+`--reprocess` deliberately skips unchanged, already-linked rows so a replay cannot churn canonical names or classifications. When a new derived table is added (for example, the DOE utility profile), use `--force-reapply` to run those rows through the current parser and write the missing child records. This is an explicit operator decision: it re-asserts canonical fields and can let a competing source change an established value, so review the affected release and report afterwards. Re-running the same release without the flag returns to the normal unchanged-row skip.
 
 A failed reprocess of a release that is already public keeps the release row and its last good source records exactly as they were: validation issues are recorded, staging is skipped, and the release stays `published` so the public snapshot remains visible. A later retry is not classified as `skipped_duplicate`.
 

@@ -138,7 +138,11 @@ class SchoolData:
     deped_school_id: str | None = None
     sector: str | None = None
     school_management: str | None = None
-    annex_status: str | None = None
+    division: str | None = None
+    district: str | None = None
+    legislative_district: str | None = None
+    settlement_type: str | None = None
+    offering_classification: str | None = None
     offers_es: bool | None = None
     offers_jhs: bool | None = None
     offers_shs: bool | None = None
@@ -150,9 +154,27 @@ class SchoolData:
 @dataclass
 class HealthData:
     doh_facility_id: str | None = None
+    facility_major_type: str | None = None
+    facility_type_detail: str | None = None
     facility_category: str | None = None
-    service_capability_level: str | None = None
+    ownership_subclassification: str | None = None
+    licensing_status: str | None = None
     bed_capacity: int | None = None
+
+
+@dataclass
+class UtilityData:
+    doe_facility_code: str | None = None
+    resource_type: str | None = None
+    technology_type: str | None = None
+    connection_type: str | None = None
+    grid: str | None = None
+    owner_type: str | None = None
+    contract_type: str | None = None
+    installed_mw: float | None = None
+    dependable_mw: float | None = None
+    number_of_units: int | None = None
+    date_commissioned: str | None = None
 
 
 @dataclass
@@ -239,8 +261,14 @@ class FacilityCandidate:
     contacts: list[ContactData] = field(default_factory=list)
     school: SchoolData | None = None
     health: HealthData | None = None
+    utility: UtilityData | None = None
     licenses: list[LicenseData] = field(default_factory=list)
     accreditations: list[AccreditationData] = field(default_factory=list)
+    # An enrichment release fills only missing or placeholder canonical values
+    # on an existing facility. It never renames the facility, never replaces an
+    # established classification, and never changes the source record that owns
+    # an existing school profile.
+    enrichment_only: bool = False
 
 
 class SourceAdapter(Protocol):

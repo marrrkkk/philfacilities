@@ -108,7 +108,9 @@ export default async function FacilityPage({ params }: { params: Params }) {
   const [typed, changes, assertions] = await Promise.all([
     facility.facility_type === "school"
       ? getSchoolDetail(id).catch(() => null)
-      : getHealthDetail(id).catch(() => null),
+      : facility.facility_type === "health_facility"
+        ? getHealthDetail(id).catch(() => null)
+        : Promise.resolve(null),
     getFacilityChanges(id).catch(() => null),
     getFacilityAssertions(id).catch(() => [] as AttributeAssertionOut[]),
   ]);
@@ -345,8 +347,19 @@ export default async function FacilityPage({ params }: { params: Params }) {
                   <DataRow label="School management">
                     {school.facility.school?.school_management ?? "Unknown"}
                   </DataRow>
-                  <DataRow label="Annex status">
-                    {school.facility.school?.annex_status ?? "Unknown"}
+                  <DataRow label="Division">
+                    {school.facility.school?.division ?? "Unknown"}
+                  </DataRow>
+                  <DataRow label="District">
+                    {school.facility.school?.district ?? "Unknown"}
+                  </DataRow>
+                  <DataRow label="Legislative district">
+                    {school.facility.school?.legislative_district ?? "Unknown"}
+                  </DataRow>
+                  <DataRow label="Settlement type">
+                    {school.facility.school?.settlement_type
+                      ? titleCase(school.facility.school.settlement_type)
+                      : "Unknown"}
                   </DataRow>
                   <DataRow label="Reference school year">
                     {school.facility.school?.reference_school_year ?? "Unknown"}
@@ -451,11 +464,20 @@ export default async function FacilityPage({ params }: { params: Params }) {
               >
                 <dl>
                   <DataRow label="DOH NHFR ID">{health.facility.health?.doh_facility_id ?? "Not supplied"}</DataRow>
+                  <DataRow label="Facility major type">
+                    {health.facility.health?.facility_major_type ?? "Unknown"}
+                  </DataRow>
+                  <DataRow label="Facility type">
+                    {health.facility.health?.facility_type_detail ?? "Unknown"}
+                  </DataRow>
                   <DataRow label="Facility category">
                     {health.facility.health?.facility_category ?? "Unknown"}
                   </DataRow>
-                  <DataRow label="Service capability">
-                    {health.facility.health?.service_capability_level ?? "Unknown"}
+                  <DataRow label="Ownership sub-classification">
+                    {health.facility.health?.ownership_subclassification ?? "Unknown"}
+                  </DataRow>
+                  <DataRow label="Licensing status">
+                    {health.facility.health?.licensing_status ?? "Unknown"}
                   </DataRow>
                   <DataRow label="Bed capacity">
                     {health.facility.health?.bed_capacity !== null &&
@@ -542,6 +564,50 @@ export default async function FacilityPage({ params }: { params: Params }) {
                 )}
               </Section>
             </>
+          ) : null}
+
+          {facility.utility ? (
+            <Section
+              title="Power plant profile"
+              description="DOE registry values. Capacity is the source's reported rating, not verified current output. Registry presence does not imply that the plant is operating."
+            >
+              <dl>
+                <DataRow label="DOE facility code">
+                  {facility.utility.doe_facility_code ?? "Not supplied"}
+                </DataRow>
+                <DataRow label="Resource type">{facility.utility.resource_type ?? "Unknown"}</DataRow>
+                <DataRow label="Technology">{facility.utility.technology_type ?? "Unknown"}</DataRow>
+                <DataRow label="Connection type">
+                  {facility.utility.connection_type ?? "Unknown"}
+                </DataRow>
+                <DataRow label="Grid">{facility.utility.grid ?? "Unknown"}</DataRow>
+                <DataRow label="Owner type">{facility.utility.owner_type ?? "Unknown"}</DataRow>
+                <DataRow label="Contract type">
+                  {facility.utility.contract_type ?? "Unknown"}
+                </DataRow>
+                <DataRow label="Installed capacity">
+                  {facility.utility.installed_mw !== null &&
+                  facility.utility.installed_mw !== undefined
+                    ? `${formatNumber(facility.utility.installed_mw)} MW`
+                    : "Unknown"}
+                </DataRow>
+                <DataRow label="Dependable capacity">
+                  {facility.utility.dependable_mw !== null &&
+                  facility.utility.dependable_mw !== undefined
+                    ? `${formatNumber(facility.utility.dependable_mw)} MW`
+                    : "Unknown"}
+                </DataRow>
+                <DataRow label="Units">
+                  {facility.utility.number_of_units !== null &&
+                  facility.utility.number_of_units !== undefined
+                    ? formatNumber(facility.utility.number_of_units)
+                    : "Unknown"}
+                </DataRow>
+                <DataRow label="Commissioned">
+                  {facility.utility.date_commissioned ?? "Unknown"}
+                </DataRow>
+              </dl>
+            </Section>
           ) : null}
 
           <Section

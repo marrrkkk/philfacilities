@@ -85,6 +85,23 @@ def public_facility_filter() -> list:
     ]
 
 
+def public_facility_index_filter() -> list:
+    """Fast publication gate for high-volume browse, map, and aggregate queries.
+
+    ``Facility.publication_status`` is written as ``public`` by canonical ingestion
+    only when the record has a rights-cleared current source link. That stored flag
+    is indexed, so directory pages and map viewports can use it directly instead of
+    rebuilding the national public-evidence set on every request.
+
+    Detail endpoints still call :func:`facility_is_public` and re-validate the live
+    source evidence, so a withdrawn source cannot expose a profile. A rights change
+    that is not accompanied by the normal ingest/reconciliation pass will be
+    reflected on the next publication pass; it is not treated as a second,
+    independently mutable publication state.
+    """
+    return [Facility.publication_status == "public"]
+
+
 def facility_is_public(session: Session, facility: Facility) -> bool:
     """True when the stored public flag still has current public evidence.
 
@@ -116,18 +133,37 @@ def load_current_locations(
         return {}
     result: dict[uuid.UUID, FacilityLocation] = {}
     for chunk in _chunked(facility_ids):
+        # Fetch the current locations through the partial unique index first. The
+        # previous query embedded an OR/EXISTS rights predicate, which made
+        # PostgreSQL choose a sequential scan of every location for a page of 20.
         rows = session.scalars(
             select(FacilityLocation)
             .where(
                 FacilityLocation.facility_id.in_(chunk),
                 FacilityLocation.is_current.is_(True),
-                # An internal-only release must not surface its coordinates even
-                # if it was the last writer of the current location.
-                public_source_record_condition(FacilityLocation.source_record_id),
             )
             .order_by(FacilityLocation.created_at.desc())
         ).all()
+        source_record_ids = {row.source_record_id for row in rows if row.source_record_id}
+        public_record_ids: set[uuid.UUID] = set()
+        if source_record_ids:
+            # An internal-only release must not surface its coordinates even if
+            # it was the last writer of the current location. This is a small
+            # primary-key lookup for the page's locations, not a scan.
+            public_record_ids = set(
+                session.scalars(
+                    select(SourceRecord.id)
+                    .join(Release, SourceRecord.release_id == Release.id)
+                    .join(Dataset, Release.dataset_id == Dataset.id)
+                    .where(
+                        SourceRecord.id.in_(source_record_ids),
+                        public_dataset_release_condition(),
+                    )
+                ).all()
+            )
         for row in rows:
+            if row.source_record_id is not None and row.source_record_id not in public_record_ids:
+                continue
             result.setdefault(row.facility_id, row)
     return result
 
@@ -553,6 +589,7 @@ def build_facility_detail(
         HealthAccreditation,
         HealthProfile,
         SchoolProfile,
+        UtilityProfile,
     )
     from .schemas import (
         AccreditationOut,
@@ -560,6 +597,7 @@ def build_facility_detail(
         FacilityDetail,
         HealthProfileOut,
         SchoolProfileOut,
+        UtilityProfileOut,
     )
 
     summary = build_summaries(session, [facility], geography_release)[0]
@@ -567,6 +605,7 @@ def build_facility_detail(
 
     school = None
     health = None
+    utility = None
     accreditations: list[AccreditationOut] = []
     if facility.facility_type == "school":
         profile = session.scalars(
@@ -605,7 +644,11 @@ def build_facility_detail(
                 deped_school_id=profile.deped_school_id,
                 sector=profile.sector,
                 school_management=profile.school_management,
-                annex_status=profile.annex_status,
+                division=profile.division,
+                district=profile.district,
+                legislative_district=profile.legislative_district,
+                settlement_type=profile.settlement_type,
+                offering_classification=profile.offering_classification,
                 offers_es=profile.offers_es,
                 offers_jhs=profile.offers_jhs,
                 offers_shs=profile.offers_shs,
@@ -625,8 +668,11 @@ def build_facility_detail(
         if profile:
             health = HealthProfileOut(
                 doh_facility_id=profile.doh_facility_id,
+                facility_major_type=profile.facility_major_type,
+                facility_type_detail=profile.facility_type_detail,
                 facility_category=profile.facility_category,
-                service_capability_level=profile.service_capability_level,
+                ownership_subclassification=profile.ownership_subclassification,
+                licensing_status=profile.licensing_status,
                 bed_capacity=profile.bed_capacity,
                 source_record_id=profile.source_record_id,
             )
@@ -658,6 +704,34 @@ def build_facility_detail(
                     page_reference=row.page_reference,
                     source_record_id=row.source_record_id,
                 )
+            )
+
+    elif facility.facility_type == "utility_facility":
+        profile = session.scalars(
+            select(UtilityProfile)
+            .where(
+                UtilityProfile.facility_id == facility.id,
+                public_source_record_condition(UtilityProfile.source_record_id),
+            )
+            .order_by(
+                UtilityProfile.valid_from.desc().nullslast(),
+                UtilityProfile.doe_facility_code,
+            )
+        ).first()
+        if profile:
+            utility = UtilityProfileOut(
+                doe_facility_code=profile.doe_facility_code,
+                resource_type=profile.resource_type,
+                technology_type=profile.technology_type,
+                connection_type=profile.connection_type,
+                grid=profile.grid,
+                owner_type=profile.owner_type,
+                contract_type=profile.contract_type,
+                installed_mw=decimal_to_float(profile.installed_mw),
+                dependable_mw=decimal_to_float(profile.dependable_mw),
+                number_of_units=profile.number_of_units,
+                date_commissioned=profile.date_commissioned,
+                source_record_id=profile.source_record_id,
             )
 
     contacts = [
@@ -722,6 +796,7 @@ def build_facility_detail(
         access_conditions=facility.access_conditions,
         school=school,
         health=health,
+        utility=utility,
         accreditations=accreditations,
         contacts=contacts,
         function_details=[

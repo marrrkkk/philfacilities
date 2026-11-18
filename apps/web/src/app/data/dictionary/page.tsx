@@ -83,7 +83,10 @@ const matchStatuses = [
 
 const schoolFields = [
   ["deped_school_id", "DepEd school identifier preserved as text."],
-  ["sector, school_management, annex_status", "Source values; not normalized policy categories."],
+  ["sector, school_management", "Source values; not normalized policy categories."],
+  ["division, district, legislative_district", "DepEd administrative areas from the SY 2020-2021 masterlist."],
+  ["settlement_type", "Source settlement class: urban, partially urban, or rural."],
+  ["offering_classification", "Combined source offering category retained verbatim."],
   ["offers_es, offers_jhs, offers_shs", "Tri-state: true, false, or null for unknown."],
   ["reference_school_year", "School year the profile describes."],
   ["enrollment_total", "Latest total when an observation exists; otherwise null."],
@@ -93,11 +96,23 @@ const schoolFields = [
 
 const healthFields = [
   ["doh_facility_id", "DOH source identifier preserved as text."],
-  ["facility_category", "Source category, not a normalized service capability."],
-  ["service_capability_level", "Source capability string when supplied."],
-  ["bed_capacity", "Source bed count. Null is unknown, not zero."],
+  ["facility_major_type", "NHFR major classification, such as Health Facility or Health Related Facility."],
+  ["facility_type_detail", "NHFR facility type exactly as published, such as Hospital or Rural Health Unit."],
+  ["facility_category", "Source category retained from the establishing release; not a normalized service capability."],
+  ["ownership_subclassification", "NHFR ownership sub-classification, such as Local Government Unit or Corporation."],
+  ["licensing_status", "NHFR licensing status as published: With License, Without License, or null when the source is blank."],
+  ["bed_capacity", "Source bed count. Zero is a real source value; null is unknown."],
   ["licenses[]", "Time-bounded licences with issuing authority and source status."],
   ["accreditations[]", "Time-bounded PhilHealth or other accreditation rows."],
+];
+
+const utilityFields = [
+  ["doe_facility_code", "DOE facility code preserved as text."],
+  ["resource_type, technology_type", "Source resource and technology labels, not normalized generation categories."],
+  ["connection_type, grid", "Source connection and grid labels, such as Luzon or off-grid."],
+  ["owner_type, contract_type", "DOE owner and contract classes; not a legal-ownership determination."],
+  ["installed_mw, dependable_mw", "Source capacity ratings in megawatts; null when blank."],
+  ["number_of_units, date_commissioned", "Source unit count and commissioning date, preserved as stated."],
 ];
 
 function FieldTable({
@@ -305,9 +320,9 @@ export default function DataDictionaryPage() {
 
       <section className="mt-10" aria-labelledby="domain-fields">
         <h2 id="domain-fields" className="font-display text-2xl font-extrabold">
-          School and health fields
+          School, health, and utility fields
         </h2>
-        <div className="mt-4 grid gap-6 lg:grid-cols-2">
+        <div className="mt-4 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           <div className="min-w-0">
             <h3 className="font-display text-xl font-extrabold">Schools</h3>
             <FieldTable
@@ -324,11 +339,20 @@ export default function DataDictionaryPage() {
               rows={healthFields.map(([field, meaning]) => [field, "mixed", meaning])}
             />
           </div>
+          <div className="min-w-0">
+            <h3 className="font-display text-xl font-extrabold">Power plants</h3>
+            <FieldTable
+              caption="Utility fields"
+              columns={["Field", "Type", "Meaning"]}
+              rows={utilityFields.map(([field, meaning]) => [field, "mixed", meaning])}
+            />
+          </div>
         </div>
         <p className="mt-4 max-w-3xl font-sans text-sm leading-relaxed text-[#5a5a58]">
           Licences and accreditations are time-bounded records, not a real-time guarantee that a
           service is available or reimbursable. School offerings are tri-state: true, false, or null
-          for unknown.
+          for unknown. Power-plant capacity is a registry rating, not metered output or proof that
+          the plant is operating.
         </p>
       </section>
 

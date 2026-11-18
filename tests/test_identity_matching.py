@@ -494,7 +494,7 @@ def test_ingestion_hook_queues_candidate_without_merging(client, db_session):
             "facility_name",
             "facility_category",
             "ownership",
-            "service_capability_level",
+            "facility_type_detail",
             "bed_capacity",
             "latitude",
             "longitude",

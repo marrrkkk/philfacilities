@@ -60,6 +60,7 @@ GET /v1/taxonomy
 ```http
 GET /v1/facilities
 GET /v1/facilities/within?bbox=min_lon,min_lat,max_lon,max_lat
+GET /v1/facilities/map?bbox=min_lon,min_lat,max_lon,max_lat&zoom=...
 GET /v1/facilities/nearby?lat=...&lon=...&radius_m=...
 GET /v1/facilities/{facility_id}
 GET /v1/facilities/{facility_id}/sources
@@ -71,9 +72,11 @@ GET /v1/facilities/{facility_id}/export.csv   (not in OpenAPI)
 
 `{facility_id}` accepts a UUID or a public slug. Detail endpoints return `404 facility_not_found` for a non-public or unknown facility.
 
+`/v1/facilities/map` is the browser map's viewport endpoint. It returns only the fields needed to draw and label a marker: `id`, `slug`, `name`, `facility_type`, `inclusion_class`, `precision`, `latitude`, and `longitude`. While the viewport contains at most 500 published facilities it returns `mode=points`; above that threshold it returns `mode=clusters` with grid-cell count circles, average coordinates, and a human-readable label. The viewport is never rejected for being wide: a national or multi-region view returns a bounded set of large count circles rather than failing. `total` is the number of mapped records represented by the response. Use `/v1/facilities/within` only when full `FacilitySummary` rows are required; it keeps the older 25°² viewport limit.
+
 `/sources` returns the publication-cleared source records behind the facility. `/assertions` returns the exact source claims behind canonical fields; use `attribute=` to narrow to one field (for example `location.precision`). A field may have multiple claims; the endpoint does not pick a winner or erase a disagreement. `/history` returns canonical change events.
 
-Detail responses include `location.postal_code` when the source supplied one, and `contacts[]` for source-linked institutional phone, email, website, and opening-hours channels. Contacts keep their `source_record_id` and `source_field`; the API does not select one source's phone number as the national truth. Accreditation phone, email, street address, and municipality stay inside `accreditations[]` because they describe a time-bounded accreditation row, not necessarily the facility's current general contact details.
+Detail responses include `location.postal_code` when the source supplied one, and `contacts[]` for source-linked institutional phone, email, website, and opening-hours channels. Contacts keep their `source_record_id` and `source_field`; the API does not select one source's phone number as the national truth. Accreditation phone, email, street address, and municipality stay inside `accreditations[]` because they describe a time-bounded accreditation row, not necessarily the facility's current general contact details. A school detail carries `school`; a health facility carries `health`; a power plant carries `utility` with DOE resource, grid, capacity, unit and commissioning fields. Each profile is null when no public source record supplies it.
 
 The per-facility CSV export returns a small flat row and is hidden from the OpenAPI schema, so it does not appear in generated clients. It applies the same publication gate as the JSON detail. Use `/v1/downloads/facilities.csv` for bulk analysis.
 

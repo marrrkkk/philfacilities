@@ -4,7 +4,7 @@ The ingestion pipeline writes an assertion for every field a source row
 supplies. Older releases were ingested before that behaviour existed, but their
 child rows already retain the exact ``source_record_id`` that supplied each
 value. This module reconstructs only those exact claims: locations, functions,
-services, roles, and school/health profile fields. It deliberately does not
+services, roles, and school/health/utility profile fields. It deliberately does not
 guess which source supplied a facility-level field when several sources could
 have done so.
 """
@@ -24,6 +24,7 @@ from philfacilities_api.models import (
     FacilityService,
     HealthProfile,
     SchoolProfile,
+    UtilityProfile,
 )
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -44,17 +45,37 @@ ROLE_ATTRIBUTES = ("role_type", "role_entity_name")
 SCHOOL_ATTRIBUTES = (
     "school.sector",
     "school.school_management",
-    "school.annex_status",
+    "school.division",
+    "school.district",
+    "school.legislative_district",
+    "school.settlement_type",
+    "school.offering_classification",
     "school.offers_es",
     "school.offers_jhs",
     "school.offers_shs",
     "deped_school_id",
 )
 HEALTH_ATTRIBUTES = (
+    "health.facility_major_type",
+    "health.facility_type_detail",
     "health.facility_category",
-    "health.service_capability_level",
+    "health.ownership_subclassification",
+    "health.licensing_status",
     "health.bed_capacity",
     "doh_facility_id",
+)
+UTILITY_ATTRIBUTES = (
+    "utility.doe_facility_code",
+    "utility.resource_type",
+    "utility.technology_type",
+    "utility.connection_type",
+    "utility.grid",
+    "utility.owner_type",
+    "utility.contract_type",
+    "utility.installed_mw",
+    "utility.dependable_mw",
+    "utility.number_of_units",
+    "utility.date_commissioned",
 )
 ALL_ATTRIBUTES = (
     *LOCATION_ATTRIBUTES,
@@ -63,6 +84,7 @@ ALL_ATTRIBUTES = (
     *ROLE_ATTRIBUTES,
     *SCHOOL_ATTRIBUTES,
     *HEALTH_ATTRIBUTES,
+    *UTILITY_ATTRIBUTES,
 )
 
 
@@ -241,7 +263,11 @@ def backfill_assertions(session: Session) -> AssertionBackfillStats:
         for attribute in (
             "sector",
             "school_management",
-            "annex_status",
+            "division",
+            "district",
+            "legislative_district",
+            "settlement_type",
+            "offering_classification",
             "offers_es",
             "offers_jhs",
             "offers_shs",
@@ -267,8 +293,11 @@ def backfill_assertions(session: Session) -> AssertionBackfillStats:
     ):
         assert row.source_record_id is not None
         for attribute in (
+            "facility_major_type",
+            "facility_type_detail",
             "facility_category",
-            "service_capability_level",
+            "ownership_subclassification",
+            "licensing_status",
             "bed_capacity",
             "doh_facility_id",
         ):
@@ -282,6 +311,36 @@ def backfill_assertions(session: Session) -> AssertionBackfillStats:
                 attribute=(
                     "doh_facility_id" if attribute == "doh_facility_id" else f"health.{attribute}"
                 ),
+                raw_value=value,
+                normalized_value=value,
+                source_field=attribute,
+            )
+
+    for row in session.scalars(
+        select(UtilityProfile).where(UtilityProfile.source_record_id.is_not(None))
+    ):
+        assert row.source_record_id is not None
+        for attribute in (
+            "doe_facility_code",
+            "resource_type",
+            "technology_type",
+            "connection_type",
+            "grid",
+            "owner_type",
+            "contract_type",
+            "installed_mw",
+            "dependable_mw",
+            "number_of_units",
+            "date_commissioned",
+        ):
+            value = getattr(row, attribute)
+            _add(
+                session,
+                stats,
+                existing,
+                facility_id=row.facility_id,
+                source_record_id=row.source_record_id,
+                attribute=f"utility.{attribute}",
                 raw_value=value,
                 normalized_value=value,
                 source_field=attribute,

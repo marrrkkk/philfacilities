@@ -38,6 +38,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/facilities/map": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Clustered map points for a viewport
+         * @description Return viewport points or a bounded grid of count clusters.
+         *
+         *     The browser map cannot download hundreds of thousands of full facility
+         *     summaries. This endpoint asks only for the coordinates and labels it needs,
+         *     and switches to server-side clusters once the viewport exceeds
+         *     ``max_map_points``. The viewport is never rejected for being large: wide
+         *     zoom levels return a small number of large count circles instead of failing.
+         */
+        get: operations["facilities_map_v1_facilities_map_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/facilities/nearby": {
         parameters: {
             query?: never;
@@ -1204,6 +1230,7 @@ export interface components {
             access_conditions?: string | null;
             school?: components["schemas"]["SchoolProfileOut"] | null;
             health?: components["schemas"]["HealthProfileOut"] | null;
+            utility?: components["schemas"]["UtilityProfileOut"] | null;
             /** Accreditations */
             accreditations?: components["schemas"]["AccreditationOut"][];
             /** Contacts */
@@ -1259,6 +1286,77 @@ export interface components {
             total: number;
             /** Limit */
             limit: number;
+        };
+        /** FacilityMapCluster */
+        FacilityMapCluster: {
+            /** Latitude */
+            latitude: number;
+            /** Longitude */
+            longitude: number;
+            /** Count */
+            count: number;
+            /** Label */
+            label: string;
+        };
+        /**
+         * FacilityMapPoint
+         * @description Minimal map feature; deliberately excludes detail-only summary fields.
+         */
+        FacilityMapPoint: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Slug */
+            slug?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Facility Type
+             * @enum {string}
+             */
+            facility_type: "school" | "health_facility" | "government_office" | "community_facility" | "emergency_facility" | "library" | "museum" | "social_welfare_facility" | "public_market" | "transport_facility" | "utility_facility" | "environmental_monitoring" | "public_space" | "cultural_facility" | "agricultural_facility" | "justice_facility" | "housing_service" | "other_qualifying_facility";
+            /**
+             * Inclusion Class
+             * @enum {string}
+             */
+            inclusion_class: "GOVERNMENT_FACILITY" | "PRIVATE_PUBLIC_SERVICE_PROVIDER" | "PUBLIC_ACCESS_VENUE" | "DISCOVERY_CANDIDATE";
+            /**
+             * Precision
+             * @default unknown
+             * @enum {string}
+             */
+            precision: "gps_verified" | "field_verified" | "source_gps" | "map_geocoded" | "barangay_centroid" | "unknown";
+            /** Latitude */
+            latitude: number;
+            /** Longitude */
+            longitude: number;
+        };
+        /** FacilityMapPointsResponse */
+        FacilityMapPointsResponse: {
+            /** Bbox */
+            bbox: string;
+            /** Zoom */
+            zoom: number;
+            /** Total */
+            total: number;
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "points" | "clusters";
+            /** Points */
+            points?: components["schemas"]["FacilityMapPoint"][];
+            /** Clusters */
+            clusters?: components["schemas"]["FacilityMapCluster"][];
+            /** Cell Deg */
+            cell_deg?: number | null;
+            /**
+             * Truncated
+             * @default false
+             */
+            truncated: boolean;
         };
         /** FacilityMapResponse */
         FacilityMapResponse: {
@@ -1505,10 +1603,16 @@ export interface components {
         HealthProfileOut: {
             /** Doh Facility Id */
             doh_facility_id?: string | null;
+            /** Facility Major Type */
+            facility_major_type?: string | null;
+            /** Facility Type Detail */
+            facility_type_detail?: string | null;
             /** Facility Category */
             facility_category?: string | null;
-            /** Service Capability Level */
-            service_capability_level?: string | null;
+            /** Ownership Subclassification */
+            ownership_subclassification?: string | null;
+            /** Licensing Status */
+            licensing_status?: string | null;
             /** Bed Capacity */
             bed_capacity?: number | null;
             /** Source Record Id */
@@ -1925,8 +2029,16 @@ export interface components {
             sector?: string | null;
             /** School Management */
             school_management?: string | null;
-            /** Annex Status */
-            annex_status?: string | null;
+            /** Division */
+            division?: string | null;
+            /** District */
+            district?: string | null;
+            /** Legislative District */
+            legislative_district?: string | null;
+            /** Settlement Type */
+            settlement_type?: string | null;
+            /** Offering Classification */
+            offering_classification?: string | null;
             /** Offers Es */
             offers_es?: boolean | null;
             /** Offers Jhs */
@@ -2237,6 +2349,33 @@ export interface components {
             /** Label */
             label: string;
         };
+        /** UtilityProfileOut */
+        UtilityProfileOut: {
+            /** Doe Facility Code */
+            doe_facility_code?: string | null;
+            /** Resource Type */
+            resource_type?: string | null;
+            /** Technology Type */
+            technology_type?: string | null;
+            /** Connection Type */
+            connection_type?: string | null;
+            /** Grid */
+            grid?: string | null;
+            /** Owner Type */
+            owner_type?: string | null;
+            /** Contract Type */
+            contract_type?: string | null;
+            /** Installed Mw */
+            installed_mw?: number | null;
+            /** Dependable Mw */
+            dependable_mw?: number | null;
+            /** Number Of Units */
+            number_of_units?: number | null;
+            /** Date Commissioned */
+            date_commissioned?: string | null;
+            /** Source Record Id */
+            source_record_id?: string | null;
+        };
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -2354,6 +2493,60 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FacilityMapResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    facilities_map_v1_facilities_map_get: {
+        parameters: {
+            query: {
+                /** @description min_lon,min_lat,max_lon,max_lat */
+                bbox: string;
+                /** @description Client zoom level; tunes cluster density. */
+                zoom?: number;
+                type?: ("school" | "health_facility" | "government_office" | "community_facility" | "emergency_facility" | "library" | "museum" | "social_welfare_facility" | "public_market" | "transport_facility" | "utility_facility" | "environmental_monitoring" | "public_space" | "cultural_facility" | "agricultural_facility" | "justice_facility" | "housing_service" | "other_qualifying_facility") | null;
+                subtype?: string | null;
+                inclusion_class?: ("GOVERNMENT_FACILITY" | "PRIVATE_PUBLIC_SERVICE_PROVIDER" | "PUBLIC_ACCESS_VENUE" | "DISCOVERY_CANDIDATE") | null;
+                ownership?: ("government" | "private" | "unknown") | null;
+                ownership_type?: ("NATIONAL_GOVERNMENT" | "LOCAL_GOVERNMENT" | "GOCC" | "PUBLIC_EDUCATIONAL_INSTITUTION" | "OTHER_PUBLIC_BODY" | "GOVERNMENT_UNSPECIFIED" | "PRIVATE_CORPORATE" | "PRIVATE_INDIVIDUAL_OR_PARTNERSHIP" | "NGO_NON_PROFIT" | "COOPERATIVE" | "RELIGIOUS_FAITH_BASED" | "PUBLIC_PRIVATE_JOINT" | "PRIVATE_UNSPECIFIED" | "UNKNOWN") | null;
+                operator_type?: ("NATIONAL_GOVERNMENT" | "LOCAL_GOVERNMENT" | "GOCC" | "PUBLIC_EDUCATIONAL_INSTITUTION" | "OTHER_PUBLIC_BODY" | "GOVERNMENT_UNSPECIFIED" | "PRIVATE_CORPORATE" | "PRIVATE_INDIVIDUAL_OR_PARTNERSHIP" | "NGO_NON_PROFIT" | "COOPERATIVE" | "RELIGIOUS_FAITH_BASED" | "PUBLIC_PRIVATE_JOINT" | "PRIVATE_UNSPECIFIED" | "UNKNOWN") | null;
+                public_access_class?: ("PUBLIC_FREE" | "PUBLIC_PAID_OR_CONDITIONAL" | "SERVICE_USERS_ONLY" | "APPOINTMENT_ONLY" | "MEMBERS_STUDENTS_ONLY" | "STAFF_ONLY" | "RESTRICTED" | "UNKNOWN") | null;
+                facility_kind?: ("facility" | "site" | "building" | "facility_unit" | "infrastructure_asset" | "project") | null;
+                function?: string | null;
+                q?: string | null;
+                psgc?: string | null;
+                region_code?: string | null;
+                province_code?: string | null;
+                municipality_code?: string | null;
+                barangay_code?: string | null;
+                source?: string | null;
+                location_precision?: ("gps_verified" | "field_verified" | "source_gps" | "map_geocoded" | "barangay_centroid" | "unknown") | null;
+                reference_period_start?: string | null;
+                reference_period_end?: string | null;
+                updated_since?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FacilityMapPointsResponse"];
                 };
             };
             /** @description Validation Error */

@@ -40,7 +40,17 @@ _test_artifacts = Path(tempfile.mkdtemp(prefix="philfacilities-tests-"))
 os.environ["PHILFACILITIES_RAW_STORE"] = str(_test_artifacts / "raw")
 os.environ["PHILFACILITIES_REPORT_DIR"] = str(_test_artifacts / "reports")
 
-SCHEMAS = ("source", "core", "geo", "school", "health", "quality", "history", "stats")
+SCHEMAS = (
+    "source",
+    "core",
+    "geo",
+    "school",
+    "health",
+    "utility",
+    "quality",
+    "history",
+    "stats",
+)
 
 
 def _reset_schema(database_url: str) -> None:

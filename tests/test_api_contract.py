@@ -12,6 +12,7 @@ REQUIRED_PATHS = {
     "/v1",
     "/v1/facilities",
     "/v1/facilities/within",
+    "/v1/facilities/map",
     "/v1/facilities/nearby",
     "/v1/facilities/{facility_id}",
     "/v1/facilities/{facility_id}/sources",
@@ -80,7 +81,11 @@ def test_openapi_contains_the_public_read_contract(openapi_client):
         "IngestionRunSummary",
         "SchoolDetailResponse",
         "HealthDetailResponse",
+        "UtilityProfileOut",
     } <= schema_names
+
+    facility_detail = document["components"]["schemas"]["FacilityDetail"]["properties"]
+    assert facility_detail["utility"]["anyOf"][0]["$ref"].endswith("UtilityProfileOut")
 
     facility_summary = document["components"]["schemas"]["FacilitySummary"]["properties"]
     assert facility_summary["is_synthetic"]["type"] == "boolean"

@@ -196,19 +196,6 @@ def from_access_state(
 # kept factual: it records the observed failure and does not claim a permission
 # that the publisher did not grant.
 SOURCE_SKIPS: dict[str, SkipDecision] = {
-    "doh-nhfr": SkipDecision(
-        reason="WAF_CHALLENGE",
-        detail=(
-            "The official DOH NHFR export returned HTTP 403 behind a Cloudflare "
-            "challenge in the recorded probes; the public list page did not expose "
-            "a downloadable release. No challenge, login or agreement was bypassed."
-        ),
-        alternate_route=(
-            "NHA GeoServer WFS layer NHA_PH:DOH HF (partial official alternate) and "
-            "PhilHealth provider-category releases (accreditation evidence only)."
-        ),
-        next_retry_at=next_retry(),
-    ),
     "deped-machine-ready": SkipDecision(
         reason="HUMAN_ACCESS_REQUIRED",
         detail=(

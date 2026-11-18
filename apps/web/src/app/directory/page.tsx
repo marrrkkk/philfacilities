@@ -1,25 +1,24 @@
 import Link from "next/link";
 import { SlidersHorizontal } from "lucide-react";
 
-import { Breadcrumbs, EmptyState, Pagination } from "@/components/breadcrumbs";
-import { FacilityCard } from "@/components/facility-card";
-import { SearchForm } from "@/components/search-form";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
+import { Breadcrumbs } from "@/components/breadcrumbs";
+import { DirectoryResults } from "@/components/directory-results";
+import {
+  DirectorySearchInput,
+  DirectorySearchProvider,
+} from "@/components/directory-search";
 import { buttonVariants } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
 import {
+  getGeography,
   listFacilities,
   listGeographies,
   listSources,
   type AdministrativeUnitOut,
   type DatasetOut,
 } from "@/lib/api";
-import { formatNumber, INCLUSION_CLASS_LABELS, titleCase } from "@/lib/format";
-import { queryString } from "@/lib/query";
+import { INCLUSION_CLASS_LABELS, titleCase } from "@/lib/format";
 import { cn } from "@/lib/utils";
-
-export const dynamic = "force-dynamic";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -118,8 +117,7 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Se
   const updatedSince = first(raw.updated_since);
   const cursor = first(raw.cursor) || undefined;
 
-  const query = {
-    q: q || undefined,
+  const filterParams = {
     type: type || undefined,
     inclusion_class: inclusion || undefined,
     ownership: ownership || undefined,
@@ -136,6 +134,11 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Se
     reference_period_start: referencePeriodStart || undefined,
     reference_period_end: referencePeriodEnd || undefined,
     updated_since: updatedSince || undefined,
+  };
+
+  const query = {
+    ...filterParams,
+    q: q || undefined,
     cursor,
     limit: 20,
   };
@@ -146,11 +149,75 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Se
   let error: string | null = null;
 
   try {
-    [result, units, sources] = await Promise.all([
+    const [facilityResult, regionUnits, provinceUnits, sourceRows] = await Promise.all([
       listFacilities(query),
-      listGeographies({ limit: 500 }).catch(() => []),
+      listGeographies({ level: "region", limit: 500 }).catch(() => []),
+      listGeographies({ level: "province", limit: 500 }).catch(() => []),
       listSources().catch(() => []),
     ]);
+    result = facilityResult;
+    sources = sourceRows;
+    const provinceOptions = provinceUnits.filter(
+      (item) => !region || item.parent_psgc_code === region,
+    );
+    let municipalityUnits: AdministrativeUnitOut[] = [];
+    if (province) {
+      municipalityUnits = await listGeographies({
+        level: "municipality",
+        parent: province,
+        limit: 500,
+      }).catch(() => []);
+    } else if (region) {
+      // Most regions nest municipalities under provinces, but NCR has cities
+      // directly under the region. Fetch both scopes so either structure works.
+      const [directMunicipalities, perProvince] = await Promise.all([
+        listGeographies({
+          level: "municipality",
+          parent: region,
+          limit: 500,
+        }).catch(() => []),
+        Promise.all(
+          provinceOptions.map((item) =>
+            listGeographies({
+              level: "municipality",
+              parent: item.psgc_code,
+              limit: 500,
+            }).catch(() => []),
+          ),
+        ),
+      ]);
+      municipalityUnits = [...directMunicipalities, ...perProvince.flat()];
+    }
+    let barangayUnits: AdministrativeUnitOut[] = [];
+    if (municipality) {
+      barangayUnits = await listGeographies({
+        level: "barangay",
+        parent: municipality,
+        limit: 500,
+      }).catch(() => []);
+    }
+    // Only fetch a selected unit directly when it is not already in the
+    // parent-scoped option lists (for example a bookmarked municipality URL).
+    const knownCodes = new Set(
+      [...regionUnits, ...provinceUnits, ...municipalityUnits, ...barangayUnits].map(
+        (item) => item.psgc_code,
+      ),
+    );
+    const missingCodes = [municipality, barangay].filter(
+      (code): code is string => Boolean(code) && !knownCodes.has(code),
+    );
+    const selectedUnits = (
+      await Promise.all(
+        missingCodes.map((code) => getGeography(code).catch(() => null)),
+      )
+    ).filter((item): item is AdministrativeUnitOut => item !== null);
+    units = [
+      ...regionUnits,
+      ...provinceUnits,
+      ...municipalityUnits,
+      ...barangayUnits,
+      ...selectedUnits,
+    ];
   } catch (caught) {
     error = caught instanceof Error ? caught.message : "The directory could not be loaded.";
   }
@@ -161,31 +228,13 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Se
     units.find((item) => item.psgc_code === code)?.name ?? code;
   const regions = units.filter((item) => item.geographic_level === "region");
   const provinces = units.filter((item) => item.geographic_level === "province");
-  const provinceParents = new Map(provinces.map((item) => [item.psgc_code, item.parent_psgc_code]));
-  const municipalities = units.filter((item) => item.geographic_level === "municipality");
-  const municipalityParents = new Map(
-    municipalities.map((item) => [item.psgc_code, item.parent_psgc_code]),
-  );
-  const barangays = units.filter((item) => item.geographic_level === "barangay");
   const provinceOptions = provinces.filter(
     (item) => !region || item.parent_psgc_code === region,
   );
-  const municipalityOptions = municipalities.filter(
-    (item) =>
-      (!province || item.parent_psgc_code === province) &&
-      (!region || provinceParents.get(item.parent_psgc_code ?? "") === region),
-  );
-  const barangayOptions = barangays.filter((item) => {
-    const parentProvince = municipalityParents.get(item.parent_psgc_code ?? "");
-    return (
-      (!municipality || item.parent_psgc_code === municipality) &&
-      (!province || parentProvince === province) &&
-      (!region || provinceParents.get(parentProvince ?? "") === region)
-    );
-  });
+  const municipalityOptions = units.filter((item) => item.geographic_level === "municipality");
+  const barangayOptions = units.filter((item) => item.geographic_level === "barangay");
 
   const activeFilters = [
-    q ? { label: `Search: ${q}` } : null,
     type ? { label: CATEGORY_LABELS[type] ?? titleCase(type) } : null,
     inclusion
       ? {
@@ -217,37 +266,19 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Se
     updatedSince ? { label: `Updated since: ${updatedSince}` } : null,
   ].filter(Boolean) as { label: string }[];
 
-  const paginationParams = {
-    q: q || undefined,
-    type: type || undefined,
-    inclusion_class: inclusion || undefined,
-    ownership: ownership || undefined,
-    ownership_type: ownershipType || undefined,
-    facility_kind: facilityKind || undefined,
-    public_access_class: publicAccess || undefined,
-    region_code: region || undefined,
-    province_code: province || undefined,
-    municipality_code: municipality || undefined,
-    barangay_code: barangay || undefined,
-    source: source || undefined,
-    has_coordinates: hasCoordinates || undefined,
-    location_precision: precision || undefined,
-    reference_period_start: referencePeriodStart || undefined,
-    reference_period_end: referencePeriodEnd || undefined,
-    updated_since: updatedSince || undefined,
-  };
-
-  const mapParams = {
-    ...paginationParams,
-    // The map only shows records with coordinates, so a "no coordinates"
-    // directory result cannot produce a useful mapped subset.
-    has_coordinates: hasCoordinates === "true" ? "true" : undefined,
-  };
+  const activeFilterLabels = activeFilters.map((filter) => filter.label);
 
   return (
     <div className="container-page py-10">
       <Breadcrumbs items={[{ label: "Directory" }]} />
-      <div className="grid gap-8 lg:grid-cols-[18rem_1fr]">
+      <DirectorySearchProvider
+        key={JSON.stringify({ filterParams, q, cursor })}
+        initialQuery={q}
+        initialResult={result}
+        initialError={error}
+        filterParams={filterParams}
+      >
+        <div className="grid gap-8 lg:grid-cols-[18rem_1fr]">
         <aside>
           <div className="border border-[#d1d8e6] bg-white p-5 lg:sticky lg:top-[calc(var(--header-height)+1.5rem)]">
             <div className="flex items-center gap-2 border-b border-[#d1d8e6] pb-3">
@@ -257,10 +288,9 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Se
             <form method="get" action="/directory" className="mt-4 space-y-4">
               <div>
                 <Label htmlFor="filter-q">Search</Label>
-                <Input
+                <DirectorySearchInput
                   id="filter-q"
                   name="q"
-                  defaultValue={q}
                   placeholder="Name, address, locality, source ID"
                 />
               </div>
@@ -448,106 +478,10 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Se
         </aside>
 
         <div>
-          <div className="flex flex-col gap-2 border-b border-[#d1d8e6] pb-5 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="eyebrow text-[#0038a8]">Facility directory</p>
-              <h1 className="mt-2 font-display text-4xl font-extrabold tracking-tight">
-                {result ? formatNumber(result.total) : "—"} matching records
-              </h1>
-              <p className="mt-2 font-sans text-sm text-[#5a5a58]">
-                Search across canonical names, localities, and agency source identifiers. Every
-                result is also available as a text profile.
-              </p>
-            </div>
-            <Link
-              href={`/map${queryString(mapParams)}`}
-              className={cn(buttonVariants({ variant: "outline" }))}
-            >
-              View on map
-            </Link>
-          </div>
-
-          <div className="mt-5">
-            <SearchForm
-              defaultQuery={q}
-              defaultType={type}
-              compact
-              preserve={{
-                inclusion_class: inclusion,
-                ownership,
-                ownership_type: ownershipType,
-                facility_kind: facilityKind,
-                public_access_class: publicAccess,
-                region_code: region,
-                province_code: province,
-                municipality_code: municipality,
-                barangay_code: barangay,
-                source,
-                has_coordinates: hasCoordinates,
-                location_precision: precision,
-                reference_period_start: referencePeriodStart,
-                reference_period_end: referencePeriodEnd,
-                updated_since: updatedSince,
-              }}
-            />
-          </div>
-
-          {activeFilters.length > 0 ? (
-            <div className="mt-4 flex flex-wrap items-center gap-2" aria-label="Active filters">
-              <span className="font-ui text-xs font-bold uppercase tracking-wide text-[#5a5a58]">
-                Active:
-              </span>
-              {activeFilters.map((filter) => (
-                <Badge key={filter.label} tone="muted" className="normal-case tracking-normal">
-                  {filter.label}
-                </Badge>
-              ))}
-            </div>
-          ) : null}
-
-          <div className="mt-6">
-            {error ? (
-              <Alert tone="danger">
-                <AlertTitle>The directory could not be loaded</AlertTitle>
-                <AlertDescription>
-                  {error}. Check that the API is running at the configured API base URL, then try
-                  again.
-                </AlertDescription>
-              </Alert>
-            ) : result && result.items.length > 0 ? (
-              <>
-                <div className="border-t border-[#d1d8e6]">
-                  {result.items.map((facility) => (
-                    <FacilityCard key={facility.id} facility={facility} />
-                  ))}
-                </div>
-                <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="font-sans text-xs text-[#5a5a58]">
-                    Showing {formatNumber(result.items.length)} of {formatNumber(result.total)}
-                    {result.has_more ? " · more pages available" : " · end of results"}
-                  </p>
-                  <Badge tone="muted">
-                    {result.limit} per page · cursor pagination
-                  </Badge>
-                </div>
-                <Pagination
-                  nextCursor={result.next_cursor}
-                  basePath="/directory"
-                  params={paginationParams}
-                />
-              </>
-            ) : (
-              <EmptyState title="No published records match these filters">
-                Try a broader search, clear the ownership or precision filter, or{" "}
-                <Link href="/directory" className="text-[#0038a8] underline">
-                  reset the directory
-                </Link>
-                . A missing result is not evidence that a facility does not exist.
-              </EmptyState>
-            )}
-          </div>
+          <DirectoryResults activeFilters={activeFilterLabels} filterParams={filterParams} />
         </div>
-      </div>
+        </div>
+      </DirectorySearchProvider>
     </div>
   );
 }

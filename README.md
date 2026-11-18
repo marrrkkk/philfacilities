@@ -13,20 +13,20 @@ Measured from the configured PostgreSQL/PostGIS database on 18 November 2026:
 
 | Measure | Actual state |
 |---|---|
-| Canonical facilities | **258,349** |
-| Public facilities | **258,349** (API-gated) |
+| Canonical facilities | **273,369** |
+| Public facilities | **273,369** (API-gated) |
 | Non-public facilities | **0** |
 | Synthetic facilities in the working database | **0** |
-| Registered datasets | **82** |
-| Retained source releases | **100** |
+| Registered datasets | **85** |
+| Retained source releases | **103** |
 | Published geographic units | **43,760** (BetterGov PSGC Q2 2024 mirror) |
 | Published population observations | **134,748** across 18 PSA 2024 Census regional releases |
 | Published health accreditations | **28,207** across 26 PhilHealth provider categories |
 | Fused attribute claims | **417,461** (0 agreed, 97,507 conflict, 319,954 single-source) |
-| Public facilities with coordinates | **155,228**, all `map_geocoded` or source-supplied |
-| Public facilities without coordinates | **103,121** (kept in text search; never given invented coordinates) |
+| Public facilities with coordinates | **155,230**, all `map_geocoded` or source-supplied |
+| Public facilities without coordinates | **118,139** (kept in text search; never given invented coordinates) |
 
-These counts describe processed source records, not the complete national facility universe. OSM/HOT records are crowd-sourced map features, not official DOH or DepEd registries. The DepEd EBEIS extract contains school-head names; the current source releases are approved for institution-level publication with those names withheld, and canonical DepEd records are published as unclassified because the source has no reliable per-row sector field. See [`docs/data-policy.md`](docs/data-policy.md).
+The fused-attribute table is an internal derived layer, not a public API surface. Its last completed rebuild predates the DepEd Masterlist and NHFR enrichment releases, so the fused count is lower than the assertion count those releases added. These counts describe processed source records, not the complete national facility universe. OSM/HOT records are crowd-sourced map features, not official DOH or DepEd registries. The DOH September 2026 NHFR snapshot is the official health-facility registry and supplies institutional fields for 44,799 DOH codes; OSM-only health features without a DOH code remain crowd-sourced and unclassified. The DepEd EBEIS extract contains school-head names; the current source releases are approved for institution-level publication with those names withheld. The SY 2020-2021 Masterlist now supplies sector/ownership evidence for 60,924 exact BEIS IDs; the remaining EBEIS rows stay unclassified because EBEIS has no reliable per-row sector field. See [`docs/data-policy.md`](docs/data-policy.md).
 
 ### Published sources
 
@@ -36,7 +36,10 @@ These counts describe processed source records, not the complete national facili
 | HOT/OSM health extract | 18,545 source records; 18,426 linked facilities | `approved_with_attribution` (ODbL) / `published` | Crowd-sourced; coordinates are bounding-box centres (`map_geocoded`); operational status unknown. |
 | HOT/OSM education extract | 57,303 source records; 56,469 linked facilities | `approved_with_attribution` (ODbL) / `published` | Crowd-sourced; not a DepEd masterlist; same coordinate/status caveats. |
 | HOT/OSM bulk PBF extract | 51,549 source records; 51,538 linked facilities | `approved_with_attribution` (ODbL) / `published` | Crowd-sourced map features across categories; ownership and operational status are not inferred. |
-| DepEd EBEIS school masterlist (19 regional result sets) | 83,218 records; canonical facilities published as unclassified | `approved_with_attribution` / releases `published` | Public result sets. Institution-level fields are published with attribution and a recorded takedown route; school-head names stay in the private source store. Rows are published as `DISCOVERY_CANDIDATE` because the source has no reliable sector field. |
+| DepEd EBEIS school masterlist (19 regional result sets) | 83,218 records; 60,924 now sector- and administration-enriched | `approved_with_attribution` / releases `published` | Public result sets. Institution-level fields are published with attribution and a recorded takedown route; school-head names stay in the private source store. Rows without an exact SY 2020-2021 Masterlist match remain `DISCOVERY_CANDIDATE`. |
+| DepEd Masterlist of Schools, SY 2020-2021 | Official 544-page PDF; 60,924 rows; enrichment-only | `approved_with_attribution` / `published` | Fills missing `ownership`, `ownership_type`, `inclusion_class`, and `school.sector` by exact six-digit BEIS ID. DepEd returns HTTP 403 to automated clients; the preserved Wayback copy (SHA-256 `461a96d3…`) is the release artifact. Does not create or rename facilities and only replaces placeholder classifications; 7-digit private-school variants remain unknown because no official crosswalk exists. |
+| DepEd Masterlist SY 2020-2021 — tabular detail (BetterGov dataset 41) | CC BY 4.0 CSV; 60,924 rows; enrichment-only | `approved_with_attribution` / `published` | Fills missing `school.school_management`, `division`, `district`, `legislative_district`, `settlement_type`, `offering_classification`, and derived offering flags by exact BEIS ID. BetterGov attributes the work to DepEd and states CC BY 4.0; the CSV SHA-256 is pinned. Never creates, renames, or reclassifies a facility; unknown offering categories stay null. |
+| DOH National Health Facility Registry, September 2026 | Official XLSX export; 44,799 facilities; enrichment-only | `approved_with_attribution` / `published` | DOH facility code, major/detail type, ownership sub-classification, PSGC codes, licensing status and bed capacity. The official site returns HTTP 403 to automated clients; the preserved public copy of the same export (SHA-256 `470c967d…`) is the release artifact. 29,779 exact DOH codes fill only missing profile values; 15,020 unmatched official facilities are added. Never renames or reclassifies an established facility. Contact, street/building address and facility-head fields are discarded. Registry presence is not current operating status. |
 | CHED HEIDA higher-education directory | 2,716 institution records; 2,711 linked facilities | `publicly_available_verified` / `published` | Public directory; institution-level fields only; no coordinates or PSGC codes. Contact and institutional-head fields are withheld, and institutional types that do not establish ownership are published as unclassified. |
 | BetterGov PSGC Q2 2024 mirror | 43,760 geographic units | `approved_with_attribution` (CC BY-SA 4.0) / `published` | Supplementary snapshot; **not** the latest official PSA release. Codes are stored as strings with leading zeros. |
 | PSA 2024 Census population via BetterGov | 134,748 observations; 18 regional releases | `approved_with_attribution` (CC BY-SA 4.0 compilation) / `published` | Saved PSA OpenSTAT snapshots, not live PSA data; counts are persons/households as labelled, never facility capacity. |
@@ -56,8 +59,8 @@ These counts describe processed source records, not the complete national facili
 | HOT/OSM airports, heliports and terminals | 297 parsed, 296 linked facilities | `approved_with_attribution` (ODbL) / `published` | Crowd-sourced; not a CAAP aerodrome register. Operator, ownership and operational status are not inferred. |
 | HOT/OSM sea ports and ferry terminals | 912 parsed, 912 linked facilities | `approved_with_attribution` (ODbL) / `published` | Crowd-sourced; not a PPA or MARINA port inventory. PPA's official port list remains the authoritative identity source. |
 | HOT/OSM railway stations | 151 linked facilities | `approved_with_attribution` (ODbL) / `published` | Crowd-sourced; line/operator and operational status are not inferred beyond source tags. |
-| DOE existing power plants | 4 grid releases; 661 parsed, 635 linked facilities | `approved_with_attribution` / `published` | Luzon, Visayas and Mindanao lists are September 2026; off-grid is April 2026. Capacity and status are source-stated, never inferred. |
-| NHA GeoServer DOH health-facility layer | 31,016 health facilities | `approved_with_attribution` / `published` | A partial alternate to the blocked official DOH NHFR export, not a replacement or a completeness claim. |
+| DOE existing power plants | 4 grid releases; 661 parsed, 661 linked facilities | `approved_with_attribution` / `published` | Luzon, Visayas and Mindanao lists are September 2026; off-grid is April 2026. Capacity and status are source-stated, never inferred. |
+| NHA GeoServer DOH health-facility layer | 31,016 health facilities | `approved_with_attribution` / `published` | A partial spatial alternate to the DOH NHFR registry export; it adds coordinates and independent evidence, but is not the registry or a completeness claim. |
 | NHA landholdings | 169 land/site records | `approved_with_attribution` / `published` | Landholding records only. 946 NHA housing-project records were excluded because they are projects, not facilities; no occupancy or personal data acquired. |
 | LRTA Lines 1–2 stations | 33 stations derived from official station-distance tables | `approved_with_attribution` / `published` | Station set derived from the official distance tables; no coordinates added where the source did not provide them. |
 | MRT-3 stations | 13 stations from the official station page | `approved_with_attribution` / `published` | Official station page only; no inferred geolocation or operational-status claim. |
@@ -70,7 +73,7 @@ These counts describe processed source records, not the complete national facili
 |---|---|---|
 | Official PSA PSGC workbook/API data | `review_required` / `blocked` | Workbook and page return HTTP 403 behind Cloudflare; the classification index returns 200 but collection endpoints require a token. No bypass attempted. |
 | DepEd Machine-Ready Files | `review_required` / `blocked` | HTTP 403 and a human download/terms flow that was not completed. |
-| DOH NHFR and HFSRB licensed facilities | `review_required` / `blocked` | HTTP 403 behind Cloudflare; applicable data-use agreement has not been reviewed or accepted. |
+| DOH HFSRB licensed facilities | `review_required` / `blocked` | HTTP 403; licensing semantics and reuse terms are not established. The broader NHFR registry is published separately from a preserved export. |
 | TESDA TVI | `review_required` / `blocked` | Directory page reachable, but the monitor classifies the response as an access challenge; no verified provider-level bulk release. |
 | Hazard and additional agency sources | `unknown` / `blocked` | Discovery only; no verified layer or facility release acquired. |
 
@@ -183,6 +186,7 @@ Prerequisites: Docker with Compose, Node.js 22+ (24 tested), pnpm 12+, Python 3.
    uv run philfacilities-ingest source run philhealth
    uv run philfacilities-ingest source run osm-health
    uv run philfacilities-ingest source run osm-education
+   uv run philfacilities-ingest source run doh-nhfr
    ```
 
    DepEd EBEIS is deliberately separate. Its source release is published for institution-level fields with personal fields withheld, and its canonical rows are published as unclassified records pending field-level mapping:
@@ -333,11 +337,12 @@ PHILFACILITIES_API_URL=http://127.0.0.1:8010 uv run python scripts/capture_api_e
 
 ## Known limitations
 
-- Coverage is partial. CHED HEIDA institution records are published under `publicly_available_verified`, but there is no complete official DepEd, DOH, PSA PSGC, or TESDA dataset in the public release; CHED coverage is `NATIONAL_PARTIAL` and not campus-level.
+- Coverage is partial. CHED HEIDA institution records are published under `publicly_available_verified`. The DOH NHFR September 2026 snapshot covers 44,799 DOH-coded facilities, but registry presence is not operating status and OSM-only health features remain outside it. There is no complete official DepEd, PSA PSGC, or TESDA dataset in the public release; CHED coverage is `NATIONAL_PARTIAL` and not campus-level.
 - No official PSA PSGC workbook has been acquired; the BetterGov Q2 2024 mirror is a labelled supplement, not a substitute for the latest official release.
 - Public coordinates are `map_geocoded` or source-supplied; there are no GPS-verified or field-verified public coordinates.
-- 103,121 public facilities have no current coordinates and remain searchable without map placement.
-- 97,337 located public facilities lack a PSGC assignment; no geography was guessed.
+- 118,139 public facilities have no current coordinates and remain searchable without map placement.
+- 196 located public facilities lack a PSGC assignment; no geography was guessed.
+- No accessible national bulk list has been verified for fire stations, police stations, public markets, evacuation centres, barangay halls, or general government offices. Those types are covered mainly by crowd-sourced OSM features, whose ownership and operational status remain unknown rather than inferred.
 - OSM duplicate identifiers and missing names are reported as open quality issues rather than silently merged or dropped.
 - The Antenatal PhilHealth PDF was re-ingested with the corrected parser. Its first parse had recorded 6,562 rows because the two-up PDF's expiry/sector annex (pages 121–240) was counted as provider rows; that release was withdrawn and its derived records removed. The corrected `philhealth-pdf-1.2.0` parser reads 3,221 provider rows, stops at page 120, and produced 3,221 accreditations for 3,178 existing facilities. Evidence: `docs/operations/evidence/2026-11-16-philhealth-antenatal-reingestion/`. The linked Birthing Homes PDF still returns HTTP 404 and is not replaced with invented data.
 - Hosted CI, a hosted scheduled run, production monitoring/paging, a licensed production basemap, production backups/PITR, and external security/legal review remain external release gates.

@@ -154,6 +154,7 @@ def stage_source_records(
     parsed: ParsedRelease,
     validation: ValidationResult,
     reprocess: bool,
+    force_reapply: bool = False,
 ) -> tuple[dict[str, SourceRecord], dict[str, uuid.UUID], set[str], dict[str, bool]]:
     """Upsert every parsed row as a source record and record validation issues.
 
@@ -201,7 +202,9 @@ def stage_source_records(
             unchanged_by_key[record_key] = False
         else:
             payload_hash = _hash(row.raw_payload)
-            unchanged_by_key[record_key] = record.raw_record_hash == payload_hash
+            unchanged_by_key[record_key] = (
+                False if force_reapply else record.raw_record_hash == payload_hash
+            )
             record.row_number_or_page = row.row_reference
             record.raw_payload = row.raw_payload
             record.raw_record_hash = payload_hash

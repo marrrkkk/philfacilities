@@ -325,7 +325,6 @@ def test_internal_release_cannot_rewrite_public_facility_or_leak_children(
         deped_school_id=public_deped_id,
         sector="public",
         school_management="deped",
-        annex_status="standalone",
         offers_es=True,
         offers_jhs=True,
         offers_shs=True,

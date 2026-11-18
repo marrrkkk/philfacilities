@@ -50,6 +50,16 @@ from ..contracts import (
 from ..pipeline import ensure_source
 from .bettergov import build_psgc_release_payload, parse_psgc_api_payload
 from .deped_ebeis import parse_masterlist_html
+from .deped_masterlist import (
+    DATASET_PAGE_URL as DEPED_MASTERLIST_DATASET_URL,
+)
+from .deped_masterlist import (
+    OFFICIAL_PDF_URL as DEPED_MASTERLIST_URL,
+)
+from .deped_masterlist_detail import (
+    BETTERGOV_DATASET_URL,
+    KAGGLE_DATASET_URL,
+)
 from .philhealth import PhilHealthCatalogEntry, parse_catalog
 
 # ---------------------------------------------------------------------------
@@ -120,6 +130,52 @@ DEPED_EBEIS_RIGHTS_BASIS = (
     "attribution for non-commercial public-interest use. School-head names and other "
     "personal fields remain in the private source store and are not exposed by the "
     "public API. This is a documented publication decision, not a legal opinion."
+)
+DEPED_MASTERLIST_RIGHTS_BASIS = (
+    "The Masterlist of Schools is a work of the Department of Education, a government "
+    "agency. RA 8293 section 176 provides that no copyright subsists in a work of the "
+    "Government of the Philippines, while prior approval may be required for commercial "
+    "use. PhilFacilities publishes only institution-level school fields (BEIS School ID, "
+    "Sector, and the derived ownership classification) with attribution for "
+    "non-commercial public-interest use. The file contains no school-head names or other "
+    "personal fields. The official DepEd URL returns HTTP 403 to automated clients, so "
+    "the preserved Wayback copy of the same artifact is acquired and checksummed. This "
+    "is a documented publication decision, not a legal opinion."
+)
+DEPED_MASTERLIST_ATTRIBUTION = (
+    "Department of Education — Masterlist of Schools, SY 2020-2021 "
+    "(based on LIS as of 15 January 2021)"
+)
+DEPED_MASTERLIST_DETAIL_RIGHTS_BASIS = (
+    "BetterGov Open Data Portal dataset 41 publishes the DepEd Masterlist of "
+    "Schools, SY 2020-2021 as a machine-readable CSV attributed to the Department "
+    "of Education and licensed CC BY 4.0. The upstream work is a government work; "
+    "RA 8293 section 176 provides that no copyright subsists in such a work, while "
+    "prior approval may be required for commercial use. PhilFacilities publishes "
+    "only institution-level school fields for non-commercial public-interest use "
+    "with attribution, provenance, and takedown on notice. The CSV contains no "
+    "school-head names or other personal fields. This is a documented publication "
+    "decision, not a legal opinion."
+)
+DEPED_MASTERLIST_DETAIL_ATTRIBUTION = (
+    "Department of Education — Masterlist of Schools, SY 2020-2021; tabular "
+    "transcription via BetterGov Open Data Portal dataset 41 (CC BY 4.0)"
+)
+DOH_NHFR_RIGHTS_BASIS = (
+    "The National Health Facility Registry is a work of the Department of Health, a "
+    "government agency. RA 8293 section 176 provides that no copyright subsists in a "
+    "work of the Government of the Philippines, while prior approval may be required "
+    "for commercial use. The official registry endpoint returns an access-control "
+    "challenge to automated clients, so PhilFacilities acquires a preserved public "
+    "copy of the official September 2026 XLSX export and pins its SHA-256. Only "
+    "institution-level registry fields are published; contact details, street and "
+    "building addresses, and facility-head names are deliberately discarded. "
+    "Publication is for non-commercial public-interest use with attribution, "
+    "provenance, and takedown on notice. This is a documented publication decision, "
+    "not a legal opinion."
+)
+DOH_NHFR_ATTRIBUTION = (
+    "Department of Health — National Health Facility Registry, September 2026 snapshot"
 )
 OFFICIAL_BLOCKED_BASIS = (
     "The official endpoint was reachable only through a human terms/access flow or "
@@ -822,6 +878,63 @@ REAL_SOURCES: dict[str, RealSource] = {
             "basis, while the raw acquisition artifact remains private."
         ),
     ),
+    "deped-masterlist-2020": RealSource(
+        key="deped-masterlist-2020",
+        agency_code="deped",
+        agency_name="Department of Education",
+        dataset_slug="deped-masterlist-sy2020-2021",
+        dataset_name="DepEd Masterlist of Schools, SY 2020-2021",
+        source_url=DEPED_MASTERLIST_URL,
+        access_method="public_pdf",
+        update_pattern="school year",
+        rights=RIGHTS_APPROVED_ATTRIBUTION,
+        rights_basis=DEPED_MASTERLIST_RIGHTS_BASIS,
+        attribution_text=DEPED_MASTERLIST_ATTRIBUTION,
+        personal_data_status="institution_level_only",
+        requested_publication_status=PUBLICATION_APPROVED,
+        terms_url=DEPED_MASTERLIST_DATASET_URL,
+        minimum_acceptance_rate=0.999,
+        minimum_acceptance_rows=60000,
+        note=(
+            "Official 544-page PDF (60,924 rows) published 9 June 2021. The DepEd "
+            "URL currently returns HTTP 403 to automated clients; acquisition falls "
+            "back to the preserved Wayback copy (SHA-256 "
+            "461a96d3fa2bca1f046ac4fb5c5ea1b7430e2f190c7253fe54f64dfdf87547d5). "
+            "Rows are matched by exact six-digit BEIS School ID and fill only missing "
+            "ownership, classification, and school-sector fields. They never rename "
+            "a facility or replace an established classification. A third-party "
+            "transcription was used only to validate the parser output, not as a "
+            "published source."
+        ),
+    ),
+    "deped-masterlist-2020-detail": RealSource(
+        key="deped-masterlist-2020-detail",
+        agency_code="deped",
+        agency_name="Department of Education",
+        dataset_slug="deped-masterlist-sy2020-2021-detail",
+        dataset_name="DepEd Masterlist of Schools, SY 2020-2021 — tabular detail",
+        source_url=BETTERGOV_DATASET_URL,
+        access_method="public_csv",
+        update_pattern="school year",
+        rights=RIGHTS_APPROVED_ATTRIBUTION,
+        rights_basis=DEPED_MASTERLIST_DETAIL_RIGHTS_BASIS,
+        attribution_text=DEPED_MASTERLIST_DETAIL_ATTRIBUTION,
+        personal_data_status="institution_level_only",
+        requested_publication_status=PUBLICATION_APPROVED,
+        terms_url=KAGGLE_DATASET_URL,
+        minimum_acceptance_rate=0.999,
+        minimum_acceptance_rows=60000,
+        coverage_scope="NATIONAL",
+        note=(
+            "BetterGov Open Data Portal dataset 41, a CC BY 4.0 CSV transcription "
+            "of the official DepEd masterlist (60,924 rows). The CSV preserves "
+            "division, district, legislative district, settlement type, "
+            "school-management class and combined offering classification that "
+            "are clipped or absent in the PDF. Rows are matched by exact six-digit "
+            "BEIS School ID and fill only missing values; they never rename a "
+            "facility or create an unmatched school."
+        ),
+    ),
     "deped-machine-ready": RealSource(
         key="deped-machine-ready",
         agency_code="deped",
@@ -843,14 +956,29 @@ REAL_SOURCES: dict[str, RealSource] = {
         dataset_slug="doh-nhfr",
         dataset_name="DOH National Health Facility Registry",
         source_url="https://nhfr.doh.gov.ph/VActivefacilitiesList",
-        access_method="official_registry",
-        update_pattern="weekly",
-        rights=RIGHTS_REVIEW_REQUIRED,
-        rights_basis=OFFICIAL_BLOCKED_BASIS,
-        requested_publication_status=PUBLICATION_BLOCKED,
+        access_method="public_workbook",
+        update_pattern="monthly",
+        rights=RIGHTS_APPROVED_ATTRIBUTION,
+        rights_basis=DOH_NHFR_RIGHTS_BASIS,
+        attribution_text=DOH_NHFR_ATTRIBUTION,
+        personal_data_status="institution_level_only",
+        requested_publication_status=PUBLICATION_APPROVED,
+        terms_url="https://nhfr.doh.gov.ph/",
+        minimum_acceptance_rate=0.999,
+        minimum_acceptance_rows=44000,
+        coverage_scope="NATIONAL",
         note=(
-            "HTTP 403 Cloudflare challenge on 15 Nov 2026. Existing FOI disclosures may "
-            "carry a Data Release and Use Agreement; no agreement was accepted."
+            "Official September 2026 registry export: 44,799 facilities with unique "
+            "DOH codes. The official site returns an HTTP 403 Cloudflare challenge to "
+            "automated clients; acquisition reads the preserved public copy of the "
+            "same XLSX (SHA-256 "
+            "470c967db52e90bf9d7018d0434d3166e1d17ed04714edcc7ceadb78bad82835) and "
+            "rejects any checksum change. Rows are matched by exact DOH facility code "
+            "and fill only missing profile values; they never rename an established "
+            "facility or replace an established classification. Unmatched official "
+            "rows create a new health facility. Registry presence is not proof of "
+            "current operation. Contact, street/building address, and facility-head "
+            "fields are discarded."
         ),
     ),
     "ched-heida": RealSource(

@@ -8,7 +8,7 @@ Adapter modules still own parsing, validation, and normalization.
 from __future__ import annotations
 
 from collections.abc import Callable
-from datetime import date
+from datetime import UTC, date, datetime
 from typing import Any
 
 from ..contracts import ReleaseSpec
@@ -34,7 +34,29 @@ from .definitions import (
     SourceDefinition,
     publisher_type_for,
 )
+from .deped_masterlist import (
+    ARCHIVE_PDF_URL,
+    MAX_PDF_BYTES,
+    DepEdMasterlistAdapter,
+    fetch_deped_masterlist,
+)
+from .deped_masterlist_detail import (
+    BETTERGOV_DATASET_URL,
+    KAGGLE_DOWNLOAD_URL,
+    DepEdMasterlistDetailAdapter,
+    fetch_deped_masterlist_detail,
+)
 from .doe_power import DoePowerPlantAdapter
+from .doh_nhfr import (
+    MAX_XLSX_BYTES as DOH_NHFR_MAX_BYTES,
+)
+from .doh_nhfr import (
+    MIRROR_XLSX_URL as DOH_NHFR_XLSX_URL,
+)
+from .doh_nhfr import (
+    DohNhfrAdapter,
+    fetch_doh_nhfr,
+)
 from .dswd_crcf import DswdCrcfDirectoryAdapter
 from .dti_negosyo import DtiNegosyoCenterAdapter, fetch_negosyo_centers
 from .lrta import LrtaStationAdapter, fetch_distance_page
@@ -178,6 +200,18 @@ def _build_catalog() -> tuple[dict[str, SourceDefinition], dict[str, SourceConne
             data={"page": "1", "region_id": "13", "user_id": "", "school_head": ""},
             expected_marker="School ID",
         ),
+        "deped-masterlist-2020": CheckSpec(
+            url=ARCHIVE_PDF_URL,
+            expected_marker="%PDF",
+        ),
+        "deped-masterlist-2020-detail": CheckSpec(
+            url=KAGGLE_DOWNLOAD_URL,
+            expected_marker="PK",
+        ),
+        "doh-nhfr": CheckSpec(
+            url=DOH_NHFR_XLSX_URL,
+            expected_marker="PK",
+        ),
         "bettergov-psgc": CheckSpec(url=f"{BETTERGOV_PSGC_URL}/Q2_2024/regions"),
         "nlp": CheckSpec(expected_marker="%PDF"),
         "ppa": CheckSpec(expected_marker="%PDF"),
@@ -218,6 +252,66 @@ def _build_catalog() -> tuple[dict[str, SourceDefinition], dict[str, SourceConne
 
     # DepEd --------------------------------------------------------------
     connectors["deped-ebeis"] = EbeisConnector()
+    connectors["deped-masterlist-2020"] = _single(
+        "deped-masterlist-2020",
+        url=REAL_SOURCES["deped-masterlist-2020"].source_url,
+        fetcher=fetch_deped_masterlist,
+        adapter=DepEdMasterlistAdapter,
+        filename=_fixed("deped-masterlist-sy2020-2021.pdf"),
+        release_label=_fixed("DEPED-MASTERLIST-SY2020-2021"),
+        max_bytes=MAX_PDF_BYTES,
+        source_published_at=datetime(2021, 6, 9, tzinfo=UTC),
+        reference_period_start=date(2020, 6, 1),
+        reference_period_end=date(2021, 1, 15),
+        timeout_seconds=180.0,
+        notes=(
+            "Official DepEd PDF; acquisition falls back to the preserved Wayback "
+            "copy when the DepEd host returns HTTP 403."
+        ),
+    )
+    connectors["deped-masterlist-2020-detail"] = _single(
+        "deped-masterlist-2020-detail",
+        # The declared source is the BetterGov catalogue page. The fetcher uses
+        # the public Kaggle mirror and records that acquisition URL in metadata.
+        url=BETTERGOV_DATASET_URL,
+        fetcher=fetch_deped_masterlist_detail,
+        adapter=DepEdMasterlistDetailAdapter,
+        filename=_fixed("deped-masterlist-sy2020-2021-detail.zip"),
+        release_label=_fixed("DEPED-MASTERLIST-SY2020-2021-DETAIL"),
+        max_bytes=20 * 1024 * 1024,
+        source_published_at=datetime(2021, 6, 9, tzinfo=UTC),
+        reference_period_start=date(2020, 6, 1),
+        reference_period_end=date(2021, 1, 15),
+        timeout_seconds=120.0,
+        notes=(
+            "BetterGov Open Data Portal dataset 41 (CC BY 4.0), a machine-readable "
+            "transcription of the official DepEd masterlist. The CSV SHA-256 is "
+            "pinned; any artifact change is rejected."
+        ),
+    )
+
+    # DOH ----------------------------------------------------------------
+    connectors["doh-nhfr"] = _single(
+        "doh-nhfr",
+        url=REAL_SOURCES["doh-nhfr"].source_url,
+        fetcher=fetch_doh_nhfr,
+        adapter=DohNhfrAdapter,
+        filename=_fixed("doh-nhfr-2026-09.xlsx"),
+        release_label=_fixed("DOH-NHFR-2026-09"),
+        max_bytes=DOH_NHFR_MAX_BYTES,
+        # The export states only "as of September 2026"; no official publication
+        # day is given, so the publication timestamp stays null rather than
+        # inventing month-end precision.
+        source_published_at=None,
+        reference_period_start=date(2026, 9, 1),
+        reference_period_end=date(2026, 9, 30),
+        timeout_seconds=180.0,
+        notes=(
+            "Official NHFR XLSX export. The official site returns HTTP 403 to "
+            "automated clients; acquisition reads the preserved public copy of the "
+            "same export and verifies its pinned SHA-256."
+        ),
+    )
 
     # Single-artifact sources -------------------------------------------
     connectors["philhealth-offices"] = _single(
@@ -544,10 +638,6 @@ def _build_catalog() -> tuple[dict[str, SourceDefinition], dict[str, SourceConne
         "deped-machine-ready": (
             "DepEd machine-ready files require a human download and a documented rights "
             "decision; no automated connector is configured."
-        ),
-        "doh-nhfr": (
-            "The DOH National Health Facility Registry endpoint is access-controlled and "
-            "has no documented reuse decision; no automated connector is configured."
         ),
         "tesda-tvi": (
             "The TESDA TVI directory has no verified access or reuse decision; no "

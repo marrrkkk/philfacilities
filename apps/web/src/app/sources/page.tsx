@@ -49,14 +49,20 @@ export default async function SourcesPage() {
   let monitoring: SourceMonitoringOut[] = [];
   let error: string | null = null;
   let monitoringError: string | null = null;
-  try {
-    sources = await listSources();
-  } catch (caught) {
+  const [sourcesResult, monitoringResult] = await Promise.allSettled([
+    listSources(),
+    listMonitoring(),
+  ]);
+  if (sourcesResult.status === "fulfilled") {
+    sources = sourcesResult.value;
+  } else {
+    const caught = sourcesResult.reason;
     error = caught instanceof Error ? caught.message : "The source register is unavailable.";
   }
-  try {
-    monitoring = await listMonitoring();
-  } catch (caught) {
+  if (monitoringResult.status === "fulfilled") {
+    monitoring = monitoringResult.value;
+  } else {
+    const caught = monitoringResult.reason;
     monitoringError =
       caught instanceof Error ? caught.message : "Source monitoring is unavailable.";
   }

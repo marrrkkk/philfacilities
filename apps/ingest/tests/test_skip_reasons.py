@@ -87,7 +87,6 @@ def test_access_states_never_return_blocked():
 
 def test_every_registered_skip_has_a_valid_reason_and_alternate_route():
     assert set(SOURCE_SKIPS) == {
-        "doh-nhfr",
         "deped-machine-ready",
         "psa-psgc",
         "tesda-tvi",

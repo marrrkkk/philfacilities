@@ -30,6 +30,7 @@ from philfacilities_api.models import (
     ResourceObservation,
     SchoolProfile,
     SourceRecord,
+    UtilityProfile,
 )
 from philfacilities_api.taxonomy import (
     DISCOVERY_CANDIDATE,
@@ -288,6 +289,17 @@ def _apply_sector_ownership(
         )
 
 
+_PLACEHOLDER_VALUES = {"", "unknown", "unset", "discovery_candidate"}
+
+
+def _is_unset(value: object) -> bool:
+    """True when a canonical field carries no established value yet."""
+
+    return value is None or (
+        isinstance(value, str) and value.strip().casefold() in _PLACEHOLDER_VALUES
+    )
+
+
 def _apply_candidate(
     session: Session,
     *,
@@ -302,6 +314,7 @@ def _apply_candidate(
     enqueue_matches: bool = True,
     used_slugs: set[str] | None = None,
     facility_by_entity: dict[str, Facility] | None = None,
+    facility_by_doh_id: dict[str, Facility | None] | None = None,
     sector_by_facility: dict[uuid.UUID, set[str]] | None = None,
     pending_matches: list[tuple[Facility, SourceRecord]] | None = None,
     new_facilities: list[Facility] | None = None,
@@ -313,7 +326,42 @@ def _apply_candidate(
     facility = _find_facility_for_entity(
         session, agency.id, entity_id, facility_by_entity=facility_by_entity
     )
+    ambiguous_doh_code = False
+    matched_by_doh_facility_code = False
+    if (
+        facility is None
+        and facility_by_doh_id is not None
+        and candidate.health is not None
+        and candidate.health.doh_facility_id
+    ):
+        # The DOH facility code is a stable cross-source identifier. The NHA
+        # health-facility layer already stores it on the health profile, so a
+        # second official DOH source must link to that facility rather than
+        # creating a duplicate. A code already mapped to more than one facility
+        # is ambiguous and must not create a third one.
+        code = candidate.health.doh_facility_id
+        if code in facility_by_doh_id:
+            facility = facility_by_doh_id[code]
+            ambiguous_doh_code = facility is None
+            matched_by_doh_facility_code = facility is not None
     created = False
+    if ambiguous_doh_code:
+        session.add(
+            QualityIssue(
+                source_record_id=record.id,
+                release_id=release.id,
+                issue_code="ambiguous_doh_facility_code",
+                severity="error",
+                message=(
+                    "DOH facility code resolves to more than one canonical facility; "
+                    "no record was created or changed."
+                ),
+                details={"doh_facility_id": candidate.health.doh_facility_id},
+                status="open",
+            )
+        )
+        stats["unresolved"] += 1
+        return None
     inclusion_class = candidate.inclusion_class or derive_inclusion_class(candidate.ownership)
     if inclusion_class not in (*PUBLIC_INCLUSION_CLASSES, DISCOVERY_CANDIDATE):
         raise ValueError(f"Unsupported inclusion class {inclusion_class!r}")
@@ -458,11 +506,20 @@ def _apply_candidate(
                 # identifying source release.
                 if new_value in (None, "", "unknown", "UNKNOWN"):
                     continue
+                # A later enrichment release may fill a gap, but it must not
+                # rename the facility or replace an established classification.
+                # DISCOVERY_CANDIDATE and unknown are placeholders, not
+                # established values.
+                if candidate.enrichment_only and (
+                    attribute == "display_name" or not _is_unset(old_value)
+                ):
+                    continue
                 if new_value != old_value:
                     setattr(facility, attribute, new_value)
                     changed[attribute] = {"old": old_value, "new": new_value}
             if (
                 candidate.access_conditions
+                and not candidate.enrichment_only
                 and candidate.access_conditions != facility.access_conditions
             ):
                 old_conditions = facility.access_conditions
@@ -536,13 +593,20 @@ def _apply_candidate(
         "source_record_key": candidate.source_record_key,
         "parser_version": parser_version,
     }
+    if matched_by_doh_facility_code:
+        evidence["matched_doh_facility_id"] = candidate.health.doh_facility_id
+    match_method = "new_canonical_record"
+    if not created:
+        match_method = (
+            "exact_doh_facility_code" if matched_by_doh_facility_code else "exact_agency_id"
+        )
     if link is None:
         session.add(
             FacilitySourceLink(
                 facility_id=facility.id,
                 source_record_id=record.id,
                 source_entity_id=entity_id,
-                match_method="new_canonical_record" if created else "exact_agency_id",
+                match_method=match_method,
                 match_confidence=Decimal("1.000"),
                 match_status="automatic_high_confidence",
                 evidence=evidence,
@@ -550,7 +614,9 @@ def _apply_candidate(
         )
     else:
         link.source_entity_id = entity_id
-        link.match_method = "new_canonical_record" if created else "exact_agency_id"
+        # Preserve how the link was originally established. Replaying the same
+        # release finds the link through the stored agency ID and must not
+        # rewrite a cross-agency DOH-code match as an exact agency-ID match.
         link.match_status = "automatic_high_confidence"
         link.evidence = evidence
 
@@ -901,14 +967,25 @@ def _apply_candidate(
         for attribute in (
             "sector",
             "school_management",
-            "annex_status",
+            "division",
+            "district",
+            "legislative_district",
+            "settlement_type",
+            "offering_classification",
             "offers_es",
             "offers_jhs",
             "offers_shs",
         ):
             value = getattr(school, attribute)
             if value is not None:
-                if profile is not None and not protect_public:
+                # An enrichment release fills a missing school attribute. The
+                # profile's original source record keeps ownership of values it
+                # already supplied.
+                if (
+                    profile is not None
+                    and not protect_public
+                    and (not candidate.enrichment_only or _is_unset(getattr(profile, attribute)))
+                ):
                     setattr(profile, attribute, value)
                 _add_assertion(
                     session,
@@ -921,7 +998,7 @@ def _apply_candidate(
                     existing=assertion_keys,
                     source_field=attribute,
                 )
-        if profile is not None and not protect_public:
+        if profile is not None and not protect_public and not candidate.enrichment_only:
             profile.source_record_id = record.id
         for observation in school.enrollment:
             exists = (
@@ -1013,13 +1090,22 @@ def _apply_candidate(
             if update_prefetch is not None:
                 update_prefetch.remember_health_profile(profile)
         for attribute in (
+            "facility_major_type",
+            "facility_type_detail",
             "facility_category",
-            "service_capability_level",
+            "ownership_subclassification",
+            "licensing_status",
             "bed_capacity",
         ):
             value = getattr(health, attribute)
             if value is not None:
-                if profile is not None and not protect_public:
+                # An enrichment release fills a missing profile value but keeps
+                # the source record that established an existing one.
+                if (
+                    profile is not None
+                    and not protect_public
+                    and (not candidate.enrichment_only or _is_unset(getattr(profile, attribute)))
+                ):
                     setattr(profile, attribute, value)
                 _add_assertion(
                     session,
@@ -1032,7 +1118,7 @@ def _apply_candidate(
                     existing=assertion_keys,
                     source_field=attribute,
                 )
-        if profile is not None and not protect_public:
+        if profile is not None and not protect_public and not candidate.enrichment_only:
             profile.source_record_id = record.id
         if health.doh_facility_id:
             _add_assertion(
@@ -1042,6 +1128,66 @@ def _apply_candidate(
                 attribute="doh_facility_id",
                 raw_value=health.doh_facility_id,
                 normalized_value=health.doh_facility_id,
+                version=parser_version,
+                existing=assertion_keys,
+            )
+
+    if candidate.utility:
+        utility = candidate.utility
+        # Utility profiles are keyed by facility and DOE facility code, not by
+        # source record, so a replayed release still matches the same profile.
+        profile = None
+        if not created:
+            profile = session.scalars(
+                select(UtilityProfile).where(
+                    UtilityProfile.facility_id == facility.id,
+                    UtilityProfile.doe_facility_code == utility.doe_facility_code,
+                )
+            ).first()
+        if profile is None and not protect_public:
+            profile = UtilityProfile(
+                facility_id=facility.id,
+                doe_facility_code=utility.doe_facility_code,
+                source_record_id=record.id,
+            )
+            session.add(profile)
+        for attribute in (
+            "resource_type",
+            "technology_type",
+            "connection_type",
+            "grid",
+            "owner_type",
+            "contract_type",
+            "installed_mw",
+            "dependable_mw",
+            "number_of_units",
+            "date_commissioned",
+        ):
+            value = getattr(utility, attribute)
+            if value is not None:
+                if profile is not None and not protect_public:
+                    setattr(profile, attribute, value)
+                _add_assertion(
+                    session,
+                    facility_id=facility.id,
+                    source_record_id=record.id,
+                    attribute=f"utility.{attribute}",
+                    raw_value=value,
+                    normalized_value=value,
+                    version=parser_version,
+                    existing=assertion_keys,
+                    source_field=attribute,
+                )
+        if profile is not None and not protect_public:
+            profile.source_record_id = record.id
+        if utility.doe_facility_code:
+            _add_assertion(
+                session,
+                facility_id=facility.id,
+                source_record_id=record.id,
+                attribute="utility.doe_facility_code",
+                raw_value=utility.doe_facility_code,
+                normalized_value=utility.doe_facility_code,
                 version=parser_version,
                 existing=assertion_keys,
             )

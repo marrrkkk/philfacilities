@@ -448,6 +448,56 @@ def test_spatial_queries_are_bounded_and_respect_coordinates(client):
     assert unacceptable.json()["code"] == "bbox_too_large"
 
 
+def test_map_endpoint_returns_minimal_points_and_server_clusters(client, monkeypatch):
+    bbox = "120.55,14.40,121.18,14.85"
+    points = client.get("/v1/facilities/map", params={"bbox": bbox, "zoom": 9})
+    assert points.status_code == 200
+    body = points.json()
+    assert body["mode"] == "points"
+    assert body["total"] == len(body["points"])
+    assert body["points"]
+    assert set(body["points"][0]) == {
+        "id",
+        "slug",
+        "name",
+        "facility_type",
+        "inclusion_class",
+        "precision",
+        "latitude",
+        "longitude",
+    }
+    min_lon, min_lat, max_lon, max_lat = map(float, bbox.split(","))
+    for point in body["points"]:
+        assert min_lat <= point["latitude"] <= max_lat
+        assert min_lon <= point["longitude"] <= max_lon
+
+    # A wide national viewport must never fail just because it is large; the
+    # endpoint switches to count circles instead of rejecting the view.
+    wide = client.get("/v1/facilities/map", params={"bbox": "116.0,4.0,127.0,22.0", "zoom": 5})
+    assert wide.status_code == 200
+    assert wide.json()["mode"] in {"points", "clusters"}
+
+    from philfacilities_api.api import facilities as facilities_api
+
+    monkeypatch.setattr(facilities_api.settings, "max_map_points", 1)
+    clustered = client.get("/v1/facilities/map", params={"bbox": bbox, "zoom": 10})
+    assert clustered.status_code == 200
+    clustered_body = clustered.json()
+    assert clustered_body["mode"] == "clusters"
+    assert clustered_body["clusters"]
+    assert clustered_body["total"] == sum(
+        cluster["count"] for cluster in clustered_body["clusters"]
+    )
+    for cluster in clustered_body["clusters"]:
+        assert cluster["label"].endswith(("facility", "facilities"))
+        assert min_lat <= cluster["latitude"] <= max_lat
+        assert min_lon <= cluster["longitude"] <= max_lon
+
+    invalid = client.get("/v1/facilities/map", params={"bbox": "0,0,0,0"})
+    assert invalid.status_code == 400
+    assert invalid.json()["code"] == "invalid_bbox"
+
+
 def test_geography_release_chain_and_psgc_values(client):
     regions = _items(client, "/v1/geographies", level="region", limit=100)
     assert len(regions) == 2

@@ -61,12 +61,21 @@ from .matching import (
     reject_match_candidate,
     undo_match_merge,
 )
+from .osm_boundaries import (
+    BOUNDARY_RELEASE_LABEL,
+    boundary_artifacts,
+    extract_osm_boundaries,
+    import_osm_boundaries,
+    sha256_file,
+)
 from .pipeline import (
     build_engine,
     run_ingestion,
     run_psgc_ingestion,
     session_factory,
 )
+from .psgc_fill import fill_location_psgc
+from .psgc_spatial_fill import fill_location_psgc_from_map
 from .rebuild_reports import write_rebuild_pack
 from .release_rollback import ReleaseRollbackError, rollback_release
 from .replay import ReplayManifestError, replay_manifest
@@ -85,6 +94,11 @@ from .source_inventory import (
 from .source_report import enrich_source_inventory, validate_report_fields, write_source_reports
 from .source_runner import run_selection, summarize_results, validate_source
 from .sources.catalog import SOURCES, catalog_rows, select_keys
+from .sources.connectors.osm import (
+    DEFAULT_PBF_PATH,
+    PBF_SOURCE_PUBLISHED_AT,
+    PBF_SOURCE_URL,
+)
 from .sources.deped import DepEdEnrollmentAdapter, DepEdMasterlistAdapter, DepEdResourceAdapter
 from .sources.doh import DOHNHFRAdapter
 from .sources.philhealth import PhilHealthPdfAdapter
@@ -464,6 +478,17 @@ def source_run(
         bool,
         typer.Option("--reprocess", help="Reprocess an already-preserved release."),
     ] = False,
+    force_reapply: Annotated[
+        bool,
+        typer.Option(
+            "--force-reapply",
+            help=(
+                "Reapply every parsed row even when its raw payload is unchanged. "
+                "Use after adding a derived child table; this re-asserts canonical "
+                "fields and can churn values from competing sources."
+            ),
+        ),
+    ] = False,
     dry_run: Annotated[
         bool,
         typer.Option(
@@ -539,6 +564,7 @@ def source_run(
             settings,
             selected,
             reprocess=reprocess,
+            force_reapply=force_reapply,
             dry_run=dry_run,
             input_path=input_path,
             options=options,
@@ -898,6 +924,182 @@ def fill_locations_from_osm_command(
     typer.echo(json.dumps(result.to_dict(), indent=2, default=str))
     if not apply:
         typer.echo("dry run: pass --apply to write the community map locations.")
+
+
+@app.command("fill-location-psgc")
+def fill_location_psgc_command(
+    apply: Annotated[
+        bool,
+        typer.Option(
+            "--apply",
+            help="Write the resolved PSGC codes; without it the command is a dry run.",
+        ),
+    ] = False,
+    report: Annotated[
+        Path | None,
+        typer.Option(
+            "--report",
+            help="Write a machine-readable resolution report (JSON) here.",
+        ),
+    ] = None,
+) -> None:
+    """Resolve missing location PSGC codes from linked source evidence."""
+
+    engine, session = _session()
+    try:
+        result = fill_location_psgc(session, apply=apply, report_path=report)
+    finally:
+        session.close()
+        engine.dispose()
+    typer.echo(json.dumps(result.to_dict(include_rows=False), indent=2, default=str))
+    if not apply:
+        typer.echo("dry run: pass --apply to write the resolved PSGC codes.")
+
+
+@app.command("fill-location-psgc-from-map")
+def fill_location_psgc_from_map_command(
+    apply: Annotated[
+        bool,
+        typer.Option(
+            "--apply",
+            help="Write the map-derived PSGC codes; without it the command is a dry run.",
+        ),
+    ] = False,
+    refine: Annotated[
+        bool,
+        typer.Option(
+            "--refine",
+            help=(
+                "Upgrade a non-null code only when the containing map unit is a "
+                "descendant of the current code."
+            ),
+        ),
+    ] = False,
+    prefer_map: Annotated[
+        bool,
+        typer.Option(
+            "--prefer-map",
+            help=(
+                "Treat the containing map unit as authoritative: override "
+                "same-level and different-branch source codes, keeping the "
+                "original source claim in its assertion."
+            ),
+        ),
+    ] = False,
+    report: Annotated[
+        Path | None,
+        typer.Option(
+            "--report",
+            help="Write a machine-readable containment report (JSON) here.",
+        ),
+    ] = None,
+) -> None:
+    """Fill missing location PSGC codes from point-in-polygon map containment.
+
+    ``--prefer-map`` makes the containing map unit authoritative for the
+    administrative location while preserving source claims as assertions.
+    """
+
+    engine, session = _session()
+    try:
+        result = fill_location_psgc_from_map(
+            session,
+            apply=apply,
+            refine=refine,
+            prefer_map=prefer_map,
+            report_path=report,
+        )
+    finally:
+        session.close()
+        engine.dispose()
+    payload = result.to_dict(include_rows=False)
+    payload.pop("conflict_samples", None)
+    payload.pop("unresolved_samples", None)
+    typer.echo(json.dumps(payload, indent=2, default=str))
+    if not apply:
+        typer.echo("dry run: pass --apply to write the map-derived PSGC codes.")
+
+
+@app.command("import-osm-boundaries")
+def import_osm_boundaries_command(
+    pbf_path: Annotated[
+        Path,
+        typer.Option("--pbf-path", help="Local Geofabrik .osm.pbf snapshot."),
+    ] = DEFAULT_PBF_PATH,
+    extract_out: Annotated[
+        Path,
+        typer.Option(
+            "--extract-out",
+            help="Preserved boundary Parquet artifact; metadata is written beside it.",
+        ),
+    ] = Path("var/extracts/osm-admin-boundaries-philippines.parquet"),
+    release_label: Annotated[
+        str,
+        typer.Option("--release-label", help="Boundary snapshot label stored with rows."),
+    ] = BOUNDARY_RELEASE_LABEL,
+    refresh: Annotated[
+        bool,
+        typer.Option(
+            "--refresh",
+            help="Re-extract boundaries even when the Parquet artifact already exists.",
+        ),
+    ] = False,
+    apply: Annotated[
+        bool,
+        typer.Option(
+            "--apply",
+            help="Replace the stored boundary layer; without it the command is a dry run.",
+        ),
+    ] = False,
+    report: Annotated[
+        Path | None,
+        typer.Option(
+            "--report",
+            help="Write a machine-readable boundary import report (JSON) here.",
+        ),
+    ] = None,
+) -> None:
+    """Extract OSM administrative boundaries and resolve them to current PSGC codes."""
+
+    if refresh or not extract_out.exists():
+        if not pbf_path.exists():
+            raise typer.BadParameter(f"PBF snapshot not found: {pbf_path}")
+        extract_stats = extract_osm_boundaries(
+            pbf_path,
+            extract_out,
+            source_url=PBF_SOURCE_URL,
+            source_sha256=sha256_file(pbf_path),
+            source_published_at=PBF_SOURCE_PUBLISHED_AT,
+        )
+        typer.echo(json.dumps(extract_stats.to_dict(), indent=2, default=str))
+
+    _rows, metadata = boundary_artifacts(extract_out)
+    published_raw = metadata.get("source_published_at")
+    retrieved_raw = metadata.get("retrieved_at")
+    source_published_at = (
+        datetime.fromisoformat(published_raw) if published_raw else PBF_SOURCE_PUBLISHED_AT
+    )
+    retrieved_at = datetime.fromisoformat(retrieved_raw) if retrieved_raw else None
+
+    engine, session = _session()
+    try:
+        result = import_osm_boundaries(
+            session,
+            extract_out,
+            release_label=release_label,
+            source_url=str(metadata.get("source_url") or PBF_SOURCE_URL),
+            source_sha256=metadata.get("source_sha256"),
+            source_published_at=source_published_at,
+            retrieved_at=retrieved_at,
+            apply=apply,
+            report_path=report,
+        )
+    finally:
+        session.close()
+        engine.dispose()
+    typer.echo(json.dumps(result.to_dict(include_rows=False), indent=2, default=str))
+    if not apply:
+        typer.echo("dry run: pass --apply to replace the stored boundary layer.")
 
 
 @app.command("auto-merge-duplicates")

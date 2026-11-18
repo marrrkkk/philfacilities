@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 import csv
 import io
+import math
 import uuid
 from datetime import date, datetime
 from typing import Annotated, Literal
@@ -10,7 +11,7 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import Response
 from geoalchemy2.types import Geography
-from sqlalchemy import and_, cast, func, or_, select
+from sqlalchemy import Float, and_, cast, func, or_, select
 from sqlalchemy.orm import Session
 
 from ..config import get_settings
@@ -32,6 +33,9 @@ from ..schemas import (
     FacilityDetail,
     FacilityKind,
     FacilityListResponse,
+    FacilityMapCluster,
+    FacilityMapPoint,
+    FacilityMapPointsResponse,
     FacilityMapResponse,
     FacilityType,
     InclusionClass,
@@ -69,6 +73,30 @@ def _get_public_facility(db: Session, identifier: str) -> Facility:
     if facility is None or not facility_is_public(db, facility):
         raise ApiError(404, "facility_not_found", "No published facility exists with that ID.")
     return facility
+
+
+def _parse_bbox(raw: str, *, max_area: float | None = None) -> tuple[float, float, float, float]:
+    """Parse and validate a ``min_lon,min_lat,max_lon,max_lat`` viewport."""
+
+    try:
+        values = [float(part) for part in raw.split(",")]
+    except (TypeError, ValueError) as exc:
+        raise ApiError(
+            400, "invalid_bbox", "bbox must be min_lon,min_lat,max_lon,max_lat."
+        ) from exc
+    if len(values) != 4:
+        raise ApiError(400, "invalid_bbox", "bbox must be min_lon,min_lat,max_lon,max_lat.")
+    min_lon, min_lat, max_lon, max_lat = values
+    if not (-180 <= min_lon < max_lon <= 180 and -90 <= min_lat < max_lat <= 90):
+        raise ApiError(400, "invalid_bbox", "bbox coordinates are outside valid ranges.")
+    if max_area is not None and (max_lon - min_lon) * (max_lat - min_lat) > max_area:
+        raise ApiError(
+            400,
+            "bbox_too_large",
+            "The requested bounding box is too large; zoom in or narrow the viewport.",
+            {"max_area_deg2": max_area},
+        )
+    return min_lon, min_lat, max_lon, max_lat
 
 
 @router.get("", response_model=FacilityListResponse, summary="Search and list facilities")
@@ -185,22 +213,7 @@ def facilities_within(
     updated_since: datetime | None = None,
     limit: int = Query(200, ge=1),
 ):
-    try:
-        min_lon, min_lat, max_lon, max_lat = (float(value) for value in bbox.split(","))
-    except (ValueError, TypeError) as exc:
-        raise ApiError(
-            400, "invalid_bbox", "bbox must be min_lon,min_lat,max_lon,max_lat."
-        ) from exc
-    if not (-180 <= min_lon < max_lon <= 180 and -90 <= min_lat < max_lat <= 90):
-        raise ApiError(400, "invalid_bbox", "bbox coordinates are outside valid ranges.")
-    area = (max_lon - min_lon) * (max_lat - min_lat)
-    if area > settings.max_bbox_area_deg2:
-        raise ApiError(
-            400,
-            "bbox_too_large",
-            "The requested bounding box is too large; zoom in or narrow the viewport.",
-            {"max_area_deg2": settings.max_bbox_area_deg2},
-        )
+    min_lon, min_lat, max_lon, max_lat = _parse_bbox(bbox, max_area=settings.max_bbox_area_deg2)
     selected_limit = min(limit, settings.max_map_features)
     conditions = facility_conditions(
         facility_type=type,
@@ -246,6 +259,180 @@ def facilities_within(
         limit=selected_limit,
         truncated=truncated,
         bbox=bbox,
+    )
+
+
+@router.get(
+    "/map",
+    response_model=FacilityMapPointsResponse,
+    summary="Clustered map points for a viewport",
+)
+def facilities_map(
+    db: Annotated[Session, Depends(get_db)],
+    bbox: str = Query(..., description="min_lon,min_lat,max_lon,max_lat"),
+    zoom: int = Query(6, ge=0, le=22, description="Client zoom level; tunes cluster density."),
+    type: FacilityTypeFilter | None = None,
+    subtype: str | None = Query(None, max_length=80),
+    inclusion_class: InclusionClass | None = None,
+    ownership: OwnershipFilter | None = None,
+    ownership_type: OwnershipType | None = None,
+    operator_type: OperatorType | None = None,
+    public_access_class: AccessClass | None = None,
+    facility_kind: FacilityKind | None = None,
+    function: str | None = Query(None, max_length=60),
+    q: str | None = Query(None, max_length=200),
+    psgc: str | None = Query(None, max_length=12),
+    region_code: str | None = Query(None, max_length=12),
+    province_code: str | None = Query(None, max_length=12),
+    municipality_code: str | None = Query(None, max_length=12),
+    barangay_code: str | None = Query(None, max_length=12),
+    source: str | None = Query(None, max_length=40),
+    location_precision: PrecisionFilter | None = None,
+    reference_period_start: date | None = None,
+    reference_period_end: date | None = None,
+    updated_since: datetime | None = None,
+):
+    """Return viewport points or a bounded grid of count clusters.
+
+    The browser map cannot download hundreds of thousands of full facility
+    summaries. This endpoint asks only for the coordinates and labels it needs,
+    and switches to server-side clusters once the viewport exceeds
+    ``max_map_points``. The viewport is never rejected for being large: wide
+    zoom levels return a small number of large count circles instead of failing.
+    """
+
+    min_lon, min_lat, max_lon, max_lat = _parse_bbox(bbox)
+    conditions = facility_conditions(
+        facility_type=type,
+        facility_subtype=subtype,
+        inclusion_class=inclusion_class,
+        ownership=ownership,
+        ownership_type=ownership_type,
+        operator_type=operator_type,
+        public_access_class=public_access_class,
+        facility_kind=facility_kind,
+        function=function,
+        q=q,
+        psgc=psgc,
+        region_code=region_code,
+        province_code=province_code,
+        municipality_code=municipality_code,
+        barangay_code=barangay_code,
+        source=source,
+        location_precision=location_precision,
+        reference_period_start=reference_period_start,
+        reference_period_end=reference_period_end,
+        updated_since=updated_since,
+    )
+    envelope = cast(func.ST_MakeEnvelope(min_lon, min_lat, max_lon, max_lat, 4326), Geography)
+    # Points use the partial GiST index so a sparse viewport stops as soon as
+    # the page is full. Clusters use the numeric coordinate columns instead:
+    # reading the 258k-row table once is far cheaper than 150k+ random heap
+    # lookups through the geography index for a national viewport.
+    point_filters = (
+        *conditions,
+        FacilityLocation.is_current.is_(True),
+        FacilityLocation.geom.is_not(None),
+        FacilityLocation.latitude.is_not(None),
+        FacilityLocation.longitude.is_not(None),
+        func.ST_Intersects(FacilityLocation.geom, envelope),
+    )
+    probe = db.execute(
+        select(
+            Facility.id,
+            Facility.slug,
+            Facility.display_name,
+            Facility.facility_type,
+            Facility.inclusion_class,
+            FacilityLocation.latitude,
+            FacilityLocation.longitude,
+            FacilityLocation.precision,
+        )
+        .select_from(FacilityLocation)
+        .join(Facility, Facility.id == FacilityLocation.facility_id)
+        .where(*point_filters)
+        .limit(settings.max_map_points + 1)
+    ).all()
+
+    if len(probe) <= settings.max_map_points:
+        probe = sorted(probe, key=lambda row: row.display_name.casefold())
+        return FacilityMapPointsResponse(
+            bbox=bbox,
+            zoom=zoom,
+            total=len(probe),
+            mode="points",
+            points=[
+                FacilityMapPoint(
+                    id=row.id,
+                    slug=row.slug,
+                    name=row.display_name,
+                    facility_type=row.facility_type,
+                    inclusion_class=row.inclusion_class,
+                    precision=row.precision or "unknown",
+                    latitude=float(row.latitude),
+                    longitude=float(row.longitude),
+                )
+                for row in probe
+            ],
+        )
+
+    # Grid cells are sized from the viewport area and the result total, so a
+    # national viewport and a city viewport both stay under the cluster budget.
+    # The zoom level adds detail on dense city views without changing the cap.
+    width = max_lon - min_lon
+    height = max_lat - min_lat
+    zoom_budget = min(settings.max_map_clusters, 2 ** max(0, zoom - 2))
+    total_budget = min(settings.max_map_clusters, max(16, len(probe) // 4))
+    target_cells = max(zoom_budget, total_budget)
+    cell_deg = max(math.sqrt((width * height) / target_cells), 1e-6)
+    longitude_cell = func.floor((cast(FacilityLocation.longitude, Float) - min_lon) / cell_deg)
+    latitude_cell = func.floor((cast(FacilityLocation.latitude, Float) - min_lat) / cell_deg)
+    range_filters = (
+        *conditions,
+        FacilityLocation.is_current.is_(True),
+        FacilityLocation.latitude.between(min_lat, max_lat),
+        FacilityLocation.longitude.between(min_lon, max_lon),
+    )
+    rows = []
+    truncated = False
+    for _attempt in range(4):
+        rows = db.execute(
+            select(
+                longitude_cell.label("cell_lon"),
+                latitude_cell.label("cell_lat"),
+                func.count().label("count"),
+                func.avg(cast(FacilityLocation.latitude, Float)).label("latitude"),
+                func.avg(cast(FacilityLocation.longitude, Float)).label("longitude"),
+            )
+            .select_from(FacilityLocation)
+            .join(Facility, Facility.id == FacilityLocation.facility_id)
+            .where(*range_filters)
+            .group_by(longitude_cell, latitude_cell)
+            .order_by(func.count().desc(), longitude_cell, latitude_cell)
+            .limit(settings.max_map_clusters + 1)
+        ).all()
+        if len(rows) <= settings.max_map_clusters:
+            break
+        cell_deg *= 1.5
+    else:
+        truncated = True
+        rows = rows[: settings.max_map_clusters]
+    return FacilityMapPointsResponse(
+        bbox=bbox,
+        zoom=zoom,
+        total=sum(row.count for row in rows),
+        mode="clusters",
+        clusters=[
+            FacilityMapCluster(
+                latitude=float(row.latitude),
+                longitude=float(row.longitude),
+                count=row.count,
+                label=f"{row.count:,} facilit{'y' if row.count == 1 else 'ies'}",
+            )
+            for row in rows
+        ],
+        cell_deg=cell_deg,
+        truncated=truncated,
     )
 
 

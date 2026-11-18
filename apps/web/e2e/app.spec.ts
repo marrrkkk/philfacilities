@@ -120,6 +120,26 @@ test.describe("directory", () => {
     ).toBeVisible();
   });
 
+  test("typing debounces and updates results without reloading the page", async ({ page }) => {
+    await gotoHydrated(page, "/directory");
+    await expectDirectoryHeading(page);
+    await page.evaluate(() => {
+      (window as Window & { __directoryNoReload?: boolean }).__directoryNoReload = true;
+    });
+
+    await page.locator("#filter-q").fill(SCHOOL_SEARCH);
+
+    await expectSearchQuery(page, SCHOOL_SEARCH);
+    await expectDirectoryHeading(page, "1 matching records");
+    await expect(page.getByRole("link", { name: SCHOOL_NAME, exact: true })).toBeVisible();
+    // A full page load would clear the marker; the debounced search must keep it.
+    expect(
+      await page.evaluate(
+        () => (window as Window & { __directoryNoReload?: boolean }).__directoryNoReload,
+      ),
+    ).toBe(true);
+  });
+
   test("missing coordinates stay labelled as unknown", async ({ page }) => {
     await page.goto("/directory?has_coordinates=false");
     await expect(page.getByText(/matching records/i)).toBeVisible({ timeout: 15_000 });

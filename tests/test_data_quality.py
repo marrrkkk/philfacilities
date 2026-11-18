@@ -182,11 +182,14 @@ def test_missing_values_remain_unknown_not_zero(db_session):
         for location in address_only
     )
 
-    missing_capability = db_session.scalars(
-        select(HealthProfile).where(HealthProfile.service_capability_level.is_(None))
-    ).all()
-    assert missing_capability
-    assert all(row.service_capability_level is None for row in missing_capability)
+    # The synthetic demo supplies a detail type but no licensing status. A
+    # missing licence is retained as null, never fabricated as "Without License".
+    profiles = db_session.scalars(select(HealthProfile)).all()
+    assert profiles
+    with_doh_id = [profile for profile in profiles if profile.doh_facility_id]
+    assert with_doh_id
+    assert all(profile.facility_type_detail for profile in with_doh_id)
+    assert all(profile.licensing_status is None for profile in profiles)
 
 
 def test_quality_issues_are_explainable_and_reference_a_release(db_session):

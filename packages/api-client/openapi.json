@@ -990,6 +990,486 @@
         }
       }
     },
+    "/v1/facilities/map": {
+      "get": {
+        "tags": [
+          "facilities"
+        ],
+        "summary": "Clustered map points for a viewport",
+        "description": "Return viewport points or a bounded grid of count clusters.\n\nThe browser map cannot download hundreds of thousands of full facility\nsummaries. This endpoint asks only for the coordinates and labels it needs,\nand switches to server-side clusters once the viewport exceeds\n``max_map_points``. The viewport is never rejected for being large: wide\nzoom levels return a small number of large count circles instead of failing.",
+        "operationId": "facilities_map_v1_facilities_map_get",
+        "parameters": [
+          {
+            "name": "bbox",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "min_lon,min_lat,max_lon,max_lat",
+              "title": "Bbox"
+            },
+            "description": "min_lon,min_lat,max_lon,max_lat"
+          },
+          {
+            "name": "zoom",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 22,
+              "minimum": 0,
+              "description": "Client zoom level; tunes cluster density.",
+              "default": 6,
+              "title": "Zoom"
+            },
+            "description": "Client zoom level; tunes cluster density."
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "school",
+                    "health_facility",
+                    "government_office",
+                    "community_facility",
+                    "emergency_facility",
+                    "library",
+                    "museum",
+                    "social_welfare_facility",
+                    "public_market",
+                    "transport_facility",
+                    "utility_facility",
+                    "environmental_monitoring",
+                    "public_space",
+                    "cultural_facility",
+                    "agricultural_facility",
+                    "justice_facility",
+                    "housing_service",
+                    "other_qualifying_facility"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Type"
+            }
+          },
+          {
+            "name": "subtype",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Subtype"
+            }
+          },
+          {
+            "name": "inclusion_class",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "GOVERNMENT_FACILITY",
+                    "PRIVATE_PUBLIC_SERVICE_PROVIDER",
+                    "PUBLIC_ACCESS_VENUE",
+                    "DISCOVERY_CANDIDATE"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Inclusion Class"
+            }
+          },
+          {
+            "name": "ownership",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "government",
+                    "private",
+                    "unknown"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ownership"
+            }
+          },
+          {
+            "name": "ownership_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "NATIONAL_GOVERNMENT",
+                    "LOCAL_GOVERNMENT",
+                    "GOCC",
+                    "PUBLIC_EDUCATIONAL_INSTITUTION",
+                    "OTHER_PUBLIC_BODY",
+                    "GOVERNMENT_UNSPECIFIED",
+                    "PRIVATE_CORPORATE",
+                    "PRIVATE_INDIVIDUAL_OR_PARTNERSHIP",
+                    "NGO_NON_PROFIT",
+                    "COOPERATIVE",
+                    "RELIGIOUS_FAITH_BASED",
+                    "PUBLIC_PRIVATE_JOINT",
+                    "PRIVATE_UNSPECIFIED",
+                    "UNKNOWN"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ownership Type"
+            }
+          },
+          {
+            "name": "operator_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "NATIONAL_GOVERNMENT",
+                    "LOCAL_GOVERNMENT",
+                    "GOCC",
+                    "PUBLIC_EDUCATIONAL_INSTITUTION",
+                    "OTHER_PUBLIC_BODY",
+                    "GOVERNMENT_UNSPECIFIED",
+                    "PRIVATE_CORPORATE",
+                    "PRIVATE_INDIVIDUAL_OR_PARTNERSHIP",
+                    "NGO_NON_PROFIT",
+                    "COOPERATIVE",
+                    "RELIGIOUS_FAITH_BASED",
+                    "PUBLIC_PRIVATE_JOINT",
+                    "PRIVATE_UNSPECIFIED",
+                    "UNKNOWN"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Operator Type"
+            }
+          },
+          {
+            "name": "public_access_class",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "PUBLIC_FREE",
+                    "PUBLIC_PAID_OR_CONDITIONAL",
+                    "SERVICE_USERS_ONLY",
+                    "APPOINTMENT_ONLY",
+                    "MEMBERS_STUDENTS_ONLY",
+                    "STAFF_ONLY",
+                    "RESTRICTED",
+                    "UNKNOWN"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Public Access Class"
+            }
+          },
+          {
+            "name": "facility_kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "facility",
+                    "site",
+                    "building",
+                    "facility_unit",
+                    "infrastructure_asset",
+                    "project"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Facility Kind"
+            }
+          },
+          {
+            "name": "function",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 60
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Function"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "name": "psgc",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 12
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Psgc"
+            }
+          },
+          {
+            "name": "region_code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 12
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Region Code"
+            }
+          },
+          {
+            "name": "province_code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 12
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Province Code"
+            }
+          },
+          {
+            "name": "municipality_code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 12
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Municipality Code"
+            }
+          },
+          {
+            "name": "barangay_code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 12
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Barangay Code"
+            }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 40
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source"
+            }
+          },
+          {
+            "name": "location_precision",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "gps_verified",
+                    "field_verified",
+                    "source_gps",
+                    "map_geocoded",
+                    "barangay_centroid",
+                    "unknown"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Location Precision"
+            }
+          },
+          {
+            "name": "reference_period_start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Reference Period Start"
+            }
+          },
+          {
+            "name": "reference_period_end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Reference Period End"
+            }
+          },
+          {
+            "name": "updated_since",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Updated Since"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FacilityMapPointsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/facilities/nearby": {
       "get": {
         "tags": [
@@ -5483,6 +5963,16 @@
               }
             ]
           },
+          "utility": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UtilityProfileOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "accreditations": {
             "items": {
               "$ref": "#/components/schemas/AccreditationOut"
@@ -5692,6 +6182,186 @@
           "limit"
         ],
         "title": "FacilityListResponse"
+      },
+      "FacilityMapCluster": {
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "title": "Latitude"
+          },
+          "longitude": {
+            "type": "number",
+            "title": "Longitude"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          }
+        },
+        "type": "object",
+        "required": [
+          "latitude",
+          "longitude",
+          "count",
+          "label"
+        ],
+        "title": "FacilityMapCluster"
+      },
+      "FacilityMapPoint": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "facility_type": {
+            "type": "string",
+            "enum": [
+              "school",
+              "health_facility",
+              "government_office",
+              "community_facility",
+              "emergency_facility",
+              "library",
+              "museum",
+              "social_welfare_facility",
+              "public_market",
+              "transport_facility",
+              "utility_facility",
+              "environmental_monitoring",
+              "public_space",
+              "cultural_facility",
+              "agricultural_facility",
+              "justice_facility",
+              "housing_service",
+              "other_qualifying_facility"
+            ],
+            "title": "Facility Type"
+          },
+          "inclusion_class": {
+            "type": "string",
+            "enum": [
+              "GOVERNMENT_FACILITY",
+              "PRIVATE_PUBLIC_SERVICE_PROVIDER",
+              "PUBLIC_ACCESS_VENUE",
+              "DISCOVERY_CANDIDATE"
+            ],
+            "title": "Inclusion Class"
+          },
+          "precision": {
+            "type": "string",
+            "enum": [
+              "gps_verified",
+              "field_verified",
+              "source_gps",
+              "map_geocoded",
+              "barangay_centroid",
+              "unknown"
+            ],
+            "title": "Precision",
+            "default": "unknown"
+          },
+          "latitude": {
+            "type": "number",
+            "title": "Latitude"
+          },
+          "longitude": {
+            "type": "number",
+            "title": "Longitude"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "facility_type",
+          "inclusion_class",
+          "latitude",
+          "longitude"
+        ],
+        "title": "FacilityMapPoint",
+        "description": "Minimal map feature; deliberately excludes detail-only summary fields."
+      },
+      "FacilityMapPointsResponse": {
+        "properties": {
+          "bbox": {
+            "type": "string",
+            "title": "Bbox"
+          },
+          "zoom": {
+            "type": "integer",
+            "title": "Zoom"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "points",
+              "clusters"
+            ],
+            "title": "Mode"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/FacilityMapPoint"
+            },
+            "type": "array",
+            "title": "Points"
+          },
+          "clusters": {
+            "items": {
+              "$ref": "#/components/schemas/FacilityMapCluster"
+            },
+            "type": "array",
+            "title": "Clusters"
+          },
+          "cell_deg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cell Deg"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "bbox",
+          "zoom",
+          "total",
+          "mode"
+        ],
+        "title": "FacilityMapPointsResponse"
       },
       "FacilityMapResponse": {
         "properties": {
@@ -6446,6 +7116,28 @@
             ],
             "title": "Doh Facility Id"
           },
+          "facility_major_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Facility Major Type"
+          },
+          "facility_type_detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Facility Type Detail"
+          },
           "facility_category": {
             "anyOf": [
               {
@@ -6457,7 +7149,7 @@
             ],
             "title": "Facility Category"
           },
-          "service_capability_level": {
+          "ownership_subclassification": {
             "anyOf": [
               {
                 "type": "string"
@@ -6466,7 +7158,18 @@
                 "type": "null"
               }
             ],
-            "title": "Service Capability Level"
+            "title": "Ownership Subclassification"
+          },
+          "licensing_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Licensing Status"
           },
           "bed_capacity": {
             "anyOf": [
@@ -7799,7 +8502,7 @@
             ],
             "title": "School Management"
           },
-          "annex_status": {
+          "division": {
             "anyOf": [
               {
                 "type": "string"
@@ -7808,7 +8511,51 @@
                 "type": "null"
               }
             ],
-            "title": "Annex Status"
+            "title": "Division"
+          },
+          "district": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "District"
+          },
+          "legislative_district": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Legislative District"
+          },
+          "settlement_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Settlement Type"
+          },
+          "offering_classification": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Offering Classification"
           },
           "offers_es": {
             "anyOf": [
@@ -8803,6 +9550,145 @@
           "label"
         ],
         "title": "TaxonomyTermOut"
+      },
+      "UtilityProfileOut": {
+        "properties": {
+          "doe_facility_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Doe Facility Code"
+          },
+          "resource_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resource Type"
+          },
+          "technology_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Technology Type"
+          },
+          "connection_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Connection Type"
+          },
+          "grid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grid"
+          },
+          "owner_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Type"
+          },
+          "contract_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contract Type"
+          },
+          "installed_mw": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Installed Mw"
+          },
+          "dependable_mw": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dependable Mw"
+          },
+          "number_of_units": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Number Of Units"
+          },
+          "date_commissioned": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date Commissioned"
+          },
+          "source_record_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Record Id"
+          }
+        },
+        "type": "object",
+        "title": "UtilityProfileOut"
       },
       "ValidationError": {
         "properties": {

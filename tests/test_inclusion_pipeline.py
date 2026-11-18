@@ -26,11 +26,15 @@ from philfacilities_ingest.contracts import (
     AccreditationData,
     ContactData,
     FacilityCandidate,
+    HealthData,
+    LicenseData,
     LocationData,
     ParsedRelease,
     ParsedRow,
     ReleaseSpec,
     RoleData,
+    SchoolData,
+    UtilityData,
     ValidationResult,
 )
 from philfacilities_ingest.pipeline import run_ingestion
@@ -407,6 +411,135 @@ def test_enrichment_release_cannot_demote_classified_facility(db_session) -> Non
     assert facility.publication_status == "internal"
 
 
+def test_enrichment_only_fills_gaps_without_renaming_or_replacing(db_session) -> None:
+    """A masterlist enrichment fills unknown values and keeps established ones."""
+
+    from philfacilities_api.models import SchoolProfile
+
+    token = uuid.uuid4().hex[:10]
+    entity_id = "stable-enrichment-school"
+    school_id = f"TEST-{token}"
+    first_spec = _public_spec(token, suffix="-A")
+    first_candidate = replace(
+        _candidate(
+            "enrichment-base",
+            "Synthetic Original School Name",
+            entity_id=entity_id,
+        ),
+        facility_type="school",
+        facility_subtype="OTHER_SCHOOL",
+        public_access_class="UNKNOWN",
+        record_status="active_in_registry",
+        school=SchoolData(
+            deped_school_id=school_id,
+            sector=None,
+            school_management="DepED Managed",
+        ),
+    )
+    first = run_ingestion(
+        spec=first_spec,
+        adapter=_StaticAdapter(first_spec, [first_candidate]),
+        session=db_session,
+    )
+    assert first.status == "published"
+
+    facility = _facility_for_release(db_session, first.release_id)
+    assert facility is not None
+    assert facility.ownership == "unknown"
+    assert facility.inclusion_class == "DISCOVERY_CANDIDATE"
+    profile = db_session.scalars(
+        select(SchoolProfile).where(
+            SchoolProfile.facility_id == facility.id,
+            SchoolProfile.deped_school_id == school_id,
+        )
+    ).one()
+    original_profile_record = profile.source_record_id
+
+    second_spec = _public_spec(token, suffix="-B")
+    second_candidate = replace(
+        _candidate(
+            "enrichment-fill",
+            "Different Name From Enrichment Source",
+            entity_id=entity_id,
+            ownership="government",
+            ownership_type="GOVERNMENT_UNSPECIFIED",
+            inclusion_class="GOVERNMENT_FACILITY",
+        ),
+        facility_type="school",
+        facility_subtype="OTHER_SCHOOL",
+        public_access_class="UNKNOWN",
+        record_status="active_in_registry",
+        school=SchoolData(
+            deped_school_id=school_id,
+            sector="public",
+            school_management="Private",
+        ),
+        enrichment_only=True,
+    )
+    second = run_ingestion(
+        spec=second_spec,
+        adapter=_StaticAdapter(second_spec, [second_candidate]),
+        session=db_session,
+    )
+    assert second.status == "published"
+
+    facility = _facility_for_release(db_session, second.release_id)
+    assert facility is not None
+    assert facility.display_name == "Synthetic Original School Name"
+    assert facility.ownership == "government"
+    assert facility.ownership_type == "GOVERNMENT_UNSPECIFIED"
+    assert facility.inclusion_class == "GOVERNMENT_FACILITY"
+
+    db_session.refresh(profile)
+    assert profile.sector == "public"
+    assert profile.school_management == "DepED Managed"
+    assert profile.source_record_id == original_profile_record
+
+    # A later enrichment that contradicts an established value cannot replace
+    # it: only genuinely missing values are fillable.
+    third_spec = _public_spec(token, suffix="-C")
+    third_candidate = replace(
+        _candidate(
+            "enrichment-conflict",
+            "Third Name Must Not Win",
+            entity_id=entity_id,
+            ownership="private",
+            ownership_type="PRIVATE_UNSPECIFIED",
+            inclusion_class="PRIVATE_PUBLIC_SERVICE_PROVIDER",
+        ),
+        facility_type="school",
+        facility_subtype="PUBLIC_SCHOOL",
+        public_access_class="UNKNOWN",
+        record_status="inactive",
+        school=SchoolData(
+            deped_school_id=school_id,
+            sector="private",
+            school_management="Private",
+        ),
+        enrichment_only=True,
+    )
+    third = run_ingestion(
+        spec=third_spec,
+        adapter=_StaticAdapter(third_spec, [third_candidate]),
+        session=db_session,
+    )
+    assert third.status == "published"
+
+    facility = _facility_for_release(db_session, third.release_id)
+    assert facility is not None
+    assert facility.display_name == "Synthetic Original School Name"
+    assert facility.facility_subtype == "OTHER_SCHOOL"
+    assert facility.record_status == "active_in_registry"
+    assert facility.ownership == "government"
+    assert facility.ownership_type == "GOVERNMENT_UNSPECIFIED"
+    assert facility.inclusion_class == "GOVERNMENT_FACILITY"
+
+    db_session.refresh(profile)
+    assert profile.sector == "public"
+    assert profile.school_management == "DepED Managed"
+    assert profile.source_record_id == original_profile_record
+
+
 def test_hosted_government_counter_keeps_its_own_class_and_host_role(db_session) -> None:
     token = uuid.uuid4().hex[:10]
     spec = _spec(token)
@@ -518,3 +651,372 @@ def test_contacts_and_postal_code_are_persisted_with_source_provenance(db_sessio
         )
     ).one()
     assert location.postal_code == "1000"
+
+
+def test_doe_utility_profile_is_written_with_source_assertions(db_session) -> None:
+    """A DOE row creates one utility profile keyed by facility and DOE code."""
+
+    from philfacilities_api.models import AttributeAssertion, UtilityProfile
+
+    token = uuid.uuid4().hex[:10]
+    code = f"DOE-{token}"
+    spec = _public_spec(token)
+    candidate = replace(
+        _candidate(code, "Synthetic Power Plant", entity_id=code),
+        facility_type="utility_facility",
+        facility_subtype="POWER_PLANT",
+        utility=UtilityData(
+            doe_facility_code=code,
+            resource_type="Coal",
+            technology_type="Circulating Fluidized Bed (CFB) Coal",
+            connection_type="Grid-connected",
+            grid="Luzon",
+            owner_type="NON-NPC/IPP",
+            installed_mw=83.7,
+            dependable_mw=80.0,
+            number_of_units=1,
+            date_commissioned="2016",
+        ),
+    )
+    result = run_ingestion(
+        spec=spec,
+        adapter=_StaticAdapter(spec, [candidate]),
+        session=db_session,
+    )
+    assert result.status == "published"
+
+    facility = _facility_for_release(db_session, result.release_id)
+    assert facility is not None
+    profile = db_session.scalars(
+        select(UtilityProfile).where(UtilityProfile.facility_id == facility.id)
+    ).one()
+    assert profile.doe_facility_code == code
+    assert profile.resource_type == "Coal"
+    assert float(profile.installed_mw) == 83.7
+    assert profile.number_of_units == 1
+    assert profile.source_record_id is not None
+
+    attributes = set(
+        db_session.scalars(
+            select(AttributeAssertion.attribute_name).where(
+                AttributeAssertion.facility_id == facility.id
+            )
+        ).all()
+    )
+    assert {
+        "utility.resource_type",
+        "utility.technology_type",
+        "utility.connection_type",
+        "utility.grid",
+        "utility.owner_type",
+        "utility.installed_mw",
+        "utility.dependable_mw",
+        "utility.number_of_units",
+        "utility.date_commissioned",
+    } <= attributes
+
+
+def test_force_reapply_rewrites_a_missing_utility_profile(db_session) -> None:
+    """An explicit reapply recreates derived rows that a new profile table adds."""
+
+    from philfacilities_api.models import AttributeAssertion, UtilityProfile
+
+    token = uuid.uuid4().hex[:10]
+    code = f"DOE-{token}"
+    spec = _public_spec(token)
+    candidate = replace(
+        _candidate(code, "Synthetic Force-Reapply Plant", entity_id=code),
+        facility_type="utility_facility",
+        facility_subtype="POWER_PLANT",
+        utility=UtilityData(
+            doe_facility_code=code,
+            resource_type="Coal",
+            technology_type="Circulating Fluidized Bed (CFB) Coal",
+            connection_type="Grid-connected",
+            grid="Luzon",
+            owner_type="NON-NPC/IPP",
+            installed_mw=83.7,
+            dependable_mw=80.0,
+            number_of_units=1,
+            date_commissioned="2016",
+        ),
+    )
+    first = run_ingestion(
+        spec=spec,
+        adapter=_StaticAdapter(spec, [candidate]),
+        session=db_session,
+    )
+    assert first.status == "published"
+
+    facility = _facility_for_release(db_session, first.release_id)
+    assert facility is not None
+    profile = db_session.scalars(
+        select(UtilityProfile).where(UtilityProfile.facility_id == facility.id)
+    ).one()
+    db_session.delete(profile)
+    for claim in db_session.scalars(
+        select(AttributeAssertion).where(
+            AttributeAssertion.facility_id == facility.id,
+            AttributeAssertion.attribute_name.like("utility.%"),
+        )
+    ).all():
+        db_session.delete(claim)
+    db_session.flush()
+
+    second = run_ingestion(
+        spec=spec,
+        adapter=_StaticAdapter(spec, [candidate]),
+        session=db_session,
+        reprocess=True,
+        force_reapply=True,
+    )
+    assert second.status == "published"
+    assert second.stats["forced_reapply"] is True
+    assert second.stats["reprocess_skipped_unchanged"] == 0
+
+    recreated = db_session.scalars(
+        select(UtilityProfile).where(UtilityProfile.facility_id == facility.id)
+    ).one()
+    assert recreated.doe_facility_code == code
+    assert recreated.resource_type == "Coal"
+    assert recreated.source_record_id is not None
+    attributes = set(
+        db_session.scalars(
+            select(AttributeAssertion.attribute_name).where(
+                AttributeAssertion.facility_id == facility.id
+            )
+        ).all()
+    )
+    assert "utility.installed_mw" in attributes
+    assert "utility.doe_facility_code" in attributes
+
+
+def test_nhfr_health_enrichment_matches_cross_agency_doh_code(db_session) -> None:
+    """An NHFR row links to the facility already carrying its DOH code."""
+
+    from philfacilities_api.models import HealthLicense, HealthProfile
+
+    token = uuid.uuid4().hex[:10]
+    doh_code = f"DOH{token:0>12}"[:22]
+    first_spec = _public_spec(token, suffix="-NHA")
+    first_candidate = replace(
+        _candidate(
+            "nha-health-base",
+            "Synthetic Established Hospital",
+            entity_id="nha-health-1",
+            latitude=14.5,
+            longitude=121.0,
+        ),
+        health=HealthData(
+            doh_facility_id=doh_code,
+            facility_category="Hospital",
+        ),
+    )
+    first = run_ingestion(
+        spec=first_spec,
+        adapter=_StaticAdapter(first_spec, [first_candidate]),
+        session=db_session,
+    )
+    assert first.status == "published"
+    facility = _facility_for_release(db_session, first.release_id)
+    assert facility is not None
+    profile = db_session.scalars(
+        select(HealthProfile).where(HealthProfile.doh_facility_id == doh_code)
+    ).one()
+    original_profile_record = profile.source_record_id
+
+    second_spec = replace(
+        _public_spec(token, suffix="-NHFR"),
+        agency_code="doh",
+        dataset_slug=f"test-doh-nhfr-{token}",
+    )
+    second_candidate = replace(
+        _candidate(
+            doh_code,
+            "Different Official Registry Name",
+            entity_id=doh_code,
+            ownership="government",
+            ownership_type="LOCAL_GOVERNMENT",
+            inclusion_class="GOVERNMENT_FACILITY",
+        ),
+        facility_subtype="INFIRMARY",
+        health=HealthData(
+            doh_facility_id=doh_code,
+            facility_major_type="Health Facility",
+            facility_type_detail="Infirmary",
+            facility_category="Infirmary",
+            ownership_subclassification="Local Government Unit",
+            licensing_status="With License",
+            bed_capacity=25,
+        ),
+        licenses=[
+            LicenseData(
+                issuing_authority="Department of Health",
+                license_type="Infirmary",
+                source_status="With License",
+                valid_until=date(2026, 12, 31),
+            )
+        ],
+        enrichment_only=True,
+    )
+    second = run_ingestion(
+        spec=second_spec,
+        adapter=_StaticAdapter(second_spec, [second_candidate]),
+        session=db_session,
+    )
+    assert second.status == "published"
+    assert second.stats["facilities_created"] == 0
+
+    db_session.refresh(facility)
+    assert facility.display_name == "Synthetic Established Hospital"
+    assert facility.facility_subtype == "HOSPITAL"
+    assert facility.ownership == "government"
+    assert facility.ownership_type == "LOCAL_GOVERNMENT"
+    assert facility.inclusion_class == "GOVERNMENT_FACILITY"
+
+    db_session.refresh(profile)
+    assert profile.facility_category == "Hospital"
+    assert profile.facility_major_type == "Health Facility"
+    assert profile.facility_type_detail == "Infirmary"
+    assert profile.ownership_subclassification == "Local Government Unit"
+    assert profile.licensing_status == "With License"
+    assert profile.bed_capacity == 25
+    assert profile.source_record_id == original_profile_record
+    license_row = db_session.scalars(
+        select(HealthLicense).where(HealthLicense.facility_id == facility.id)
+    ).one()
+    assert license_row.source_status == "With License"
+
+    from philfacilities_api.models import FacilitySourceLink, SourceRecord
+
+    link = db_session.scalars(
+        select(FacilitySourceLink)
+        .join(SourceRecord, SourceRecord.id == FacilitySourceLink.source_record_id)
+        .where(SourceRecord.release_id == second.release_id)
+    ).one()
+    assert link.match_method == "exact_doh_facility_code"
+    assert link.evidence["matched_doh_facility_id"] == doh_code
+
+
+def test_nhfr_creates_new_official_health_facility(db_session) -> None:
+    """An unmatched official DOH code creates one new facility and profile."""
+
+    from philfacilities_api.models import HealthProfile
+
+    token = uuid.uuid4().hex[:10]
+    doh_code = f"DOH{token:0>12}"[:22]
+    spec = replace(
+        _public_spec(token, suffix="-NHFR"),
+        agency_code="doh",
+        dataset_slug=f"test-doh-nhfr-new-{token}",
+    )
+    candidate = replace(
+        _candidate(
+            doh_code,
+            "Synthetic New Rural Health Unit",
+            entity_id=doh_code,
+            ownership="government",
+            ownership_type="LOCAL_GOVERNMENT",
+            inclusion_class="GOVERNMENT_FACILITY",
+        ),
+        facility_subtype="RURAL_HEALTH_UNIT",
+        health=HealthData(
+            doh_facility_id=doh_code,
+            facility_major_type="Health Facility",
+            facility_type_detail="Rural Health Unit",
+            facility_category="Rural Health Unit",
+            ownership_subclassification="Local Government Unit",
+            licensing_status="With License",
+            bed_capacity=0,
+        ),
+        enrichment_only=True,
+    )
+
+    result = run_ingestion(
+        spec=spec,
+        adapter=_StaticAdapter(spec, [candidate]),
+        session=db_session,
+    )
+    assert result.status == "published"
+    assert result.stats["facilities_created"] == 1
+
+    facility = _facility_for_release(db_session, result.release_id)
+    assert facility is not None
+    assert facility.facility_type == "health_facility"
+    assert facility.facility_subtype == "RURAL_HEALTH_UNIT"
+    assert facility.ownership == "government"
+    assert facility.ownership_type == "LOCAL_GOVERNMENT"
+    assert facility.inclusion_class == "GOVERNMENT_FACILITY"
+    profile = db_session.scalars(
+        select(HealthProfile).where(HealthProfile.facility_id == facility.id)
+    ).one()
+    assert profile.doh_facility_id == doh_code
+    assert profile.facility_category == "Rural Health Unit"
+    assert profile.licensing_status == "With License"
+    assert profile.bed_capacity == 0
+
+
+def test_nhfr_does_not_create_a_facility_for_an_ambiguous_doh_code(db_session) -> None:
+    """A DOH code already mapped to two facilities stays unresolved."""
+
+    from philfacilities_api.models import HealthProfile, QualityIssue
+    from sqlalchemy import update
+
+    token = uuid.uuid4().hex[:10]
+    shared_code = f"DOH-SHARED-{token}"
+    first_spec = _public_spec(token, suffix="-AMBIG")
+    candidates = [
+        replace(
+            _candidate(
+                f"ambiguous-{index}",
+                f"Synthetic Ambiguous Health Facility {index}",
+                entity_id=f"ambiguous-entity-{index}",
+            ),
+            health=HealthData(doh_facility_id=f"{shared_code}-{index}"),
+        )
+        for index in (1, 2)
+    ]
+    first = run_ingestion(
+        spec=first_spec,
+        adapter=_StaticAdapter(first_spec, candidates),
+        session=db_session,
+    )
+    assert first.status == "published"
+    assert first.stats["facilities_created"] == 2
+
+    db_session.execute(
+        update(HealthProfile)
+        .where(HealthProfile.doh_facility_id.in_([f"{shared_code}-1", f"{shared_code}-2"]))
+        .values(doh_facility_id=shared_code)
+    )
+    db_session.commit()
+
+    second_spec = replace(
+        _public_spec(token, suffix="-AMBIG-NHFR"),
+        agency_code="doh",
+        dataset_slug=f"test-doh-nhfr-ambiguous-{token}",
+    )
+    candidate = replace(
+        _candidate(
+            shared_code,
+            "Synthetic Ambiguous Official Row",
+            entity_id=shared_code,
+            ownership="government",
+            ownership_type="GOVERNMENT_UNSPECIFIED",
+            inclusion_class="GOVERNMENT_FACILITY",
+        ),
+        health=HealthData(doh_facility_id=shared_code),
+        enrichment_only=True,
+    )
+    second = run_ingestion(
+        spec=second_spec,
+        adapter=_StaticAdapter(second_spec, [candidate]),
+        session=db_session,
+    )
+    assert second.status == "published"
+    assert second.stats["facilities_created"] == 0
+    assert second.stats["unresolved"] == 1
+    issue = db_session.scalars(
+        select(QualityIssue).where(QualityIssue.issue_code == "ambiguous_doh_facility_code")
+    ).one()
+    assert issue.details == {"doh_facility_id": shared_code}

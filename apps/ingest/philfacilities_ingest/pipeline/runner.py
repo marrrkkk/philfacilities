@@ -20,6 +20,7 @@ from philfacilities_api.models import (
     FacilitySourceLink,
     GeographicRelease,
     HealthAccreditation,
+    HealthProfile,
     IngestionRun,
     PublicationGate,
     QualityIssue,
@@ -80,6 +81,7 @@ def run_ingestion(
     session: Session | None = None,
     settings: IngestSettings | None = None,
     reprocess: bool = False,
+    force_reapply: bool = False,
 ) -> IngestResult:
     settings = settings or get_settings()
     store = store or build_store(settings)
@@ -100,6 +102,7 @@ def run_ingestion(
                 session=session,
                 settings=settings,
                 reprocess=reprocess,
+                force_reapply=force_reapply,
             )
     finally:
         if own_session:
@@ -116,9 +119,15 @@ def _run_ingestion_locked(
     session: Session,
     settings: IngestSettings,
     reprocess: bool,
+    force_reapply: bool = False,
 ) -> IngestResult:
     run_id = uuid.uuid4()
     stats = IngestStats()
+    if force_reapply:
+        # Reapplying an unchanged row is an explicit operator decision, never
+        # an automatic consequence of a parser-version bump.
+        reprocess = True
+        stats["forced_reapply"] = True
     all_issues: list[dict[str, Any]] = []
     agency: Agency | None = None
     dataset: Dataset | None = None
@@ -453,6 +462,7 @@ def _run_ingestion_locked(
                 parsed=parsed,
                 validation=validation,
                 reprocess=reprocess,
+                force_reapply=force_reapply,
             )
         rejected_references = validation.rejected_row_references
         stats.stop_stage("stage_records")
@@ -523,12 +533,18 @@ def _run_ingestion_locked(
         pending_matches: list[tuple[Facility, SourceRecord]] = []
         new_facilities: list[Facility] = []
         current_location_by_facility: dict[uuid.UUID, FacilityLocation | None] = {}
+        # A health release can match an existing facility through a DOH code
+        # that an earlier agency already recorded. Resolve those links in one
+        # batched query so the apply loop does not select per row.
+        facility_by_doh_id = _preload_facility_by_doh_id(session, candidates)
         # A stale-but-valid release can update every facility from an earlier
         # release. Preload the per-facility state that the update path would
         # otherwise query row by row: the current location and the pre-release
         # snapshot (one existence query plus one query per child table).
         candidate_facility_ids = _candidate_facility_ids(
-            candidates=candidates, facility_by_entity=facility_by_entity
+            candidates=candidates,
+            facility_by_entity=facility_by_entity,
+            facility_by_doh_id=facility_by_doh_id,
         )
         current_location_by_facility.update(
             _preload_current_locations(session, candidate_facility_ids)
@@ -630,6 +646,7 @@ def _run_ingestion_locked(
                 enqueue_matches=spec.enqueue_cross_source_matches,
                 used_slugs=used_slugs,
                 facility_by_entity=facility_by_entity,
+                facility_by_doh_id=facility_by_doh_id,
                 sector_by_facility=sector_by_facility,
                 pending_matches=pending_matches,
                 new_facilities=new_facilities,
@@ -858,10 +875,47 @@ def _latest_run_failed(session: Session, release_id: uuid.UUID) -> bool:
     return status == "failed"
 
 
+def _preload_facility_by_doh_id(
+    session: Session, candidates: list[FacilityCandidate]
+) -> dict[str, Facility | None]:
+    """Resolve DOH facility codes already stored on a health profile.
+
+    A code that maps to more than one canonical facility is stored as ``None``
+    so the apply step can reject the row as ambiguous instead of silently
+    merging two established facilities. Only codes present in this release are
+    queried.
+    """
+
+    codes = sorted(
+        {
+            candidate.health.doh_facility_id
+            for candidate in candidates
+            if candidate.health is not None and candidate.health.doh_facility_id
+        }
+    )
+    resolved: dict[str, Facility | None] = {}
+    for start in range(0, len(codes), UPDATE_PREFETCH_CHUNK_SIZE):
+        chunk = codes[start : start + UPDATE_PREFETCH_CHUNK_SIZE]
+        rows = session.execute(
+            select(HealthProfile.doh_facility_id, Facility)
+            .join(Facility, Facility.id == HealthProfile.facility_id)
+            .where(HealthProfile.doh_facility_id.in_(chunk))
+        ).all()
+        for code, facility in rows:
+            if code in resolved:
+                existing = resolved[code]
+                if existing is None or existing.id != facility.id:
+                    resolved[code] = None
+            else:
+                resolved[code] = facility
+    return resolved
+
+
 def _candidate_facility_ids(
     *,
     candidates: list[FacilityCandidate],
     facility_by_entity: dict[str, Facility],
+    facility_by_doh_id: dict[str, Facility | None] | None = None,
 ) -> list[uuid.UUID]:
     """Return existing facilities touched by this release, in apply order.
 
@@ -874,6 +928,8 @@ def _candidate_facility_ids(
     for candidate in candidates:
         entity_id = candidate.source_entity_id or candidate.source_record_key
         facility = facility_by_entity.get(entity_id)
+        if facility is None and facility_by_doh_id and candidate.health is not None:
+            facility = facility_by_doh_id.get(candidate.health.doh_facility_id or "")
         if facility is not None and facility.id not in seen:
             seen.add(facility.id)
             facility_ids.append(facility.id)

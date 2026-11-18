@@ -16,7 +16,7 @@ from ..models import (
     SourceRecord,
 )
 from ..rights import PUBLIC_RIGHTS
-from ..services import public_facility_filter
+from ..services import public_facility_index_filter
 
 
 def facility_conditions(
@@ -46,10 +46,9 @@ def facility_conditions(
     # A reference-period match already requires a rights-cleared source release, so
     # the correlated public-source EXISTS would only add work and trigger a slow
     # nested-loop plan at national scale. Keep the stored public flag in that case.
-    if reference_period_start or reference_period_end:
-        conditions = [Facility.publication_status == "public"]
-    else:
-        conditions = list(public_facility_filter())
+    # Browse/map/search paths use the indexed stored publication flag. Detail
+    # endpoints still re-validate live source evidence in `facility_is_public`.
+    conditions = list(public_facility_index_filter())
     if (
         reference_period_start
         and reference_period_end

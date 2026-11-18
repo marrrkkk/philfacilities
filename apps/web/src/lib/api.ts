@@ -3,6 +3,9 @@ import type { components } from "@philfacilities/api-client/schema";
 export type FacilitySummary = components["schemas"]["FacilitySummary"];
 export type FacilityDetail = components["schemas"]["FacilityDetail"];
 export type FacilityListResponse = components["schemas"]["FacilityListResponse"];
+export type FacilityMapPoint = components["schemas"]["FacilityMapPoint"];
+export type FacilityMapCluster = components["schemas"]["FacilityMapCluster"];
+export type FacilityMapPointsResponse = components["schemas"]["FacilityMapPointsResponse"];
 export type DatasetOut = components["schemas"]["DatasetOut"];
 export type QualitySummary = components["schemas"]["QualitySummary"];
 export type StatisticsOut = components["schemas"]["StatisticsOut"];
@@ -167,10 +170,20 @@ export function listGeographies(query: Query) {
   return apiGet<AdministrativeUnitOut[]>("/v1/geographies", query, { revalidate: 300 });
 }
 
-export function listMapFacilities(bbox: string, limit = 300) {
-  return apiGet<components["schemas"]["FacilityMapResponse"]>("/v1/facilities/within", {
-    bbox,
-    limit,
+export function getGeography(psgcCode: string) {
+  return apiGet<AdministrativeUnitOut>(
+    `/v1/geographies/${encodeURIComponent(psgcCode)}`,
+    undefined,
+    { revalidate: 300 },
+  );
+}
+
+export function getFacilityMap(
+  query: Query,
+  init?: { signal?: AbortSignal },
+) {
+  return apiGet<FacilityMapPointsResponse>("/v1/facilities/map", query, {
+    signal: init?.signal,
   });
 }
 

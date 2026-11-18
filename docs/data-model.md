@@ -110,19 +110,27 @@ The identity link. Key fields: `facility_id`, `source_record_id` (unique togethe
 
 Maps a code in one release to a code in another, with a change type and evidence. Used by the geography crosswalk endpoint and release comparisons.
 
+### `geo.osm_admin_boundaries`
+
+Derived reference geometry from one preserved Geofabrik PBF snapshot. `osm_type`/`osm_id` identify the OSM object, `admin_level` is the OSM level, `ref` is the raw tag, and `psgc_code` is the resolved current-release code (null when unresolved). `geographic_level`, `parent_psgc_code`, `resolution_method`, `area_deg2`, `release_label`, `source_url`, `source_sha256`, `source_published_at`, `retrieved_at` and `imported_at` record provenance. A GiST index supports point-in-polygon lookups. This is not a PSA boundary release and is not exposed as an official geography layer.
+
 ## 6. Domain tables
 
 ### School (`school`)
 
-- `profiles` — `facility_id`, `deped_school_id`, `sector`, `school_management`, `annex_status`, `offers_es`, `offers_jhs`, `offers_shs`, source record, validity.
+- `profiles` — `facility_id`, `deped_school_id`, `sector`, `school_management`, `division`, `district`, `legislative_district`, `settlement_type`, `offering_classification`, `offers_es`, `offers_jhs`, `offers_shs`, source record, validity.
 - `enrollment_observations` — long format by school year, grade level, and sex; learner count nullable.
 - `resource_observations` — long format by school year and resource code; numeric/text value and unit.
 
 ### Health (`health`)
 
-- `profiles` — DOH facility ID, facility category, service capability level, bed capacity, source record, validity.
+- `profiles` — DOH facility ID, facility major type, facility type detail, facility category, ownership sub-classification, licensing status, bed capacity, source record, validity. The DOH NHFR release fills these institutional fields; `bed_capacity=0` is a source value and is not the same as null (unknown).
 - `licenses` — issuing authority, licence number/type, source status, validity.
 - `accreditations` — authority, provider category, benefit package, accreditation category, bed count, sector code, source status, validity, source-as-of date, page reference. Accreditation is many-to-many and time-bounded. Contact fields remain on the accreditation row and are exposed only when its source record passes the public publication gate.
+
+### Utility (`utility`)
+
+- `profiles` — `facility_id`, DOE facility code, resource type, technology type, connection type, grid, owner type, contract type, installed and dependable capacity in MW, unit count, commissioning date, source record, validity. The DOE existing-power-plant lists fill these fields; registry presence is not proof of current operation.
 
 ### Statistics (`stats`)
 

@@ -294,8 +294,10 @@ def _preserved_parse_fingerprint(spec) -> dict:
             }
             for row in sorted(parsed.rows, key=lambda row: row.source_record_key)
         ],
+        # `enrichment_only` is a pipeline directive, not source-derived data.
+        # Excluding it keeps this fingerprint about what the EBEIS page says.
         "candidates": [
-            asdict(candidate)
+            {key: value for key, value in asdict(candidate).items() if key != "enrichment_only"}
             for candidate in sorted(candidates, key=lambda item: item.source_record_key)
         ],
     }

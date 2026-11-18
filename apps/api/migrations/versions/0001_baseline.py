@@ -19,7 +19,7 @@ down_revision = None
 branch_labels = None
 depends_on = None
 
-SCHEMAS = ("source", "core", "geo", "school", "health", "quality", "history", "stats")
+SCHEMAS = ("source", "core", "geo", "school", "health", "utility", "quality", "history", "stats")
 
 
 def upgrade() -> None:

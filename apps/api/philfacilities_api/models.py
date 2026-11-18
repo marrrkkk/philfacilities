@@ -5,12 +5,14 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Any
 
-from geoalchemy2 import Geography
+from geoalchemy2 import Geography, Geometry
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     CheckConstraint,
     Date,
     DateTime,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -19,6 +21,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    desc,
     func,
     text,
 )
@@ -145,6 +148,12 @@ class Release(Base):
     __table_args__ = (
         UniqueConstraint("dataset_id", "sha256", name="uq_releases_dataset_sha256"),
         Index("ix_source_releases_dataset_label", "dataset_id", "source_release_label"),
+        Index(
+            "ix_source_releases_dataset_retrieved",
+            "dataset_id",
+            desc("retrieved_at"),
+            desc("created_at"),
+        ),
         {"schema": "source"},
     )
 
@@ -225,6 +234,17 @@ class Facility(Base):
         ),
         Index("ix_core_facilities_type", "facility_type"),
         Index("ix_core_facilities_publication", "publication_status"),
+        Index(
+            "ix_core_facilities_public_feed",
+            "publication_status",
+            desc("updated_at"),
+            desc("id"),
+        ),
+        Index(
+            "ix_core_facilities_updated_feed",
+            desc("updated_at"),
+            desc("id"),
+        ),
         Index("ix_core_facilities_inclusion", "inclusion_class"),
         Index("ix_core_facilities_ownership_type", "ownership_type"),
         CheckConstraint(
@@ -590,6 +610,47 @@ class AdministrativeUnit(Base):
     valid_to: Mapped[date | None] = mapped_column(Date)
 
 
+class OsmAdminBoundary(Base):
+    """An OSM administrative boundary polygon used for map-location resolution.
+
+    The polygon layer is derived from one Geofabrik PBF snapshot. ``ref`` is the
+    raw OSM tag; ``psgc_code`` is the resolved current-release code. A boundary
+    whose code cannot be resolved stays in the table with a null code so it can
+    be re-evaluated when the PSGC release or boundary snapshot changes.
+    """
+
+    __tablename__ = "osm_admin_boundaries"
+    __table_args__ = (
+        UniqueConstraint("osm_type", "osm_id", name="uq_geo_osm_admin_boundaries_osm"),
+        Index("ix_geo_osm_admin_boundaries_geom", "geom", postgresql_using="gist"),
+        Index("ix_geo_osm_admin_boundaries_psgc", "psgc_code"),
+        Index("ix_geo_osm_admin_boundaries_level", "admin_level"),
+        {"schema": "geo"},
+    )
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    osm_type: Mapped[str] = mapped_column(String(10), nullable=False)
+    osm_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    admin_level: Mapped[int] = mapped_column(Integer, nullable=False)
+    name: Mapped[str | None] = mapped_column(Text)
+    ref: Mapped[str | None] = mapped_column(String(40))
+    psgc_code: Mapped[str | None] = mapped_column(String(12))
+    geographic_level: Mapped[str | None] = mapped_column(String(40))
+    parent_psgc_code: Mapped[str | None] = mapped_column(String(12))
+    resolution_method: Mapped[str | None] = mapped_column(String(40))
+    geom: Mapped[Any] = mapped_column(
+        Geometry(geometry_type="MULTIPOLYGON", srid=4326, spatial_index=False),
+        nullable=False,
+    )
+    area_deg2: Mapped[float | None] = mapped_column(Float)
+    release_label: Mapped[str] = mapped_column(String(120), nullable=False)
+    source_url: Mapped[str] = mapped_column(Text, nullable=False)
+    source_sha256: Mapped[str | None] = mapped_column(String(64))
+    source_published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    retrieved_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    imported_at: Mapped[datetime] = created_at()
+
+
 class GeographyCrosswalk(Base):
     __tablename__ = "geography_crosswalk"
     __table_args__ = (
@@ -619,6 +680,12 @@ class FacilityLocation(Base):
     __tablename__ = "facility_locations"
     __table_args__ = (
         Index("ix_core_facility_locations_geom", "geom", postgresql_using="gist"),
+        Index(
+            "ix_core_facility_locations_current_geom",
+            "geom",
+            postgresql_using="gist",
+            postgresql_where=text("is_current"),
+        ),
         Index("ix_core_facility_locations_psgc", "psgc_code"),
         Index(
             "ix_core_facility_locations_address_trgm",
@@ -748,7 +815,11 @@ class SchoolProfile(Base):
     deped_school_id: Mapped[str | None] = mapped_column(String(40), index=True)
     sector: Mapped[str | None] = mapped_column(String(60))
     school_management: Mapped[str | None] = mapped_column(String(80))
-    annex_status: Mapped[str | None] = mapped_column(String(80))
+    division: Mapped[str | None] = mapped_column(String(120))
+    district: Mapped[str | None] = mapped_column(String(120))
+    legislative_district: Mapped[str | None] = mapped_column(String(120))
+    settlement_type: Mapped[str | None] = mapped_column(String(40))
+    offering_classification: Mapped[str | None] = mapped_column(String(60))
     offers_es: Mapped[bool | None] = mapped_column(Boolean)
     offers_jhs: Mapped[bool | None] = mapped_column(Boolean)
     offers_shs: Mapped[bool | None] = mapped_column(Boolean)
@@ -830,9 +901,44 @@ class HealthProfile(Base):
         ForeignKey("core.facilities.id", ondelete="CASCADE"), nullable=False
     )
     doh_facility_id: Mapped[str | None] = mapped_column(String(80), index=True)
+    facility_major_type: Mapped[str | None] = mapped_column(String(120))
+    facility_type_detail: Mapped[str | None] = mapped_column(String(120))
     facility_category: Mapped[str | None] = mapped_column(String(120))
-    service_capability_level: Mapped[str | None] = mapped_column(String(120))
+    ownership_subclassification: Mapped[str | None] = mapped_column(String(120))
+    licensing_status: Mapped[str | None] = mapped_column(String(80))
     bed_capacity: Mapped[int | None] = mapped_column(Integer)
+    source_record_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("source.records.id", ondelete="SET NULL")
+    )
+    valid_from: Mapped[date | None] = mapped_column(Date)
+    valid_to: Mapped[date | None] = mapped_column(Date)
+
+
+class UtilityProfile(Base):
+    __tablename__ = "profiles"
+    __table_args__ = (
+        UniqueConstraint(
+            "facility_id", "doe_facility_code", name="uq_utility_profile_facility_code"
+        ),
+        Index("ix_utility_profiles_facility", "facility_id"),
+        {"schema": "utility"},
+    )
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    facility_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("core.facilities.id", ondelete="CASCADE"), nullable=False
+    )
+    doe_facility_code: Mapped[str | None] = mapped_column(String(120), index=True)
+    resource_type: Mapped[str | None] = mapped_column(String(80))
+    technology_type: Mapped[str | None] = mapped_column(String(160))
+    connection_type: Mapped[str | None] = mapped_column(String(40))
+    grid: Mapped[str | None] = mapped_column(String(40))
+    owner_type: Mapped[str | None] = mapped_column(String(80))
+    contract_type: Mapped[str | None] = mapped_column(String(80))
+    installed_mw: Mapped[Decimal | None] = mapped_column(Numeric(12, 2))
+    dependable_mw: Mapped[Decimal | None] = mapped_column(Numeric(12, 2))
+    number_of_units: Mapped[int | None] = mapped_column(Integer)
+    date_commissioned: Mapped[str | None] = mapped_column(String(160))
     source_record_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("source.records.id", ondelete="SET NULL")
     )

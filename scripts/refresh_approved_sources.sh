@@ -8,7 +8,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-echo "Refreshing rights-cleared geography, population, PhilHealth, and OSM sources."
+echo "Refreshing rights-cleared geography, population, PhilHealth, NHFR, and OSM sources."
 uv run philfacilities-ingest source run \
-  bettergov-psgc bettergov-population philhealth osm-health osm-education
+  bettergov-psgc bettergov-population philhealth osm-health osm-education doh-nhfr
 uv run philfacilities-ingest status

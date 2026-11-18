@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FeatureCollection } from "geojson";
 import type { GeoJSONSource, Map as MapLibreMap } from "maplibre-gl";
 import { List, Loader2, Map as MapIcon, Search } from "lucide-react";
@@ -9,7 +9,12 @@ import { List, Loader2, Map as MapIcon, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
-import { apiBaseUrl, type FacilitySummary } from "@/lib/api";
+import {
+  getFacilityMap,
+  type FacilityMapCluster,
+  type FacilityMapPoint,
+  type FacilityMapPointsResponse,
+} from "@/lib/api";
 import {
   ACCESS_LABELS,
   INCLUSION_CLASS_LABELS,
@@ -21,6 +26,27 @@ import { BASEMAP_STYLE } from "@/lib/map-style";
 import { cn } from "@/lib/utils";
 
 const EMPTY: FeatureCollection = { type: "FeatureCollection", features: [] };
+
+const EMPTY_MAP: FacilityMapPointsResponse = {
+  bbox: "",
+  zoom: 0,
+  total: 0,
+  mode: "points",
+  points: [],
+  clusters: [],
+  cell_deg: null,
+  truncated: false,
+};
+
+function viewportOf(map: MapLibreMap): { bbox: string; zoom: number } {
+  const bounds = map.getBounds();
+  return {
+    bbox: [bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth()]
+      .map((value) => value.toFixed(5))
+      .join(","),
+    zoom: Math.round(map.getZoom()),
+  };
+}
 
 const CATEGORY_OPTIONS = [
   ["school", "Schools"],
@@ -101,9 +127,11 @@ export function MapExplorer({
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [facilities, setFacilities] = useState<FacilitySummary[]>([]);
-  const [selected, setSelected] = useState<FacilitySummary | null>(null);
+  const [basemapError, setBasemapError] = useState<string | null>(null);
+  const [dataError, setDataError] = useState<string | null>(null);
+  const [mapResponse, setMapResponse] = useState<FacilityMapPointsResponse>(EMPTY_MAP);
+  const [viewport, setViewport] = useState<{ bbox: string; zoom: number } | null>(null);
+  const [selected, setSelected] = useState<FacilityMapPoint | null>(null);
   const [type, setType] = useState(initialType);
   const [inclusionClass, setInclusionClass] = useState(initialInclusionClass);
   const [ownershipType, setOwnershipType] = useState(initialOwnershipType);
@@ -111,57 +139,18 @@ export function MapExplorer({
   const [kind, setKind] = useState(initialKind);
   const [query, setQuery] = useState(initialQuery);
   const [mobileView, setMobileView] = useState<"map" | "list">("map");
-  const [truncated, setTruncated] = useState(false);
 
-  const visible = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    if (initialHasCoordinates === "false") return [];
-    return facilities.filter((facility) => {
-      if (type && facility.facility_type !== type) return false;
-      if (inclusionClass && facility.inclusion_class !== inclusionClass) return false;
-      if (initialOwnership && facility.ownership !== initialOwnership) return false;
-      if (ownershipType && facility.ownership_type !== ownershipType) return false;
-      if (accessClass && facility.public_access_class !== accessClass) return false;
-      if (kind && facility.facility_kind !== kind) return false;
-      if (initialRegion && facility.geography.region_code !== initialRegion) return false;
-      if (initialProvince && facility.geography.province_code !== initialProvince) return false;
-      if (initialMunicipality && facility.geography.municipality_code !== initialMunicipality)
-        return false;
-      if (initialBarangay && facility.geography.barangay_code !== initialBarangay) return false;
-      if (initialPrecision && facility.location.precision !== initialPrecision) return false;
-      if (!needle) return true;
-      return [
-        facility.display_name,
-        facility.geography.region_name,
-        facility.geography.province_name,
-        facility.geography.municipality_name,
-        facility.geography.barangay_name,
-        facility.facility_subtype ?? "",
-      ]
-        .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(needle));
-    });
-  }, [
-    accessClass,
-    facilities,
-    inclusionClass,
-    initialBarangay,
-    initialHasCoordinates,
-    initialMunicipality,
-    initialOwnership,
-    initialPrecision,
-    initialProvince,
-    initialRegion,
-    kind,
-    ownershipType,
-    query,
-    type,
-  ]);
+  // The "has coordinates" filter is a database-level constraint that this
+  // endpoint cannot express, so render an explicit empty state instead of
+  // issuing a query whose results would all be filtered out client-side.
+  const noCoordinates = initialHasCoordinates === "false";
+  const mapData = noCoordinates ? EMPTY_MAP : mapResponse;
+  const isLoading = noCoordinates ? false : loading;
 
-  const visibleRef = useRef(visible);
+  const mapDataRef = useRef(mapData);
   useEffect(() => {
-    visibleRef.current = visible;
-  }, [visible]);
+    mapDataRef.current = mapData;
+  }, [mapData]);
 
   useEffect(() => {
     let disposed = false;
@@ -174,57 +163,64 @@ export function MapExplorer({
       map = new maplibregl.Map({
         container: containerRef.current,
         style: BASEMAP_STYLE,
-        center: [121.6, 14.9],
-        zoom: 7.2,
+        center: [122.0, 12.5],
+        zoom: 5.2,
         attributionControl: { compact: true },
       });
       mapRef.current = map;
       map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
       map.on("error", () => {
-        setError(
+        setBasemapError(
           "The basemap could not load. The text result list remains available and is not map-only.",
         );
       });
 
       map.on("load", () => {
         if (!map) return;
-        map.addSource("facilities", {
-          type: "geojson",
-          data: EMPTY,
-          cluster: true,
-          clusterRadius: 46,
-          clusterMaxZoom: 12,
-        });
+        map.addSource("facilities", { type: "geojson", data: EMPTY });
         map.addLayer({
-          id: "clusters",
+          id: "facility-clusters",
           type: "circle",
           source: "facilities",
-          filter: ["has", "point_count"],
+          filter: ["==", ["get", "kind"], "cluster"],
           paint: {
             "circle-color": "#0038a8",
-            "circle-radius": ["step", ["get", "point_count"], 18, 10, 24, 50, 32],
+            "circle-radius": [
+              "step",
+              ["get", "count"],
+              18,
+              10,
+              24,
+              100,
+              30,
+              1000,
+              36,
+              10000,
+              42,
+            ],
             "circle-stroke-color": "#ffffff",
             "circle-stroke-width": 2,
             "circle-opacity": 0.92,
           },
         });
         map.addLayer({
-          id: "cluster-count",
+          id: "facility-cluster-count",
           type: "symbol",
           source: "facilities",
-          filter: ["has", "point_count"],
+          filter: ["==", ["get", "kind"], "cluster"],
           layout: {
-            "text-field": ["get", "point_count_abbreviated"],
-            "text-size": 12,
+            "text-field": ["to-string", ["get", "count"]],
+            "text-size": ["step", ["get", "count"], 10, 1000, 11, 10000, 12],
             "text-font": ["Open Sans Bold", "Arial Unicode MS Bold"],
+            "text-allow-overlap": true,
           },
           paint: { "text-color": "#ffffff" },
         });
         map.addLayer({
-          id: "unclustered-point",
+          id: "facility-points",
           type: "circle",
           source: "facilities",
-          filter: ["!", ["has", "point_count"]],
+          filter: ["==", ["get", "kind"], "point"],
           paint: {
             "circle-color": [
               "case",
@@ -253,110 +249,50 @@ export function MapExplorer({
           },
         });
 
-        map.on("click", "clusters", async (event) => {
+        map.on("click", "facility-clusters", (event) => {
           const feature = event.features?.[0];
           if (!feature || !map) return;
-          const clusterId = Number(feature.properties?.cluster_id);
-          const source = map.getSource("facilities") as GeoJSONSource;
-          const zoom = await source.getClusterExpansionZoom(clusterId);
-          const coordinates =
-            feature.geometry.type === "Point" ? feature.geometry.coordinates : null;
+          const longitude = Number(feature.properties?.longitude);
+          const latitude = Number(feature.properties?.latitude);
+          if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) return;
           map.easeTo({
-            center: coordinates ? [coordinates[0], coordinates[1]] : undefined,
-            zoom,
+            center: [longitude, latitude],
+            zoom: Math.min(map.getZoom() + 2, 18),
           });
         });
-        map.on("click", "unclustered-point", (event) => {
-          const id = event.features?.[0]?.properties?.id;
-          const match = visibleRef.current.find((facility) => facility.id === id);
+        map.on("click", "facility-points", (event) => {
+          const id = String(event.features?.[0]?.properties?.id ?? "");
+          const match = (mapDataRef.current.points ?? []).find((point) => point.id === id);
           if (match) setSelected(match);
         });
-        map.on("mouseenter", "clusters", () => {
+        map.on("mouseenter", "facility-clusters", () => {
           if (map) map.getCanvas().style.cursor = "pointer";
         });
-        map.on("mouseleave", "clusters", () => {
+        map.on("mouseleave", "facility-clusters", () => {
           if (map) map.getCanvas().style.cursor = "";
         });
-        map.on("mouseenter", "unclustered-point", () => {
+        map.on("mouseenter", "facility-points", () => {
           if (map) map.getCanvas().style.cursor = "pointer";
         });
-        map.on("mouseleave", "unclustered-point", () => {
+        map.on("mouseleave", "facility-points", () => {
           if (map) map.getCanvas().style.cursor = "";
         });
 
         setReady(true);
-        void loadViewport();
+        setViewport(viewportOf(map));
       });
 
       map.on("moveend", () => {
+        if (!map) return;
         if (debounceRef.current) clearTimeout(debounceRef.current);
-        debounceRef.current = setTimeout(() => void loadViewport(), 400);
+        const next = viewportOf(map);
+        debounceRef.current = setTimeout(() => {
+          if (disposed) return;
+          setViewport((current) =>
+            current && current.bbox === next.bbox && current.zoom === next.zoom ? current : next,
+          );
+        }, 250);
       });
-    }
-
-    async function loadViewport() {
-      if (!map) return;
-      const bounds = map.getBounds();
-      const west = bounds.getWest();
-      const south = bounds.getSouth();
-      const east = bounds.getEast();
-      const north = bounds.getNorth();
-      if ((east - west) * (north - south) > 24) {
-        setError("Zoom in to load records; the viewport is larger than the map query limit.");
-        setLoading(false);
-        return;
-      }
-      setLoading(true);
-      setError(null);
-      const bbox = [west, south, east, north].map((value) => value.toFixed(5)).join(",");
-      const params = new URLSearchParams({ bbox, limit: "500" });
-      for (const [key, value] of Object.entries({
-        type: initialType,
-        q: initialQuery,
-        inclusion_class: initialInclusionClass || undefined,
-        ownership: initialOwnership,
-        ownership_type: initialOwnershipType || undefined,
-        public_access_class: initialAccessClass || undefined,
-        facility_kind: initialKind || undefined,
-        region_code: initialRegion,
-        province_code: initialProvince,
-        municipality_code: initialMunicipality,
-        barangay_code: initialBarangay,
-        source: initialSource,
-        location_precision: initialPrecision,
-        has_coordinates: initialHasCoordinates === "true" ? "true" : undefined,
-        reference_period_start: initialReferencePeriodStart || undefined,
-        reference_period_end: initialReferencePeriodEnd || undefined,
-        updated_since: initialUpdatedSince || undefined,
-      })) {
-        if (value) params.set(key, value);
-      }
-      try {
-        const response = await fetch(
-          `${apiBaseUrl()}/v1/facilities/within?${params.toString()}`,
-          { headers: { Accept: "application/json" } },
-        );
-        if (!response.ok) {
-          const body = (await response.json().catch(() => null)) as { message?: string } | null;
-          throw new Error(body?.message ?? `The map query returned ${response.status}.`);
-        }
-        const data = (await response.json()) as {
-          items: FacilitySummary[];
-          truncated: boolean;
-        };
-        if (disposed) return;
-        setFacilities(data.items);
-        setTruncated(data.truncated);
-        setSelected((current) =>
-          current ? (data.items.find((item) => item.id === current.id) ?? null) : null,
-        );
-      } catch (caught) {
-        if (!disposed) {
-          setError(caught instanceof Error ? caught.message : "The map query failed.");
-        }
-      } finally {
-        if (!disposed) setLoading(false);
-      }
     }
 
     void init();
@@ -366,24 +302,78 @@ export function MapExplorer({
       map?.remove();
       mapRef.current = null;
     };
+  }, []);
+
+  useEffect(() => {
+    if (initialHasCoordinates === "false" || !ready || !viewport) return;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => {
+      setLoading(true);
+      setDataError(null);
+      const params: Record<string, string | number | undefined> = {
+        bbox: viewport.bbox,
+        zoom: viewport.zoom,
+        type: type || undefined,
+        q: query.trim() || undefined,
+        inclusion_class: inclusionClass || undefined,
+        ownership: initialOwnership || undefined,
+        ownership_type: ownershipType || undefined,
+        public_access_class: accessClass || undefined,
+        facility_kind: kind || undefined,
+        region_code: initialRegion || undefined,
+        province_code: initialProvince || undefined,
+        municipality_code: initialMunicipality || undefined,
+        barangay_code: initialBarangay || undefined,
+        source: initialSource || undefined,
+        location_precision: initialPrecision || undefined,
+        reference_period_start: initialReferencePeriodStart || undefined,
+        reference_period_end: initialReferencePeriodEnd || undefined,
+        updated_since: initialUpdatedSince || undefined,
+      };
+      getFacilityMap(params, { signal: controller.signal })
+        .then((data) => {
+          if (controller.signal.aborted) return;
+          setMapResponse(data);
+          setSelected((current) =>
+            current && (data.points ?? []).some((point) => point.id === current.id)
+              ? current
+              : null,
+          );
+        })
+        .catch((caught) => {
+          if (controller.signal.aborted) return;
+          setDataError(
+            caught instanceof Error ? caught.message : "The map query failed. Try again.",
+          );
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setLoading(false);
+        });
+    }, 250);
+    return () => {
+      clearTimeout(timeout);
+      controller.abort();
+    };
   }, [
-    initialAccessClass,
+    accessClass,
+    inclusionClass,
     initialBarangay,
     initialHasCoordinates,
-    initialInclusionClass,
-    initialKind,
     initialMunicipality,
     initialOwnership,
-    initialOwnershipType,
     initialPrecision,
     initialProvince,
-    initialQuery,
     initialReferencePeriodEnd,
     initialReferencePeriodStart,
     initialRegion,
     initialSource,
-    initialType,
     initialUpdatedSince,
+    kind,
+    ownershipType,
+    query,
+    ready,
+    type,
+    viewport,
   ]);
 
   useEffect(() => {
@@ -391,57 +381,70 @@ export function MapExplorer({
     if (!map || !ready) return;
     const source = map.getSource("facilities") as GeoJSONSource | undefined;
     if (!source) return;
-    source.setData({
-      type: "FeatureCollection",
-      features: visible.flatMap((facility) => {
-        const latitude = facility.location.latitude;
-        const longitude = facility.location.longitude;
-        if (latitude == null || longitude == null) return [];
-        return [
-          {
-            type: "Feature" as const,
-            id: facility.id,
-            properties: {
-              id: facility.id,
-              facility_type: facility.facility_type,
-              inclusion_class: facility.inclusion_class,
-              precision: facility.location.precision,
-              name: facility.display_name,
-            },
-            geometry: {
-              type: "Point" as const,
-              coordinates: [longitude, latitude],
-            },
-          },
-        ];
-      }),
-    });
-  }, [visible, ready]);
+    const features = [
+      ...(mapData.points ?? []).map((point) => ({
+        type: "Feature" as const,
+        id: point.id,
+        properties: {
+          kind: "point",
+          id: point.id,
+          name: point.name,
+          facility_type: point.facility_type,
+          inclusion_class: point.inclusion_class,
+          precision: point.precision,
+        },
+        geometry: {
+          type: "Point" as const,
+          coordinates: [point.longitude, point.latitude],
+        },
+      })),
+      ...(mapData.clusters ?? []).map((cluster, index) => ({
+        type: "Feature" as const,
+        id: `cluster-${index}`,
+        properties: {
+          kind: "cluster",
+          count: cluster.count,
+          label: cluster.label,
+          longitude: cluster.longitude,
+          latitude: cluster.latitude,
+        },
+        geometry: {
+          type: "Point" as const,
+          coordinates: [cluster.longitude, cluster.latitude],
+        },
+      })),
+    ];
+    source.setData({ type: "FeatureCollection", features });
+  }, [mapData, ready]);
 
-  function focusFacility(facility: FacilitySummary) {
-    setSelected(facility);
+  function focusPoint(point: FacilityMapPoint) {
+    setSelected(point);
     setMobileView("map");
     const map = mapRef.current;
-    const latitude = facility.location.latitude;
-    const longitude = facility.location.longitude;
-    if (map && latitude != null && longitude != null) {
-      map.easeTo({
-        center: [longitude, latitude],
-        zoom: Math.max(map.getZoom(), 12),
-      });
+    if (map) {
+      map.easeTo({ center: [point.longitude, point.latitude], zoom: Math.max(map.getZoom(), 12) });
     }
   }
 
-  const selectedNeedsAreaLabel = selected?.location.precision === "barangay_centroid";
+  function focusCluster(cluster: FacilityMapCluster) {
+    setMobileView("map");
+    mapRef.current?.easeTo({
+      center: [cluster.longitude, cluster.latitude],
+      zoom: Math.min((mapRef.current?.getZoom() ?? 6) + 2, 18),
+    });
+  }
+
+  const selectedNeedsAreaLabel = selected?.precision === "barangay_centroid";
+  const points = mapData.points ?? [];
+  const clusters = mapData.clusters ?? [];
 
   return (
-    <div className="flex h-[calc(100dvh-var(--header-height))] min-h-[36rem] flex-col border-t border-[#d1d8e6] lg:flex-row">
-      <div
-        className={cn(
-          "relative min-h-[24rem] flex-1",
-          mobileView === "list" && "hidden lg:block",
-        )}
-      >
+    <div className="relative flex h-[calc(100dvh-var(--header-height))] min-h-[36rem] flex-col border-t border-[#d1d8e6] lg:flex-row">
+      {/* Keep the map mounted at full size on mobile. Hiding it with display:none
+          makes MapLibre recalculate a collapsed viewport and refetch a bbox that
+          excludes the current results, which empties the list. The results panel
+          is overlaid instead. */}
+      <div className="relative min-h-[24rem] flex-1">
         <div ref={containerRef} className="h-full w-full bg-[#e6ebf4]" />
         <div className="absolute left-3 top-3 z-10 w-[min(23rem,calc(100%-1.5rem))] border border-[#d1d8e6] bg-white p-3 shadow-[4px_4px_0_0_rgba(0,56,168,0.18)]">
           <div className="flex gap-2">
@@ -548,23 +551,27 @@ export function MapExplorer({
           </div>
           <p className="mt-2 flex items-center justify-between gap-2 font-ui text-xs text-[#5a5a58]">
             <span>
-              {loading ? (
+              {isLoading ? (
                 <span className="inline-flex items-center gap-1">
                   <Loader2 aria-hidden="true" className="size-3 animate-spin" /> Updating
                 </span>
               ) : (
-                `${visible.length} mapped records in view`
+                `${mapData.total.toLocaleString()} mapped records in view`
               )}
             </span>
-            <span>{truncated ? "Capped at 500" : "Bounded viewport query"}</span>
+            <span>
+              {mapData.mode === "clusters"
+                ? `${clusters.length} server clusters`
+                : "Individual markers"}
+            </span>
           </p>
         </div>
-        {error ? (
+        {dataError || basemapError ? (
           <div
             role="alert"
             className="absolute inset-x-3 top-28 z-20 border-l-4 border-[#9a6700] bg-[#fff8e1] p-3 font-sans text-xs text-[#3d2b00] shadow-lg lg:hidden"
           >
-            {error}{" "}
+            {dataError ?? basemapError}{" "}
             <Link href="/directory" className="underline">
               Use the directory
             </Link>
@@ -578,7 +585,7 @@ export function MapExplorer({
                   Selected facility
                 </p>
                 <h2 className="mt-1 font-display text-xl font-bold leading-tight">
-                  {selected.display_name}
+                  {selected.name}
                 </h2>
               </div>
               <button
@@ -594,12 +601,7 @@ export function MapExplorer({
               {titleCase(selected.facility_type)} ·{" "}
               {INCLUSION_CLASS_LABELS[selected.inclusion_class] ??
                 titleCase(selected.inclusion_class)}{" "}
-              · {PRECISION_LABELS[selected.location.precision]}
-              {selected.is_synthetic ? " · Synthetic" : ""}
-            </p>
-            <p className="mt-1 font-sans text-xs text-[#5a5a58]">
-              Ownership: {titleCase(selected.ownership_type)} · Access:{" "}
-              {ACCESS_LABELS[selected.public_access_class] ?? "Unknown"}
+              · {PRECISION_LABELS[selected.precision] ?? titleCase(selected.precision)}
             </p>
             {selectedNeedsAreaLabel ? (
               <p className="mt-2 border-l-2 border-[#9a6700] pl-2 font-sans text-xs text-[#6b4a00]">
@@ -623,21 +625,27 @@ export function MapExplorer({
       <aside
         aria-label="Map results list"
         className={cn(
-          "flex w-full flex-col border-l border-[#d1d8e6] bg-white lg:max-w-[27rem]",
+          "absolute inset-x-0 bottom-12 top-0 z-20 flex w-full flex-col border-l border-[#d1d8e6] bg-white lg:static lg:inset-auto lg:z-auto lg:max-w-[27rem]",
           mobileView === "map" && "hidden lg:flex",
         )}
       >
         <div className="border-b border-[#d1d8e6] p-4">
           <div className="flex items-center justify-between gap-2">
             <h1 className="font-display text-2xl font-extrabold">Map results</h1>
-            <Badge tone="muted">{visible.length}</Badge>
+            <Badge tone="muted">{mapData.total.toLocaleString()}</Badge>
           </div>
           <p className="mt-1 font-sans text-xs leading-relaxed text-[#5a5a58]">
             The same records are listed here. Map selection never replaces the text result list.
           </p>
-          {error ? (
+          {mapData.mode === "clusters" ? (
+            <p className="mt-2 font-sans text-xs leading-relaxed text-[#5a5a58]">
+              This view holds too many markers, so records are grouped into count circles. Select
+              a circle or zoom in to load individual facilities.
+            </p>
+          ) : null}
+          {dataError || basemapError ? (
             <p role="alert" className="mt-3 border-l-4 border-[#9a6700] bg-[#fff8e1] p-2 font-sans text-xs text-[#3d2b00]">
-              {error}{" "}
+              {dataError ?? basemapError}{" "}
               <Link href="/directory" className="underline">
                 Use the directory
               </Link>
@@ -645,48 +653,68 @@ export function MapExplorer({
           ) : null}
         </div>
         <div className="flex-1 overflow-y-auto">
-          {visible.length === 0 ? (
+          {mapData.mode === "clusters" ? (
+            clusters.length === 0 ? (
+              <p className="p-6 font-sans text-sm text-[#5a5a58]">
+                No geocoded records are visible at this position. Pan or zoom the map, clear the
+                filter, or use the full directory for records without coordinates.
+              </p>
+            ) : (
+              <ul className="divide-y divide-[#d1d8e6]">
+                {clusters.map((cluster) => (
+                  <li key={`${cluster.latitude}-${cluster.longitude}`}>
+                    <button
+                      type="button"
+                      onClick={() => focusCluster(cluster)}
+                      className="w-full p-4 text-left hover:bg-[#f4f7fc]"
+                    >
+                      <span className="flex flex-wrap items-center gap-1.5">
+                        <Badge tone="default">{cluster.label}</Badge>
+                      </span>
+                      <span className="mt-2 block font-display text-lg font-bold leading-tight">
+                        Zoom into this area
+                      </span>
+                      <span className="mt-1 block font-sans text-xs text-[#5a5a58]">
+                        Select to load the facilities inside this cluster.
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )
+          ) : points.length === 0 ? (
             <p className="p-6 font-sans text-sm text-[#5a5a58]">
               No geocoded records are visible at this position. Pan or zoom the map, clear the
               filter, or use the full directory for records without coordinates.
             </p>
           ) : (
             <ul className="divide-y divide-[#d1d8e6]">
-              {visible.map((facility) => (
-                <li key={facility.id}>
+              {points.map((point) => (
+                <li key={point.id}>
                   <button
                     type="button"
-                    onClick={() => focusFacility(facility)}
+                    onClick={() => focusPoint(point)}
                     className={cn(
                       "w-full p-4 text-left hover:bg-[#f4f7fc]",
-                      selected?.id === facility.id && "bg-[#e8f1ff]",
+                      selected?.id === point.id && "bg-[#e8f1ff]",
                     )}
                   >
                     <span className="flex flex-wrap items-center gap-1.5">
-                      <Badge tone="outline">{titleCase(facility.facility_type)}</Badge>
+                      <Badge tone="outline">{titleCase(point.facility_type)}</Badge>
                       <Badge
                         tone={
-                          facility.inclusion_class === "GOVERNMENT_FACILITY"
-                            ? "default"
-                            : "outline"
+                          point.inclusion_class === "GOVERNMENT_FACILITY" ? "default" : "outline"
                         }
                       >
-                        {INCLUSION_CLASS_LABELS[facility.inclusion_class] ??
-                          titleCase(facility.inclusion_class)}
+                        {INCLUSION_CLASS_LABELS[point.inclusion_class] ??
+                          titleCase(point.inclusion_class)}
                       </Badge>
-                      {facility.is_synthetic ? <Badge tone="sun">Synthetic</Badge> : null}
                     </span>
                     <span className="mt-2 block font-display text-lg font-bold leading-tight">
-                      {facility.display_name}
+                      {point.name}
                     </span>
                     <span className="mt-1 block font-sans text-xs text-[#5a5a58]">
-                      {facility.geography.municipality_name ??
-                        facility.geography.province_name ??
-                        facility.geography.region_name ??
-                        "Geography unknown"}
-                      {" · "}
-                      {PRECISION_LABELS[facility.location.precision] ??
-                        facility.location.precision}
+                      {PRECISION_LABELS[point.precision] ?? titleCase(point.precision)}
                     </span>
                   </button>
                 </li>
@@ -717,7 +745,7 @@ export function MapExplorer({
           )}
           aria-pressed={mobileView === "list"}
         >
-          <List aria-hidden="true" className="size-4" /> List ({visible.length})
+          <List aria-hidden="true" className="size-4" /> List ({mapData.total.toLocaleString()})
         </button>
       </div>
     </div>

@@ -1,6 +1,6 @@
 # Data dictionary
 
-**Version:** 2.0 — 17 November 2026
+**Version:** 2.0 — 18 November 2026
 **API contract:** OpenAPI 3 at `/openapi.json`; interactive docs at `/docs`
 **Bulk data:** `/v1/downloads/facilities.csv`, `facilities.parquet`, `schools.csv`, `health-facilities.csv`
 
@@ -220,6 +220,8 @@ Additional location fields:
 
 A postal code is a source claim, not a normalized mailing address. Do not infer one from the PSGC hierarchy. A missing code means the source did not supply one; it is not an empty string or a zero.
 
+A `psgc_code` can be source-supplied or derived. Derived values keep their evidence as an `AttributeAssertion`: source code/name resolution uses `psgc-resolution-v1`, while point-in-polygon map containment uses `psgc-spatial-v1`. By default a map-derived value fills a missing code, or replaces a code only with a more specific descendant; same-level and different-branch map conflicts are reported for review rather than silently overwritten. With the map-authoritative workflow (`--prefer-map`), the containing map unit replaces same-level or different-branch source codes; the original source claim remains in its assertion, and a map result that is less specific than the source code is not downgraded. A location outside every resolved OSM boundary remains unknown. The OSM boundary layer is internal reference geometry, not an official PSA boundary release.
+
 Do not render a `barangay_centroid` or `map_geocoded` point as an exact facility pin. A map must keep a text result list available when tiles fail. Never invent coordinates for a record that has none.
 
 ### 4.1 Contacts
@@ -280,7 +282,7 @@ Field-level assertions answer "which exact source record supplied this value?". 
 | `raw_value` | Value as supplied by the source; not normalized |
 | `normalized_value` | Value after parser normalization |
 | `transformation_version` | Parser or backfill version that produced the claim |
-| `review_status` | Review state, normally `source_supplied` |
+| `review_status` | Review state, normally `source_supplied`; `derived` for a deterministic crosswalk, hierarchy resolution, or map-boundary containment |
 | `asserted_at` | When PhilFacilities stored the claim |
 | `source` | The same source-evidence object returned by `/sources` |
 
@@ -394,9 +396,13 @@ Bulk: `GET /v1/downloads/schools.csv`
 | Field | Meaning |
 |---|---|
 | `deped_school_id` | DepEd school identifier, preserved as text |
-| `sector` | Source sector value |
-| `school_management` | Source management value |
-| `annex_status` | Source annex status |
+| `sector` | Normalized school sector: `public`, `private`, or `suc_luc`; null when no source states it. The raw source value is preserved in the source record. |
+| `school_management` | Source school-management class, such as `deped_managed`, `local_government`, or `sectarian` |
+| `division` | DepEd schools division from the SY 2020-2021 masterlist |
+| `district` | DepEd district from the SY 2020-2021 masterlist |
+| `legislative_district` | Legislative district printed in the SY 2020-2021 masterlist |
+| `settlement_type` | Source settlement class: `urban`, `partially_urban`, or `rural` |
+| `offering_classification` | Combined offering category exactly as published, such as `purely_es` or `jhs_with_shs` |
 | `offers_es`, `offers_jhs`, `offers_shs` | Whether the source says the school offers each level |
 | `reference_school_year` | School year the profile describes |
 | `enrollment_total` | Latest total when a matching observation exists; otherwise null |
@@ -405,7 +411,11 @@ Bulk: `GET /v1/downloads/schools.csv`
 
 Boolean school offerings are tri-state: `true`, `false`, or `null` for unknown. Do not treat null as `false`. Enrollment observations remain separate rows so historical years are not overwritten.
 
-Most currently published schools come from the HOT/OSM education extract. They are crowd-sourced map features, not DepEd records: `deped_school_id`, `sector`, `school_management`, and the offering flags are normally null, and enrollment/resources endpoints return an empty list unless a public observation exists. DepEd EBEIS rows are published with institution-level fields, and school-head names are withheld. Do not interpret an OSM school as an official DepEd school.
+The SY 2020-2021 DepEd Masterlist supplies explicit sector evidence for 60,924 exact six-digit BEIS IDs. Its `Public` rows map to `ownership=government`, `ownership_type=GOVERNMENT_UNSPECIFIED`, `inclusion_class=GOVERNMENT_FACILITY`; `Private` rows map to `ownership=private`, `ownership_type=PRIVATE_UNSPECIFIED`, `inclusion_class=PRIVATE_PUBLIC_SERVICE_PROVIDER`; and `SUCs/LUCs` rows map to `ownership=government`, `ownership_type=PUBLIC_EDUCATIONAL_INSTITUTION`, `inclusion_class=GOVERNMENT_FACILITY`. The release is enrichment-only: it fills unknown values by exact BEIS ID and never renames a facility, replaces a school profile's established values, or downgrades an established classification.
+
+BetterGov Open Data Portal dataset 41 republishes the same masterlist as a CC BY 4.0 CSV. It adds the school division, district, legislative district, settlement type, management class, and combined offering classification that are clipped or absent in the PDF. It is a second enrichment-only release keyed by the same six-digit BEIS ID. It never creates an unmatched school. Derived offering booleans are set only from the explicit combined categories; unknown categories stay null.
+
+Most currently published schools come from the HOT/OSM education extract. They are crowd-sourced map features, not DepEd records: `deped_school_id`, `sector`, `school_management`, and the offering flags are normally null, and enrollment/resources endpoints return an empty list unless a public observation exists. DepEd EBEIS rows are published with institution-level fields, and school-head names are withheld. Of the 83,218 EBEIS IDs, 60,924 carry sector, management, division, district, legislative-district, settlement, and offering values from the 2020 masterlist; 11,614 newer six-digit IDs, 9,579 seven-digit private-school variants, and 1,101 five-digit IDs remain unknown. Do not interpret an OSM school as an official DepEd school.
 
 ## 10. Health domain
 
@@ -415,15 +425,18 @@ Bulk: `GET /v1/downloads/health-facilities.csv`
 | Field | Meaning |
 |---|---|
 | `doh_facility_id` | DOH source identifier, preserved as text |
-| `facility_category` | Source category, not a normalized service capability |
-| `service_capability_level` | Source capability string when supplied |
-| `bed_capacity` | Source bed count. Null is unknown, not zero |
+| `facility_major_type` | NHFR major classification, such as Health Facility or Health Related Facility |
+| `facility_type_detail` | NHFR facility type exactly as published, such as Hospital or Rural Health Unit |
+| `facility_category` | Source category retained from the establishing release, not a normalized service capability |
+| `ownership_subclassification` | NHFR ownership sub-classification, such as Local Government Unit or Corporation |
+| `licensing_status` | NHFR licensing status: With License, Without License, or null when the source is blank |
+| `bed_capacity` | Source bed count. Zero is a real source value; null is unknown |
 | `licenses[]` | Time-bounded health licences with issuing authority and source status |
 | `accreditations[]` | Time-bounded PhilHealth or other accreditation rows |
 
 Licences and accreditations are many-to-many and time-bounded. An accreditation record is not a real-time guarantee that a service is available or reimbursable. `valid_until` may be null when the source does not supply it.
 
-The public health set combines several sources: HOT/OSM health features, an NHA GeoServer DOH health-facility layer, PhilHealth accreditation evidence linked where identity and location match, local-government health-centre directories, and other published health directories. `doh_facility_id`, bed capacity, and DOH licences are normally null because no official DOH NHFR/HFSRB source is published. PhilHealth rows describe time-bound benefit-package accreditation, not facility ownership or licensing. An OSM health feature is crowd-sourced and may be inactive, renamed, or misplaced.
+The public health set combines several sources: the DOH National Health Facility Registry (September 2026 snapshot, 44,799 facilities), HOT/OSM health features, an NHA GeoServer DOH health-facility layer, PhilHealth accreditation evidence linked where identity and location match, local-government health-centre directories, and other published health directories. The NHFR release is enrichment-only: it matches an existing facility by exact DOH facility code, fills only missing profile fields, and creates a new official facility only when the code is not present. It never renames an established facility or replaces an established classification. NHFR registry presence is not proof of current operation, and a blank licensing status stays null. PhilHealth rows describe time-bound benefit-package accreditation, not facility ownership or licensing. An OSM health feature is crowd-sourced and may be inactive, renamed, or misplaced.
 
 ### Accreditation records
 
@@ -445,7 +458,26 @@ The public health set combines several sources: HOT/OSM health features, an NHA 
 
 `valid_on` filters to an accreditation valid on that date. The interval is not proof of current operation, staffing, or service availability. Accreditation contact and address fields are time-bound to the accreditation; they are not copied into the facility's general contacts.
 
-## 11. Population
+## 11. Utility domain
+
+The utility profile is exposed on the facility detail response as `utility`, for a facility whose `facility_type` is `utility_facility`. It is populated by the DOE existing-power-plant lists.
+
+| Field | Meaning |
+|---|---|
+| `doe_facility_code` | DOE facility code, preserved as text |
+| `resource_type` | Source resource label, such as Coal or Geothermal |
+| `technology_type` | Source technology, such as Circulating Fluidized Bed (CFB) Coal |
+| `connection_type` | Grid-connected or off-grid, as stated by the source list |
+| `grid` | Source grid label: Luzon, Visayas, Mindanao, or off-grid |
+| `owner_type` | DOE owner class, such as NPC or NON-NPC/IPP. Not a legal-ownership determination |
+| `contract_type` | Source contract type when stated |
+| `installed_mw`, `dependable_mw` | Source capacity ratings in megawatts; null when the source is blank |
+| `number_of_units` | Source unit count |
+| `date_commissioned` | Source commissioning date, preserved as text |
+
+Capacity is a registry rating, not metered output. Inclusion in the DOE list is not evidence that a plant is currently operating. The profile does not replace the facility's function record, which carries the `POWER_SERVICE` designation and installed-capacity value asserted by the same release.
+
+## 12. Population
 
 Endpoint: `GET /v1/population?psgc=&level=&indicator=&q=&release_id=&limit=&offset=`
 
@@ -466,7 +498,7 @@ One row per published PSA 2024 Census observation.
 
 A population count is never facility capacity or service coverage.
 
-## 12. Quality issues and status
+## 13. Quality issues and status
 
 Endpoints: `GET /v1/quality/summary`, `GET /v1/quality/issues`, `GET /healthz`, `GET /v1`
 
@@ -488,7 +520,7 @@ Endpoints: `GET /v1/quality/summary`, `GET /v1/quality/issues`, `GET /healthz`, 
 
 Quality counts are measured from records. They are not an editorial trust score, and a clean quality summary does not prove the source is correct.
 
-## 13. Change history
+## 14. Change history
 
 Endpoint: `GET /v1/facilities/{facility_id}/history`, feed `GET /v1/changes?since=&limit=&cursor=`
 
@@ -503,7 +535,7 @@ Endpoint: `GET /v1/facilities/{facility_id}/history`, feed `GET /v1/changes?sinc
 
 History is append-oriented. A correction creates a new event; it does not rewrite earlier evidence. `/v1/changes` is a global feed over public facilities and uses cursor pagination.
 
-## 14. Pagination, errors, and caching
+## 15. Pagination, errors, and caching
 
 - Facility, school, and health lists are cursor-paginated: send `cursor`, read `next_cursor` and `has_more`. Cursors are opaque and capped in length.
 - Reference tables (geographies, accreditations, population, source checks, source releases, quality issues, match candidates) use `limit` and `offset`.
@@ -514,23 +546,23 @@ History is append-oriented. A correction creates a new event; it does not rewrit
 
 Full endpoint and filter reference: [API](api.md).
 
-## 15. Current coverage caveats
+## 16. Current coverage caveats
 
-Measured 18 November 2026: 258,349 canonical facilities, all public, 155,228 public with coordinates, 103,121 without. These counts change as sources are added or reviewed.
+Measured 18 November 2026: 273,369 canonical facilities, all public, 155,230 public with coordinates, 118,139 without. These counts change as sources are added or reviewed.
 
 - Coverage counts describe processed source records, not the real-world facility universe. None of these counts establishes nationwide completeness.
 - OSM/HOT facilities are crowd-sourced map features, not official DepEd, DOH, DILG, or LGU registries. Their coordinates are often bounding-box centres (`map_geocoded`) and their operational status is unknown.
-- DepEd EBEIS canonical rows are published as `DISCOVERY_CANDIDATE`/unclassified because the result set has no reliable per-row sector field. Only institution-level fields are published; school-head names stay in the private source store.
+- DepEd EBEIS rows without an exact SY 2020-2021 Masterlist match remain `DISCOVERY_CANDIDATE`/unclassified because the EBEIS result set has no reliable per-row sector field. The 60,924 exact matches now carry `ownership`, `ownership_type`, `inclusion_class`, and `school.sector` from the masterlist. Only institution-level fields are published; school-head names stay in the private source store.
 - The BetterGov PSGC Q2 2024 snapshot is supplementary and not the latest official PSA release. PSA 2024 Census values come from saved BetterGov/OpenSTAT snapshots, not live PSA data.
 - The NHA GeoServer DOH layer and PhilHealth accreditations are partial alternates for blocked official DOH sources, not replacements or completeness claims.
 - LGU directories cover only the named city or municipality. Absence from them is not evidence that a facility does not exist.
 - Source rights are separate from the Apache-2.0 code licence. No formal legal review has been completed; rights states record terms evidence and the enforced technical gate.
-- Official PSA PSGC, DepEd Machine-Ready Files, DOH NHFR/HFSRB, CHED, TESDA, and other blocked sources remain blocked until access and reuse evidence exists.
+- Official PSA PSGC, DepEd Machine-Ready Files, DOH HFSRB licensed facilities, and other blocked sources remain blocked until access and reuse evidence exists. The DOH NHFR is published from a preserved official-export mirror with a pinned checksum; the official site still returns a Cloudflare challenge.
 - Backups, monitoring, TLS/WAF, and external security review are not production-configured in this checkout; the map uses attributed demo tiles until a licensed provider is selected. See [operations](operations.md).
 
 For the current source-by-source state, use `GET /v1/sources`, `GET /v1/monitoring`, and [Sources](sources.md). This dictionary does not freeze a source list that changes with every release.
 
-## 16. Related documents
+## 17. Related documents
 
 - [Data model](data-model.md) — canonical tables, provenance, constraints
 - [API](api.md) — every endpoint and filter

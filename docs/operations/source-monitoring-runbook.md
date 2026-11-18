@@ -24,7 +24,8 @@ Blocked sources are **not** refreshed automatically:
 - Official PSA PSGC workbook: blocked by a Cloudflare challenge.
 - DepEd Machine-Ready Files: blocked by a human terms/download flow.
 - DepEd EBEIS: the current source release is published for institution-level fields with personal fields withheld.
-- DOH NHFR/HFSRB: blocked by Cloudflare and an unreviewed data-use agreement.
+- DOH NHFR: the official site is blocked by Cloudflare, but a checksum-pinned preserved export is approved for enrichment and new-facility publication. Refresh only from a verified preserved artifact.
+- DOH HFSRB licensed facilities: blocked by Cloudflare; licensing semantics and reuse terms are not established.
 - CHED/TESDA: no verified bulk release or documented public API.
 
 An operator must not enable an approved-refresh job for a source until its rights and

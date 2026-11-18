@@ -180,6 +180,7 @@ def _apply_release(
     session: Session,
     settings: IngestSettings,
     reprocess: bool,
+    force_reapply: bool = False,
 ) -> SourceOutcome:
     if acquired.kind == KIND_GEOGRAPHY:
         result: IngestResult = run_geography_ingestion(
@@ -229,6 +230,7 @@ def _apply_release(
         session=session,
         settings=settings,
         reprocess=reprocess,
+        force_reapply=force_reapply,
     )
     return SourceOutcome(
         key=definition.key,
@@ -248,6 +250,7 @@ def run_source(
     key: str,
     *,
     reprocess: bool = False,
+    force_reapply: bool = False,
     dry_run: bool = False,
     input_path: Path | None = None,
     options: dict[str, Any] | None = None,
@@ -304,6 +307,7 @@ def run_source(
                         session=session,
                         settings=settings,
                         reprocess=reprocess,
+                        force_reapply=force_reapply,
                     )
             except Exception as exc:  # one release failure keeps the rest of a group running
                 session.rollback()
@@ -400,6 +404,7 @@ def run_selection(
     group: str | None = None,
     exclude: list[str] | tuple[str, ...] | None = None,
     reprocess: bool = False,
+    force_reapply: bool = False,
     dry_run: bool = False,
     input_path: Path | None = None,
     options: dict[str, Any] | None = None,
@@ -413,6 +418,7 @@ def run_selection(
             settings,
             key,
             reprocess=reprocess,
+            force_reapply=force_reapply,
             dry_run=dry_run,
             input_path=input_path,
             options=options,

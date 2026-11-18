@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     max_bbox_area_deg2: float = 25.0
     max_nearby_radius_m: int = 50_000
     max_map_features: int = 500
+    max_map_points: int = 500
+    max_map_clusters: int = 800
     api_version: str = "v1"
     coverage_stale_after_days: int = 365
 

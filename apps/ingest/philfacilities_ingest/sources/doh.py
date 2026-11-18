@@ -32,7 +32,13 @@ METHOD_ALIASES = ["coordinate_method", "coordinate_source", "geocode_method", "l
 PSGC_ALIASES = ["psgc_code", "barangay_psgc", "barangay_code"]
 OWNERSHIP_ALIASES = ["ownership", "ownership_type", "sector"]
 CATEGORY_ALIASES = ["facility_category", "facility_type", "category", "classification"]
-SERVICE_ALIASES = ["service_capability_level", "service_capability", "hospital_level", "level"]
+SERVICE_ALIASES = [
+    "facility_type_detail",
+    "service_capability_level",
+    "service_capability",
+    "hospital_level",
+    "level",
+]
 BED_ALIASES = ["bed_capacity", "beds", "bed_count", "authorized_beds"]
 LICENSE_ALIASES = ["license_number", "license_no", "doh_license_number"]
 LICENSE_STATUS_ALIASES = ["license_status", "registration_status", "source_status"]
@@ -206,9 +212,7 @@ class DOHNHFRAdapter:
                     health=HealthData(
                         doh_facility_id=facility_id,
                         facility_category=clean_text(first_present(payload, CATEGORY_ALIASES)),
-                        service_capability_level=clean_text(
-                            first_present(payload, SERVICE_ALIASES)
-                        ),
+                        facility_type_detail=clean_text(first_present(payload, SERVICE_ALIASES)),
                         bed_capacity=parse_int(first_present(payload, BED_ALIASES)),
                     ),
                     licenses=licenses,

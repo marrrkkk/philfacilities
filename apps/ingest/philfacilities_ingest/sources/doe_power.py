@@ -31,6 +31,7 @@ from ..contracts import (
     ParsedRelease,
     ParsedRow,
     ReleaseSpec,
+    UtilityData,
     ValidationIssue,
     ValidationResult,
 )
@@ -73,6 +74,11 @@ def _number(value: Any) -> float | None:
         return float(text)
     except ValueError:
         return None
+
+
+def _integer(value: Any) -> int | None:
+    number = _number(value)
+    return int(number) if number is not None else None
 
 
 def _slug(value: str) -> str:
@@ -228,7 +234,7 @@ def _record_key(record: dict[str, Any]) -> str:
 
 class DoePowerPlantAdapter:
     source_code = "doe"
-    parser_version = "doe-loepp-pdf-1.0.0"
+    parser_version = "doe-loepp-pdf-1.1.0"
     schema_version = "doe-loepp-pdf-v1"
 
     def __init__(self, spec: ReleaseSpec, *, grid: str) -> None:
@@ -409,6 +415,19 @@ class DoePowerPlantAdapter:
                             },
                         )
                     ],
+                    utility=UtilityData(
+                        doe_facility_code=code,
+                        resource_type=_text(payload.get("resource_type")) or None,
+                        technology_type=_text(payload.get("technology_type")) or None,
+                        connection_type=_text(payload.get("connection_type")) or None,
+                        grid=_text(payload.get("grid")) or None,
+                        owner_type=_text(payload.get("owner_type")) or None,
+                        contract_type=_text(payload.get("contract_type")) or None,
+                        installed_mw=installed,
+                        dependable_mw=dependable,
+                        number_of_units=_integer(payload.get("number_of_units")),
+                        date_commissioned=_text(payload.get("date_commissioned")) or None,
+                    ),
                 )
             )
         return candidates

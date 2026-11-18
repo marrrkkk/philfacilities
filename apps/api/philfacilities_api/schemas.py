@@ -138,7 +138,11 @@ class SchoolProfileOut(BaseModel):
     deped_school_id: str | None = None
     sector: str | None = None
     school_management: str | None = None
-    annex_status: str | None = None
+    division: str | None = None
+    district: str | None = None
+    legislative_district: str | None = None
+    settlement_type: str | None = None
+    offering_classification: str | None = None
     offers_es: bool | None = None
     offers_jhs: bool | None = None
     offers_shs: bool | None = None
@@ -169,9 +173,27 @@ class ResourceObservationOut(BaseModel):
 
 class HealthProfileOut(BaseModel):
     doh_facility_id: str | None = None
+    facility_major_type: str | None = None
+    facility_type_detail: str | None = None
     facility_category: str | None = None
-    service_capability_level: str | None = None
+    ownership_subclassification: str | None = None
+    licensing_status: str | None = None
     bed_capacity: int | None = None
+    source_record_id: uuid.UUID | None = None
+
+
+class UtilityProfileOut(BaseModel):
+    doe_facility_code: str | None = None
+    resource_type: str | None = None
+    technology_type: str | None = None
+    connection_type: str | None = None
+    grid: str | None = None
+    owner_type: str | None = None
+    contract_type: str | None = None
+    installed_mw: float | None = None
+    dependable_mw: float | None = None
+    number_of_units: int | None = None
+    date_commissioned: str | None = None
     source_record_id: uuid.UUID | None = None
 
 
@@ -297,6 +319,7 @@ class FacilityDetail(FacilitySummary):
     access_conditions: str | None = None
     school: SchoolProfileOut | None = None
     health: HealthProfileOut | None = None
+    utility: UtilityProfileOut | None = None
     accreditations: list[AccreditationOut] = Field(default_factory=list)
     contacts: list[ContactOut] = Field(default_factory=list)
     function_details: list[FacilityFunctionOut] = Field(default_factory=list)
@@ -321,6 +344,37 @@ class FacilityMapResponse(BaseModel):
     limit: int
     truncated: bool = False
     bbox: str | None = None
+
+
+class FacilityMapPoint(BaseModel):
+    """Minimal map feature; deliberately excludes detail-only summary fields."""
+
+    id: uuid.UUID
+    slug: str | None = None
+    name: str
+    facility_type: FacilityType
+    inclusion_class: InclusionClass
+    precision: LocationPrecision = "unknown"
+    latitude: float
+    longitude: float
+
+
+class FacilityMapCluster(BaseModel):
+    latitude: float
+    longitude: float
+    count: int
+    label: str
+
+
+class FacilityMapPointsResponse(BaseModel):
+    bbox: str
+    zoom: int
+    total: int
+    mode: Literal["points", "clusters"]
+    points: list[FacilityMapPoint] = Field(default_factory=list)
+    clusters: list[FacilityMapCluster] = Field(default_factory=list)
+    cell_deg: float | None = None
+    truncated: bool = False
 
 
 class NearbyResponse(BaseModel):
