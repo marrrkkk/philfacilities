@@ -89,6 +89,10 @@ other_qualifying_facility
 
 A null subtype means the source did not establish one. Do not infer a subtype from a name. A facility with several compatible uses is represented by functions and relationships, not by inventing a new subtype.
 
+For health facilities, `facility_subtype` is a controlled class: `HOSPITAL`, `INFIRMARY`, `RURAL_HEALTH_UNIT`, `BARANGAY_HEALTH_STATION`, `CLINIC`, `LABORATORY`, `DIALYSIS_CENTER`, `BIRTHING_HOME`, `PHARMACY`, or `OTHER_HEALTH_FACILITY`. A hospital service level (`LEVEL 1`), a PhilHealth benefit package (`GAMOT Package Providers`, `Postpartum`) or a profession (`dentist`) is not a facility class and must not be stored there; the raw label remains on `health.profiles.facility_category` and the source record. An unrecognised health label stays unmapped for review rather than being silently cleared.
+
+For schools, raw map tags such as `school`, `kindergarten`, `university` and `college` are folded into `OTHER_SCHOOL` or `HIGHER_EDUCATION_INSTITUTION`. A tag that belongs to another category (`PUBLIC_LIBRARY`, `LOCAL_GOVERNMENT_OFFICE`, `SPORTS_COMPLEX`) is cleared rather than carried on a school. The pass does not infer a public/private sector or an elementary/secondary level from the name; those remain null unless an official source states them.
+
 ### 3.2 Facility kind
 
 | Value | Meaning |
@@ -126,6 +130,8 @@ Inclusion class is not a statement that the facility is open, licensed, or gover
 | Unknown | `UNKNOWN` |
 
 `GOVERNMENT_UNSPECIFIED` and `PRIVATE_UNSPECIFIED` are not placeholders for a guess; they record a source-stated broad class without a finer type. `PUBLIC_PRIVATE_JOINT` is not collapsed into either side. Ownership and operation can differ: a government-owned building may be operated by a private entity, and vice versa.
+
+The DOH NHFR publishes an ownership sub-classification (`Local Government Unit`, `National Government`, `Single Proprietorship`, `Corporation`, …). `refine-health-ownership` applies it only within the existing government or private major class, refining `GOVERNMENT_UNSPECIFIED` / `PRIVATE_UNSPECIFIED` or an unknown value. It never changes a facility from government to private (or back) and never overwrites a more specific type established by another official source. The NHFR subclassification and DOH facility code remain on the health profile as evidence.
 
 ### 3.5 Public access class
 
@@ -242,7 +248,7 @@ The API does not choose one phone number as the facility's truth. Several source
 
 Only institutional channels are published. Named staff contacts, personal mobile numbers, personal email addresses, and contact-person fields stay out of the public record. Accreditation phone, email, street address, and municipality are exposed inside `accreditations[]`, not copied into general facility contacts, because they describe that accreditation row.
 
-`geography` resolves the PSGC code against the selected geography release and exposes `psgc_code`, `psgc_release`, and the region, province, municipality, and barangay codes and names. A missing name means the code did not resolve in that release; it is not a zero-length place.
+`geography` resolves the PSGC code against the selected geography release and exposes `psgc_code`, `psgc_release`, the region, province, municipality, and barangay codes and names, and `urban_rural`. `urban_rural` is the PSGC barangay class normalised to `urban` or `rural`; a blank or `-` source value stays null. It describes the barangay, not the facility's catchment or an inferred settlement type. A missing name means the code did not resolve in that release; it is not a zero-length place.
 
 ## 5. Provenance and source releases
 
@@ -381,6 +387,7 @@ Endpoints: `GET /v1/geographies`, `GET /v1/geographies/{psgc_code}`, `GET /v1/ge
 | `geographic_level` | `region`, `province`, `municipality`, or `barangay` |
 | `name` | Name in the selected geography release |
 | `parent_psgc_code` | Parent code in the same release |
+| `urban_rural` | Barangay PSGC class: `U` or `R` in the source unit; `urban_rural` on facility geography is normalised to `urban`/`rural` and stays null for `-` or blank |
 | `release_label`, `reference_date` | Geography release identity and date |
 | `is_synthetic` | Whether the release is synthetic |
 

@@ -7,6 +7,8 @@ orchestrates the release lifecycle and the application loop.
 
 from __future__ import annotations
 
+import gc
+import resource
 import uuid
 from datetime import UTC, datetime
 from typing import Any
@@ -17,6 +19,7 @@ from philfacilities_api.models import (
     Dataset,
     Facility,
     FacilityLocation,
+    FacilitySlugAlias,
     FacilitySourceLink,
     GeographicRelease,
     HealthAccreditation,
@@ -36,6 +39,7 @@ from philfacilities_api.rights import (
     normalize_rights,
 )
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import distinct_on
 from sqlalchemy.orm import Session
 
 from ..config import IngestSettings, get_settings
@@ -50,9 +54,12 @@ from ..release_rollback import UPDATE_PREFETCH_CHUNK_SIZE, FacilityUpdatePrefetc
 from ..storage import RawStore, build_store
 from ..validators import coordinate_issue
 from .canonical import (
+    BULK_ASSERTIONS_KEY,
     _apply_candidate,
     _flush_new_facilities,
     _maybe_flag_cross_source,
+    flush_attribute_assertions,
+    flush_enrollment_observations,
 )
 from .common import (
     APPLY_FLUSH_BATCH_SIZE,
@@ -471,6 +478,11 @@ def _run_ingestion_locked(
         candidates = adapter.normalize(parsed)
         stats["normalized_candidates"] = len(candidates)
         stats.stop_stage("normalize")
+        # Normalization is the last consumer of the parsed row payloads. Drop
+        # them before the apply loop so a 60k-row enrollment release does not
+        # keep two full copies of every source row alive alongside its
+        # candidates and staged source records.
+        parsed.rows.clear()
         if validation.failed:
             # The failure decision was made before application. Keep the parsed
             # staging records and validation issues for audit, but touch no
@@ -499,23 +511,39 @@ def _run_ingestion_locked(
         # Bulk releases repeat generic facility names heavily. Keeping the slug
         # set in memory avoids one or more SELECTs per duplicate name.
         used_slugs = set(session.scalars(select(Facility.slug)).all())
-        # Preload this agency's entity links once, as Facility objects. A first
-        # bulk load otherwise issues one lookup per row for an entity that
-        # cannot exist yet, and a reprocess load would issue one session.get per
-        # matched row.
-        facility_by_entity: dict[str, Facility] = {}
+        # A retired slug is still resolvable, so a new clean slug must not
+        # reuse it.
+        used_slugs.update(session.scalars(select(FacilitySlugAlias.slug)).all())
+        # Preload this agency's entity links once, as facility IDs. A first bulk
+        # load otherwise issues one lookup per row for an entity that cannot
+        # exist yet. Keeping IDs rather than Facility instances means the apply
+        # loop only holds the facilities in its current flush batch; older
+        # instances are expunged instead of accumulating for 60k rows.
+        facility_by_entity: dict[str, uuid.UUID] = {}
+        # DepEd publishes one six-digit school ID in several datasets (EBEIS,
+        # the SY 2020-2021 masterlist, Project Bukas). Materialising every
+        # duplicate row would enlarge the session identity map by tens of
+        # thousands of Facility objects for no benefit, so keep only the latest
+        # link per entity in the database and then in memory.
         entity_rows = session.execute(
-            select(FacilitySourceLink.source_entity_id, Facility)
+            select(FacilitySourceLink.source_entity_id, Facility.id)
             .join(Facility, FacilitySourceLink.facility_id == Facility.id)
             .join(SourceRecord, FacilitySourceLink.source_record_id == SourceRecord.id)
             .join(Release, SourceRecord.release_id == Release.id)
             .join(Dataset, Release.dataset_id == Dataset.id)
-            .where(Dataset.agency_id == agency.id)
-            .order_by(Release.retrieved_at.desc())
+            .where(
+                Dataset.agency_id == agency.id,
+                FacilitySourceLink.source_entity_id.is_not(None),
+            )
+            .ext(distinct_on(FacilitySourceLink.source_entity_id))
+            .order_by(
+                FacilitySourceLink.source_entity_id,
+                Release.retrieved_at.desc(),
+            )
         ).all()
-        for entity_id, facility in entity_rows:
+        for entity_id, facility_id in entity_rows:
             if entity_id:
-                facility_by_entity.setdefault(entity_id, facility)
+                facility_by_entity.setdefault(entity_id, facility_id)
         # PhilHealth's explicit SEC field is the only sector evidence currently
         # ingested. Load the accumulated values once so a facility appearing in
         # several provider categories is classified consistently, and never by
@@ -531,6 +559,7 @@ def _run_ingestion_locked(
                 sector_by_facility.setdefault(facility_id, set()).add(value)
         applied_candidate_keys: set[str] = set()
         pending_matches: list[tuple[Facility, SourceRecord]] = []
+        pending_observations: list[dict[str, Any]] = []
         new_facilities: list[Facility] = []
         current_location_by_facility: dict[uuid.UUID, FacilityLocation | None] = {}
         # A health release can match an existing facility through a DOH code
@@ -546,13 +575,20 @@ def _run_ingestion_locked(
             facility_by_entity=facility_by_entity,
             facility_by_doh_id=facility_by_doh_id,
         )
-        current_location_by_facility.update(
-            _preload_current_locations(session, candidate_facility_ids)
-        )
+        bulk_apply_reset = bool(getattr(adapter, "bulk_apply_reset", False))
+        if not bulk_apply_reset:
+            # The preload holds one FacilityLocation per touched facility. A
+            # bulk enrichment release would pin tens of thousands of them for
+            # the whole run, so it resolves the current location per row and
+            # releases it at the next flush instead.
+            current_location_by_facility.update(
+                _preload_current_locations(session, candidate_facility_ids)
+            )
         update_prefetch = FacilityUpdatePrefetch(
             session, release=release, facility_ids=candidate_facility_ids
         )
         applied_since_flush = 0
+        applied_total = 0
         known_psgc: set[str] = set()
         if latest_geo:
             known_psgc = set(
@@ -571,6 +607,18 @@ def _run_ingestion_locked(
                     "row_reference": None,
                 }
             )
+        # Bulk apply allocates hundreds of thousands of short-lived dicts and
+        # ORM rows. Python's generational GC would repeatedly walk the whole
+        # heap, which is pathological on a 60k-row release under memory
+        # pressure. Freeze the already-loaded reference data, pause cyclic GC
+        # for the tight loop, and restore it before the final flush.
+        gc.collect()
+        gc.freeze()
+        gc.disable()
+        # Assertions are insert-only. Collect them as mappings and bulk insert
+        # them per flush instead of retaining one ORM instance per assertion in
+        # the session identity map.
+        session.info[BULK_ASSERTIONS_KEY] = True
         for candidate in candidates:
             if candidate.row_reference in rejected_references:
                 stats["unresolved"] += 1
@@ -653,14 +701,42 @@ def _run_ingestion_locked(
                 current_location_by_facility=current_location_by_facility,
                 record_is_new=candidate.source_record_key not in pre_existing_keys,
                 update_prefetch=update_prefetch,
+                pending_observations=pending_observations,
             )
+            # Release the staged row after its candidate has been applied. The
+            # raw payload is the largest per-row object in the run, and no
+            # later candidate needs this source record.
+            record_by_key.pop(candidate.source_record_key, None)
             applied_since_flush += 1
             if applied_since_flush >= APPLY_FLUSH_BATCH_SIZE:
                 # Bound memory and keep the INSERT batches large enough to
                 # amortise round trips without one flush per facility.
                 _flush_new_facilities(session, new_facilities)
                 session.flush()
+                flush_attribute_assertions(session)
+                flush_enrollment_observations(session, pending_observations)
+                # Rollback snapshots and profile/location caches otherwise pin
+                # every touched facility for the whole 60k-row release. They
+                # are durable after the flush, so the next batch can reload
+                # only what it needs.
+                session.info.get("release_facility_snapshots", {}).clear()
+                current_location_by_facility.clear()
+                update_prefetch.reset(release=release)
+                # Cyclic garbage from the per-row ORM graphs (source records,
+                # snapshots and their child state) cannot be reclaimed while
+                # automatic GC is paused for the bulk loop. Collect at each
+                # batch boundary so a 40k-row release does not grow to multiple
+                # gigabytes and start swapping; keep automatic GC disabled
+                # between collections to avoid repeatedly walking the heap.
+                gc.collect()
                 applied_since_flush = 0
+                applied_total += APPLY_FLUSH_BATCH_SIZE
+                if applied_total % 10_000 == 0:
+                    print(
+                        f"applied {applied_total} rows; "
+                        f"maxrss={resource.getrusage(resource.RUSAGE_SELF).ru_maxrss // 1024} MiB",
+                        flush=True,
+                    )
             # Attribute assertions are written by _apply_candidate for every
             # source-supplied field, including display_name and ownership.
             facility_id = applied_facility.id if applied_facility else None
@@ -699,8 +775,13 @@ def _run_ingestion_locked(
                         facility_id=facility_id,
                     )
 
+        gc.enable()
+        gc.unfreeze()
         _flush_new_facilities(session, new_facilities)
         session.flush()
+        flush_attribute_assertions(session)
+        flush_enrollment_observations(session, pending_observations)
+        session.info.pop(BULK_ASSERTIONS_KEY, None)
         if pending_matches:
             # Deferred cross-source matching runs once, after every link exists.
             for pending_facility, pending_record in pending_matches:
@@ -731,7 +812,7 @@ def _run_ingestion_locked(
         ).first()
         anomaly = row_count_anomaly(
             previous_release.row_count_parsed if previous_release else None,
-            len(parsed.rows),
+            parsed_rows,
         )
         stats["row_count_previous"] = (
             previous_release.row_count_parsed if previous_release else None
@@ -788,8 +869,8 @@ def _run_ingestion_locked(
                 if spec.is_synthetic
                 else normalize_rights(spec.redistribution_status)
             )
-            release.row_count_parsed = len(parsed.rows)
-            release.row_count_reported = stats.get("input_rows") or len(parsed.rows)
+            release.row_count_parsed = parsed_rows
+            release.row_count_reported = stats.get("input_rows") or parsed_rows
             release.processed_at = datetime.now(UTC)
             release.ingestion_status = "failed" if failed else "published"
             if failed:
@@ -877,7 +958,7 @@ def _latest_run_failed(session: Session, release_id: uuid.UUID) -> bool:
 
 def _preload_facility_by_doh_id(
     session: Session, candidates: list[FacilityCandidate]
-) -> dict[str, Facility | None]:
+) -> dict[str, uuid.UUID | None]:
     """Resolve DOH facility codes already stored on a health profile.
 
     A code that maps to more than one canonical facility is stored as ``None``
@@ -893,29 +974,29 @@ def _preload_facility_by_doh_id(
             if candidate.health is not None and candidate.health.doh_facility_id
         }
     )
-    resolved: dict[str, Facility | None] = {}
+    resolved: dict[str, uuid.UUID | None] = {}
     for start in range(0, len(codes), UPDATE_PREFETCH_CHUNK_SIZE):
         chunk = codes[start : start + UPDATE_PREFETCH_CHUNK_SIZE]
         rows = session.execute(
-            select(HealthProfile.doh_facility_id, Facility)
+            select(HealthProfile.doh_facility_id, Facility.id)
             .join(Facility, Facility.id == HealthProfile.facility_id)
             .where(HealthProfile.doh_facility_id.in_(chunk))
         ).all()
-        for code, facility in rows:
+        for code, facility_id in rows:
             if code in resolved:
                 existing = resolved[code]
-                if existing is None or existing.id != facility.id:
+                if existing is None or existing != facility_id:
                     resolved[code] = None
             else:
-                resolved[code] = facility
+                resolved[code] = facility_id
     return resolved
 
 
 def _candidate_facility_ids(
     *,
     candidates: list[FacilityCandidate],
-    facility_by_entity: dict[str, Facility],
-    facility_by_doh_id: dict[str, Facility | None] | None = None,
+    facility_by_entity: dict[str, uuid.UUID],
+    facility_by_doh_id: dict[str, uuid.UUID | None] | None = None,
 ) -> list[uuid.UUID]:
     """Return existing facilities touched by this release, in apply order.
 
@@ -927,12 +1008,12 @@ def _candidate_facility_ids(
     seen: set[uuid.UUID] = set()
     for candidate in candidates:
         entity_id = candidate.source_entity_id or candidate.source_record_key
-        facility = facility_by_entity.get(entity_id)
-        if facility is None and facility_by_doh_id and candidate.health is not None:
-            facility = facility_by_doh_id.get(candidate.health.doh_facility_id or "")
-        if facility is not None and facility.id not in seen:
-            seen.add(facility.id)
-            facility_ids.append(facility.id)
+        facility_id = facility_by_entity.get(entity_id)
+        if facility_id is None and facility_by_doh_id and candidate.health is not None:
+            facility_id = facility_by_doh_id.get(candidate.health.doh_facility_id or "")
+        if facility_id is not None and facility_id not in seen:
+            seen.add(facility_id)
+            facility_ids.append(facility_id)
     return facility_ids
 
 

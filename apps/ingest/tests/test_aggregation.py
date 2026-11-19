@@ -113,6 +113,8 @@ def _source_facility(
     longitude=None,
     psgc_code=None,
     deped_school_id: str | None = None,
+    dataset_slug: str | None = None,
+    raw_payload: dict | None = None,
 ) -> tuple[Facility, MatchCandidate | None]:
     suffix = uuid.uuid4().hex[:10]
     agency = Agency(
@@ -122,7 +124,7 @@ def _source_facility(
     session.flush()
     dataset = Dataset(
         agency_id=agency.id,
-        slug=f"aggregation-test-{agency_code.lower()}-{suffix}",
+        slug=dataset_slug or f"aggregation-test-{agency_code.lower()}-{suffix}",
         name=f"Aggregation test {agency_code}",
         publication_status="public",
         redistribution_status="publicly_available_verified",
@@ -145,7 +147,7 @@ def _source_facility(
     record = SourceRecord(
         release_id=release.id,
         source_record_key=f"{agency_code}:{suffix}",
-        raw_payload={"name": name, "address": address},
+        raw_payload={"name": name, "address": address, **(raw_payload or {})},
         raw_record_hash=uuid.uuid4().hex * 2,
         validation_status="valid",
     )
@@ -426,6 +428,100 @@ def test_city_only_name_match_without_location_bridge_is_not_merged(db_session) 
         assert stats["auto_pairs"] == 1
         assert stats["clusters_rejected"] == 1
         assert stats["would_merge"] == 0
+    finally:
+        db_session.rollback()
+
+
+def test_structured_admin_resolves_duplicate_city_names_and_city_suffix() -> None:
+    from philfacilities_ingest.aggregation import (
+        _AdminIndex,
+        _resolve_barangay_code,
+        _resolve_city_code,
+    )
+
+    admin = _AdminIndex(
+        city_alias_to_codes={
+            "calamba": {"0403405000", "1004204000"},
+            "san isidro": {"0304925000", "0403426000"},
+            "bacolod": {"1003501000", "1830200000"},
+        },
+        city_names={
+            "0403405000": "City of Calamba",
+            "1004204000": "Calamba",
+            "0304925000": "San Isidro",
+            "0403426000": "San Isidro",
+            "1003501000": "Bacolod",
+            "1830200000": "City of Bacolod",
+        },
+        barangay_names={"0431200017": "Gulang-gulang"},
+        administrative_tokens=set(),
+        city_alias_to_parent_alias_codes={
+            ("san isidro", "nueva ecija"): {"0304925000"},
+            ("san isidro", "laguna"): {"0403426000"},
+        },
+        barangay_alias_to_parent_codes={
+            ("bgy no 18 san quirino poblacion", "0102812000"): {"0102812059"},
+        },
+    )
+    assert (
+        _resolve_city_code(admin, municipality="CITY OF CALAMBA", division="Calamba City")
+        == "0403405000"
+    )
+    assert (
+        _resolve_city_code(
+            admin, municipality="BACOLOD CITY (Capital)", division="Negros Occidental"
+        )
+        == "1830200000"
+    )
+    assert (
+        _resolve_city_code(admin, municipality="SAN ISIDRO", division="Nueva Ecija") == "0304925000"
+    )
+    assert _resolve_city_code(admin, municipality="SAN ISIDRO", division="Laguna") == "0403426000"
+    assert _resolve_city_code(admin, municipality="SAN ISIDRO") is None
+    assert (
+        _resolve_barangay_code(admin, "BRY. NO. 18, SAN QUIRINO (POB.)", "0102812000")
+        == "0102812059"
+    )
+
+
+def test_deped_structured_admin_derives_barangay_and_merges_with_osm(db_session) -> None:
+    from philfacilities_ingest.aggregation import consolidate_facilities
+
+    try:
+        _geography(db_session)
+        deped, _ = _source_facility(
+            db_session,
+            name="Tugonan Elementary School",
+            agency_code="deped",
+            authority_level="official",
+            address="Purok 2",
+            deped_school_id="123456",
+            dataset_slug="deped-masterlist-sy2020-2021-detail",
+            raw_payload={
+                "municipality": "LUCENA CITY (Capital)",
+                "division": "Lucena City",
+                "region": "Region IV-A",
+                "barangay": "GULANG-GULANG",
+            },
+        )
+        _osm, _ = _source_facility(
+            db_session,
+            name="Tugonan Elementary School",
+            agency_code="osm",
+            authority_level="community",
+            address="Gulang-gulang",
+            latitude=13.961715,
+            longitude=121.612162,
+            psgc_code="0431200017",
+        )
+        stats = consolidate_facilities(db_session, dry_run=True)
+        assert stats["clusters_accepted"] == 1
+        assert stats["would_merge"] == 1
+        example = stats["examples"][0]
+        assert example["same_city"] is True
+        assert example["same_barangay"] is True
+        assert example["location_reason"] == "same_barangay"
+        assert deped.record_status == "active_in_registry"
     finally:
         db_session.rollback()
 

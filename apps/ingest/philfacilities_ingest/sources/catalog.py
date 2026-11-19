@@ -34,6 +34,26 @@ from .definitions import (
     SourceDefinition,
     publisher_type_for,
 )
+from .deped_bukas import (
+    ARCHIVE_ZIP_URL as DEPED_BUKAS_ARCHIVE_URL,
+)
+from .deped_bukas import (
+    MAX_ZIP_BYTES as DEPED_BUKAS_MAX_BYTES,
+)
+from .deped_bukas import (
+    DepEdBukasEnrollmentAdapter,
+    fetch_deped_bukas_enrollment,
+)
+from .deped_mapaaralan import (
+    MAX_BYTES as DEPED_MAPAARALAN_MAX_BYTES,
+)
+from .deped_mapaaralan import (
+    SOURCE_URL as DEPED_MAPAARALAN_URL,
+)
+from .deped_mapaaralan import (
+    DepEdMapaaralanAdapter,
+    fetch_deped_mapaaralan,
+)
 from .deped_masterlist import (
     ARCHIVE_PDF_URL,
     MAX_PDF_BYTES,
@@ -45,6 +65,13 @@ from .deped_masterlist_detail import (
     KAGGLE_DOWNLOAD_URL,
     DepEdMasterlistDetailAdapter,
     fetch_deped_masterlist_detail,
+)
+from .deped_shs_arcgis import (
+    LAYER_URL as DEPED_SHS_LAYER_URL,
+)
+from .deped_shs_arcgis import (
+    DepEdShsArcgisAdapter,
+    fetch_deped_shs_arcgis,
 )
 from .doe_power import DoePowerPlantAdapter
 from .doh_nhfr import (
@@ -208,6 +235,18 @@ def _build_catalog() -> tuple[dict[str, SourceDefinition], dict[str, SourceConne
             url=KAGGLE_DOWNLOAD_URL,
             expected_marker="PK",
         ),
+        "deped-bukas-enrollment": CheckSpec(
+            url=DEPED_BUKAS_ARCHIVE_URL,
+            expected_marker="PK",
+        ),
+        "deped-shs-arcgis": CheckSpec(
+            url=f"{DEPED_SHS_LAYER_URL}/query?where=1%3D1&returnCountOnly=true&f=json",
+            expected_marker="count",
+        ),
+        "deped-mapaaralan": CheckSpec(
+            url=DEPED_MAPAARALAN_URL,
+            expected_marker="latitude",
+        ),
         "doh-nhfr": CheckSpec(
             url=DOH_NHFR_XLSX_URL,
             expected_marker="PK",
@@ -287,6 +326,65 @@ def _build_catalog() -> tuple[dict[str, SourceDefinition], dict[str, SourceConne
             "BetterGov Open Data Portal dataset 41 (CC BY 4.0), a machine-readable "
             "transcription of the official DepEd masterlist. The CSV SHA-256 is "
             "pinned; any artifact change is rejected."
+        ),
+    )
+    connectors["deped-bukas-enrollment"] = _single(
+        "deped-bukas-enrollment",
+        url=REAL_SOURCES["deped-bukas-enrollment"].source_url,
+        fetcher=fetch_deped_bukas_enrollment,
+        adapter=DepEdBukasEnrollmentAdapter,
+        filename=_fixed("deped-project-bukas-enrollment-sy2024-2025.zip"),
+        release_label=_fixed("DEPED-PROJECT-BUKAS-ENROLLMENT-SY2024-2025"),
+        max_bytes=DEPED_BUKAS_MAX_BYTES,
+        source_published_at=None,
+        reference_period_start=date(2024, 6, 1),
+        reference_period_end=date(2025, 3, 31),
+        timeout_seconds=180.0,
+        notes=(
+            "Official DepEd Project Bukas enrollment module, SY 2024-2025. The "
+            "official deped.gov.ph URL returns HTTP 403 to automated clients; "
+            "acquisition falls back to the preserved Wayback ZIP and verifies its "
+            "pinned SHA-256. No coordinates or PSGC codes are present."
+        ),
+    )
+
+    connectors["deped-shs-arcgis"] = _single(
+        "deped-shs-arcgis",
+        url=REAL_SOURCES["deped-shs-arcgis"].source_url,
+        fetcher=fetch_deped_shs_arcgis,
+        adapter=DepEdShsArcgisAdapter,
+        filename=_dated("deped-shs-arcgis", "json"),
+        release_label=_label("DEPED-SHS-ARCGIS"),
+        max_bytes=16 * 1024 * 1024,
+        source_published_at=None,
+        reference_period_start=None,
+        reference_period_end=None,
+        timeout_seconds=180.0,
+        notes=(
+            "Public CHED GIS feature service containing the DepEd Senior High "
+            "School point layer. The connector pages through the feature service, "
+            "verifies the reported feature count, and excludes the G11/G12 "
+            "enrollment columns. No reference school year is published."
+        ),
+    )
+
+    connectors["deped-mapaaralan"] = _single(
+        "deped-mapaaralan",
+        url=DEPED_MAPAARALAN_URL,
+        fetcher=fetch_deped_mapaaralan,
+        adapter=DepEdMapaaralanAdapter,
+        filename=_fixed("deped-mapaaralan-2019-osmph.tsv"),
+        release_label=_fixed("DEPED-MAPAARALAN-2019-OSMPH"),
+        max_bytes=DEPED_MAPAARALAN_MAX_BYTES,
+        source_published_at=None,
+        reference_period_start=date(2019, 1, 1),
+        reference_period_end=date(2019, 12, 31),
+        timeout_seconds=120.0,
+        notes=(
+            "Pinned OSMPH copy of the DepEd MaPaaralan 2019 school points. The "
+            "connector rejects any SHA-256 change. Rows link only to existing "
+            "facilities by exact six-digit school ID and fill a missing point; "
+            "they never create or rename a facility."
         ),
     )
 

@@ -29,6 +29,7 @@ from ..contracts import (
     ValidationIssue,
     ValidationResult,
 )
+from ..school_labels import classify_school_subtype
 from .common import clean_text, parse_float
 from .psgc import ParsedUnit
 
@@ -230,6 +231,9 @@ class OSMParquetAdapter:
                 subtype = _primary_value(payload.get("amenity")) or _primary_value(
                     payload.get("building")
                 )
+                known, controlled = classify_school_subtype(subtype)
+                if known:
+                    subtype = controlled
                 school = SchoolData()
                 facility_type = "school"
             psgc_code, psgc_method = _psgc_from_osm(payload)

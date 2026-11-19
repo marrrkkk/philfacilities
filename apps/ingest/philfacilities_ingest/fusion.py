@@ -413,17 +413,18 @@ def _facility_ids(
     facility_ids: Iterable[uuid.UUID] | None,
     *,
     multi_source_only: bool = False,
+    batch_size: int = 5000,
 ) -> Iterable[list[uuid.UUID]]:
     if facility_ids is not None:
         unique = list(dict.fromkeys(facility_ids))
-        for batch in _chunks(unique, 5000):
+        for batch in _chunks(unique, batch_size):
             scoped = _filter_multi_source(session, batch) if multi_source_only else batch
             if scoped:
                 yield scoped
         return
     last: uuid.UUID | None = None
     while True:
-        query = select(Facility.id).order_by(Facility.id).limit(5000)
+        query = select(Facility.id).order_by(Facility.id).limit(batch_size)
         if multi_source_only:
             query = (
                 select(Facility.id)
@@ -434,7 +435,7 @@ def _facility_ids(
                 .group_by(Facility.id)
                 .having(func.count(func.distinct(FacilitySourceLink.source_record_id)) > 1)
                 .order_by(Facility.id)
-                .limit(5000)
+                .limit(batch_size)
             )
         if last is not None:
             query = query.where(Facility.id > last)
@@ -493,6 +494,9 @@ def build_attribute_fusions(
     facility_ids: Iterable[uuid.UUID] | None = None,
     multi_source_only: bool = True,
     progress: Any = None,
+    batch_size: int = 5000,
+    release_objects: bool = False,
+    commit_batches: bool = False,
 ) -> FusionStats:
     """Materialise one fusion row per facility/attribute from source claims.
 
@@ -501,11 +505,21 @@ def build_attribute_fusions(
     ``multi_source_only=False`` to materialise a row for every facility. An
     explicit ``facility_ids`` list is scoped by the same rule, so ``--limit``
     cannot silently widen the run.
+
+    ``batch_size`` bounds peak memory for a large rebuild. ``release_objects``
+    detaches loaded ORM rows after each batch, and ``commit_batches`` commits the
+    batch so an interrupted rebuild keeps its completed work. Both are opt-in
+    because other callers may need the surrounding transaction to stay atomic.
     """
 
     stats = FusionStats()
     latest_release = latest_public_release_cte()
-    for batch in _facility_ids(session, facility_ids, multi_source_only=multi_source_only):
+    for batch in _facility_ids(
+        session,
+        facility_ids,
+        multi_source_only=multi_source_only,
+        batch_size=batch_size,
+    ):
         stats.facilities_scanned += len(batch)
         rows = session.execute(
             select(AttributeAssertion, SourceRecord, Release, Dataset, Agency)
@@ -557,6 +571,10 @@ def build_attribute_fusions(
         stats.removed += _delete_stale_fusions(session, batch, set(grouped))
         _upsert_fusions(session, pending)
         session.flush()
+        if commit_batches:
+            session.commit()
+        if release_objects:
+            session.expunge_all()
         if progress is not None:
             progress(stats)
     return stats

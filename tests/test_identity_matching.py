@@ -479,7 +479,7 @@ def test_ingestion_hook_queues_candidate_without_merging(client, db_session):
     from philfacilities_ingest.sources.doh import DOHNHFRAdapter
 
     existing = db_session.scalars(
-        select(Facility).where(Facility.slug == "synthetic-demo-health-facility-01-doh")
+        select(Facility).where(Facility.slug == "synthetic-demo-health-facility-01")
     ).one()
     existing_location = db_session.scalars(
         select(FacilityLocation).where(

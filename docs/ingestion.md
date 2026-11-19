@@ -206,11 +206,14 @@ Subtype labels come from independent agency vocabularies and are compared as fam
 
 Aggregation (`aggregation.py`) blocks candidate pairs by facility type + name key + city, or by a spatial cell when the city is unknown, then scores independent evidence inside each block. A cluster is merged only when it is complete and mutually compatible: the names agree, the place/address/coordinate evidence agrees, and no official identifier conflicts. Every automatic merge needs a strong bridge — a shared official ID or a location score of at least `0.9`. Exact name plus the same city is not enough; the conflict rules and the complete-cluster requirement still apply.
 
+A differing barangay is normally a conflict: two branches of one agency can sit near a boundary, and the barangay is independent administrative evidence. The exception is a map-derived location. If the names are exactly equal and specific, both points are within 50 m, and at least one side is `map_geocoded` or `barangay_centroid`, a differing barangay is treated as boundary noise rather than proof of two places. Two independently surveyed (`source_gps`, `surveyed`, `field_verified`) points that disagree still stay separate. The source coordinates and PSGC claims are never rewritten by this rule.
+
 The surviving record is chosen deterministically: official source first, then the most official identifiers, then the most source links, then the oldest record. After the merge the most precise documented location becomes current; the previous current location is closed as history rather than discarded, and `resolution["location_promotion"]` records the change. Incomplete or ambiguous clusters stay as pending candidates for review. A rejected pair is retained so the same evidence does not re-queue it.
 
 ```bash
 uv run philfacilities-ingest consolidate-facilities                 # dry run
 uv run philfacilities-ingest consolidate-facilities --apply --limit 100
+uv run philfacilities-ingest consolidate-facilities --facility-type school --apply --limit 20000 --commit-every 500 --defer-fusion
 uv run philfacilities-ingest merge-deped-prefixed-ids               # dry run
 uv run philfacilities-ingest merge-deped-prefixed-ids --apply --limit 100
 uv run philfacilities-ingest match-candidates-generate
@@ -221,6 +224,8 @@ uv run philfacilities-ingest match-candidates-merge <id> --reviewer <name> --not
 uv run philfacilities-ingest match-candidates-undo-merge <id> --reviewer <name> --note "..."
 ```
 
+`--facility-type` limits the pass to one type. For a large backlog, `--commit-every N` commits roughly every N merges so an interrupted run keeps its completed work, and `--defer-fusion` skips the per-merge fusion invalidation and rebuilds derived rows once at the end of the run. The final pass covers both survivors and retired duplicates, so stale fusion rows on tombstones are removed. Do not run two write passes at once; the merge locks and the shared database do not benefit from parallel writers.
+
 Accepting is separate from merging. A merge is transactional, moves evidence, retires the duplicate as a `merged` tombstone, and writes change events. Contacts move with the facility; a contact that duplicates the target's `(contact_type, value, source_record)` stays on the source tombstone so `uq_facility_contact_source` is never violated, and the merge resolution records the retained count. School and utility profiles behave the same way when the survivor already holds the same official code: the duplicate profile stays on the tombstone as evidence. Undo restores only the rows that actually moved. Rejected candidates are retained so the same pair is not re-queued for the same algorithm version.
 
 The merge resolution stores the undo data: facility snapshots before and after, moved counts and IDs per child table, and the previous current-location state. Undo refuses rather than guesses when moved evidence has changed since the merge. A merged facility keeps its slug as an alias: `GET /v1/facilities/<old-slug>` resolves to the survivor and the web profile redirects to the canonical URL. UUIDs never change.
@@ -228,6 +233,42 @@ The merge resolution stores the undo data: facility snapshots before and after, 
 The EBEIS masterlist can list the same school under its official six-digit BEIS ID and a seven-digit level-prefixed variant (for example `403263` and `1403263`). The prefixed ID is treated as an alias only when the six-digit base row exists in the same release and the school-name keys match. The six-digit facility is the target; the prefixed row is kept as source evidence. Each twin merge is recorded as an accepted `deped_prefixed_school_id` candidate (`confidence 0.999`, reviewer `system:deped-prefixed-id`), and a merged profile backfill is recorded in `resolution["profile_backfill"]` so undo can reverse it or refuse if a later edit changed the value. Adapters mark prefixed rows `enrichment_only=True`, so the canonical row is always applied first.
 
 `auto-merge-duplicates` is the older, narrower rule (exact normalized name plus a precise address/coordinate match). Use `consolidate-facilities` for whole-registry aggregation; it applies the strong-bridge and cluster-completeness rules above.
+
+### Public slug normalization
+
+Early bulk ingestion appended the reporting agency to every public slug (`-osm`, `-doh`, `-nha`, `-philhealth`). That identifies the dataset that first reported a place, not the facility. `normalize-facility-slugs` removes any known source suffix from a current facility slug and keeps the previous value in `core.facility_slug_aliases`, so old bookmarks, exports and API links still resolve to the same facility. Every rename writes a `facility_slug_normalized` change event. A genuine collision gets a numeric suffix (`-2`, `-3`); merged tombstones keep their slug because it is the redirect key.
+
+```bash
+uv run philfacilities-ingest normalize-facility-slugs --facility-type health_facility
+uv run philfacilities-ingest normalize-facility-slugs --facility-type health_facility --apply --commit-every 5000
+```
+
+Run the pass per facility type after consolidation; each type can be verified independently, and `--commit-every` keeps completed renames if a large pass is interrupted.
+
+### Health classification cleanup
+
+Two official evidence gaps can be repaired without re-running a release:
+
+- `normalize-health-subtypes` maps raw health labels to the controlled `facility_subtype` vocabulary. A physical class (`Clinical Laboratory`, `Yakap Clinics`) is mapped; a hospital service level (`LEVEL 1`), a benefit package (`GAMOT Package Providers`, `Postpartum`) or a profession (`dentist`) is cleared from `facility_subtype` because it is not a facility class. An ambiguous label that does not establish one class (`INF/DISP`, a truncated `centre`) is also cleared rather than guessed from the facility name. The raw label remains on `health.profiles.facility_category` and the source record. Unrecognised labels are reported as `unmapped` and left unchanged rather than silently discarded.
+- `refine-health-ownership` applies the DOH NHFR ownership sub-classification (`Local Government Unit`, `Single Proprietorship`, `Corporation`, …) to the specific `ownership_type`. It only refines a broad `GOVERNMENT_UNSPECIFIED` / `PRIVATE_UNSPECIFIED` / unknown value and never crosses the source's government/private major class; a conflicting major class is skipped and reported.
+
+```bash
+uv run philfacilities-ingest normalize-health-subtypes            # dry run
+uv run philfacilities-ingest refine-health-ownership              # dry run
+```
+
+Health subtype families treat clinic, rural health unit and barangay health station as one outpatient service family, hospital and infirmary as inpatient, and laboratory and pharmacy as separate classes. An OSM `clinic` and a DOH `RURAL_HEALTH_UNIT` can therefore describe one facility, while a hospital is never merged with a clinic on a name match alone.
+
+### School classification cleanup
+
+OpenStreetMap education layers publish raw map tags (`school`, `university`, `kindergarten`) as the subtype. They also contribute school features whose tag belongs to another category (`PUBLIC_LIBRARY`, `LOCAL_GOVERNMENT_OFFICE`, `SPORTS_COMPLEX`) because the same place was imported through more than one layer. `normalize-school-subtypes` maps tags that establish a school class and clears foreign or non-school tags. It never guesses a school level from the facility name and never changes the facility type; the raw tag remains on the source record.
+
+```bash
+uv run philfacilities-ingest normalize-school-subtypes            # dry run
+uv run philfacilities-ingest normalize-school-subtypes --apply
+```
+
+An unrecognised label is reported as `unmapped` and left unchanged. The same classifier runs inside the OSM education adapter, so a re-ingested release writes the controlled subtype directly.
 
 ## 9. Field-level fusion
 
@@ -263,6 +304,8 @@ An adapter may set `FacilityCandidate.enrichment_only=True` when its rows add ev
 - creates a missing school, health, or utility profile, but fills only missing or placeholder profile attributes and never changes an existing profile's `source_record_id`. A utility profile is keyed by facility and DOE facility code, so replaying the same release updates the same row.
 
 The DepEd SY 2020-2021 Masterlist uses this mode to add sector evidence to 60,924 exact BEIS IDs without creating or renaming facilities. The DOH National Health Facility Registry uses the same mode for 29,779 existing DOH codes and creates new official facilities for its 15,020 unmatched codes. A contradictory non-placeholder value cannot downgrade an established classification. The NHFR load does not auto-merge by name or barangay; an official row without a matching DOH code becomes a new facility, and any same-name collision stays available for the separate match-candidate review workflow.
+
+An adapter may also set `FacilityCandidate.link_only=True` for a stale or community-compiled snapshot that must never add registry records. The pipeline links by exact agency entity ID and stores the row as source evidence, but an unmatched ID is recorded as an `unmatched_link_only_row` quality issue instead of creating a facility. The OSMPH 2019 MaPaaralan point table uses this mode: it fills a missing school point and never creates, renames or reclassifies a school, because its IDs predate later closures, splits and renames. When a coordinate-only enrichment row becomes the current location for an address-only facility, the established address text is carried onto the new current row so the point does not erase the address; the prior location row remains as history.
 
 ## 10. Idempotency and failure behaviour
 

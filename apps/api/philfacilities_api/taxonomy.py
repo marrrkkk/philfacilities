@@ -385,6 +385,7 @@ CATEGORY_SUBTYPES: Final[dict[str, tuple[str, ...]]] = {
     ),
     HEALTH_FACILITY: (
         "HOSPITAL",
+        "INFIRMARY",
         "RURAL_HEALTH_UNIT",
         "BARANGAY_HEALTH_STATION",
         "CLINIC",

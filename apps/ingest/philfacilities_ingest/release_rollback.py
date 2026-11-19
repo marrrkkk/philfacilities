@@ -211,6 +211,24 @@ class FacilityUpdatePrefetch:
     def remember_health_profile(self, profile: HealthProfile) -> None:
         self._health_profiles[(profile.facility_id, profile.doh_facility_id)] = profile
 
+    def reset(self, *, release: Release | None = None) -> None:
+        """Drop cached chunks and profiles between apply flush batches.
+
+        The prefetch is intentionally lazy, but a 60k-row enrichment release
+        still caches one profile per touched facility. Clearing here lets the
+        runner expunge the batch's ORM instances and reload only the next
+        batch instead of pinning every facility, profile and location for the
+        whole run.
+        """
+
+        if release is not None:
+            self.release = release
+        self._loaded.clear()
+        self._existing.clear()
+        self._children.clear()
+        self._school_profiles.clear()
+        self._health_profiles.clear()
+
     def _ensure(self, facility_id: uuid.UUID) -> None:
         position = self._positions.get(facility_id)
         if position is None:
@@ -218,6 +236,14 @@ class FacilityUpdatePrefetch:
         chunk_index = position // self.chunk_size
         if chunk_index in self._loaded:
             return
+        # Snapshot and child state are only needed while the apply loop is
+        # working on this chunk. Retaining every loaded chunk duplicates the
+        # rollback payload in memory and exhausts a 60k-row bulk release; the
+        # profile caches stay because they are small and are also used for
+        # newly created profiles before the next flush.
+        self._loaded.clear()
+        self._existing.clear()
+        self._children.clear()
         self._loaded.add(chunk_index)
         start = chunk_index * self.chunk_size
         chunk = self.facility_ids[start : start + self.chunk_size]

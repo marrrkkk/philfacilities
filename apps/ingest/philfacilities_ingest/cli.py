@@ -51,6 +51,10 @@ from .fusion import (
     build_attribute_fusions,
     fusion_report,
 )
+from .health_refinement import (
+    normalize_health_subtypes,
+    refine_health_ownership,
+)
 from .lgu_inventory import validate_inventory
 from .location_fill import fill_locations_from_osm
 from .manifest import render_release_notes, write_release_manifest
@@ -81,7 +85,9 @@ from .psgc_spatial_fill import fill_location_psgc_from_map
 from .rebuild_reports import write_rebuild_pack
 from .release_rollback import ReleaseRollbackError, rollback_release
 from .replay import ReplayManifestError, replay_manifest
+from .school_refinement import normalize_school_subtypes
 from .scraper import CrawlPolicy, crawl, summary_json
+from .slugs import normalize_facility_slugs
 from .source_candidates import (
     load_source_candidates,
     summarize_source_candidates,
@@ -1156,6 +1162,31 @@ def consolidate_facilities_command(
         bool,
         typer.Option(help="Include synthetic demo facilities."),
     ] = False,
+    facility_type: Annotated[
+        str | None,
+        typer.Option("--facility-type", help="Limit the pass to one facility type."),
+    ] = None,
+    defer_fusion: Annotated[
+        bool,
+        typer.Option(
+            "--defer-fusion",
+            help=(
+                "Commit merges without rebuilding field fusions. Run the fusion "
+                "command once afterwards; use this for large bulk passes."
+            ),
+        ),
+    ] = False,
+    commit_every: Annotated[
+        int | None,
+        typer.Option(
+            "--commit-every",
+            min=1,
+            help=(
+                "Commit after roughly this many merges so a long pass keeps its "
+                "completed work. The default commits once at the end."
+            ),
+        ),
+    ] = None,
     examples: Annotated[
         int,
         typer.Option(min=0, help="Maximum merge examples to include in the output."),
@@ -1177,6 +1208,7 @@ def consolidate_facilities_command(
     engine, session = _session()
     try:
         affected: set[uuid.UUID] = set()
+        merged: set[uuid.UUID] = set()
         stats = consolidate_facilities(
             session,
             dry_run=not apply,
@@ -1184,10 +1216,233 @@ def consolidate_facilities_command(
             include_synthetic=include_synthetic,
             example_limit=examples,
             affected_facility_ids=affected,
+            facility_type=facility_type,
+            commit_every=commit_every,
+            defer_fusion=defer_fusion,
+            merged_facility_ids=merged,
         )
         if apply:
-            if affected:
-                build_attribute_fusions(session, facility_ids=affected)
+            # Keep completed merges even if the derived fusion pass fails.
+            session.commit()
+            scoped = affected | merged
+            if scoped:
+                # A deferred pass rebuilds derived rows once for every surviving
+                # facility and clears the stale rows left on retired duplicates.
+                build_attribute_fusions(
+                    session,
+                    facility_ids=scoped,
+                    multi_source_only=False,
+                    batch_size=500,
+                    release_objects=True,
+                    commit_batches=True,
+                )
+            session.commit()
+        else:
+            session.rollback()
+        typer.echo(json.dumps(stats, indent=2, default=str))
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("normalize-facility-slugs")
+def normalize_facility_slugs_command(
+    apply: Annotated[
+        bool,
+        typer.Option(
+            "--apply/--dry-run",
+            help="Apply the slug renames. The default is a dry run.",
+        ),
+    ] = False,
+    limit: Annotated[
+        int,
+        typer.Option(min=1, help="Maximum facility slugs to rename in this run."),
+    ] = 50_000,
+    facility_type: Annotated[
+        str | None,
+        typer.Option("--facility-type", help="Limit the pass to one facility type."),
+    ] = None,
+    commit_every: Annotated[
+        int | None,
+        typer.Option(
+            "--commit-every",
+            min=1,
+            help=(
+                "Commit completed renames in batches of this size so a large "
+                "pass keeps its progress. The default commits once at the end."
+            ),
+        ),
+    ] = None,
+    examples: Annotated[
+        int,
+        typer.Option(min=0, help="Maximum rename examples to include in the output."),
+    ] = 20,
+) -> None:
+    """Remove source suffixes from public facility slugs.
+
+    ``-osm``, ``-doh``, ``-nha`` and similar suffixes describe the dataset that
+    first reported a facility, not the facility itself. Every rename keeps the
+    old slug as an alias so existing links continue to resolve, and records a
+    change event for audit.
+    """
+
+    engine, session = _session()
+    try:
+        stats = normalize_facility_slugs(
+            session,
+            dry_run=not apply,
+            limit=limit,
+            facility_type=facility_type,
+            example_limit=examples,
+            commit_every=commit_every,
+        )
+        if apply:
+            session.commit()
+        else:
+            session.rollback()
+        typer.echo(json.dumps(stats, indent=2, default=str))
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("refine-health-ownership")
+def refine_health_ownership_command(
+    apply: Annotated[
+        bool,
+        typer.Option(
+            "--apply/--dry-run",
+            help="Apply the ownership refinements. The default is a dry run.",
+        ),
+    ] = False,
+    limit: Annotated[
+        int,
+        typer.Option(min=1, help="Maximum facilities to update in this run."),
+    ] = 50_000,
+    examples: Annotated[
+        int,
+        typer.Option(min=0, help="Maximum examples to include in the output."),
+    ] = 20,
+) -> None:
+    """Apply the DOH NHFR ownership sub-classification.
+
+    Only broad ``GOVERNMENT_UNSPECIFIED`` / ``PRIVATE_UNSPECIFIED`` / unknown
+    values are refined, and only within the facility's existing government or
+    private major class. The subclassification and DOH facility code remain on
+    the health profile as evidence.
+    """
+
+    engine, session = _session()
+    try:
+        stats = refine_health_ownership(
+            session,
+            dry_run=not apply,
+            limit=limit,
+            example_limit=examples,
+        )
+        if apply:
+            session.commit()
+        else:
+            session.rollback()
+        typer.echo(json.dumps(stats, indent=2, default=str))
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("normalize-health-subtypes")
+def normalize_health_subtypes_command(
+    apply: Annotated[
+        bool,
+        typer.Option(
+            "--apply/--dry-run",
+            help="Apply the subtype normalization. The default is a dry run.",
+        ),
+    ] = False,
+    limit: Annotated[
+        int,
+        typer.Option(min=1, help="Maximum facilities to update in this run."),
+    ] = 50_000,
+    examples: Annotated[
+        int,
+        typer.Option(min=0, help="Maximum examples to include in the output."),
+    ] = 20,
+) -> None:
+    """Replace raw accreditation labels with controlled health subtypes.
+
+    PhilHealth benefit-package categories (``Postpartum``, ``GAMOT Package
+    Providers``, ``LEVEL 1``) describe a package or a hospital level, not a
+    physical facility class. Explicit facility labels are mapped; non-facility
+    labels are cleared; unrecognised labels are reported and left unchanged.
+    The raw value remains on the health profile and the source record.
+    """
+
+    engine, session = _session()
+    try:
+        stats = normalize_health_subtypes(
+            session,
+            dry_run=not apply,
+            limit=limit,
+            example_limit=examples,
+        )
+        if apply:
+            session.commit()
+        else:
+            session.rollback()
+        typer.echo(json.dumps(stats, indent=2, default=str))
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("normalize-school-subtypes")
+def normalize_school_subtypes_command(
+    apply: Annotated[
+        bool,
+        typer.Option(
+            "--apply/--dry-run",
+            help="Apply the subtype normalization. The default is a dry run.",
+        ),
+    ] = False,
+    limit: Annotated[
+        int,
+        typer.Option(min=1, help="Maximum facilities to update in this run."),
+    ] = 50_000,
+    examples: Annotated[
+        int,
+        typer.Option(min=0, help="Maximum examples to include in the output."),
+    ] = 20,
+) -> None:
+    """Replace raw map tags with controlled school subtypes.
+
+    OpenStreetMap education layers publish ``school``, ``university`` or
+    ``kindergarten`` as the subtype. Explicit school labels are mapped to the
+    controlled vocabulary; labels that belong to another facility category are
+    cleared; unrecognised labels are reported and left unchanged. The raw tag
+    remains on the source record and the facility type is never changed.
+    """
+
+    engine, session = _session()
+    try:
+        stats = normalize_school_subtypes(
+            session,
+            dry_run=not apply,
+            limit=limit,
+            example_limit=examples,
+        )
+        if apply:
             session.commit()
         else:
             session.rollback()

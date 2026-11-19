@@ -301,14 +301,21 @@ def _current_location(session: Session, facility_id: uuid.UUID) -> FacilityLocat
     ).first()
 
 
-def _current_locations(session: Session) -> dict[uuid.UUID, FacilityLocation]:
+def _current_locations(
+    session: Session,
+    *,
+    facility_type: str | None = None,
+) -> dict[uuid.UUID, FacilityLocation]:
     """Load current locations once instead of querying per facility."""
 
+    query = select(FacilityLocation).where(FacilityLocation.is_current.is_(True))
+    if facility_type is not None:
+        query = query.join(Facility, Facility.id == FacilityLocation.facility_id).where(
+            Facility.facility_type == facility_type
+        )
     locations: dict[uuid.UUID, FacilityLocation] = {}
     for location in session.scalars(
-        select(FacilityLocation)
-        .where(FacilityLocation.is_current.is_(True))
-        .order_by(FacilityLocation.facility_id, FacilityLocation.created_at)
+        query.order_by(FacilityLocation.facility_id, FacilityLocation.created_at)
     ):
         locations.setdefault(location.facility_id, location)
     return locations
@@ -705,12 +712,17 @@ def merge_match_candidate(
     *,
     reviewer: str,
     note: str | None = None,
+    invalidate_fusions: bool = True,
 ) -> MatchCandidate:
     """Retire the source facility into the accepted candidate facility.
 
     The source facility row is retained as an internal tombstone so its history and the
     candidate audit remain queryable. Source evidence, locations, observations, profiles,
     licences, accreditations, assertions, and issues move to the surviving facility.
+
+    Set ``invalidate_fusions=False`` for bulk passes that rebuild derived fusion rows
+    once at the end. Per-merge invalidation is then redundant and its index lookups
+    dominate the merge cost.
     """
 
     if not reviewer.strip():
@@ -860,7 +872,8 @@ def merge_match_candidate(
 
     from .fusion import delete_fusions_for_facilities
 
-    delete_fusions_for_facilities(session, (source.id, target.id))
+    if invalidate_fusions:
+        delete_fusions_for_facilities(session, (source.id, target.id))
 
     session.add(
         FacilityChangeEvent(

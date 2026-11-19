@@ -71,6 +71,10 @@ ALGORITHM_VERSION = "1"
 AUTO_REVIEWER = "system:facility-identity-evidence"
 AUTO_MIN_NAME_SCORE = 0.9
 AUTO_MIN_LOCATION_SCORE = 0.9
+# Two rows from the same agency with the exact same name are duplicates only
+# when they describe the same point, not merely the same city or barangay.
+# A source can legitimately publish several branches of one office in a city.
+SAME_AGENCY_POINT_DISTANCE_M = 50.0
 CITY_ONLY_LOCATION_SCORE = 0.6
 MAX_CLUSTER_SIZE = 8
 CONFLICTING_POINT_DISTANCE_M = 1_000.0
@@ -81,7 +85,16 @@ class _AdminIndex:
     city_alias_to_codes: dict[str, set[str]]
     city_names: dict[str, str]
     barangay_names: dict[str, str]
-    administrative_tokens: set[str]
+    administrative_tokens: frozenset[str]
+    # Province/region-scoped city aliases resolve duplicate municipality names
+    # (for example the several "San Isidro" municipalities).
+    city_alias_to_parent_alias_codes: dict[tuple[str, str], set[str]] = field(default_factory=dict)
+    # Barangay names repeat across the country, so resolution is scoped by the
+    # parent city/municipality code.
+    barangay_alias_to_parent_codes: dict[tuple[str, str], set[str]] = field(default_factory=dict)
+    city_region_codes: dict[str, str] = field(default_factory=dict)
+    region_names: dict[str, str] = field(default_factory=dict)
+    region_alias_to_codes: dict[str, set[str]] = field(default_factory=dict)
 
 
 @dataclass
@@ -103,6 +116,11 @@ class _Ref:
     barangay_code: str | None = None
     city_name: str | None = None
     barangay_name: str | None = None
+    # True when the code was resolved from the source's municipality/barangay
+    # text rather than supplied as a PSGC code. Matching evidence records this
+    # distinction; it is never written back as a published location code.
+    city_code_derived: bool = False
+    barangay_code_derived: bool = False
     deped_ids: set[str] = field(default_factory=set)
     doh_ids: set[str] = field(default_factory=set)
     doe_ids: set[str] = field(default_factory=set)
@@ -132,10 +150,42 @@ class _Pair:
     note: str
 
 
+_SAINT_ALIASES = {"sta": "santa", "sto": "santo", "st": "saint"}
+
+# Established alternate spellings used by DepEd in its administrative fields.
+# These name the same city; they do not merge two different administrative
+# units.
+_CITY_SPELLING_ALIASES = {
+    "baliuag": "baliwag",
+    "kalookan": "caloocan",
+    "ozamis": "ozamiz",
+}
+
+_REGION_SHORT_ALIASES = {
+    "ncr": "national capital region",
+    "car": "cordillera administrative region",
+    "barmm": "bangsamoro autonomous region in muslim mindanao",
+}
+
+
 def _city_aliases(name: str) -> set[str]:
-    normalized = normalize_name(name)
+    """Return comparable aliases for a city/municipality name.
+
+    DepEd publishes forms such as ``SURIGAO CITY (Capital)``,
+    ``CITY MALAYBALAY (Capital)`` and ``STA. RITA``. Parenthetical qualifiers
+    are administrative notes (or former names), not part of the name, and saint
+    abbreviations are expanded so they match the official PSGC spelling.
+    """
+
+    normalized = normalize_name(re.sub(r"\([^)]*\)", " ", name or ""))
     if not normalized:
         return set()
+    tokens = [
+        _CITY_SPELLING_ALIASES.get(token, _SAINT_ALIASES.get(token, token))
+        for token in normalized.split()
+        if token not in {"capital", "poblacion"}
+    ]
+    normalized = " ".join(tokens)
     aliases = {normalized}
     for prefix in ("city of ", "municipality of "):
         if normalized.startswith(prefix):
@@ -144,6 +194,10 @@ def _city_aliases(name: str) -> set[str]:
             # Addresses usually write "Lucena City" even when the official
             # name is "City of Lucena".
             aliases.add(f"{base} city" if prefix == "city of " else f"{base} municipality")
+    if normalized.startswith("city ") and not normalized.startswith("city of "):
+        base = normalized[len("city ") :].strip()
+        aliases.add(base)
+        aliases.add(f"{base} city")
     for suffix in (" city", " municipality"):
         if normalized.endswith(suffix):
             aliases.add(normalized[: -len(suffix)].strip())
@@ -161,27 +215,73 @@ def _load_admin_index(session: Session) -> _AdminIndex:
             select(AdministrativeUnit).where(AdministrativeUnit.release_id == latest_release_id)
         ).all()
     )
+    by_code = {unit.psgc_code: unit for unit in units}
     city_names: dict[str, str] = {}
     barangay_names: dict[str, str] = {}
+    region_names: dict[str, str] = {}
     alias_codes: dict[str, set[str]] = defaultdict(set)
+    parent_alias_codes: dict[tuple[str, str], set[str]] = defaultdict(set)
+    barangay_alias_codes: dict[tuple[str, str], set[str]] = defaultdict(set)
+    city_region_codes: dict[str, str] = {}
+    region_alias_codes: dict[str, set[str]] = defaultdict(set)
     tokens: set[str] = set()
     for unit in units:
         name = normalize_name(unit.name)
         if not name:
             continue
         tokens.update(name.split())
+        if unit.geographic_level == "region":
+            region_names[unit.psgc_code] = unit.name
+            for alias in _city_aliases(unit.name):
+                region_alias_codes[alias].add(unit.psgc_code)
+            for short, long_name in _REGION_SHORT_ALIASES.items():
+                if long_name in normalize_name(unit.name):
+                    region_alias_codes[short].add(unit.psgc_code)
+
+    for unit in units:
         if unit.geographic_level == "municipality":
             city_names[unit.psgc_code] = unit.name
-            for alias in _city_aliases(unit.name):
+            aliases = _city_aliases(unit.name)
+            parent = by_code.get(unit.parent_psgc_code)
+            parent_aliases = _city_aliases(parent.name) if parent else set()
+            region_code: str | None = None
+            if parent is not None:
+                if parent.geographic_level == "region":
+                    region_code = parent.psgc_code
+                elif parent.parent_psgc_code:
+                    grandparent = by_code.get(parent.parent_psgc_code)
+                    if grandparent is not None and grandparent.geographic_level == "region":
+                        region_code = grandparent.psgc_code
+            if region_code:
+                city_region_codes[unit.psgc_code] = region_code
+                parent_aliases |= _city_aliases(region_names.get(region_code, ""))
+            for alias in aliases:
                 alias_codes[alias].add(unit.psgc_code)
                 tokens.update(alias.split())
+                for parent_alias in parent_aliases:
+                    parent_alias_codes[(alias, parent_alias)].add(unit.psgc_code)
         elif unit.geographic_level == "barangay":
             barangay_names[unit.psgc_code] = unit.name
+            if unit.parent_psgc_code:
+                for alias in _barangay_aliases(unit.name):
+                    barangay_alias_codes[(alias, unit.parent_psgc_code)].add(unit.psgc_code)
+                    tokens.update(alias.split())
     return _AdminIndex(
         city_alias_to_codes={alias: codes for alias, codes in alias_codes.items() if codes},
         city_names=city_names,
         barangay_names=barangay_names,
-        administrative_tokens=tokens,
+        administrative_tokens=frozenset(tokens),
+        city_alias_to_parent_alias_codes={
+            key: codes for key, codes in parent_alias_codes.items() if codes
+        },
+        barangay_alias_to_parent_codes={
+            key: codes for key, codes in barangay_alias_codes.items() if codes
+        },
+        city_region_codes=city_region_codes,
+        region_names=region_names,
+        region_alias_to_codes={
+            alias: codes for alias, codes in region_alias_codes.items() if codes
+        },
     )
 
 
@@ -254,6 +354,106 @@ def _city_from_address(address: str | None, admin: _AdminIndex) -> str | None:
     return next(iter(codes)) if len(codes) == 1 else None
 
 
+_BARANGAY_TOKEN_ALIASES = {
+    "bry": "bgy",
+    "brgy": "bgy",
+    "bgy": "bgy",
+    "pob": "poblacion",
+    "pobl": "poblacion",
+}
+
+
+def _barangay_aliases(name: str | None) -> set[str]:
+    """Return comparable aliases for a barangay name.
+
+    DepEd writes ``BRY. NO. 18, SAN QUIRINO (POB.)`` while PSGC writes
+    ``Bgy. No. 18, San Quirino (Pob.)``. Abbreviations and saint spellings are
+    folded, but the barangay-specific tokens (``Poblacion``) are preserved,
+    unlike the city aliases where they are administrative noise.
+    """
+
+    normalized = normalize_name(name)
+    if not normalized:
+        return set()
+    tokens = [
+        _BARANGAY_TOKEN_ALIASES.get(token, _SAINT_ALIASES.get(token, token))
+        for token in normalized.split()
+    ]
+    aliases = {" ".join(tokens)}
+    if tokens and tokens[0] == "bgy":
+        aliases.add(" ".join(tokens[1:]))
+    return {alias for alias in aliases if alias}
+
+
+def _resolve_city_code(
+    admin: _AdminIndex,
+    *,
+    municipality: str | None,
+    division: str | None = None,
+    region: str | None = None,
+) -> str | None:
+    """Resolve a DepEd municipality name to one PSGC city/municipality code.
+
+    The municipality text is matched against PSGC names, then scoped by the
+    DepEd division and, as a last resort, the region. Only a unique result is
+    returned; an ambiguous name is left unresolved rather than guessed.
+    """
+
+    aliases = _city_aliases(municipality or "")
+    if not aliases:
+        return None
+    codes: set[str] = set()
+    for alias in aliases:
+        codes.update(admin.city_alias_to_codes.get(alias, set()))
+    if len(codes) == 1:
+        return next(iter(codes))
+    hints = [division or ""]
+    hints.extend(part.strip() for part in re.split(r"[,/]", division or "") if part.strip())
+    for hint in hints:
+        for alias in aliases:
+            for parent_alias in _city_aliases(hint):
+                scoped = admin.city_alias_to_parent_alias_codes.get((alias, parent_alias), set())
+                if len(scoped) == 1:
+                    return next(iter(scoped))
+    # A source that writes "CITY" is describing a city, so a same-named
+    # municipality is a different administrative unit. This resolves names
+    # such as "BACOLOD CITY" when the city is administratively independent and
+    # its province hint no longer matches a reorganised region.
+    normalized_municipality = normalize_name(re.sub(r"\([^)]*\)", " ", municipality or ""))
+    if " city" in f" {normalized_municipality}" or normalized_municipality.startswith("city "):
+        city_codes = {
+            code
+            for code in codes
+            if "city" in normalize_name(admin.city_names.get(code, "")).split()
+            or normalize_name(admin.city_names.get(code, "")).startswith("city of ")
+        }
+        if len(city_codes) == 1:
+            return next(iter(city_codes))
+    if len(codes) > 1 and region:
+        region_codes: set[str] = set()
+        for alias in _city_aliases(region):
+            region_codes.update(admin.region_alias_to_codes.get(alias, set()))
+        regional = {code for code in codes if admin.city_region_codes.get(code) in region_codes}
+        if len(regional) == 1:
+            return next(iter(regional))
+    return None
+
+
+def _resolve_barangay_code(
+    admin: _AdminIndex,
+    barangay: str | None,
+    city_code: str | None,
+) -> str | None:
+    """Resolve a barangay name inside one city/municipality to a PSGC code."""
+
+    if not barangay or not city_code:
+        return None
+    codes: set[str] = set()
+    for alias in _barangay_aliases(barangay):
+        codes.update(admin.barangay_alias_to_parent_codes.get((alias, city_code), set()))
+    return next(iter(codes)) if len(codes) == 1 else None
+
+
 def _mentions_admin_name(address: str | None, name: str | None) -> bool:
     normalized_address = normalize_name(address)
     normalized_name = normalize_name(name)
@@ -262,13 +462,57 @@ def _mentions_admin_name(address: str | None, name: str | None) -> bool:
     return f" {normalized_name} " in f" {normalized_address} "
 
 
+def _load_structured_school_admin(
+    session: Session,
+    facility_ids: list[uuid.UUID],
+) -> dict[uuid.UUID, tuple[str | None, str | None, str | None, str | None]]:
+    """Load DepEd municipality/division/region/barangay text for facilities.
+
+    The EBEIS masterlist location only carries a free-text address. Its detail
+    release publishes the administrative names as separate fields, which is the
+    evidence needed to resolve a DepEd-only facility to a PSGC city and
+    barangay. Values are used only for matching and are never written back to
+    the canonical location.
+    """
+
+    result: dict[uuid.UUID, tuple[str | None, str | None, str | None, str | None]] = {}
+    if not facility_ids:
+        return result
+    payload = SourceRecord.raw_payload
+    for chunk in _chunks(facility_ids):
+        rows = session.execute(
+            select(
+                FacilitySourceLink.facility_id,
+                payload["municipality"].astext,
+                payload["division"].astext,
+                payload["region"].astext,
+                payload["barangay"].astext,
+            )
+            .join(SourceRecord, FacilitySourceLink.source_record_id == SourceRecord.id)
+            .join(Release, SourceRecord.release_id == Release.id)
+            .join(Dataset, Release.dataset_id == Dataset.id)
+            .where(
+                Dataset.slug == "deped-masterlist-sy2020-2021-detail",
+                FacilitySourceLink.facility_id.in_(chunk),
+            )
+            .order_by(Release.retrieved_at.desc())
+        ).all()
+        for facility_id, municipality, division, region, barangay in rows:
+            actual = facility_id
+            if actual in result:
+                continue
+            result[actual] = (municipality, division, region, barangay)
+    return result
+
+
 def _load_refs(
     session: Session,
     admin: _AdminIndex,
     *,
     include_synthetic: bool,
+    facility_type: str | None = None,
 ) -> dict[uuid.UUID, _Ref]:
-    rows = session.execute(
+    query = (
         select(
             FacilitySourceLink.facility_id,
             FacilitySourceLink.source_record_id,
@@ -287,8 +531,11 @@ def _load_refs(
             Facility.record_status != "merged",
         )
         .order_by(Release.retrieved_at.desc(), FacilitySourceLink.created_at.desc())
-    ).all()
-    locations = _current_locations(session)
+    )
+    if facility_type is not None:
+        query = query.where(Facility.facility_type == facility_type)
+    rows = session.execute(query).all()
+    locations = _current_locations(session, facility_type=facility_type)
     refs: dict[uuid.UUID, _Ref] = {}
     for _facility_id, record_id, agency_code, dataset_slug, authority_level, facility in rows:
         if facility.is_synthetic and not include_synthetic:
@@ -319,9 +566,47 @@ def _load_refs(
         ref.official = ref.official or authority_level == "official"
         ref.links.append((record_id, agency_code, dataset_slug, authority_level))
         if ref.city_code and not ref.city_name:
-            ref.city_name = admin.city_names.get(ref.city_code)
+            ref.city_name = admin.city_names.get(f"{ref.city_code}000")
         if ref.barangay_code and not ref.barangay_name:
             ref.barangay_name = admin.barangay_names.get(ref.barangay_code)
+    unresolved = [
+        facility_id
+        for facility_id, ref in refs.items()
+        if not ref.city_code or (ref.city_code and not ref.barangay_code)
+    ]
+    city_cache: dict[tuple[str | None, str | None, str | None], str | None] = {}
+    barangay_cache: dict[tuple[str | None, str | None], str | None] = {}
+    for facility_id, (
+        municipality,
+        division,
+        region,
+        barangay,
+    ) in _load_structured_school_admin(session, unresolved).items():
+        ref = refs.get(facility_id)
+        if ref is None:
+            continue
+        if not ref.city_code:
+            city_key = (municipality, division, region)
+            if city_key not in city_cache:
+                city_cache[city_key] = _resolve_city_code(
+                    admin, municipality=municipality, division=division, region=region
+                )
+            city_code = city_cache[city_key]
+            if city_code:
+                ref.city_code = psgc_city_code(city_code)
+                ref.city_code_derived = True
+                ref.city_name = ref.city_name or admin.city_names.get(city_code)
+        if not ref.barangay_code and ref.city_code:
+            barangay_key = (barangay, ref.city_code)
+            if barangay_key not in barangay_cache:
+                barangay_cache[barangay_key] = _resolve_barangay_code(
+                    admin, barangay, f"{ref.city_code}000"
+                )
+            barangay_code = barangay_cache[barangay_key]
+            if barangay_code:
+                ref.barangay_code = barangay_code
+                ref.barangay_code_derived = True
+                ref.barangay_name = ref.barangay_name or admin.barangay_names.get(barangay_code)
     return refs
 
 
@@ -409,6 +694,33 @@ def _different_agencies(left: _Ref, right: _Ref) -> bool:
     return len(left.agency_codes) > 1
 
 
+def _same_agency_duplicate(
+    left: _Ref,
+    right: _Ref,
+    *,
+    name_score: float,
+    distance: float | None,
+    conflicting_ids: bool,
+    conflicting_location: bool,
+) -> bool:
+    """Whether two rows from one agency are the same point, not two branches.
+
+    This is deliberately stricter than a cross-agency match. The name must be
+    identical, both records must be specific named places, and the rows must
+    share a point within 50 m. The same city, barangay or free-text address
+    alone is not enough, because one agency can publish several branches of the
+    same office in one barangay and often repeats a city-level address for them.
+    """
+
+    if name_score != 1.0 or conflicting_ids or conflicting_location:
+        return False
+    if not left.agency_codes or left.agency_codes != right.agency_codes:
+        return False
+    if not left.specific or not right.specific or left.generic or right.generic:
+        return False
+    return distance is not None and distance <= SAME_AGENCY_POINT_DISTANCE_M
+
+
 def _id_evidence(left: _Ref, right: _Ref) -> tuple[bool, bool]:
     """Return ``(conflict, shared)`` for official identifiers."""
 
@@ -476,8 +788,37 @@ def _location_evidence(
     return 0.0, "no_location_evidence", distance, shared_address, same_city, same_barangay
 
 
-def _conflicting_location(left: _Ref, right: _Ref, distance: float | None) -> bool:
+def _conflicting_location(
+    left: _Ref,
+    right: _Ref,
+    distance: float | None,
+    *,
+    same_barangay: bool,
+    name_score: float,
+) -> bool:
     if distance is not None and distance > CONFLICTING_POINT_DISTANCE_M:
+        return True
+    if same_barangay:
+        # DepEd commonly publishes a site note ("Purok 2") while OSM publishes
+        # the barangay name. Once both records agree on the same barangay, that
+        # administrative bridge outranks a difference in free-text address.
+        return False
+    if left.barangay_code and right.barangay_code and left.barangay_code != right.barangay_code:
+        # A crowd-sourced or geocoded point can fall on the neighbouring side of
+        # a barangay boundary while an official registry places the same site in
+        # its own barangay. When the names are exact, both places are specific,
+        # the points are within 50 m, and at least one side is map-derived, the
+        # mismatch is boundary noise rather than evidence of two facilities.
+        if (
+            name_score == 1.0
+            and distance is not None
+            and distance <= 50
+            and left.specific
+            and right.specific
+            and not left.generic
+            and not right.generic
+        ):
+            return not _has_map_derived_precision(left, right)
         return True
     left_tokens = address_tokens(left.location.address_text, administrative_names=None)
     right_tokens = address_tokens(right.location.address_text, administrative_names=None)
@@ -486,6 +827,25 @@ def _conflicting_location(left: _Ref, right: _Ref, distance: float | None) -> bo
     # no raw address token matches at all.
     raw_shared = len(left_tokens & right_tokens)
     return bool(left_tokens and right_tokens and raw_shared == 0)
+
+
+# Precision classes for the barangay-boundary exception. A map-derived point
+# cannot establish which side of a barangay boundary a site is on; two
+# independently surveyed points that disagree stay separate.
+_MAP_DERIVED_PRECISIONS = frozenset({"map_geocoded", "barangay_centroid"})
+_LOCATION_PRECISIONS = (
+    frozenset({"source_gps", "gps_verified", "surveyed", "field_verified"})
+    | _MAP_DERIVED_PRECISIONS
+)
+
+
+def _has_map_derived_precision(left: _Ref, right: _Ref) -> bool:
+    left_map = left.location.precision in _MAP_DERIVED_PRECISIONS
+    right_map = right.location.precision in _MAP_DERIVED_PRECISIONS
+    if not (left_map or right_map):
+        return False
+    other = right if left_map else left
+    return other.location.precision in _LOCATION_PRECISIONS
 
 
 def _evaluate_pair(left: _Ref, right: _Ref, admin: _AdminIndex) -> _Pair | None:
@@ -508,12 +868,25 @@ def _evaluate_pair(left: _Ref, right: _Ref, admin: _AdminIndex) -> _Pair | None:
         same_city,
         same_barangay,
     ) = _location_evidence(left, right, admin)
-    conflicting_location = _conflicting_location(left, right, distance)
+    conflicting_location = _conflicting_location(
+        left,
+        right,
+        distance,
+        same_barangay=same_barangay,
+        name_score=name_score,
+    )
     conflicting_ids, shared_ids = _id_evidence(left, right)
     different_agency = _different_agencies(left, right)
     if not different_agency:
-        auto = False
-        note = "same agency only"
+        auto = _same_agency_duplicate(
+            left,
+            right,
+            name_score=name_score,
+            distance=distance,
+            conflicting_ids=conflicting_ids,
+            conflicting_location=conflicting_location,
+        )
+        note = "same-agency exact duplicate" if auto else "same agency only"
     elif conflicting_ids:
         auto = False
         note = "conflicting official identifiers"
@@ -583,6 +956,8 @@ def _candidate_evidence(pair: _Pair, target: _Ref) -> dict[str, Any]:
         "location_reason": pair.location_reason,
         "city_code": source.city_code or target.city_code,
         "barangay_code": source.barangay_code or target.barangay_code,
+        "city_code_derived": source.city_code_derived or target.city_code_derived,
+        "barangay_code_derived": (source.barangay_code_derived or target.barangay_code_derived),
         "same_city": pair.same_city,
         "same_barangay": pair.same_barangay,
         "shared_address_tokens": pair.shared_address_tokens,
@@ -855,11 +1230,33 @@ def consolidate_facilities(
     pending_limit: int = 500,
     example_limit: int = 20,
     affected_facility_ids: set[uuid.UUID] | None = None,
+    facility_type: str | None = None,
+    commit_every: int | None = None,
+    defer_fusion: bool = False,
+    merged_facility_ids: set[uuid.UUID] | None = None,
 ) -> dict[str, Any]:
-    """Merge complete evidence clusters and queue ambiguous candidates."""
+    """Merge complete evidence clusters and queue ambiguous candidates.
+
+    ``commit_every`` commits the completed merges periodically so a long pass
+    keeps its work if interrupted. ``defer_fusion`` skips the per-merge fusion
+    invalidation and lets the caller rebuild derived rows once at the end; the
+    retired source IDs are collected in ``merged_facility_ids`` so that pass can
+    clean their stale rows.
+    """
 
     admin = _load_admin_index(session)
-    refs = _load_refs(session, admin, include_synthetic=include_synthetic)
+    refs = _load_refs(
+        session,
+        admin,
+        include_synthetic=include_synthetic,
+        facility_type=facility_type,
+    )
+    if facility_type is not None:
+        refs = {
+            ref_id: ref
+            for ref_id, ref in refs.items()
+            if ref.facility.facility_type == facility_type
+        }
     _attach_identifiers(session, refs)
 
     exact_groups: dict[tuple[str, str], list[_Ref]] = defaultdict(list)
@@ -935,6 +1332,7 @@ def consolidate_facilities(
     }
 
     merged_facilities: set[uuid.UUID] = set()
+    merges_since_commit = 0
     for component_pairs in components.values():
         if not _complete_cluster(component_pairs):
             stats["clusters_rejected"] += 1
@@ -952,6 +1350,7 @@ def consolidate_facilities(
             continue
         target = _choose_target(list(component_refs.values()))
         stats["clusters_accepted"] += 1
+        merged_before = stats["merged"]
         for source in component_refs.values():
             if source.id == target.id:
                 continue
@@ -1020,6 +1419,7 @@ def consolidate_facilities(
                         "Independent name, location and identifier evidence; "
                         "complete cluster with no conflicting places or IDs."
                     ),
+                    invalidate_fusions=not defer_fusion,
                 )
                 promotion = promote_best_location(session, target.id, reviewer=AUTO_REVIEWER)
                 if promotion:
@@ -1028,6 +1428,8 @@ def consolidate_facilities(
                     candidate.resolution = resolution
                 stats["merged"] += 1
                 merged_facilities.add(source.id)
+                if merged_facility_ids is not None:
+                    merged_facility_ids.add(source.id)
                 if affected_facility_ids is not None:
                     affected_facility_ids.add(target.id)
             except MatchingError as exc:
@@ -1035,6 +1437,15 @@ def consolidate_facilities(
                 if len(stats["errors"]) < 20:
                     stats["errors"].append(f"{candidate.id}: {exc}")
         merged_facilities.add(target.id)
+        merges_since_commit += stats["merged"] - merged_before
+        if (
+            not dry_run
+            and commit_every is not None
+            and commit_every > 0
+            and merges_since_commit >= commit_every
+        ):
+            session.commit()
+            merges_since_commit = 0
 
     if not dry_run and stats["pending_created"] < pending_limit:
         for pair in pairs.values():

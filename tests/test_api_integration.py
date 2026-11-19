@@ -189,7 +189,7 @@ def test_search_covers_addresses_localities_and_source_identifiers(client):
 
 
 def test_facility_detail_carries_provenance_quality_and_typed_profile(client):
-    detail_response = client.get("/v1/facilities/synthetic-demo-school-01-deped")
+    detail_response = client.get("/v1/facilities/synthetic-demo-school-01")
     assert detail_response.status_code == 200
     detail = detail_response.json()
 
@@ -209,17 +209,17 @@ def test_facility_detail_carries_provenance_quality_and_typed_profile(client):
         assert source["match_method"]
         assert source["row_reference"]
 
-    sources = client.get("/v1/facilities/synthetic-demo-school-01-deped/sources").json()
+    sources = client.get("/v1/facilities/synthetic-demo-school-01/sources").json()
     assert len(sources) == detail["source_count"]
 
-    history = client.get("/v1/facilities/synthetic-demo-school-01-deped/history").json()
+    history = client.get("/v1/facilities/synthetic-demo-school-01/history").json()
     assert history["items"]
     assert history["items"][0]["change_type"] == "facility_created"
     assert history["items"][0]["source_record_id"]
 
 
 def test_school_and_health_domain_endpoints_preserve_observations(client):
-    school = client.get("/v1/schools/synthetic-demo-school-01-deped").json()
+    school = client.get("/v1/schools/synthetic-demo-school-01").json()
     assert school["facility"]["facility_type"] == "school"
     assert school["enrollment"]
     assert any(row["school_year"] == "2024-2025" for row in school["enrollment"])
@@ -230,15 +230,13 @@ def test_school_and_health_domain_endpoints_preserve_observations(client):
     assert all(row["observed_at"] for row in school["resources"])
 
     enrollment = client.get(
-        "/v1/schools/synthetic-demo-school-01-deped/enrollment",
+        "/v1/schools/synthetic-demo-school-01/enrollment",
         params={"school_year": "2024-2025"},
     )
     assert enrollment.status_code == 200
     assert all(row["school_year"] == "2024-2025" for row in enrollment.json())
 
-    health = client.get(
-        "/v1/health-facilities/synthetic-demo-accredited-hospital-01-philhealth"
-    ).json()
+    health = client.get("/v1/health-facilities/synthetic-demo-accredited-hospital-01").json()
     assert health["facility"]["facility_type"] == "health_facility"
     assert health["accreditations"]
     accreditation = health["accreditations"][0]
@@ -247,16 +245,16 @@ def test_school_and_health_domain_endpoints_preserve_observations(client):
     assert accreditation["page_reference"].startswith("page:")
     assert accreditation["source_record_id"]
 
-    licensed = client.get("/v1/health-facilities/synthetic-demo-health-facility-01-doh")
+    licensed = client.get("/v1/health-facilities/synthetic-demo-health-facility-01")
     assert licensed.status_code == 200
     licensed_body = licensed.json()
     assert licensed_body["licenses"]
     assert licensed_body["facility"]["health"]["doh_facility_id"] == "SYN-DOH-0001"
 
-    wrong_type = client.get("/v1/schools/synthetic-demo-health-facility-01-doh")
+    wrong_type = client.get("/v1/schools/synthetic-demo-health-facility-01")
     assert wrong_type.status_code == 404
     assert wrong_type.json()["code"] == "school_not_found"
-    wrong_type = client.get("/v1/health-facilities/synthetic-demo-school-01-deped")
+    wrong_type = client.get("/v1/health-facilities/synthetic-demo-school-01")
     assert wrong_type.status_code == 404
     assert wrong_type.json()["code"] == "health_facility_not_found"
 
@@ -291,7 +289,7 @@ def test_detail_exposes_source_contacts_postal_code_and_accreditation_contacts(c
     from sqlalchemy import select
 
     facility = db_session.scalars(
-        select(Facility).where(Facility.slug == "synthetic-demo-health-facility-01-doh")
+        select(Facility).where(Facility.slug == "synthetic-demo-health-facility-01")
     ).one()
     location = db_session.scalars(
         select(FacilityLocation).where(
@@ -300,7 +298,7 @@ def test_detail_exposes_source_contacts_postal_code_and_accreditation_contacts(c
         )
     ).one()
     accredited = db_session.scalars(
-        select(Facility).where(Facility.slug == "synthetic-demo-accredited-hospital-01-philhealth")
+        select(Facility).where(Facility.slug == "synthetic-demo-accredited-hospital-01")
     ).one()
     accreditation = db_session.scalars(
         select(HealthAccreditation).where(HealthAccreditation.facility_id == accredited.id)
@@ -734,13 +732,13 @@ def test_facility_csv_export_neutralizes_spreadsheet_formulas(client, db_session
     from sqlalchemy import select
 
     facility = db_session.scalars(
-        select(Facility).where(Facility.slug == "synthetic-demo-school-01-deped")
+        select(Facility).where(Facility.slug == "synthetic-demo-school-01")
     ).one()
     original_name = facility.display_name
     facility.display_name = '=HYPERLINK("https://example.invalid","click")'
     db_session.commit()
     try:
-        response = client.get("/v1/facilities/synthetic-demo-school-01-deped/export.csv")
+        response = client.get("/v1/facilities/synthetic-demo-school-01/export.csv")
         assert response.status_code == 200
         row = next(csv.DictReader(io.StringIO(response.text)))
         assert row["display_name"].startswith("'=")
@@ -769,7 +767,7 @@ def test_internal_accreditation_source_is_not_exposed(client, db_session):
 
     token = uuid.uuid4().hex[:10]
     facility = db_session.scalars(
-        select(Facility).where(Facility.slug == "synthetic-demo-accredited-hospital-01-philhealth")
+        select(Facility).where(Facility.slug == "synthetic-demo-accredited-hospital-01")
     ).one()
     agency = db_session.scalars(select(Agency).where(Agency.short_code == "philhealth")).one()
     dataset = Dataset(
@@ -846,3 +844,27 @@ def test_invalid_cursor_and_unknown_facility_fail_closed(client):
     missing = client.get("/v1/facilities/00000000-0000-0000-0000-000000000000")
     assert missing.status_code == 404
     assert missing.json()["code"] == "facility_not_found"
+
+
+def test_retired_source_suffix_slug_still_resolves(client, db_session):
+    """A normalized slug keeps the previous source-suffixed URL working."""
+
+    from philfacilities_api.models import Facility, FacilitySlugAlias
+    from sqlalchemy import select
+
+    facility = db_session.scalars(
+        select(Facility).where(Facility.slug == "synthetic-demo-school-01")
+    ).one()
+    alias = FacilitySlugAlias(
+        slug="synthetic-demo-school-01-deped",
+        facility_id=facility.id,
+    )
+    db_session.add(alias)
+    db_session.commit()
+    try:
+        response = client.get("/v1/facilities/synthetic-demo-school-01-deped")
+        assert response.status_code == 200
+        assert response.json()["id"] == str(facility.id)
+    finally:
+        db_session.delete(alias)
+        db_session.commit()

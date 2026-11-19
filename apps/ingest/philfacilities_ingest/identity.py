@@ -9,6 +9,7 @@ callers.
 from __future__ import annotations
 
 import re
+from functools import lru_cache
 
 _SAINT_TOKENS = {
     "st": "saint",
@@ -180,6 +181,23 @@ def school_name_key(value: str | None) -> str:
 # family; vague labels such as ``school`` or ``other school`` carry no level
 # information and therefore cannot contradict another label.
 _SUBTYPE_FAMILIES: dict[str, dict[str, str]] = {
+    "health facility": {
+        # OSM tags a rural health unit or barangay health station as a clinic;
+        # an official DOH row uses the specific level. These are one service
+        # family, while a hospital or a laboratory remains distinct.
+        "hospital": "inpatient",
+        "infirmary": "inpatient",
+        "clinic": "outpatient",
+        "medical clinic": "outpatient",
+        "rural health unit": "outpatient",
+        "barangay health station": "outpatient",
+        "health center": "outpatient",
+        "birthing home": "outpatient",
+        "dialysis center": "outpatient",
+        "laboratory": "diagnostic",
+        "clinical laboratory": "diagnostic",
+        "pharmacy": "pharmacy",
+    },
     "school": {
         "higher education": "tertiary",
         "higher education institution": "tertiary",
@@ -329,17 +347,36 @@ def psgc_barangay_code(code: str | None) -> str | None:
     return None
 
 
-def address_tokens(value: str | None, *, administrative_names: set[str] | None = None) -> set[str]:
+@lru_cache(maxsize=200_000)
+def _address_tokens_cached(value: str | None) -> frozenset[str]:
+    return frozenset(normalize_name(value).split())
+
+
+def address_tokens(
+    value: str | None,
+    *,
+    administrative_names: set[str] | frozenset[str] | None = None,
+) -> set[str]:
     """Return distinctive normalized address tokens.
 
     Street numbers and building names are retained. Administrative names (city,
     province, barangay) and generic words are removed when the caller supplies
     the hierarchy, so "Lucena City" alone is not treated as a shared street.
+
+    Pair evaluation calls this on the same addresses thousands of times, so the
+    normalized tokenization is cached by address text alone. The large
+    administrative hierarchy is removed per call instead of becoming part of
+    the cache key, where hashing it on every lookup would cost more than the
+    tokenization itself.
     """
 
-    tokens = set(normalize_name(value).split())
-    ignored = _ADDRESS_STOPWORDS | (administrative_names or set())
-    return {token for token in tokens if len(token) >= 3 and token not in ignored}
+    return {
+        token
+        for token in _address_tokens_cached(value)
+        if len(token) >= 3
+        and token not in _ADDRESS_STOPWORDS
+        and (administrative_names is None or token not in administrative_names)
+    }
 
 
 def address_overlap(

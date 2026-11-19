@@ -20,6 +20,7 @@ from ..contracts import (
     ValidationIssue,
     ValidationResult,
 )
+from ..health_labels import classify_health_subtype
 from .common import (
     RequiredColumnsError,
     clean_text,
@@ -338,10 +339,12 @@ class PhilHealthPdfAdapter:
             category = (
                 clean_text(first_present(payload, CATEGORY_ALIASES)) or self.provider_category
             )
+            known_subtype, mapped_subtype = classify_health_subtype(category)
             subtype = (
                 None
                 if self.provider_category.casefold() in ACCREDITATION_ONLY_CATEGORIES
-                else category
+                or not known_subtype
+                else mapped_subtype
             )
             expiry = parse_date(first_present(payload, EXPIRY_ALIASES))
             address = ", ".join(part for part in (street, municipality) if part) or None

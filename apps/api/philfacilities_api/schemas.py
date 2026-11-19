@@ -79,6 +79,9 @@ class GeographyOut(BaseModel):
     municipality_name: str | None = None
     barangay_code: str | None = None
     barangay_name: str | None = None
+    # PSGC barangay classification (``U``/``R``), normalised for clients. A
+    # blank or ``-`` value in the source stays unknown rather than being guessed.
+    urban_rural: Literal["urban", "rural"] | None = None
 
 
 class QualityWarning(BaseModel):

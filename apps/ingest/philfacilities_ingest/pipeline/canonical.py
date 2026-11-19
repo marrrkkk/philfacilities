@@ -59,10 +59,19 @@ def _find_facility_for_entity(
     session: Session,
     agency_id: uuid.UUID,
     entity_id: str,
-    facility_by_entity: dict[str, Facility] | None = None,
+    facility_by_entity: dict[str, uuid.UUID | Facility] | None = None,
 ) -> Facility | None:
     if facility_by_entity is not None:
-        return facility_by_entity.get(entity_id)
+        cached = facility_by_entity.get(entity_id)
+        if cached is None:
+            return None
+        if isinstance(cached, Facility):
+            # A facility created earlier in this unflushed batch has no
+            # persistent identity yet, so the identity map cannot resolve it.
+            # Return the pending instance directly instead of creating a
+            # second facility for the same entity.
+            return cached
+        return session.get(Facility, cached)
     facility_id = session.scalar(
         select(FacilitySourceLink.facility_id)
         .join(SourceRecord, FacilitySourceLink.source_record_id == SourceRecord.id)
@@ -80,10 +89,13 @@ def _find_facility_for_entity(
     return session.get(Facility, facility_id)
 
 
-def _new_slug(
-    session: Session, name: str, agency_code: str, used_slugs: set[str] | None = None
-) -> str:
-    """Return an unused facility slug.
+def _new_slug(session: Session, name: str, used_slugs: set[str] | None = None) -> str:
+    """Return an unused public slug.
+
+    Slugs identify the facility, not the source that first reported it. A
+    source agency suffix is deliberately absent: after consolidation a single
+    facility may carry evidence from several datasets. Identically named
+    facilities still receive a numeric suffix.
 
     Bulk sources can contain hundreds of identically named facilities (for
     example ``Barangay Health Station``). Querying the database once per suffix
@@ -91,7 +103,7 @@ def _new_slug(
     preloaded set which is updated in memory.
     """
 
-    base = f"{_slug(name)}-{agency_code}"
+    base = _slug(name) or "facility"
     candidate = base
     suffix = 1
     if used_slugs is not None:
@@ -104,6 +116,10 @@ def _new_slug(
         suffix += 1
         candidate = f"{base}-{suffix}"
     return candidate
+
+
+BULK_ASSERTIONS_KEY = "philfacilities_bulk_assertions"
+PENDING_ASSERTIONS_KEY = "philfacilities_pending_assertions"
 
 
 def _add_assertion(
@@ -124,18 +140,25 @@ def _add_assertion(
         if key in existing:
             return
         existing.add(key)
-    session.add(
-        AttributeAssertion(
-            facility_id=facility_id,
-            attribute_name=attribute,
-            source_record_id=source_record_id,
-            source_field=source_field or attribute,
-            raw_value=None if raw_value is None else str(raw_value),
-            normalized_value=normalized,
-            transformation_version=version,
-            review_status="source_supplied",
-        )
-    )
+    row = {
+        "facility_id": facility_id,
+        "attribute_name": attribute,
+        "source_record_id": source_record_id,
+        "source_field": source_field or attribute,
+        "raw_value": None if raw_value is None else str(raw_value),
+        "normalized_value": normalized,
+        "transformation_version": version,
+        "review_status": "source_supplied",
+    }
+    if session.info.get(BULK_ASSERTIONS_KEY):
+        # Large releases produce well over a million assertion rows. Keeping
+        # one ORM instance per row retains them in the session identity map
+        # until commit, which is enough to exhaust memory on the 60k-school
+        # Project Bukas release. Batch them as plain mappings instead and let
+        # the runner insert them after the facility rows are flushed.
+        session.info.setdefault(PENDING_ASSERTIONS_KEY, []).append(row)
+        return
+    session.add(AttributeAssertion(**row))
 
 
 def _assert_facility_fields(
@@ -313,14 +336,15 @@ def _apply_candidate(
     stats: IngestStats,
     enqueue_matches: bool = True,
     used_slugs: set[str] | None = None,
-    facility_by_entity: dict[str, Facility] | None = None,
-    facility_by_doh_id: dict[str, Facility | None] | None = None,
+    facility_by_entity: dict[str, uuid.UUID | Facility] | None = None,
+    facility_by_doh_id: dict[str, uuid.UUID | None] | None = None,
     sector_by_facility: dict[uuid.UUID, set[str]] | None = None,
     pending_matches: list[tuple[Facility, SourceRecord]] | None = None,
     new_facilities: list[Facility] | None = None,
     current_location_by_facility: dict[uuid.UUID, FacilityLocation | None] | None = None,
     record_is_new: bool = False,
     update_prefetch: FacilityUpdatePrefetch | None = None,
+    pending_observations: list[dict[str, Any]] | None = None,
 ) -> Facility | None:
     entity_id = candidate.source_entity_id or candidate.source_record_key
     facility = _find_facility_for_entity(
@@ -341,8 +365,12 @@ def _apply_candidate(
         # is ambiguous and must not create a third one.
         code = candidate.health.doh_facility_id
         if code in facility_by_doh_id:
-            facility = facility_by_doh_id[code]
-            ambiguous_doh_code = facility is None
+            facility_id = facility_by_doh_id[code]
+            ambiguous_doh_code = facility_id is None
+            if facility_id is not None:
+                facility = session.get(Facility, facility_id)
+                if facility is None:
+                    ambiguous_doh_code = True
             matched_by_doh_facility_code = facility is not None
     created = False
     if ambiguous_doh_code:
@@ -396,6 +424,32 @@ def _apply_candidate(
         dataset=dataset, gate=gate, facility=facility, created=False
     )
 
+    if facility is None and candidate.link_only:
+        # A stale or community-compiled enrichment layer can carry identifiers
+        # that no longer exist in the registry. Creating a facility from such a
+        # row would publish an outdated school and could duplicate a renamed or
+        # split record, so the row is retained as source evidence but never
+        # promoted to the canonical registry.
+        session.add(
+            QualityIssue(
+                source_record_id=record.id,
+                release_id=release.id,
+                issue_code="unmatched_link_only_row",
+                severity="info",
+                message=(
+                    "Link-only enrichment row has no facility with this agency "
+                    "entity ID; no record was created."
+                ),
+                details={
+                    "source_entity_id": entity_id,
+                    "source_record_key": candidate.source_record_key,
+                },
+                status="open",
+            )
+        )
+        stats["unresolved"] += 1
+        return None
+
     if facility is None:
         if not candidate.display_name:
             session.add(
@@ -423,9 +477,7 @@ def _apply_candidate(
             # flush (and a database round trip) per created facility. SQLAlchemy
             # can then batch the INSERTs during the periodic flush.
             id=uuid.uuid4(),
-            slug=_new_slug(
-                session, candidate.display_name, agency.short_code, used_slugs=used_slugs
-            ),
+            slug=_new_slug(session, candidate.display_name, used_slugs=used_slugs),
             display_name=candidate.display_name,
             official_name=candidate.display_name,
             facility_type=candidate.facility_type,
@@ -682,6 +734,20 @@ def _apply_candidate(
             or current_location is None
             or (has_coordinates and fills_missing_location)
         )
+        # A coordinate-only enrichment claim replaces an address-only current
+        # location. Keep the established address on the new current row instead
+        # of blanking it; the older location row remains as history and the
+        # address assertion stays attached to its own source record.
+        carried_address_text = None
+        if (
+            candidate.enrichment_only
+            and may_replace_current
+            and has_coordinates
+            and current_location is not None
+            and current_location.latitude is None
+            and not location.address_text
+        ):
+            carried_address_text = current_location.address_text
         if current_location is not None and current_location.source_record_id == record.id:
             existing_location = current_location
         elif (
@@ -705,7 +771,7 @@ def _apply_candidate(
                 longitude=location.longitude,
                 precision=location.precision,
                 method=location.method,
-                address_text=location.address_text,
+                address_text=location.address_text or carried_address_text,
                 postal_code=location.postal_code,
                 psgc_code=location.psgc_code,
                 review_status=location.review_status,
@@ -736,7 +802,10 @@ def _apply_candidate(
             existing_location.longitude = location.longitude
             existing_location.precision = location.precision
             existing_location.method = location.method
-            existing_location.address_text = location.address_text
+            # Replaying a coordinate-only enrichment row must not erase an
+            # address carried onto the row by an earlier apply.
+            if not (candidate.enrichment_only and not location.address_text):
+                existing_location.address_text = location.address_text
             existing_location.postal_code = location.postal_code
             existing_location.psgc_code = location.psgc_code
             existing_location.review_status = location.review_status
@@ -1027,16 +1096,22 @@ def _apply_candidate(
                 ).first()
             )
             if exists is None:
-                session.add(
-                    EnrollmentObservation(
-                        facility_id=facility.id,
-                        school_year=observation.school_year,
-                        grade_level=observation.grade_level,
-                        sex=observation.sex,
-                        learner_count=observation.learner_count,
-                        source_record_id=record.id,
-                    )
-                )
+                row = {
+                    "facility_id": facility.id,
+                    "school_year": observation.school_year,
+                    "grade_level": observation.grade_level,
+                    "sex": observation.sex,
+                    "learner_count": observation.learner_count,
+                    "source_record_id": record.id,
+                }
+                if pending_observations is not None:
+                    # Enrollment releases can carry more than a million cells.
+                    # Keep them as plain mappings and insert them in batches
+                    # after the facility rows have been flushed, rather than
+                    # building one ORM instance per cell.
+                    pending_observations.append(row)
+                else:
+                    session.add(EnrollmentObservation(**row))
                 stats["enrollment_observations"] += 1
         for observation in school.resources:
             exists = (
@@ -1291,6 +1366,85 @@ def _apply_candidate(
         else:
             _maybe_flag_cross_source(session, facility, agency, record, release, stats)
     return facility
+
+
+def _copy_mappings(
+    session: Session,
+    *,
+    table: str,
+    columns: tuple[str, ...],
+    rows: list[dict[str, Any]],
+) -> None:
+    """Stream insert mappings through PostgreSQL's COPY protocol.
+
+    A 60k-school enrollment release produces well over a million enrollment
+    cells and assertion rows. SQLAlchemy's executable insert sends one
+    statement per mapping through psycopg, which turns the release into
+    millions of round trips and dominates the apply stage. COPY streams the
+    same rows on the session's transaction in batches, which is both faster
+    and far cheaper in memory because no ORM instances are created.
+    """
+
+    if not rows:
+        return
+    connection = session.connection().connection.driver_connection
+    statement = f"COPY {table} ({', '.join(columns)}) FROM STDIN"
+    with connection.cursor() as cursor, cursor.copy(statement) as copy:
+        for row in rows:
+            copy.write_row(tuple(row[column] for column in columns))
+
+
+def flush_enrollment_observations(
+    session: Session,
+    observations: list[dict[str, Any]],
+) -> None:
+    """Insert pending enrollment mappings after their facilities are flushed."""
+
+    if not observations:
+        return
+    for observation in observations:
+        observation.setdefault("id", uuid.uuid4())
+    _copy_mappings(
+        session,
+        table="school.enrollment_observations",
+        columns=(
+            "id",
+            "facility_id",
+            "school_year",
+            "grade_level",
+            "sex",
+            "learner_count",
+            "source_record_id",
+        ),
+        rows=observations,
+    )
+    observations.clear()
+
+
+def flush_attribute_assertions(session: Session) -> None:
+    """Insert batched assertion mappings collected by ``_add_assertion``."""
+
+    pending = session.info.pop(PENDING_ASSERTIONS_KEY, None)
+    if not pending:
+        return
+    for assertion in pending:
+        assertion.setdefault("id", uuid.uuid4())
+    _copy_mappings(
+        session,
+        table="core.attribute_assertions",
+        columns=(
+            "id",
+            "facility_id",
+            "attribute_name",
+            "source_record_id",
+            "source_field",
+            "raw_value",
+            "normalized_value",
+            "transformation_version",
+            "review_status",
+        ),
+        rows=pending,
+    )
 
 
 def _flush_new_facilities(session: Session, facilities: list[Facility]) -> None:

@@ -115,7 +115,7 @@ class ContactData:
     valid_to: date | None = None
 
 
-@dataclass
+@dataclass(slots=True)
 class EnrollmentData:
     school_year: str
     grade_level: str
@@ -269,6 +269,11 @@ class FacilityCandidate:
     # established classification, and never changes the source record that owns
     # an existing school profile.
     enrichment_only: bool = False
+    # Some enrichment releases are stale or community-compiled snapshots whose
+    # rows must never become new facilities. They link only to a facility that
+    # already carries the same agency entity ID; unmatched rows stay as source
+    # evidence and are recorded as unresolved.
+    link_only: bool = False
 
 
 class SourceAdapter(Protocol):

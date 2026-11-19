@@ -41,7 +41,14 @@ class IngestResult:
 
 
 def build_engine(settings: IngestSettings):
-    return create_engine(settings.database_url, pool_pre_ping=True, future=True)
+    # Bound parameters can carry source payloads and personal data. Keep them
+    # out of exception messages and logs; the statement and error code remain.
+    return create_engine(
+        settings.database_url,
+        pool_pre_ping=True,
+        future=True,
+        hide_parameters=True,
+    )
 
 
 def session_factory(engine):

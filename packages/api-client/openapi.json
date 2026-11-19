@@ -6992,6 +6992,21 @@
               }
             ],
             "title": "Barangay Name"
+          },
+          "urban_rural": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "urban",
+                  "rural"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Urban Rural"
           }
         },
         "type": "object",

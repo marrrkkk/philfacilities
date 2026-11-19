@@ -284,6 +284,29 @@ class Facility(Base):
     )
 
 
+class FacilitySlugAlias(Base):
+    """A retired public slug that still resolves to a facility.
+
+    Source-derived suffixes (for example ``-osm`` or ``-doh``) are removed once
+    duplicate records are consolidated. Keeping the old slug as an alias
+    preserves bookmarks, exports and inbound links without retaining a second
+    facility record.
+    """
+
+    __tablename__ = "facility_slug_aliases"
+    __table_args__ = (
+        Index("ix_core_facility_slug_aliases_facility", "facility_id"),
+        {"schema": "core"},
+    )
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    slug: Mapped[str] = mapped_column(String(180), nullable=False, unique=True)
+    facility_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("core.facilities.id", ondelete="CASCADE"), nullable=False
+    )
+    created_at: Mapped[datetime] = created_at()
+
+
 class FacilityFunction(Base):
     """A source-backed purpose or designation of a physical facility.
 

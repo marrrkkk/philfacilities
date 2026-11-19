@@ -1559,6 +1559,8 @@ export interface components {
             barangay_code?: string | null;
             /** Barangay Name */
             barangay_name?: string | null;
+            /** Urban Rural */
+            urban_rural?: ("urban" | "rural") | null;
         };
         /** GeographyReleaseOut */
         GeographyReleaseOut: {

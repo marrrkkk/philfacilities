@@ -497,6 +497,7 @@ def load_geography(
             chain.append(cursor)
             cursor = units.get(cursor.parent_psgc_code) if cursor.parent_psgc_code else None
         by_level = {unit.geographic_level: unit for unit in chain}
+        barangay = by_level.get("barangay")
         results[code] = GeographyOut(
             psgc_code=code,
             psgc_release=release.release_label,
@@ -510,10 +511,17 @@ def load_geography(
             municipality_name=(
                 by_level.get("municipality").name if by_level.get("municipality") else None
             ),
-            barangay_code=by_level.get("barangay").psgc_code if by_level.get("barangay") else None,
-            barangay_name=by_level.get("barangay").name if by_level.get("barangay") else None,
+            barangay_code=barangay.psgc_code if barangay else None,
+            barangay_name=barangay.name if barangay else None,
+            urban_rural=_urban_rural(barangay.urban_rural if barangay else None),
         )
     return results, release
+
+
+def _urban_rural(value: str | None) -> str | None:
+    """Normalise the PSGC ``U``/``R`` barangay code without inferring a class."""
+
+    return {"U": "urban", "R": "rural"}.get((value or "").strip().upper())
 
 
 def quality_for(

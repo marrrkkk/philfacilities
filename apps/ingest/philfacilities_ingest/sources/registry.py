@@ -161,6 +161,60 @@ DEPED_MASTERLIST_DETAIL_ATTRIBUTION = (
     "Department of Education — Masterlist of Schools, SY 2020-2021; tabular "
     "transcription via BetterGov Open Data Portal dataset 41 (CC BY 4.0)"
 )
+DEPED_BUKAS_RIGHTS_BASIS = (
+    "The Project Bukas machine-ready files are published by the Department of "
+    "Education, a government agency, for public access to school-level education "
+    "data. RA 8293 section 176 provides that no copyright subsists in a work of the "
+    "Government of the Philippines, while prior approval may be required for "
+    "commercial use. PhilFacilities publishes only institution-level fields (school "
+    "ID, name, sector, management, administrative location, offering flags and "
+    "enrollment counts) for non-commercial public-interest use with attribution, "
+    "provenance and takedown on notice. The file contains no school-head names or "
+    "other personal fields. The official deped.gov.ph URL returns HTTP 403 to "
+    "automated clients, so the preserved Wayback copy of the same ZIP is acquired "
+    "and its SHA-256 pinned. This is a documented publication decision, not a legal "
+    "opinion."
+)
+DEPED_BUKAS_ATTRIBUTION = "Department of Education — Project Bukas, Enrollment in SY 2024-2025"
+DEPED_SHS_ARCGIS_RIGHTS_BASIS = (
+    "The Senior High School point layer is published as a public, unauthenticated "
+    "ArcGIS feature service by the CHED GIS office and contains institutional "
+    "school records compiled from DepEd data. RA 8293 section 176 provides that no "
+    "copyright subsists in a work of the Government of the Philippines, while "
+    "prior approval may be required for commercial use. PhilFacilities publishes "
+    "only institution-level fields (BEIS school ID, school name, sector, "
+    "management subclassification, administrative names, offering classification "
+    "and the published x/y point) for non-commercial public-interest use with "
+    "attribution, provenance and takedown on notice. The layer's G11/G12 "
+    "enrollment columns are not acquired, and no school-head or personal fields "
+    "are present. Points are mapped school locations, not surveyed buildings. "
+    "This is a documented publication decision, not a legal opinion."
+)
+DEPED_SHS_ARCGIS_ATTRIBUTION = (
+    "Department of Education — Senior High School list, published through the "
+    "CHED GIS feature service"
+)
+DEPED_MAPAARALAN_RIGHTS_BASIS = (
+    "The 2019 MaPaaralan school-location table is compiled by OpenStreetMap "
+    "Philippines (OSMPH) from a school-point release that the Department of "
+    "Education transmitted to OSMPH for open mapping. DepEd's 2013 letter, "
+    "preserved in the OSMPH repository, authorises release of the school points "
+    "through OpenStreetMap. The underlying school records are a work of the "
+    "Government of the Philippines; RA 8293 section 176 provides that no "
+    "copyright subsists in such a work, while prior approval may be required for "
+    "commercial use. OSMPH publishes no separate licence file, so PhilFacilities "
+    "relies on the DepEd permission, treats OSMPH as the compiler, and publishes "
+    "only institution-level fields (six-digit DepEd school ID, school name and "
+    "the published point) for non-commercial public-interest use with "
+    "attribution, provenance and takedown on notice. The file contains no school "
+    "head, contact or learner-level fields. Points are mapped school locations, "
+    "not surveyed buildings. This is a documented publication decision, not a "
+    "legal opinion."
+)
+DEPED_MAPAARALAN_ATTRIBUTION = (
+    "Department of Education — MaPaaralan Project school locations, compiled and "
+    "cleaned by OpenStreetMap Philippines (OSMPH)"
+)
 DOH_NHFR_RIGHTS_BASIS = (
     "The National Health Facility Registry is a work of the Department of Health, a "
     "government agency. RA 8293 section 176 provides that no copyright subsists in a "
@@ -948,6 +1002,116 @@ REAL_SOURCES: dict[str, RealSource] = {
         rights_basis=OFFICIAL_BLOCKED_BASIS,
         requested_publication_status=PUBLICATION_BLOCKED,
         note="Official download flow is not automated; terms/feedback flow was not completed.",
+    ),
+    "deped-bukas-enrollment": RealSource(
+        key="deped-bukas-enrollment",
+        agency_code="deped",
+        agency_name="Department of Education",
+        dataset_slug="deped-project-bukas-enrollment-sy2024-2025",
+        dataset_name="DepEd Project Bukas — Enrollment in SY 2024-2025",
+        source_url=("https://www.deped.gov.ph/wp-content/uploads/Enrollment-in-SY-2024-2025.zip"),
+        access_method="public_archived_zip",
+        update_pattern="school year",
+        rights=RIGHTS_APPROVED_ATTRIBUTION,
+        rights_basis=DEPED_BUKAS_RIGHTS_BASIS,
+        attribution_text=DEPED_BUKAS_ATTRIBUTION,
+        personal_data_status="institution_level_only",
+        requested_publication_status=PUBLICATION_APPROVED,
+        terms_url="https://www.deped.gov.ph/machine-ready-files/",
+        coverage_scope="NATIONAL",
+        coverage_note=(
+            "One row for each of 60,129 schools in the SY 2024-2025 enrollment "
+            "release, including public, private, SUC/LUC and Philippine Schools "
+            "Overseas. The file supplies administrative location names and "
+            "offering flags but no coordinates or PSGC codes. Enrollment is "
+            "reported by grade/strand and sex; a zero is not a missing value."
+        ),
+        minimum_acceptance_rate=0.999,
+        minimum_acceptance_rows=60000,
+        note=(
+            "Official school-level enrollment, sector, management, division, "
+            "district and offering release. The official deped.gov.ph URL returns "
+            "HTTP 403 to automated clients; acquisition reads the preserved "
+            "Wayback copy of the same ZIP (SHA-256 "
+            "fd5dd74a62b828608c62335b7c324ddf05be58e3f05465fee68854795f5b1a92) "
+            "and rejects any checksum change. Rows link by exact six-digit school "
+            "ID and fill only missing profile values. Registry presence is not "
+            "proof of current operation."
+        ),
+    ),
+    "deped-shs-arcgis": RealSource(
+        key="deped-shs-arcgis",
+        agency_code="deped",
+        agency_name="Department of Education",
+        dataset_slug="deped-shs-arcgis",
+        dataset_name="DepEd Senior High Schools — CHED GIS layer",
+        source_url=(
+            "https://services5.arcgis.com/KIpFXsYgUlJPgoun/arcgis/rest/services/"
+            "CHEDDepEdTesda_WFL1/FeatureServer/2"
+        ),
+        access_method="public_arcgis_feature_service",
+        update_pattern="school year",
+        rights=RIGHTS_APPROVED_ATTRIBUTION,
+        rights_basis=DEPED_SHS_ARCGIS_RIGHTS_BASIS,
+        attribution_text=DEPED_SHS_ARCGIS_ATTRIBUTION,
+        personal_data_status="institution_level_only",
+        requested_publication_status=PUBLICATION_APPROVED,
+        coverage_scope="NATIONAL",
+        coverage_note=(
+            "One point for each of 7,886 DepEd senior high schools, with the "
+            "official six-digit BEIS school ID and administrative names. The "
+            "layer does not publish a reference school year, a PSGC code or a "
+            "building-level point."
+        ),
+        minimum_acceptance_rate=0.999,
+        minimum_acceptance_rows=7000,
+        note=(
+            "Public, unauthenticated ArcGIS layer owned by chedgis_admin. All "
+            "7,886 school IDs are already present in the DepEd EBEIS masterlist; "
+            "rows therefore enrich existing facilities by exact six-digit ID. "
+            "G11/G12 enrollment columns are deliberately excluded from "
+            "acquisition because Project Bukas owns enrollment observations. "
+            "No PSGC code, operating status or building-level precision is "
+            "inferred."
+        ),
+    ),
+    "deped-mapaaralan": RealSource(
+        key="deped-mapaaralan",
+        agency_code="deped",
+        agency_name="Department of Education",
+        dataset_slug="deped-mapaaralan-school-locations",
+        dataset_name="DepEd MaPaaralan school locations — OSMPH 2019 release",
+        source_url=(
+            "https://raw.githubusercontent.com/OSMPH/OSMaPaaralan/master/data/2019/"
+            "OSMaPaaralan_v2019-282-full.tsv"
+        ),
+        access_method="public_github_release",
+        update_pattern="static_2019_snapshot",
+        rights=RIGHTS_APPROVED_ATTRIBUTION,
+        rights_basis=DEPED_MAPAARALAN_RIGHTS_BASIS,
+        attribution_text=DEPED_MAPAARALAN_ATTRIBUTION,
+        personal_data_status="institution_level_only",
+        requested_publication_status=PUBLICATION_APPROVED,
+        authority_level="community",
+        coverage_scope="NATIONAL_PARTIAL",
+        coverage_note=(
+            "44,848 rows covering 44,846 unique six-digit DepEd school IDs; "
+            "40,082 rows carry a WGS84 point inside the Philippine bounding box. "
+            "The table is a 2019 snapshot, carries no sector, ownership, "
+            "management, operational status or PSGC code, and still names "
+            "schools that later closed, split or merged."
+        ),
+        minimum_acceptance_rate=0.85,
+        minimum_acceptance_rows=35_000,
+        note=(
+            "OSMPH's cleaned copy of the DepEd MaPaaralan school points. The "
+            "artifact SHA-256 is pinned, and the dataset is registered under the "
+            "DepEd agency so exact six-digit IDs resolve to existing EBEIS "
+            "facilities. Rows are link-only enrichment: they supply a missing "
+            "point and never create, rename or reclassify a facility. DepEd's "
+            "2013 permission letter for open release is preserved in the "
+            "repository."
+        ),
     ),
     "doh-nhfr": RealSource(
         key="doh-nhfr",
@@ -1947,6 +2111,7 @@ def monitored_dataset(session: Session, source: RealSource) -> Dataset:
 FILE_UPDATE_METHODS = {
     "official_workbook",
     "public_pdf",
+    "public_archived_zip",
     "public_scanned_pdf_local_ocr",
     "public_geoparquet",
 }

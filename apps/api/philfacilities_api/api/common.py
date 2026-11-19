@@ -7,7 +7,7 @@ from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session
 
 from ..errors import ApiError
-from ..models import Facility
+from ..models import Facility, FacilitySlugAlias
 from ..pagination import decode_cursor, encode_cursor
 from ..schemas import FacilityListResponse
 from ..services import build_summaries, facility_is_public, resolve_merged_facility
@@ -19,6 +19,14 @@ def get_public_facility(db: Session, identifier: str) -> Facility:
         facility = db.get(Facility, uuid.UUID(identifier))
     if facility is None:
         facility = db.scalars(select(Facility).where(Facility.slug == identifier)).first()
+    if facility is None:
+        # Slugs are renamed when source-derived suffixes are removed. The alias
+        # keeps old bookmarks and exports resolving after that cleanup.
+        alias = db.scalars(
+            select(FacilitySlugAlias).where(FacilitySlugAlias.slug == identifier)
+        ).first()
+        if alias is not None:
+            facility = db.get(Facility, alias.facility_id)
     if facility is not None:
         # A merged duplicate keeps its slug as an alias; follow it so old links
         # and exports keep resolving to the facility that holds the evidence.
