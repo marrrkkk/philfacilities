@@ -33,8 +33,8 @@ Summary fields are returned by the list, map, and nearby endpoints. Detail adds 
 |---|---|---|
 | `id` | UUID | Stable PhilFacilities identifier. Not derived from a name or agency ID |
 | `slug` | string or null | Human-readable URL identifier. Not an identity key |
-| `display_name` | string | Name used for display. May be a normalized source value |
-| `official_name` | string or null | **Detail only.** Name recorded as official by a source, when one exists |
+| `display_name` | string | Name used for display. Fully uppercase source values are title-cased while abbreviations and codes keep their form; mixed-case names stay unchanged |
+| `official_name` | string or null | **Detail only.** Name recorded as official by a source, when one exists. Display-name normalization never rewrites it |
 | `facility_type` | controlled string | Broad category. See §3.1 |
 | `facility_subtype` | string or null | Category-specific subtype. See §3.1 |
 | `facility_kind` | controlled string | What the record represents. See §3.2 |
@@ -353,9 +353,9 @@ Preferred identity evidence, strongest first:
 2. Explicit official crosswalk or shared identifier.
 3. Exact normalized name + same PSGC unit + compatible type, with address evidence.
 4. Similar name + locality + address evidence, which produces a candidate only.
-5. Conflicting IDs or distant coordinates, which remain unmerged and are retried automatically.
+5. Conflicting IDs or distant coordinates, which remain unmerged candidates until the resolution pass.
 
-The deterministic matcher uses normalized names (case-folded, punctuation collapsed), the current PSGC unit, compatible facility type/subtype, and different source agencies. It creates candidates and merges only the exact normalized name + same PSGC + exact address rule. Everything less certain stays unmerged with its evidence and is retried when a newer release or stronger signal arrives; no human approval gate exists.
+The deterministic matcher uses normalized names (case-folded, punctuation collapsed), the current PSGC unit, compatible facility type/subtype, and different source agencies. It creates candidates and merges only the exact normalized name + same PSGC + exact address rule. Everything less certain stays unmerged with its evidence. `match-candidates-resolve` re-evaluates pending candidates against current evidence: a pair that still qualifies is merged, and a stale, cross-type, conflicting or weak pair is rejected with a reason. Rejection is terminal for that pair and algorithm version. A pair involving a non-public facility stays pending rather than being rejected. No human approval gate exists.
 
 Endpoint: `GET /v1/quality/match-candidates?status=pending`
 Detail: `GET /v1/quality/match-candidates/{candidate_id}`
@@ -375,7 +375,7 @@ Detail: `GET /v1/quality/match-candidates/{candidate_id}`
 | `reviewed_at` | When a reviewer decided |
 | `resolution` | Merge audit: moved record counts/IDs and facility snapshots |
 
-The routine path is automatic: exact normalized name + same PSGC + exact address may be merged, and every less certain candidate stays `pending` with its evidence and is retried when new evidence arrives. `pending` is not a human approval queue. The explicit accept/reject/merge CLI commands exist for operator investigation and audit; they are not required before publication. Rejected candidates are retained so the same pair is not queued again for the same algorithm version. A merge retires the source facility into the candidate facility; the retired facility remains an internal `merged` tombstone, and change events preserve the audit.
+The routine path is automatic: exact normalized name + same PSGC + exact address may be merged, and every less certain candidate stays `pending` with its evidence. `pending` is not a human approval queue. `match-candidates-resolve` applies the current rule to the whole pending queue: it merges a pair only when it still qualifies and the candidate target is the preferred survivor, and rejects the rest with a recorded reason. The explicit accept/reject/merge CLI commands exist for operator investigation and audit; they are not required before publication. Rejected candidates are retained so the same pair is not queued again for the same algorithm version. A merge retires the source facility into the candidate facility; the retired facility remains an internal `merged` tombstone, and change events preserve the audit.
 
 ## 8. Geography and PSGC releases
 
@@ -533,7 +533,7 @@ Endpoint: `GET /v1/facilities/{facility_id}/history`, feed `GET /v1/changes?sinc
 
 | Field | Meaning |
 |---|---|
-| `change_type` | `facility_created`, `attribute_updated`, `facility_merged_into`, `facility_merged_from`, `facility_merge_undone`, or another recorded event |
+| `change_type` | `facility_created`, `attribute_updated`, `display_name_normalized`, `facility_merged_into`, `facility_merged_from`, `facility_merge_undone`, or another recorded event |
 | `attribute_name` | Field changed, when the event is field-level |
 | `old_value`, `new_value` | JSON values before and after. Either may be null |
 | `source_record_id` | Evidence that caused the change, when applicable |

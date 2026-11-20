@@ -198,9 +198,9 @@ Evidence is ranked, strongest first:
 2. explicit official crosswalk or shared identifier;
 3. exact normalized name + current PSGC unit + compatible subtype + different source agency;
 4. independent agreement of name, city/barangay/address, and coordinates → candidate only;
-5. conflicting IDs or distant coordinates → unmerged candidate, retained and retried automatically.
+5. conflicting IDs or distant coordinates → unmerged candidate, retained for the resolution pass.
 
-Names are folded for comparison only: case, punctuation, whitespace, HTML-encoded ampersands (`&amp;`, `&AMP;`, `&#38;`), connector order (`X Hospital and Maternity` vs `X Maternity Hospital`), `St.`/`Saint`/`Sta.`/`Sto.`, and optional legal forms such as `Inc.` and `Corporation`. School names additionally expand uppercase school-type abbreviations (`ES`, `IS`, `NHS`, `SHS`, `SPED`, …). Folding never rewrites `display_name` or `official_name`, and a name match alone never merges two records: two different places can share a name.
+Names are folded for comparison only: case, punctuation, whitespace, HTML-encoded ampersands (`&amp;`, `&AMP;`, `&#38;`), connector order (`X Hospital and Maternity` vs `X Maternity Hospital`), `St.`/`Saint`/`Sta.`/`Sto.`, and optional legal forms such as `Inc.` and `Corporation`. School names additionally expand uppercase school-type abbreviations (`ES`, `IS`, `NHS`, `SHS`, `SPED`, …). The comparison fold never rewrites a source value. Canonical `display_name` casing is handled by the separate pass below; `official_name`, the raw source payload and the field assertions keep the source spelling. A name match alone never merges two records: two different places can share a name.
 
 Subtype labels come from independent agency vocabularies and are compared as families, not raw strings. OSM `college`, CHED `HIGHER_EDUCATION_INSTITUTION` and DepEd `OTHER_SCHOOL` can describe one school; `elementary school` and `college` cannot. A vague label such as `school` or `other …` carries no level information and never blocks a pair by itself. City is taken from the location PSGC, or resolved from the address by preferring an explicit city/municipality segment, so a trailing province name that matches another city (`Lucena City, Quezon`) does not erase the city. Subtype families and address-derived city codes are identity evidence only; the stored subtype, address and PSGC claims are never rewritten.
 
@@ -212,7 +212,9 @@ Free-text address differences also block a merge only when both addresses carry 
 
 Facility type is normally a hard boundary. A same-name pair within 50 m whose types differ is never merged automatically. When one side is official and the other is not, both names are specific and non-generic, and there are no conflicting identifiers or places, the pair becomes a pending candidate with `cross_type: true` for a reviewer. This is how a health-facility registry row and a co-located social-welfare map row for the same named institution reach review instead of becoming two public facilities. If the reviewer confirms they describe one site, `match-candidates-merge --allow-facility-type-mismatch` performs the explicit cross-type merge; the surviving facility keeps its own type and the retired record remains an internal tombstone.
 
-The surviving record is chosen deterministically: official source first, then the most official identifiers, then the most source links, then the oldest record. After the merge the most precise documented location becomes current; the previous current location is closed as history rather than discarded, and `resolution["location_promotion"]` records the change. Pairs without a strong bridge are not auto-merged; non-automatic pairs that still share a name and city stay as pending candidates for review. A rejected pair is retained so the same evidence does not re-queue it.
+The surviving record is chosen deterministically: official source first, then the most official identifiers, then the most source links, then the oldest record. After the merge the most precise documented location becomes current; the previous current location is closed as history rather than discarded, and `resolution["location_promotion"]` records the change. Pairs without a strong bridge are not auto-merged; non-automatic pairs that still share a name and city stay as pending candidates until the resolution pass.
+
+`match-candidates-resolve` re-evaluates every pending pair against current evidence instead of trusting the evidence captured when it was queued. It merges a pair only when it still meets the automatic consolidation rule and the candidate target is the preferred survivor. Stale pairs, cross-type pairs, conflicting identifiers or places, and weak same-city pairs are rejected with a recorded reason. Rejection is terminal: the same pair is not queued again for the same algorithm version. A pair that involves a facility which is not public stays pending, because publication is a separate gate. Run the command in dry-run mode first to inspect `by_reason` and the examples.
 
 ```bash
 uv run philfacilities-ingest consolidate-facilities                 # dry run
@@ -222,6 +224,8 @@ uv run philfacilities-ingest merge-deped-prefixed-ids               # dry run
 uv run philfacilities-ingest merge-deped-prefixed-ids --apply --limit 100
 uv run philfacilities-ingest match-candidates-generate
 uv run philfacilities-ingest match-candidates --status pending
+uv run philfacilities-ingest match-candidates-resolve               # dry run
+uv run philfacilities-ingest match-candidates-resolve --apply
 uv run philfacilities-ingest match-candidates-accept <id> --reviewer <name> --note "..."
 uv run philfacilities-ingest match-candidates-reject <id> --reviewer <name> --note "..."
 uv run philfacilities-ingest match-candidates-merge <id> --reviewer <name> --note "..."
@@ -237,6 +241,19 @@ The merge resolution stores the undo data: facility snapshots before and after, 
 The EBEIS masterlist can list the same school under its official six-digit BEIS ID and a seven-digit level-prefixed variant (for example `403263` and `1403263`). The prefixed ID is treated as an alias only when the six-digit base row exists in the same release and the school-name keys match. The six-digit facility is the target; the prefixed row is kept as source evidence. Each twin merge is recorded as an accepted `deped_prefixed_school_id` candidate (`confidence 0.999`, reviewer `system:deped-prefixed-id`), and a merged profile backfill is recorded in `resolution["profile_backfill"]` so undo can reverse it or refuse if a later edit changed the value. Adapters mark prefixed rows `enrichment_only=True`, so the canonical row is always applied first.
 
 `auto-merge-duplicates` is the older, narrower rule (exact normalized name plus a precise address/coordinate match). Use `consolidate-facilities` for whole-registry aggregation; it applies the strong-bridge and strong-edge clique rules above.
+
+### Display-name casing
+
+Some agency exports publish every facility name in capitals. The pipeline title-cases the canonical `display_name` at creation and update, and `normalize-display-names` applies the same rule to existing rows. Only fully uppercase names are changed; a mixed-case name keeps the spelling chosen by its source. Known abbreviations (`ES`, `IS`, `NHS`, `SHS`, `SPED`, `RHU`, `BHS`, `DOH`, `NCR`, …), Roman numerals, ordinals, single letters, alphanumeric codes (`R8`, `K12`) and consonant-only initialisms stay uppercase; ordinary words are title-cased and connectors such as `of`, `and`, `de` and `ng` are lowercased inside the name.
+
+The source spelling is never lost. `official_name`, the raw source payload, `attribute_assertions.raw_value` and the source record are unchanged, so the profile can still show exactly what the agency published. A replacement character (`�`) already present in a source value is retained as-is; the pass changes casing only and never guesses the missing byte. The fusion pass never writes `display_name`; name changes are a separate canonical or backfill step.
+
+Every backfilled row writes a `display_name_normalized` change event with the old and new value and `changed_by = system:display-name-normalization`. The pass is idempotent, includes merged tombstones so an undo restores a readable name, and supports batched commits.
+
+```bash
+uv run philfacilities-ingest normalize-display-names                 # dry run
+uv run philfacilities-ingest normalize-display-names --apply --commit-every 5000
+```
 
 ### Public slug normalization
 

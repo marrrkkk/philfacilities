@@ -9,7 +9,7 @@ Read [Getting started](getting-started.md) before your first change, then the do
 - **Do not invent source facts.** Never add an endpoint, file, field, identifier, update cadence, licence, or coverage claim unless the official source or terms were inspected and recorded.
 - **Publish only after a documented rights decision.** Follow [Data policy](data-policy.md). A verified, publicly available dataset with no explicit prohibition may be published with reviewed institutional fields and recorded provenance; explicit restrictions, FOI/agreement conditions, and personal or sensitive data still control.
 - **Preserve source truth.** Keep raw releases, original values, leading zeros, missing values, coordinate precision, and source identifiers. Missing is not zero, `false`, or inactive.
-- **No silent merges.** Ambiguous facility matches remain `quality.match_candidates` rows with their evidence, unmerged and retried automatically. Only the exact normalized name + same PSGC + exact address rule may merge; there is no human approval queue.
+- **No silent merges.** Ambiguous facility matches remain `quality.match_candidates` rows with their evidence, unmerged. Only the exact normalized name + same PSGC + exact address rule, or a pair that still meets the automatic consolidation rule when `match-candidates-resolve` re-evaluates it, may merge; there is no human approval queue.
 - **Keep the API ahead of the UI.** The OpenAPI document is the contract. Regenerate the TypeScript client when the API changes.
 - **Never commit secrets or personal data.** Do not include credentials, signed agreements, learner/patient information, private contact details, or restricted source rows. See [SECURITY.md](../SECURITY.md).
 

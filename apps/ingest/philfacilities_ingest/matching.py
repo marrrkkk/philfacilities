@@ -306,6 +306,7 @@ def _current_locations(
     session: Session,
     *,
     facility_type: str | None = None,
+    facility_ids: set[uuid.UUID] | None = None,
 ) -> dict[uuid.UUID, FacilityLocation]:
     """Load current locations once instead of querying per facility."""
 
@@ -314,6 +315,8 @@ def _current_locations(
         query = query.join(Facility, Facility.id == FacilityLocation.facility_id).where(
             Facility.facility_type == facility_type
         )
+    if facility_ids is not None:
+        query = query.where(FacilityLocation.facility_id.in_(facility_ids))
     locations: dict[uuid.UUID, FacilityLocation] = {}
     for location in session.scalars(
         query.order_by(FacilityLocation.facility_id, FacilityLocation.created_at)

@@ -48,6 +48,7 @@ from sqlalchemy.orm import Session
 
 from ..contracts import FacilityCandidate
 from ..eligibility import exclusion_reason
+from ..identity import normalize_display_name
 from ..matching import enqueue_cross_source_candidates
 from ..release_rollback import FacilityUpdatePrefetch, capture_facility_snapshot
 from .common import _slug
@@ -472,13 +473,14 @@ def _apply_candidate(
             )
             stats["unresolved"] += 1
             return None
+        display_name = normalize_display_name(candidate.display_name)
         facility = Facility(
             # Assign the primary key client-side so a bulk load does not need a
             # flush (and a database round trip) per created facility. SQLAlchemy
             # can then batch the INSERTs during the periodic flush.
             id=uuid.uuid4(),
-            slug=_new_slug(session, candidate.display_name, used_slugs=used_slugs),
-            display_name=candidate.display_name,
+            slug=_new_slug(session, display_name, used_slugs=used_slugs),
+            display_name=display_name,
             official_name=candidate.display_name,
             facility_type=candidate.facility_type,
             facility_subtype=candidate.facility_subtype,
@@ -541,7 +543,7 @@ def _apply_candidate(
                 candidate.ownership or ""
             ).strip().lower() not in ("", "unknown")
             updates = {
-                "display_name": candidate.display_name,
+                "display_name": normalize_display_name(candidate.display_name),
                 "facility_subtype": candidate.facility_subtype,
                 "inclusion_class": (inclusion_class if has_classification_evidence else None),
                 "ownership": candidate.ownership,

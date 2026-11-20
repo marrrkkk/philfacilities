@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import re
 import uuid
-from collections import defaultdict
+from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from decimal import Decimal
@@ -63,8 +63,10 @@ from .matching import (
     _distance_m,
     _facility_snapshot,
     _subtypes_compatible,
+    accept_match_candidate,
     candidate_key,
     merge_match_candidate,
+    reject_match_candidate,
 )
 
 GENERAL_MATCH_METHOD = "facility_identity_evidence_v1"
@@ -527,6 +529,7 @@ def _load_refs(
     *,
     include_synthetic: bool,
     facility_type: str | None = None,
+    facility_ids: set[uuid.UUID] | None = None,
 ) -> dict[uuid.UUID, _Ref]:
     query = (
         select(
@@ -550,8 +553,14 @@ def _load_refs(
     )
     if facility_type is not None:
         query = query.where(Facility.facility_type == facility_type)
+    if facility_ids is not None:
+        query = query.where(Facility.id.in_(facility_ids))
     rows = session.execute(query).all()
-    locations = _current_locations(session, facility_type=facility_type)
+    locations = _current_locations(
+        session,
+        facility_type=facility_type,
+        facility_ids=facility_ids,
+    )
     refs: dict[uuid.UUID, _Ref] = {}
     for _facility_id, record_id, agency_code, dataset_slug, authority_level, facility in rows:
         if facility.is_synthetic and not include_synthetic:
@@ -1790,4 +1799,185 @@ def consolidate_facilities(
             )
             if candidate is not None:
                 stats["pending_created"] += 1
+    return stats
+
+
+def _pending_rejection_reason(pair: _Pair) -> str:
+    if pair.conflicting_ids:
+        return "conflicting official identifiers"
+    if pair.conflicting_location:
+        return "address or coordinates point to different places"
+    if pair.location_score < AUTO_MIN_LOCATION_SCORE:
+        return "same-city name agreement only; no strong location or identifier bridge"
+    return f"not automatically mergeable: {pair.note}"
+
+
+def resolve_pending_match_candidates(
+    session: Session,
+    *,
+    dry_run: bool = True,
+    limit: int = 10_000,
+    reviewer: str = "system:match-candidate-resolution",
+    example_limit: int = 20,
+) -> dict[str, Any]:
+    """Resolve the pending queue against current evidence.
+
+    A candidate is merged only when the pair still meets the automatic
+    consolidation rule and the candidate's target is the preferred survivor.
+    Stale, cross-type, conflicting and weak pairs are rejected with a reason so
+    the queue cannot grow without bound. Rejection is terminal and prevents the
+    same pair from being queued again for this algorithm version.
+    """
+
+    if not reviewer.strip():
+        raise MatchingError("A reviewer is required to resolve pending candidates.")
+
+    stats: dict[str, Any] = {
+        "candidates_scanned": 0,
+        "merged": 0,
+        "would_merge": 0,
+        "rejected": 0,
+        "would_reject": 0,
+        "skipped_not_public": 0,
+        "by_reason": {},
+        "examples": [],
+        "dry_run": dry_run,
+    }
+    rows = session.execute(
+        select(
+            MatchCandidate.id,
+            MatchCandidate.source_facility_id,
+            MatchCandidate.candidate_facility_id,
+        )
+        .where(MatchCandidate.match_status == "pending")
+        .order_by(MatchCandidate.created_at, MatchCandidate.id)
+        .limit(limit)
+    ).all()
+    if not rows:
+        return stats
+
+    facility_ids = {
+        facility_id
+        for _candidate_id, source_id, target_id in rows
+        for facility_id in (source_id, target_id)
+        if facility_id is not None
+    }
+    facilities = {
+        facility.id: facility
+        for facility in session.scalars(select(Facility).where(Facility.id.in_(facility_ids))).all()
+    }
+    admin = _load_admin_index(session)
+    refs = _load_refs(
+        session,
+        admin,
+        include_synthetic=True,
+        facility_ids=facility_ids,
+    )
+    reasons: Counter[str] = Counter()
+
+    def add_example(
+        candidate_id: uuid.UUID,
+        action: str,
+        reason: str | None,
+        source: Facility | None,
+        target: Facility | None,
+    ) -> None:
+        if len(stats["examples"]) >= example_limit:
+            return
+        stats["examples"].append(
+            {
+                "candidate_id": str(candidate_id),
+                "action": action,
+                "reason": reason,
+                "source_facility_id": str(source.id) if source else None,
+                "target_facility_id": str(target.id) if target else None,
+                "source_name": source.display_name if source else None,
+                "target_name": target.display_name if target else None,
+            }
+        )
+
+    for candidate_id, source_id, target_id in rows:
+        stats["candidates_scanned"] += 1
+        source = facilities.get(source_id) if source_id is not None else None
+        target = facilities.get(target_id) if target_id is not None else None
+        reason: str | None = None
+        mergeable = False
+
+        if source is None or target is None:
+            reason = "stale: a linked facility no longer exists"
+        elif source.record_status == "merged" or target.record_status == "merged":
+            reason = "stale: a linked facility was already merged"
+        elif source.publication_status != "public" or target.publication_status != "public":
+            # Publication is a separate gate. Leave the pair pending rather than
+            # terminally rejecting evidence that may become public later.
+            stats["skipped_not_public"] += 1
+            add_example(
+                candidate_id,
+                "skip",
+                "a linked facility is not public",
+                source,
+                target,
+            )
+            continue
+        else:
+            left = refs.get(source.id)
+            right = refs.get(target.id)
+            if left is None or right is None:
+                reason = "stale: a facility has no source link or current location"
+            else:
+                pair = _evaluate_pair(left, right, admin, allow_type_mismatch=True)
+                if pair is None:
+                    reason = "current name, type, or subtype evidence no longer matches"
+                elif pair.cross_type:
+                    reason = "review-only: facility types differ"
+                elif not _auto_pair(pair):
+                    reason = _pending_rejection_reason(pair)
+                elif not _strong_pair(pair):
+                    reason = (
+                        "same-city name agreement only; no strong location or identifier bridge"
+                    )
+                elif _choose_target([left, right]).id != target.id:
+                    reason = "candidate target is not the preferred survivor"
+                else:
+                    mergeable = True
+
+        if mergeable:
+            if dry_run:
+                stats["would_merge"] += 1
+                add_example(candidate_id, "merge", None, source, target)
+                continue
+            accept_match_candidate(
+                session,
+                candidate_id,
+                reviewer=reviewer,
+                note=(
+                    "Re-evaluated current name, location and identifier evidence; "
+                    "the pair still qualifies for automatic consolidation."
+                ),
+            )
+            merge_match_candidate(
+                session,
+                candidate_id,
+                reviewer=reviewer,
+                note=("Resolved pending candidate with the current automatic consolidation rule."),
+            )
+            stats["merged"] += 1
+            add_example(candidate_id, "merge", None, source, target)
+            continue
+
+        assert reason is not None
+        reasons[reason] += 1
+        if dry_run:
+            stats["would_reject"] += 1
+        else:
+            reject_match_candidate(
+                session,
+                candidate_id,
+                reviewer=reviewer,
+                note=reason,
+            )
+            stats["rejected"] += 1
+        add_example(candidate_id, "reject", reason, source, target)
+
+    stats["by_reason"] = dict(reasons.most_common())
     return stats

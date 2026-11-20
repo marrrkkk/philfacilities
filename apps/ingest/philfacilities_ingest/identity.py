@@ -108,6 +108,246 @@ def normalize_name(value: str | None) -> str:
     return " ".join(re.sub(r"[^a-z0-9]+", " ", value.casefold()).split())
 
 
+# Lowercase connector words inside a display name. They are capitalised when
+# they open the name. Spanish and Filipino particles are included because many
+# school and barangay names use them.
+_NAME_CONNECTORS = frozenset(
+    {
+        "a",
+        "an",
+        "and",
+        "as",
+        "at",
+        "but",
+        "by",
+        "de",
+        "del",
+        "for",
+        "in",
+        "la",
+        "las",
+        "los",
+        "ng",
+        "ni",
+        "of",
+        "on",
+        "or",
+        "sa",
+        "the",
+        "to",
+        "vs",
+        "with",
+        "y",
+    }
+)
+
+# Abbreviations that read better in conventional mixed case. Every other
+# recognised abbreviation stays uppercase.
+_CONVENTIONAL_ABBREVIATIONS = {
+    "bgy": "Bgy",
+    "brgy": "Brgy",
+    "co": "Co",
+    "corp": "Corp",
+    "dr": "Dr",
+    "gen": "Gen",
+    "gov": "Gov",
+    "inc": "Inc",
+    "jr": "Jr",
+    "ltd": "Ltd",
+    "mr": "Mr",
+    "mrs": "Mrs",
+    "ms": "Ms",
+    "pob": "Pob",
+    "rep": "Rep",
+    "rev": "Rev",
+    "sr": "Sr",
+    "st": "St",
+    "sta": "Sta",
+    "sto": "Sto",
+}
+
+# Tokens that must stay uppercase even though they contain a vowel. They are
+# school types, health programmes, agencies, or established brand names. A
+# token with no A/E/I/O/U is already preserved by the consonant-cluster rule.
+_UPPERCASE_NAME_TOKENS = frozenset(
+    {
+        # School types, tracks and strands
+        "abc",
+        "abm",
+        "admu",
+        "adzu",
+        "aclc",
+        "als",
+        "ama",
+        "bsu",
+        "ched",
+        "cmu",
+        "cpu",
+        "csu",
+        "dlsu",
+        "es",
+        "feu",
+        "gsis",
+        "hi",
+        "humss",
+        "ict",
+        "is",
+        "isu",
+        "msu",
+        "nhs",
+        "nu",
+        "nha",
+        "pnu",
+        "pup",
+        "rhu",
+        "sbc",
+        "sped",
+        "ssc",
+        "stem",
+        "sti",
+        "tesda",
+        "tup",
+        "ue",
+        "up",
+        "usc",
+        "usep",
+        "ust",
+        "vsu",
+        # Health, government and programme acronyms
+        "abtc",
+        "afp",
+        "aids",
+        "armm",
+        "barmm",
+        "bir",
+        "brac",
+        "cdo",
+        "cho",
+        "dilg",
+        "denr",
+        "deped",
+        "doh",
+        "dole",
+        "dost",
+        "dots",
+        "dpp",
+        "dswd",
+        "dti",
+        "ecg",
+        "eeg",
+        "fda",
+        "fpop",
+        "hiv",
+        "ibig",
+        "imap",
+        "lgu",
+        "mho",
+        "mmda",
+        "nbi",
+        "ocd",
+        "opd",
+        "opc",
+        "osca",
+        "otp",
+        "pdea",
+        "philhealth",
+        "pnp",
+        "sbi",
+        "sss",
+        "uccp",
+        "vawc",
+        "lbc",
+        "tgp",
+    }
+)
+
+# Mixed-case forms used by the publishing agency. These are display
+# preferences, not identity changes.
+_PREFERRED_FORMS = {
+    "deped": "DepEd",
+    "dotr": "DOTr",
+    "philhealth": "PhilHealth",
+}
+
+_ROMAN_NUMERAL = re.compile(
+    r"(?i)^(?:i|ii|iii|iv|v|vi|vii|viii|ix|x|xi|xii|xiii|xiv|xv|xvi|xvii|xviii|xix|xx)$"
+)
+_ORDINAL = re.compile(r"(?i)^\d+(?:st|nd|rd|th)$")
+_WORD = re.compile(r"(?:[^\W_]|\ufffd)+(?:['\u2019](?:[^\W_]|\ufffd)+)*")
+
+
+def _is_all_caps(value: str) -> bool:
+    letters = [character for character in value if character.isalpha()]
+    return bool(letters) and all(character.isupper() for character in letters)
+
+
+def _title_word(word: str) -> str:
+    if "'" in word or "\u2019" in word:
+        head, separator, tail = re.split(r"(['\u2019])", word, maxsplit=1)
+        rendered_tail = (
+            tail.lower()
+            if len(tail) == 1 and tail.casefold() == "s"
+            else tail[:1].upper() + tail[1:].lower()
+        )
+        return f"{head[:1].upper()}{head[1:].lower()}{separator}{rendered_tail}"
+    return word[:1].upper() + word[1:].lower()
+
+
+def _render_display_word(word: str, *, first: bool) -> str:
+    key = word.casefold()
+    preferred = _PREFERRED_FORMS.get(key)
+    if preferred:
+        return preferred
+    conventional = _CONVENTIONAL_ABBREVIATIONS.get(key)
+    if conventional:
+        return conventional
+    if key in _UPPERCASE_NAME_TOKENS:
+        return word.upper()
+    if len(word) == 1:
+        # A lone letter is an initial or code, never a lowercased connector.
+        return word.upper()
+    if not first and key in _NAME_CONNECTORS:
+        return key
+    if _ROMAN_NUMERAL.fullmatch(word) or _ORDINAL.fullmatch(word):
+        return word.upper()
+    if any(character.isdigit() for character in word):
+        # Codes such as R8, K12 or a row identifier are not ordinary words.
+        return word.upper()
+    if not any(character in "aeiou" for character in key):
+        # A consonant-only token is an initialism or code (TGP, BLC, CSGH),
+        # not an ordinary English word.
+        return word.upper()
+    return _title_word(word)
+
+
+def normalize_display_name(value: str | None) -> str:
+    """Title-case a fully uppercase display name without flattening abbreviations.
+
+    Only names written entirely in uppercase are changed. Mixed-case names keep
+    the source's own style, and ``official_name`` is never passed through this
+    helper. Known abbreviations, Roman numerals, ordinal suffixes, single
+    letters and consonant-only initialisms stay uppercase. HTML entities are
+    decoded because they are a transport artefact rather than part of a name.
+    """
+
+    if not value or not _is_all_caps(value):
+        return value or ""
+    text = html.unescape(value)
+    if not any(character.isalpha() for character in text):
+        return value
+
+    rendered: list[str] = []
+    cursor = 0
+    first = True
+    for match in _WORD.finditer(text):
+        rendered.append(text[cursor : match.start()])
+        rendered.append(_render_display_word(match.group(0), first=first))
+        first = False
+        cursor = match.end()
+    rendered.append(text[cursor:])
+    return "".join(rendered)
+
+
 def facility_name_key(value: str | None) -> str:
     """Normalize a facility name for identity comparison.
 

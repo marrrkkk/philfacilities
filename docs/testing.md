@@ -115,6 +115,9 @@ Use `-m "not integration"` for a fast local pass.
 - ambiguous pairs queue in `quality.match_candidates`;
 - accepting is separate from merging;
 - rejected candidates are not re-queued for the same algorithm version;
+- pending resolution merges only a pair that still qualifies and terminally rejects stale, cross-type, conflicting and weak pairs with a reason;
+- fully uppercase display names are title-cased at canonical creation and by the backfill, while abbreviations stay uppercase and `official_name` plus field assertions keep the source spelling;
+- display-name backfill records one `display_name_normalized` change event per changed facility and is idempotent;
 - merges move evidence and leave a `merged` tombstone plus change events;
 - merge moves unique contacts, keeps a duplicate contact on the source tombstone instead of violating `uq_facility_contact_source`, and undo restores only the moved rows;
 - public match-candidate responses omit reviewer name and note;

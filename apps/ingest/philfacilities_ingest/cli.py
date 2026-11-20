@@ -28,12 +28,13 @@ from .acquisition import (
     send_failure_alert,
     send_ingestion_failure_alert,
 )
-from .aggregation import consolidate_facilities
+from .aggregation import consolidate_facilities, resolve_pending_match_candidates
 from .assertions import backfill_assertions
 from .compare import ReleaseComparisonError, compare_releases
 from .config import get_settings
 from .contracts import ReleaseSpec
 from .discovery import DISCOVERY_TARGETS, probe_discovery_targets
+from .display_names import normalize_facility_display_names
 from .fixtures import (
     FIXTURE_PUBLISHED_AT,
     FIXTURE_RETRIEVED_AT,
@@ -1313,6 +1314,64 @@ def normalize_facility_slugs_command(
         engine.dispose()
 
 
+@app.command("normalize-display-names")
+def normalize_display_names_command(
+    apply: Annotated[
+        bool,
+        typer.Option(
+            "--apply/--dry-run",
+            help="Apply the display-name normalization. The default is a dry run.",
+        ),
+    ] = False,
+    limit: Annotated[
+        int,
+        typer.Option(min=1, help="Maximum display names to normalize in this run."),
+    ] = 100_000,
+    commit_every: Annotated[
+        int | None,
+        typer.Option(
+            "--commit-every",
+            min=1,
+            help=(
+                "Commit completed batches in this size so a large pass keeps its "
+                "progress. The default commits once at the end."
+            ),
+        ),
+    ] = None,
+    examples: Annotated[
+        int,
+        typer.Option(min=0, help="Maximum change examples to include in the output."),
+    ] = 20,
+) -> None:
+    """Title-case display names published entirely in capitals.
+
+    Abbreviations, Roman numerals, ordinals, single letters and consonant-only
+    initialisms keep their uppercase form. The source spelling is retained in
+    ``official_name``, the source payload, and the field assertions.
+    """
+
+    engine, session = _session()
+    try:
+        stats = normalize_facility_display_names(
+            session,
+            dry_run=not apply,
+            limit=limit,
+            example_limit=examples,
+            commit_every=commit_every,
+        )
+        if apply:
+            session.commit()
+        else:
+            session.rollback()
+        typer.echo(json.dumps(stats, indent=2, default=str))
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+        engine.dispose()
+
+
 @app.command("refine-health-ownership")
 def refine_health_ownership_command(
     apply: Annotated[
@@ -2063,6 +2122,57 @@ def _review_candidate(
         session.rollback()
         typer.echo(f"Review failed: {exc}", err=True)
         raise typer.Exit(code=1) from exc
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("match-candidates-resolve")
+def match_candidates_resolve(
+    apply: Annotated[
+        bool,
+        typer.Option(
+            "--apply/--dry-run",
+            help="Apply the resolutions. The default is a dry run.",
+        ),
+    ] = False,
+    limit: Annotated[
+        int,
+        typer.Option(min=1, help="Maximum pending candidates to resolve in this run."),
+    ] = 10_000,
+    reviewer: Annotated[
+        str,
+        typer.Option(help="Reviewer recorded on automatic merges and rejections."),
+    ] = "system:match-candidate-resolution",
+    examples: Annotated[
+        int,
+        typer.Option(min=0, help="Maximum resolution examples to include in the output."),
+    ] = 20,
+) -> None:
+    """Resolve every pending candidate against current evidence.
+
+    A stale, cross-type, conflicting or weak pair is rejected and kept as
+    audit history so it is not queued again. A pair that still meets the
+    automatic consolidation rule is merged into its candidate target.
+    """
+
+    engine, session = _session()
+    try:
+        stats = resolve_pending_match_candidates(
+            session,
+            dry_run=not apply,
+            limit=limit,
+            reviewer=reviewer,
+            example_limit=examples,
+        )
+        if apply:
+            session.commit()
+        else:
+            session.rollback()
+        typer.echo(json.dumps(stats, indent=2, default=str))
     except Exception:
         session.rollback()
         raise
