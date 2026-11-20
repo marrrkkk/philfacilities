@@ -139,11 +139,12 @@ def candidate_key(
     candidate_facility_id: uuid.UUID,
     *,
     method: str = MATCH_METHOD,
+    algorithm_version: str = ALGORITHM_VERSION,
 ) -> str:
     raw = "|".join(
         (
             method,
-            ALGORITHM_VERSION,
+            algorithm_version,
             str(source_record_id),
             str(candidate_facility_id),
         )
@@ -713,6 +714,7 @@ def merge_match_candidate(
     reviewer: str,
     note: str | None = None,
     invalidate_fusions: bool = True,
+    allow_facility_type_mismatch: bool = False,
 ) -> MatchCandidate:
     """Retire the source facility into the accepted candidate facility.
 
@@ -723,6 +725,10 @@ def merge_match_candidate(
     Set ``invalidate_fusions=False`` for bulk passes that rebuild derived fusion rows
     once at the end. Per-merge invalidation is then redundant and its index lookups
     dominate the merge cost.
+
+    ``allow_facility_type_mismatch`` is an explicit operator override for a reviewed
+    cross-type candidate. The surviving facility keeps its own type; the retired
+    facility remains an internal tombstone with its source evidence.
     """
 
     if not reviewer.strip():
@@ -740,7 +746,7 @@ def merge_match_candidate(
         raise MatchingError("The candidate's facilities no longer exist.")
     if source.id == target.id:
         raise MatchingError("Source and candidate facilities are the same record.")
-    if source.facility_type != target.facility_type:
+    if source.facility_type != target.facility_type and not allow_facility_type_mismatch:
         raise MatchingError("Facilities with incompatible types cannot be merged.")
 
     now = datetime.now(UTC)

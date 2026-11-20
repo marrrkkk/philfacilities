@@ -40,6 +40,13 @@ def test_name_key_folds_saint_legal_form_and_ampersand():
     )
 
 
+def test_name_key_decodes_html_entity_ampersands():
+    expected = "saint adrianne medical and lying in clinic"
+    assert facility_name_key("St. Adrianne Medical &AMP; Lying-In Clinic") == expected
+    assert facility_name_key("St. Adrianne Medical &amp; Lying-In Clinic") == expected
+    assert facility_name_key("St. Adrianne Medical &#38; Lying-In Clinic") == expected
+
+
 def test_name_similarity_distinguishes_variants_from_branches():
     assert name_similarity("St. Anne College Lucena, Inc.", "Saint Anne College Lucena") == (
         1.0,

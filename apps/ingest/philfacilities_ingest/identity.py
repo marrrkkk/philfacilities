@@ -8,6 +8,7 @@ callers.
 
 from __future__ import annotations
 
+import html
 import re
 from functools import lru_cache
 
@@ -100,6 +101,10 @@ def normalize_name(value: str | None) -> str:
 
     if not value:
         return ""
+    # Some exports double-encode ampersands as ``&amp;``. That is a transport
+    # artefact, not part of the facility name, so decode before folding. The
+    # raw source payload keeps the original bytes.
+    value = html.unescape(value)
     return " ".join(re.sub(r"[^a-z0-9]+", " ", value.casefold()).split())
 
 
@@ -114,7 +119,8 @@ def facility_name_key(value: str | None) -> str:
 
     if not value:
         return ""
-    tokens = normalize_name(value.casefold().replace("&", " and ")).split()
+    text = html.unescape(value).casefold().replace("&", " and ")
+    tokens = normalize_name(text).split()
     if tokens and tokens[0] == "the":
         tokens = tokens[1:]
     tokens = [_SAINT_TOKENS.get(token, token) for token in tokens]

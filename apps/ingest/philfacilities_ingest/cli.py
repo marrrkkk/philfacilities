@@ -7,6 +7,7 @@ import hashlib
 import json
 import uuid
 from datetime import UTC, date, datetime
+from functools import partial
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -1194,11 +1195,11 @@ def consolidate_facilities_command(
 ) -> None:
     """Aggregate every facility type from independent identity evidence.
 
-    Names are compared with saint and legal-form folding (``St.``/``Saint``,
-    optional ``Inc.``), but a name never decides identity by itself. A cluster
-    is merged only when name, city/barangay/address or coordinate evidence, and
-    official identifiers all agree, with no conflicting identifiers or places.
-    Incomplete clusters and weaker pairs stay as pending match candidates.
+    Names are compared with saint, legal-form and connector-order folding, but
+    a name never decides identity by itself. A clique is merged only when every
+    pair is eligible and at least one pair has a strong identity bridge: a
+    shared official identifier, the same barangay, an address match, or points
+    within 250 m. Cross-type and weaker pairs stay as pending match candidates.
 
     This handles all facility types. The DepEd prefixed-ID repair remains a
     separate deterministic step because it is an identifier rule, not a name
@@ -2097,10 +2098,28 @@ def match_candidates_merge(
     candidate_id: uuid.UUID,
     reviewer: Annotated[str, typer.Option(help="Reviewer name or role identifier.")],
     note: Annotated[str | None, typer.Option(help="Reason for the merge.")] = None,
+    allow_facility_type_mismatch: Annotated[
+        bool,
+        typer.Option(
+            "--allow-facility-type-mismatch",
+            help=(
+                "Explicitly merge a reviewed cross-type candidate. The surviving "
+                "facility keeps its own type."
+            ),
+        ),
+    ] = False,
 ) -> None:
     """Apply an accepted candidate: retire the source facility into the candidate facility."""
 
-    _review_candidate(merge_match_candidate, candidate_id, reviewer, note)
+    _review_candidate(
+        partial(
+            merge_match_candidate,
+            allow_facility_type_mismatch=allow_facility_type_mismatch,
+        ),
+        candidate_id,
+        reviewer,
+        note,
+    )
 
 
 @app.command("match-candidates-undo-merge")

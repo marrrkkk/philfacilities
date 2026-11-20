@@ -10,10 +10,11 @@ scores independent identity dimensions instead:
 * official identifiers already stored in school, health or utility profiles;
 * source authority and agency independence.
 
-Only a complete, mutually compatible cluster of strong pairs is merged
-automatically. Anything ambiguous becomes a pending candidate for review. The
-fusion module remains responsible for combining attributes and retaining every
-source claim on the surviving facility.
+Only a mutually compatible clique of strong pairs is merged automatically: every
+pair must be eligible, and at least one must share an official identifier or
+strong location evidence. Anything ambiguous becomes a pending candidate for
+review. The fusion module remains responsible for combining attributes and
+retaining every source claim on the surviving facility.
 """
 
 from __future__ import annotations
@@ -67,7 +68,7 @@ from .matching import (
 )
 
 GENERAL_MATCH_METHOD = "facility_identity_evidence_v1"
-ALGORITHM_VERSION = "1"
+ALGORITHM_VERSION = "2"
 AUTO_REVIEWER = "system:facility-identity-evidence"
 AUTO_MIN_NAME_SCORE = 0.9
 AUTO_MIN_LOCATION_SCORE = 0.9
@@ -78,6 +79,20 @@ SAME_AGENCY_POINT_DISTANCE_M = 50.0
 CITY_ONLY_LOCATION_SCORE = 0.6
 MAX_CLUSTER_SIZE = 8
 CONFLICTING_POINT_DISTANCE_M = 1_000.0
+# Small name groups are compared exhaustively. Bucketing is only needed to keep
+# prolific generic names (pharmacies, barangay halls) tractable.
+ALL_PAIRS_GROUP_MAX = 64
+# A ~1.1 km cell plus its neighbours keeps co-located rows comparable even when
+# two sources assign them to different cities or barangays.
+CELL_BUCKET_DEGREES = 0.01
+# Reordered connectors ("Hospital and Maternity" vs "Maternity Hospital") are
+# the same name. Dropping only connector words keeps service-unit words such as
+# "Birthing Facility" intact so those remain distinct names.
+NAME_VARIANT_CONNECTORS = frozenset({"and", "of", "the"})
+# Cross-type duplicates are only proposed as review candidates, never merged
+# automatically. The point threshold is deliberately tighter than the same-type
+# gate because the type evidence disagrees.
+CROSS_TYPE_MAX_DISTANCE_M = 50.0
 
 
 @dataclass
@@ -148,6 +163,7 @@ class _Pair:
     different_agency: bool
     auto_eligible: bool
     note: str
+    cross_type: bool = False
 
 
 _SAINT_ALIASES = {"sta": "santa", "sto": "santo", "st": "saint"}
@@ -788,6 +804,78 @@ def _location_evidence(
     return 0.0, "no_location_evidence", distance, shared_address, same_city, same_barangay
 
 
+_STREET_ADDRESS_MARKERS = frozenset(
+    {
+        "ave",
+        "avenue",
+        "blvd",
+        "boulevard",
+        "dr",
+        "drive",
+        "highway",
+        "hwy",
+        "lane",
+        "purok",
+        "rd",
+        "road",
+        "sitio",
+        "st",
+        "street",
+        "subd",
+        "subdivision",
+    }
+)
+
+_ADMIN_ADDRESS_WORDS = frozenset(
+    {
+        "barangay",
+        "bgy",
+        "brgy",
+        "capital",
+        "city",
+        "district",
+        "first",
+        "fourth",
+        "huc",
+        "municipality",
+        "ncr",
+        "not",
+        "pob",
+        "poblacion",
+        "province",
+        "region",
+        "second",
+        "sixth",
+        "third",
+        "zone",
+    }
+)
+
+
+def _street_address_tokens(
+    value: str | None,
+    administrative_names: set[str] | frozenset[str] | None = None,
+) -> set[str]:
+    """Return address tokens that can distinguish one street address from another.
+
+    City, barangay and region names are administrative context, not street
+    evidence. Numeric tokens are usually house or barangay numbers and cannot
+    distinguish two nearby descriptions of the same block.
+    """
+
+    return {
+        token
+        for token in address_tokens(value, administrative_names=administrative_names)
+        if not token.isdigit() and token not in _ADMIN_ADDRESS_WORDS
+    }
+
+
+def _has_street_marker(value: str | None) -> bool:
+    """Whether an address names a street-level location rather than a locality."""
+
+    return bool(set(normalize_name(value).split()) & _STREET_ADDRESS_MARKERS)
+
+
 def _conflicting_location(
     left: _Ref,
     right: _Ref,
@@ -795,6 +883,7 @@ def _conflicting_location(
     *,
     same_barangay: bool,
     name_score: float,
+    administrative_names: set[str] | frozenset[str] | None = None,
 ) -> bool:
     if distance is not None and distance > CONFLICTING_POINT_DISTANCE_M:
         return True
@@ -820,13 +909,39 @@ def _conflicting_location(
         ):
             return not _has_map_derived_precision(left, right)
         return True
-    left_tokens = address_tokens(left.location.address_text, administrative_names=None)
-    right_tokens = address_tokens(right.location.address_text, administrative_names=None)
+    left_tokens = _street_address_tokens(
+        left.location.address_text,
+        administrative_names=administrative_names,
+    )
+    right_tokens = _street_address_tokens(
+        right.location.address_text,
+        administrative_names=administrative_names,
+    )
     # Distinct street-level addresses are evidence of different branches. Only
-    # treat them as a conflict when both sides actually carry a street token and
-    # no raw address token matches at all.
-    raw_shared = len(left_tokens & right_tokens)
-    return bool(left_tokens and right_tokens and raw_shared == 0)
+    # treat them as a conflict when both sides actually carry street evidence
+    # and no address token matches at all. A locality-only description (for
+    # example "Lucena City, Quezon") is less precise than a street address, not
+    # a competing one.
+    if not (left_tokens and right_tokens and not (left_tokens & right_tokens)):
+        return False
+    if not (
+        _has_street_marker(left.location.address_text)
+        and _has_street_marker(right.location.address_text)
+    ):
+        return False
+    # A specific matching name at the same point outranks a free-text address
+    # difference. One source often records a street while the other records an
+    # administrative or compound description of the same site.
+    same_specific_name_at_same_point = (
+        distance is not None
+        and distance <= 50
+        and name_score >= 0.9
+        and left.specific
+        and right.specific
+        and not left.generic
+        and not right.generic
+    )
+    return not same_specific_name_at_same_point
 
 
 # Precision classes for the barangay-boundary exception. A map-derived point
@@ -848,15 +963,22 @@ def _has_map_derived_precision(left: _Ref, right: _Ref) -> bool:
     return other.location.precision in _LOCATION_PRECISIONS
 
 
-def _evaluate_pair(left: _Ref, right: _Ref, admin: _AdminIndex) -> _Pair | None:
-    if left.facility.facility_type != right.facility.facility_type:
+def _evaluate_pair(
+    left: _Ref,
+    right: _Ref,
+    admin: _AdminIndex,
+    *,
+    allow_type_mismatch: bool = False,
+) -> _Pair | None:
+    same_type = left.facility.facility_type == right.facility.facility_type
+    if not same_type and not allow_type_mismatch:
         return None
-    if not _subtypes_compatible(left.facility, right.facility):
+    if same_type and not _subtypes_compatible(left.facility, right.facility):
         return None
     name_score, name_reason = name_similarity(
         left.facility.display_name,
         right.facility.display_name,
-        school=left.facility.facility_type == "school",
+        school="school" in (left.facility.facility_type, right.facility.facility_type),
     )
     if name_score < 0.9:
         return None
@@ -874,10 +996,18 @@ def _evaluate_pair(left: _Ref, right: _Ref, admin: _AdminIndex) -> _Pair | None:
         distance,
         same_barangay=same_barangay,
         name_score=name_score,
+        administrative_names=admin.administrative_tokens,
     )
     conflicting_ids, shared_ids = _id_evidence(left, right)
     different_agency = _different_agencies(left, right)
-    if not different_agency:
+    cross_type = not same_type
+    if cross_type:
+        # A type disagreement is evidence in its own right. Co-location and a
+        # matching specific name are enough to ask a reviewer, never enough to
+        # merge automatically.
+        auto = False
+        note = "facility type differs; review required"
+    elif not different_agency:
         auto = _same_agency_duplicate(
             left,
             right,
@@ -923,6 +1053,7 @@ def _evaluate_pair(left: _Ref, right: _Ref, admin: _AdminIndex) -> _Pair | None:
         different_agency=different_agency,
         auto_eligible=auto,
         note=note,
+        cross_type=cross_type,
     )
 
 
@@ -941,13 +1072,20 @@ def _confidence(pair: _Pair) -> Decimal:
 
 def _candidate_evidence(pair: _Pair, target: _Ref) -> dict[str, Any]:
     source = pair.left if target is pair.right else pair.right
-    return {
-        "reason": (
+    reason = (
+        "The records share a specific name and point but disagree on facility type; "
+        "a reviewer must decide whether they describe the same place."
+        if pair.cross_type
+        else (
             "Independent name, location and identifier evidence agree; "
             "no conflicting identifiers or places were found."
-        ),
+        )
+    )
+    return {
+        "reason": reason,
         "algorithm": GENERAL_MATCH_METHOD,
         "algorithm_version": ALGORITHM_VERSION,
+        "cross_type": pair.cross_type,
         "name_score": pair.name_score,
         "name_reason": pair.name_reason,
         "normalized_name": source.name_key,
@@ -970,6 +1108,8 @@ def _candidate_evidence(pair: _Pair, target: _Ref) -> dict[str, Any]:
         "candidate_agency_codes": sorted(target.agency_codes),
         "source_datasets": sorted(source.dataset_slugs),
         "candidate_datasets": sorted(target.dataset_slugs),
+        "source_facility_type": source.facility.facility_type,
+        "candidate_facility_type": target.facility.facility_type,
         "facility_type": target.facility.facility_type,
         "note": pair.note,
         "source_facility_snapshot": _facility_snapshot(source.facility),
@@ -1062,7 +1202,12 @@ def _record_candidate(
     if chosen is None:
         return None
     record_id, agency_code, _dataset_slug, _authority_level = chosen
-    key = candidate_key(record_id, target.id, method=GENERAL_MATCH_METHOD)
+    key = candidate_key(
+        record_id,
+        target.id,
+        method=GENERAL_MATCH_METHOD,
+        algorithm_version=ALGORITHM_VERSION,
+    )
     if (
         session.scalars(select(MatchCandidate).where(MatchCandidate.candidate_key == key)).first()
         is not None
@@ -1093,50 +1238,153 @@ def _record_candidate(
     return candidate
 
 
-def _bucket_key(ref: _Ref) -> tuple[str, Any]:
-    """Group candidates by city, or by a coarse point cell when city is unknown.
+def _name_variant_key(name_key: str) -> str:
+    """A name key that ignores connector-word order but keeps service words."""
+
+    tokens = sorted(token for token in name_key.split() if token not in NAME_VARIANT_CONNECTORS)
+    return " ".join(tokens) if len(tokens) >= 2 else ""
+
+
+def _bucket_keys(ref: _Ref) -> set[tuple[str, Any]]:
+    """Return comparison buckets for a facility.
 
     Names repeat across the country (``Mercury Drug`` has over a thousand
-    rows), so comparing every row with every other row in a name group is both
-    slow and meaningless. City is the smallest administrative unit that is
-    reliably present; rows without one can only reach strong location evidence
-    through coordinates, so a ~1 km cell keeps those comparisons local.
+    rows), so large name groups are bucketed instead of compared exhaustively.
+    A facility is placed in both its city bucket and the point cells around its
+    coordinate. The coordinate bucket is essential: two sources can assign the
+    same site to different cities or barangays, and a city-only bucket would
+    never compare them even when their points are metres apart.
     """
 
+    keys: set[tuple[str, Any]] = set()
     if ref.city_code:
-        return ("city", ref.city_code)
+        keys.add(("city", ref.city_code))
     latitude = ref.location.latitude
     longitude = ref.location.longitude
-    if latitude is None or longitude is None:
-        return ("unlocated", None)
+    if latitude is not None and longitude is not None:
+        row = round(float(latitude) / CELL_BUCKET_DEGREES)
+        column = round(float(longitude) / CELL_BUCKET_DEGREES)
+        for row_offset in (-1, 0, 1):
+            for column_offset in (-1, 0, 1):
+                keys.add(
+                    (
+                        "cell",
+                        (row + row_offset, column + column_offset),
+                    )
+                )
+    if not keys:
+        keys.add(("unlocated", None))
+    return keys
+
+
+def _auto_pair(pair: _Pair) -> bool:
+    """Whether a pair is eligible for automatic consolidation at all."""
+
+    return pair.auto_eligible and not pair.cross_type
+
+
+def _strong_pair(pair: _Pair) -> bool:
+    """Whether a pair has more than same-city name agreement.
+
+    A shared official identifier, the same barangay, an address match, or a
+    point within 250 m. Exact names in the same city alone are not enough,
+    because chains and branches legitimately share both.
+    """
+
+    return pair.shared_ids or pair.location_score >= AUTO_MIN_LOCATION_SCORE
+
+
+def _pair_score(pair: _Pair) -> float:
+    return pair.name_score + pair.location_score
+
+
+def _ref_rank(ref: _Ref) -> tuple:
+    """Order surviving targets: official, most identifiers, most links, oldest."""
+
     return (
-        "cell",
-        (round(float(latitude) / 0.01), round(float(longitude) / 0.01)),
+        not ref.official,
+        -(len(ref.deped_ids) + len(ref.doh_ids) + len(ref.doe_ids)),
+        -len(ref.links),
+        ref.facility.created_at,
+        str(ref.facility.id),
     )
 
 
-def _complete_cluster(pairs: list[_Pair]) -> bool:
-    refs = {ref.id: ref for pair in pairs for ref in (pair.left, pair.right)}
-    expected = len(refs) * (len(refs) - 1) // 2
-    if len(pairs) != expected:
-        return False
-    if len(refs) > MAX_CLUSTER_SIZE:
-        return False
-    # A cluster needs at least one strong bridge: a shared official identifier,
-    # the same barangay, an address match, or coordinates within 250 m. Exact
-    # names in the same city alone are not enough, because chains and branches
-    # legitimately share both.
-    if not any(pair.shared_ids or pair.location_score >= AUTO_MIN_LOCATION_SCORE for pair in pairs):
-        return False
-    seen: set[tuple[uuid.UUID, uuid.UUID]] = set()
+def _cliques(pairs: list[_Pair]) -> list[list[_Ref]]:
+    """Return disjoint cliques that each contain at least one strong pair.
+
+    A duplicate cluster is merged only when every pair inside it is eligible and
+    the cluster contains a strong identity bridge. Requiring a complete
+    connection component instead would let one conflicting record (for example
+    a co-located laboratory with a different official code) block the confirmed
+    duplicates around it.
+
+    Each clique is grown from a strong pair so a large weak city-only group
+    cannot consume the strong evidence and prevent the supported merge.
+    """
+
+    adjacency: dict[uuid.UUID, set[uuid.UUID]] = defaultdict(set)
+    edge_by_key: dict[tuple[uuid.UUID, uuid.UUID], _Pair] = {}
+    refs: dict[uuid.UUID, _Ref] = {}
+    strong_edges: list[_Pair] = []
     for pair in pairs:
-        key = _pair_key(pair.left, pair.right)
-        if key in seen:
-            return False
-        seen.add(key)
-        if not pair.auto_eligible:
-            return False
-    return True
+        if not _auto_pair(pair):
+            continue
+        adjacency[pair.left.id].add(pair.right.id)
+        adjacency[pair.right.id].add(pair.left.id)
+        edge_by_key[_pair_key(pair.left, pair.right)] = pair
+        refs[pair.left.id] = pair.left
+        refs[pair.right.id] = pair.right
+        if _strong_pair(pair):
+            strong_edges.append(pair)
+
+    remaining = set(adjacency)
+    cliques: list[list[_Ref]] = []
+    while remaining:
+        best: list[uuid.UUID] = []
+        best_score: tuple[float, float] | None = None
+        for edge in sorted(
+            (
+                edge
+                for edge in strong_edges
+                if edge.left.id in remaining and edge.right.id in remaining
+            ),
+            key=_pair_score,
+            reverse=True,
+        ):
+            clique = [edge.left.id, edge.right.id]
+            candidates = set.intersection(*(adjacency[ref_id] for ref_id in clique))
+            candidates &= remaining
+            while candidates and len(clique) < MAX_CLUSTER_SIZE:
+                chosen = min(
+                    candidates,
+                    key=lambda ref_id: (
+                        -min(
+                            _pair_score(edge_by_key[_pair_key(refs[ref_id], refs[other])])
+                            for other in clique
+                        ),
+                        -len(adjacency[ref_id] & candidates),
+                        _ref_rank(refs[ref_id]),
+                    ),
+                )
+                clique.append(chosen)
+                candidates &= adjacency[chosen]
+            score = (
+                float(len(clique)),
+                sum(
+                    _pair_score(edge_by_key[_pair_key(refs[ref_id], refs[other])])
+                    for index, ref_id in enumerate(clique)
+                    for other in clique[index + 1 :]
+                ),
+            )
+            if best_score is None or score > best_score:
+                best = clique
+                best_score = score
+        if len(best) < 2:
+            break
+        cliques.append([refs[ref_id] for ref_id in best])
+        remaining -= set(best)
+    return cliques
 
 
 _PRECISION_RANK = {
@@ -1261,21 +1509,42 @@ def consolidate_facilities(
 
     exact_groups: dict[tuple[str, str], list[_Ref]] = defaultdict(list)
     token_groups: dict[tuple[str, str], list[_Ref]] = defaultdict(list)
+    variant_groups: dict[tuple[str, str], list[_Ref]] = defaultdict(list)
+    all_exact_groups: dict[str, list[_Ref]] = defaultdict(list)
+    all_token_groups: dict[str, list[_Ref]] = defaultdict(list)
     for ref in refs.values():
         if not ref.name_key:
             continue
         exact_groups[(ref.facility.facility_type, ref.name_key)].append(ref)
         token_groups[(ref.facility.facility_type, ref.token_key)].append(ref)
+        if ref.specific and not ref.generic:
+            variant_key = _name_variant_key(ref.name_key)
+            if variant_key:
+                variant_groups[(ref.facility.facility_type, variant_key)].append(ref)
+            all_exact_groups[ref.name_key].append(ref)
+            all_token_groups[ref.token_key].append(ref)
 
     pairs: dict[tuple[uuid.UUID, uuid.UUID], _Pair] = {}
     groups_considered = 0
-    for group in list(exact_groups.values()) + list(token_groups.values()):
+
+    def evaluate_group(
+        group: list[_Ref],
+        *,
+        allow_type_mismatch: bool,
+        cross_type_only: bool,
+    ) -> None:
+        nonlocal groups_considered
         if len(group) < 2:
-            continue
-        buckets: dict[tuple[str, Any], list[_Ref]] = defaultdict(list)
-        for ref in group:
-            buckets[_bucket_key(ref)].append(ref)
-        for bucket in buckets.values():
+            return
+        if len(group) <= ALL_PAIRS_GROUP_MAX:
+            buckets = [group]
+        else:
+            bucket_map: dict[tuple[str, Any], list[_Ref]] = defaultdict(list)
+            for ref in group:
+                for bucket_key in _bucket_keys(ref):
+                    bucket_map[bucket_key].append(ref)
+            buckets = [bucket for bucket in bucket_map.values() if len(bucket) >= 2]
+        for bucket in buckets:
             if len(bucket) < 2:
                 continue
             groups_considered += 1
@@ -1285,9 +1554,26 @@ def consolidate_facilities(
                     key = _pair_key(left, right)
                     if key in pairs:
                         continue
-                    pair = _evaluate_pair(left, right, admin)
-                    if pair is not None:
-                        pairs[key] = pair
+                    pair = _evaluate_pair(
+                        left,
+                        right,
+                        admin,
+                        allow_type_mismatch=allow_type_mismatch,
+                    )
+                    if pair is None:
+                        continue
+                    if cross_type_only and not pair.cross_type:
+                        continue
+                    pairs[key] = pair
+
+    for group in (
+        list(exact_groups.values()) + list(token_groups.values()) + list(variant_groups.values())
+    ):
+        evaluate_group(group, allow_type_mismatch=False, cross_type_only=False)
+    for group in list(all_exact_groups.values()) + list(all_token_groups.values()):
+        if len({ref.facility.facility_type for ref in group}) < 2:
+            continue
+        evaluate_group(group, allow_type_mismatch=True, cross_type_only=True)
 
     parent: dict[uuid.UUID, uuid.UUID] = {ref_id: ref_id for ref_id in refs}
 
@@ -1303,11 +1589,12 @@ def consolidate_facilities(
             parent[right_root] = left_root
 
     auto_pairs = [pair for pair in pairs.values() if pair.auto_eligible]
-    for pair in auto_pairs:
+    mergeable_pairs = [pair for pair in auto_pairs if _auto_pair(pair)]
+    for pair in mergeable_pairs:
         union(pair.left.id, pair.right.id)
 
     components: dict[uuid.UUID, list[_Pair]] = defaultdict(list)
-    for pair in auto_pairs:
+    for pair in mergeable_pairs:
         components[find(pair.left.id)].append(pair)
 
     stats: dict[str, Any] = {
@@ -1315,6 +1602,7 @@ def consolidate_facilities(
         "groups_considered": groups_considered,
         "pairs_considered": len(pairs),
         "auto_pairs": len(auto_pairs),
+        "mergeable_pairs": len(mergeable_pairs),
         "components_considered": len(components),
         "clusters_accepted": 0,
         "clusters_rejected": 0,
@@ -1334,128 +1622,150 @@ def consolidate_facilities(
     merged_facilities: set[uuid.UUID] = set()
     merges_since_commit = 0
     for component_pairs in components.values():
-        if not _complete_cluster(component_pairs):
+        component_cliques = _cliques(component_pairs)
+        if not component_cliques:
             stats["clusters_rejected"] += 1
             stats["skipped_cluster_incomplete"] += 1
             continue
-        component_refs = {
-            ref.id: ref for pair in component_pairs for ref in (pair.left, pair.right)
-        }
-        if any(ref_id in merged_facilities for ref_id in component_refs):
-            continue
-        if not dry_run and stats["merged"] >= limit:
-            # The batch is full; report the remaining clusters instead of
-            # silently counting them as accepted.
-            stats["skipped_limit"] += 1
-            continue
-        target = _choose_target(list(component_refs.values()))
-        stats["clusters_accepted"] += 1
-        merged_before = stats["merged"]
-        for source in component_refs.values():
-            if source.id == target.id:
+        edge_by_key = {_pair_key(pair.left, pair.right): pair for pair in component_pairs}
+        for clique_refs in component_cliques:
+            if any(ref.id in merged_facilities for ref in clique_refs):
                 continue
-            pair = next(
-                pair
-                for pair in component_pairs
-                if source.id in (pair.left.id, pair.right.id)
-                and target.id in (pair.left.id, pair.right.id)
-            )
-            existing = _existing_candidate(session, source.id, target.id)
-            if existing is not None and existing.match_status in {"merged", "rejected"}:
-                stats["skipped_existing"] += 1
+            if not dry_run and stats["merged"] >= limit:
+                # The batch is full; report the remaining clusters instead of
+                # silently counting them as accepted.
+                stats["skipped_limit"] += 1
                 continue
-            if len(stats["examples"]) < example_limit:
-                stats["examples"].append(
-                    {
-                        "source_facility_id": str(source.id),
-                        "target_facility_id": str(target.id),
-                        "source_name": source.facility.display_name,
-                        "target_name": target.facility.display_name,
-                        "facility_type": source.facility.facility_type,
-                        "source_city": source.city_name or source.city_code,
-                        "target_city": target.city_name or target.city_code,
-                        "source_barangay": source.barangay_name or source.barangay_code,
-                        "target_barangay": target.barangay_name or target.barangay_code,
-                        "name_score": pair.name_score,
-                        "name_reason": pair.name_reason,
-                        "location_score": pair.location_score,
-                        "location_reason": pair.location_reason,
-                        "distance_m": pair.distance_m,
-                        "shared_address_tokens": pair.shared_address_tokens,
-                        "shared_official_ids": pair.shared_ids,
-                        "same_city": pair.same_city,
-                        "same_barangay": pair.same_barangay,
-                        "confidence": str(_confidence(pair)),
-                    }
-                )
-            if dry_run:
-                stats["would_merge"] += 1
-                continue
-            if stats["merged"] >= limit:
-                continue
-            if existing is not None:
-                if not _accept_existing_candidate(session, existing, pair, target):
+            target = _choose_target(clique_refs)
+            stats["clusters_accepted"] += 1
+            merged_before = stats["merged"]
+            for source in clique_refs:
+                if source.id == target.id:
+                    continue
+                pair = edge_by_key.get(_pair_key(source, target))
+                if pair is None:
+                    continue
+                existing = _existing_candidate(session, source.id, target.id)
+                if existing is not None and existing.match_status in {"merged", "rejected"}:
                     stats["skipped_existing"] += 1
                     continue
-                candidate = existing
-            else:
-                candidate = _record_candidate(
-                    session,
-                    source=source,
-                    target=target,
-                    pair=pair,
-                    accepted=True,
-                    reviewer=AUTO_REVIEWER,
-                )
-                if candidate is None:
-                    stats["skipped_existing"] += 1
+                if len(stats["examples"]) < example_limit:
+                    stats["examples"].append(
+                        {
+                            "source_facility_id": str(source.id),
+                            "target_facility_id": str(target.id),
+                            "source_name": source.facility.display_name,
+                            "target_name": target.facility.display_name,
+                            "facility_type": source.facility.facility_type,
+                            "source_city": source.city_name or source.city_code,
+                            "target_city": target.city_name or target.city_code,
+                            "source_barangay": source.barangay_name or source.barangay_code,
+                            "target_barangay": target.barangay_name or target.barangay_code,
+                            "name_score": pair.name_score,
+                            "name_reason": pair.name_reason,
+                            "location_score": pair.location_score,
+                            "location_reason": pair.location_reason,
+                            "distance_m": pair.distance_m,
+                            "shared_address_tokens": pair.shared_address_tokens,
+                            "shared_official_ids": pair.shared_ids,
+                            "same_city": pair.same_city,
+                            "same_barangay": pair.same_barangay,
+                            "confidence": str(_confidence(pair)),
+                        }
+                    )
+                if dry_run:
+                    stats["would_merge"] += 1
                     continue
-            try:
-                merge_match_candidate(
-                    session,
-                    candidate.id,
-                    reviewer=AUTO_REVIEWER,
-                    note=(
-                        "Independent name, location and identifier evidence; "
-                        "complete cluster with no conflicting places or IDs."
-                    ),
-                    invalidate_fusions=not defer_fusion,
-                )
-                promotion = promote_best_location(session, target.id, reviewer=AUTO_REVIEWER)
-                if promotion:
-                    resolution = dict(candidate.resolution or {})
-                    resolution["location_promotion"] = promotion
-                    candidate.resolution = resolution
-                stats["merged"] += 1
-                merged_facilities.add(source.id)
-                if merged_facility_ids is not None:
-                    merged_facility_ids.add(source.id)
-                if affected_facility_ids is not None:
-                    affected_facility_ids.add(target.id)
-            except MatchingError as exc:
-                stats["skipped_error"] += 1
-                if len(stats["errors"]) < 20:
-                    stats["errors"].append(f"{candidate.id}: {exc}")
-        merged_facilities.add(target.id)
-        merges_since_commit += stats["merged"] - merged_before
-        if (
-            not dry_run
-            and commit_every is not None
-            and commit_every > 0
-            and merges_since_commit >= commit_every
-        ):
-            session.commit()
-            merges_since_commit = 0
+                if stats["merged"] >= limit:
+                    continue
+                if existing is not None:
+                    if not _accept_existing_candidate(session, existing, pair, target):
+                        stats["skipped_existing"] += 1
+                        continue
+                    candidate = existing
+                else:
+                    candidate = _record_candidate(
+                        session,
+                        source=source,
+                        target=target,
+                        pair=pair,
+                        accepted=True,
+                        reviewer=AUTO_REVIEWER,
+                    )
+                    if candidate is None:
+                        stats["skipped_existing"] += 1
+                        continue
+                try:
+                    merge_match_candidate(
+                        session,
+                        candidate.id,
+                        reviewer=AUTO_REVIEWER,
+                        note=(
+                            "Independent name, location and identifier evidence; "
+                            "every pair in the merged cluster agrees and no places "
+                            "or official identifiers conflict."
+                        ),
+                        invalidate_fusions=not defer_fusion,
+                    )
+                    promotion = promote_best_location(session, target.id, reviewer=AUTO_REVIEWER)
+                    if promotion:
+                        resolution = dict(candidate.resolution or {})
+                        resolution["location_promotion"] = promotion
+                        candidate.resolution = resolution
+                    stats["merged"] += 1
+                    merged_facilities.add(source.id)
+                    if merged_facility_ids is not None:
+                        merged_facility_ids.add(source.id)
+                    if affected_facility_ids is not None:
+                        affected_facility_ids.add(target.id)
+                except MatchingError as exc:
+                    stats["skipped_error"] += 1
+                    if len(stats["errors"]) < 20:
+                        stats["errors"].append(f"{candidate.id}: {exc}")
+            merged_facilities.add(target.id)
+            merges_since_commit += stats["merged"] - merged_before
+            if (
+                not dry_run
+                and commit_every is not None
+                and commit_every > 0
+                and merges_since_commit >= commit_every
+            ):
+                session.commit()
+                merges_since_commit = 0
 
     if not dry_run and stats["pending_created"] < pending_limit:
         for pair in pairs.values():
             if pair.auto_eligible:
                 continue
-            if pair.name_score < 0.9 or not pair.same_city:
-                continue
-            if pair.conflicting_ids or pair.conflicting_location:
-                continue
-            source, target = pair.left, pair.right
+            if pair.cross_type:
+                # Cross-type evidence is review-only. Require a specific name,
+                # a co-located point, and one official and one non-official
+                # source before asking a reviewer.
+                if pair.name_score < 0.9:
+                    continue
+                if pair.distance_m is None or pair.distance_m > CROSS_TYPE_MAX_DISTANCE_M:
+                    continue
+                if pair.conflicting_ids or pair.conflicting_location:
+                    continue
+                if (
+                    not pair.left.specific
+                    or not pair.right.specific
+                    or pair.left.generic
+                    or pair.right.generic
+                ):
+                    continue
+                if pair.left.official == pair.right.official:
+                    continue
+                if pair.left.official:
+                    source, target = pair.right, pair.left
+                else:
+                    source, target = pair.left, pair.right
+            else:
+                if pair.name_score < 0.9 or not pair.same_city:
+                    continue
+                if pair.conflicting_ids or pair.conflicting_location:
+                    continue
+                source, target = pair.left, pair.right
             if source.id in merged_facilities or target.id in merged_facilities:
                 continue
             if (
@@ -1463,7 +1773,10 @@ def consolidate_facilities(
                 or session.get(Facility, target.id).record_status == "merged"
             ):
                 continue
-            if _existing_candidate(session, source.id, target.id) is not None:
+            if (
+                _existing_candidate(session, source.id, target.id) is not None
+                or _existing_candidate(session, target.id, source.id) is not None
+            ):
                 continue
             if stats["pending_created"] >= pending_limit:
                 break

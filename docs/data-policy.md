@@ -152,6 +152,7 @@ For every dataset and release, record at least:
 - One public facility record represents one real-world facility. Source rows remain attached as evidence; they are not deleted when records are aggregated.
 - Records are aggregated only on independent evidence: a shared official identifier, or a precise location bridge plus a consistent name and place. A similar name alone never merges two facilities, because two places can share a name.
 - Conflicting official identifiers or contradictory places block an automatic merge; the pair stays as a pending candidate for review.
+- A type mismatch also blocks an automatic merge. A co-located same-name health/social-welfare pair becomes a review-only candidate; an operator-confirmed merge requires the explicit `--allow-facility-type-mismatch` flag, and the survivor keeps its own facility type.
 - A retired duplicate is an internal `merged` tombstone, not a public record. Its links, locations, profiles, observations, assertions, and history move to the survivor, and change events record the merge.
 - The surviving record is chosen deterministically: official source first, then the most official identifiers, then the most source links, then the oldest record.
 - The survivor keeps the most precise documented location. The promoted point keeps its recorded precision and method; the previous current location stays as history rather than being deleted.

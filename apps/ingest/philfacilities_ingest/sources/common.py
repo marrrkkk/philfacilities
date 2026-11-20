@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import html
 import io
 import re
 from datetime import date, datetime
@@ -35,7 +36,10 @@ def clean_text(value: Any) -> str | None:
         return None
     if isinstance(value, float) and value.is_integer():
         value = int(value)
-    text = str(value).replace("\u00a0", " ").strip()
+    # Spreadsheet and HTML exports frequently double-encode ``&`` as
+    # ``&amp;``. Decode it for the canonical candidate while the preserved raw
+    # payload keeps the original source bytes.
+    text = html.unescape(str(value).replace("\u00a0", " ")).strip()
     return text or None
 
 

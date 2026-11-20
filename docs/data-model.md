@@ -144,7 +144,7 @@ Derived reference geometry from one preserved Geofabrik PBF snapshot. `osm_type`
 
 ### `quality.match_candidates`
 
-Deterministic identity proposals. Key fields: `candidate_key` (SHA-256 of algorithm version + source record + proposed facility), `source_record_id`, `source_facility_id`, `candidate_facility_id`, agency codes, `match_method`, `algorithm_version`, `match_confidence`, `match_status` (`pending`, `accepted`, `rejected`, `merged`), `evidence`, reviewer metadata, and `resolution` (merge audit). Reviewer names and notes are never public.
+Deterministic identity proposals. Key fields: `candidate_key` (SHA-256 of match method + algorithm version + source record + proposed facility), `source_record_id`, `source_facility_id`, `candidate_facility_id`, agency codes, `match_method`, `algorithm_version`, `match_confidence`, `match_status` (`pending`, `accepted`, `rejected`, `merged`), `evidence`, reviewer metadata, and `resolution` (merge audit). Evidence with `cross_type: true` marks a review-only facility-type disagreement; it is never merged automatically. Reviewer names and notes are never public.
 
 ### `quality.publication_gates`
 

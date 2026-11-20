@@ -589,3 +589,44 @@ def test_undo_refuses_when_moved_evidence_has_changed(db_session) -> None:
             undo_match_merge(db_session, candidate.id, reviewer="reviewer-2")
     finally:
         db_session.rollback()
+
+
+def test_cross_type_merge_requires_explicit_override(db_session) -> None:
+    from philfacilities_ingest.matching import (
+        MatchingError,
+        accept_match_candidate,
+        merge_match_candidate,
+    )
+
+    try:
+        data = _fixture(db_session)
+        source = data["source"]
+        target = data["target"]
+        candidate = data["candidate"]
+
+        # A reviewed cross-type candidate: the source is a co-located
+        # social-welfare record, while the target is the official health facility.
+        source.facility_type = "social_welfare_facility"
+        source.facility_subtype = "SHELTER"
+        db_session.flush()
+        accept_match_candidate(db_session, candidate.id, reviewer="reviewer-1")
+
+        with pytest.raises(MatchingError, match="incompatible types"):
+            merge_match_candidate(db_session, candidate.id, reviewer="reviewer-1")
+
+        merge_match_candidate(
+            db_session,
+            candidate.id,
+            reviewer="reviewer-1",
+            note="operator confirmed the co-located records describe one site",
+            allow_facility_type_mismatch=True,
+        )
+        db_session.flush()
+
+        assert candidate.match_status == "merged"
+        assert source.record_status == "merged"
+        assert source.publication_status == "internal"
+        assert target.record_status == "active"
+        assert target.facility_type == "health"
+    finally:
+        db_session.rollback()

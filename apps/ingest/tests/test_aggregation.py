@@ -359,6 +359,140 @@ def test_health_facility_sources_merge_on_barangay_and_promote_the_point(db_sess
         db_session.rollback()
 
 
+def test_same_school_in_different_assigned_cities_merges_on_close_points(db_session) -> None:
+    from philfacilities_ingest.aggregation import consolidate_facilities
+
+    try:
+        _geography(db_session)
+        osm, _ = _source_facility(
+            db_session,
+            name="Camantero Elementary School",
+            agency_code="osm",
+            authority_level="community",
+            address="Silay",
+            latitude=10.730906,
+            longitude=123.086718,
+            psgc_code="1804528000",
+        )
+        deped, _ = _source_facility(
+            db_session,
+            name="Camantero Elementary School",
+            agency_code="deped",
+            authority_level="official",
+            address="HDA CAMANTERO 1",
+            latitude=10.730879,
+            longitude=123.086797,
+            psgc_code="1804526000",
+            deped_school_id="117812",
+        )
+        stats = consolidate_facilities(db_session, dry_run=False)
+        db_session.flush()
+
+        assert stats["clusters_accepted"] == 1
+        assert stats["merged"] == 1
+        assert deped.record_status == "active_in_registry"
+        assert osm.record_status == "merged"
+    finally:
+        db_session.rollback()
+
+
+def test_hospital_name_with_reordered_connector_merges(db_session) -> None:
+    from philfacilities_ingest.aggregation import consolidate_facilities
+
+    try:
+        _geography(db_session)
+        osm, _ = _source_facility(
+            db_session,
+            name="Perpetual Succor Maternity Hospital",
+            agency_code="osm",
+            authority_level="community",
+            facility_type="health_facility",
+            subtype="HOSPITAL",
+            address="Florentino Cayco Street",
+            latitude=14.608100,
+            longitude=120.992330,
+            psgc_code="1380606000",
+        )
+        doh, _ = _source_facility(
+            db_session,
+            name="PERPETUAL SUCCOR HOSPITAL AND MATERNITY INC.",
+            agency_code="doh",
+            authority_level="official",
+            facility_type="health_facility",
+            subtype="HOSPITAL",
+            address=(
+                "BARANGAY 457, CITY OF MANILA, NCR, FIRST DISTRICT "
+                "(Not a Province), NATIONAL CAPITAL REGION (NCR)"
+            ),
+            latitude=14.608177,
+            longitude=120.992337,
+            psgc_code="1380606063",
+        )
+        stats = consolidate_facilities(db_session, dry_run=False)
+        db_session.flush()
+
+        assert stats["clusters_accepted"] == 1
+        assert stats["merged"] == 1
+        assert doh.record_status == "active_in_registry"
+        assert osm.record_status == "merged"
+    finally:
+        db_session.rollback()
+
+
+def test_cross_type_co_located_match_creates_pending_not_merge(db_session) -> None:
+    from philfacilities_ingest.aggregation import consolidate_facilities
+
+    try:
+        _geography(db_session)
+        hospital, _ = _source_facility(
+            db_session,
+            name="Quezon Medical Center",
+            agency_code="doh",
+            authority_level="official",
+            facility_type="health_facility",
+            subtype="HOSPITAL",
+            address="Brgy. Gulang-gulang, Lucena City",
+            latitude=13.961715,
+            longitude=121.612162,
+            psgc_code="0431200017",
+        )
+        shelter, _ = _source_facility(
+            db_session,
+            name="Quezon Medical Center",
+            agency_code="osm",
+            authority_level="community",
+            facility_type="social_welfare_facility",
+            subtype="SHELTER",
+            address="Lucena City",
+            latitude=13.962057,
+            longitude=121.612214,
+            psgc_code="0431200017",
+        )
+        stats = consolidate_facilities(db_session, dry_run=False)
+        db_session.flush()
+
+        assert stats["would_merge"] == 0
+        assert stats["merged"] == 0
+        assert stats["clusters_accepted"] == 0
+        assert stats["pending_created"] == 1
+        assert hospital.record_status == "active_in_registry"
+        assert shelter.record_status == "active_in_registry"
+
+        candidate = db_session.scalars(
+            select(MatchCandidate).where(
+                MatchCandidate.match_method == "facility_identity_evidence_v1",
+            )
+        ).one()
+        assert candidate.match_status == "pending"
+        assert candidate.source_facility_id == shelter.id
+        assert candidate.candidate_facility_id == hospital.id
+        assert candidate.evidence["cross_type"] is True
+        assert candidate.evidence["source_facility_type"] == "social_welfare_facility"
+        assert candidate.evidence["candidate_facility_type"] == "health_facility"
+    finally:
+        db_session.rollback()
+
+
 def test_same_name_different_branches_are_not_auto_merged(db_session) -> None:
     from philfacilities_ingest.aggregation import consolidate_facilities
 

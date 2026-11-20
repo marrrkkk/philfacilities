@@ -10,11 +10,18 @@ from philfacilities_ingest.aggregation import (
 )
 
 
-def _ref(address: str, *, agencies: set[str] | None = None, specific: bool = True):
+def _ref(
+    address: str,
+    *,
+    agencies: set[str] | None = None,
+    specific: bool = True,
+    barangay_code: str | None = None,
+):
     return SimpleNamespace(
         agency_codes=agencies or {"osm"},
         specific=specific,
         generic=not specific,
+        barangay_code=barangay_code,
         location=SimpleNamespace(address_text=address),
     )
 
@@ -85,13 +92,21 @@ def _placed(
     )
 
 
-def _conflicts(left, right, distance=2.0, *, name_score=1.0) -> bool:
+def _conflicts(
+    left,
+    right,
+    distance=2.0,
+    *,
+    name_score=1.0,
+    administrative_names: set[str] | None = None,
+) -> bool:
     return _conflicting_location(
         left,
         right,
         distance,
         same_barangay=False,
         name_score=name_score,
+        administrative_names=administrative_names,
     )
 
 
@@ -138,3 +153,58 @@ def test_shared_barangay_keeps_outranking_a_map_address() -> None:
         same_barangay=True,
         name_score=1.0,
     )
+
+
+def test_street_address_against_locality_text_is_not_a_conflict() -> None:
+    # One source names the street while the other records only an
+    # administrative description of the same site. The locality is less
+    # precise, not a competing address.
+    osm = _ref("Florentino Cayco Street")
+    official = _ref(
+        "BARANGAY 457, CITY OF MANILA, NCR, FIRST DISTRICT "
+        "(Not a Province), NATIONAL CAPITAL REGION (NCR)"
+    )
+    assert not _conflicts(osm, official, distance=8.0)
+    assert not _conflicts(
+        _ref("Diversion Road, Brgy. Gulang-gulang, Lucena City"),
+        _ref("Lucena City, Quezon"),
+    )
+
+
+def test_two_distinct_street_addresses_still_conflict() -> None:
+    assert _conflicts(
+        _ref("123 Rizal Street, Lucena City"),
+        _ref("456 Mabini Street, Lucena City"),
+        distance=120.0,
+        administrative_names={"lucena", "city"},
+    )
+
+
+def test_name_variant_key_ignores_connector_order_only() -> None:
+    from philfacilities_ingest.aggregation import _name_variant_key
+
+    assert _name_variant_key("perpetual succor maternity hospital") == _name_variant_key(
+        "perpetual succor hospital and maternity"
+    )
+    assert _name_variant_key("rural health unit") != _name_variant_key(
+        "rural health unit birthing facility"
+    )
+
+
+def test_near_points_share_a_bucket_across_different_city_codes() -> None:
+    from philfacilities_ingest.aggregation import _bucket_keys
+
+    def facility(city_code: str, latitude: float, longitude: float):
+        return SimpleNamespace(
+            city_code=city_code,
+            location=SimpleNamespace(latitude=latitude, longitude=longitude),
+        )
+
+    # OSM placed this school in Talisay and DepEd placed it in Silay, but the
+    # points are nine metres apart. A city-only bucket would never compare them.
+    osm = facility("1804528", 10.730906, 123.086718)
+    deped = facility("1804526", 10.730879, 123.086797)
+    assert _bucket_keys(osm) & _bucket_keys(deped)
+
+    far = facility("0431200000", 14.599512, 120.984222)
+    assert not _bucket_keys(osm) & _bucket_keys(far)
