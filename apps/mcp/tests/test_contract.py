@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from pathlib import Path
 
+import httpx
 import pytest
-from philfacilities_mcp.client import API_ROUTES, DOWNLOAD_PATHS
+from mcp import Client
+from philfacilities_mcp.client import API_ROUTES, DOWNLOAD_PATHS, ApiClient
+from philfacilities_mcp.server import create_server
+from philfacilities_mcp.settings import McpSettings
 
 pytestmark = pytest.mark.contract
 
@@ -76,3 +81,40 @@ def test_no_tool_path_exposes_ingestion_internals():
         assert "match-candidates" not in path
         assert "monitoring" not in path
         assert "source-checks" not in path
+
+
+def _tool_input_schema(name: str) -> dict:
+    """Build the in-memory server and return one tool's JSON input schema."""
+
+    async def run() -> dict:
+        settings = McpSettings(api_base_url="http://api.test")
+        async with httpx.AsyncClient(
+            transport=httpx.MockTransport(lambda _: httpx.Response(200, json={})),
+            base_url=settings.api_base_url,
+        ) as http:
+            server = create_server(settings=settings, api=ApiClient(settings, http_client=http))
+            async with Client(server) as client:
+                tools = (await client.list_tools()).tools
+                return next(tool.input_schema for tool in tools if tool.name == name)
+
+    return asyncio.run(run())
+
+
+def test_location_precision_description_lists_every_contract_value():
+    """The tool must not invent a second, stale copy of the precision vocabulary."""
+
+    document = json.loads(CONTRACT.read_text(encoding="utf-8"))
+    parameters = document["paths"]["/v1/facilities"]["get"]["parameters"]
+    parameter = next(p for p in parameters if p["name"] == "location_precision")
+    enum = next(
+        variant["enum"]
+        for variant in parameter["schema"].get("anyOf", [parameter["schema"]])
+        if "enum" in variant
+    )
+
+    description = _tool_input_schema("search_facilities")["properties"]["location_precision"][
+        "description"
+    ]
+    assert all(value in description for value in enum), (
+        f"location_precision description {description!r} is missing some of {enum}"
+    )

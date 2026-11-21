@@ -17,6 +17,14 @@ CODE = Annotated[
     Field(description="A PSGC code. Leading zeros are significant; pass it as a string."),
 ]
 
+# The API enforces this cap at runtime (API config `max_nearby_radius_m`). Keep
+# the tool schema aligned so a valid-looking but impossible radius is rejected
+# by input validation with a clear schema error instead of an API round trip.
+MAX_NEARBY_RADIUS_M = 50_000
+VALID_LOCATION_PRECISION = (
+    "gps_verified, field_verified, source_gps, map_geocoded, barangay_centroid, unknown"
+)
+
 
 def register(mcp: MCPServer, api: ApiClient, annotations: ToolAnnotations) -> None:
     @mcp.tool(
@@ -54,7 +62,12 @@ def register(mcp: MCPServer, api: ApiClient, annotations: ToolAnnotations) -> No
             str | None, Field(description="Dataset slug to restrict to one source.")
         ] = None,
         location_precision: Annotated[
-            str | None, Field(description="One of the LocationOut precision values.")
+            str | None,
+            Field(
+                description=(
+                    f"Location precision filter. Valid values: {VALID_LOCATION_PRECISION}."
+                )
+            ),
         ] = None,
         limit: Annotated[
             int, Field(description="Page size (default 20, maximum 100).", ge=1, le=100)
@@ -155,7 +168,15 @@ def register(mcp: MCPServer, api: ApiClient, annotations: ToolAnnotations) -> No
             float, Field(description="Centre longitude (-180 to 180).", ge=-180, le=180)
         ],
         radius_m: Annotated[
-            int, Field(description="Search radius in metres (default 5000).", ge=1)
+            int,
+            Field(
+                description=(
+                    "Search radius in metres (default 5000). The API caps this at "
+                    f"{MAX_NEARBY_RADIUS_M} m; larger values are rejected."
+                ),
+                ge=1,
+                le=MAX_NEARBY_RADIUS_M,
+            ),
         ] = 5000,
         q: Q = None,
         facility_type: Annotated[str | None, Field(description="Facility category code.")] = None,
