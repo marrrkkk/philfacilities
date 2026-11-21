@@ -1,19 +1,22 @@
 # Sources and source register
 
-**Research baseline:** 15 November 2026; category-search additions 16 November 2026.  
-**Purpose:** the reference catalog of Philippine facility and enrichment sources used to decide what the ingestion system may acquire. It records official URLs, observed fields, access reality, evidence state, and the publication constraint for each candidate.
+> **Purpose** — The evidence catalog of Philippine facility and enrichment sources used to decide what ingestion may acquire and publish.
+> **Audience** — Contributors adding a source, agents researching coverage, and anyone auditing why a dataset is published or blocked.
+> **Research baseline:** 15 November 2026; category-search additions 16 November 2026.
+> **Machine contract** — This file is parsed by `apps/ingest/philfacilities_ingest/source_inventory.py`. Keep the `# A.`–`# M.` section headings, the `| \`source.id\` — Custodian |` row format on a single line, and evidence labels in backticks. Validate with `uv run philfacilities-ingest source-inventory --check`.
+> **See also** — [Adding a source](adding-a-source.md) · [Ingestion](ingestion.md) · [Data policy](data-policy.md) · [Data dictionary](data-dictionary.md)
 
-This is a catalog, not an approval list. A row can be reachable, complete, and still unusable: the exact release must be acquired, inspected, parsed, validated, and rights-reviewed before it becomes a dataset. Registration in `sources/registry_data.py` is also not a publication decision — see [data policy](data-policy.md).
+This is a catalog, not an approval list. A reachable, complete source can still be unusable: the exact release must be acquired, inspected, parsed, validated, and rights-reviewed before it becomes a dataset. Registration in `sources/registry_data.py` is also not a publication decision — see [Data policy](data-policy.md).
 
 ## How to read this register
 
-A source may be useful in different ways. The register distinguishes:
+Sources contribute in different ways. The register distinguishes:
 
 - **Facility-of-record source** — the agency is responsible for a facility, register, or official list.
-- **Official directory** — a public directory or locator exposes individual facility/service-location records, but may not provide bulk export or API access.
-- **Project/inventory source** — records describe projects, inventories, assets, or participating-LGU submissions; they are not automatically a current facility register.
-- **GIS catalogue/layer** — a spatial layer is listed in a government catalogue. Its source date, owner, downloadability, and terms must be checked separately.
-- **Enrichment/context source** — geography, population, hazard, environmental, or statistical information that can be linked to facilities but is not itself a facility record.
+- **Official directory** — a public directory or locator exposes individual facility/service locations but may not offer bulk export or API access.
+- **Project/inventory source** — records describe projects, inventories, assets, or participating-LGU submissions; not automatically a current facility register.
+- **GIS catalogue/layer** — a spatial layer is listed in a government catalogue; its date, owner, downloadability, and terms need layer-level verification.
+- **Enrichment/context source** — geography, population, hazard, or statistical information linkable to facilities but not facility records themselves.
 - **Discovery/request target** — an agency is a likely custodian, but a usable source dataset has not been verified.
 
 Evidence grade and publication rights are separate. A verified public release with no explicit prohibition may be published under the [data inclusion and publication policy](data-policy.md); an explicit restriction, access control, agreement, or privacy limit still blocks or narrows publication.
@@ -22,80 +25,56 @@ Evidence grade and publication rights are separate. A verified public release wi
 
 | Label | Meaning |
 |---|---|
-| `FILE/DOCUMENT VERIFIED` | A specific official file or document URL was reached and its contents/fields could be inspected in this research pass. |
+| `FILE/DOCUMENT VERIFIED` | A specific official file or document URL was reached and its contents/fields inspected in this research pass. |
 | `DIRECTORY CONTENT VERIFIED` | An official live page visibly lists individual named facilities or service locations. This does not prove a bulk API exists. |
 | `OFFICIAL PORTAL VERIFIED` | An official interactive portal/map exists and exposes relevant records or categories; bulk extraction may remain unavailable. |
-| `FOI ACCESS CONFIRMED` | An official FOI response confirms data was supplied or identifies an access route. It does not automatically grant redistribution rights; FOI conditions still control. |
-| `FOI LIMITATION CONFIRMED` | An official FOI response says the agency does not hold a consolidated file, refers to another custodian, or limits the scope. |
+| `FOI ACCESS CONFIRMED` | An official FOI response confirms data was supplied or identifies an access route. It does not grant redistribution rights; FOI conditions still control. |
+| `FOI LIMITATION CONFIRMED` | An official FOI response says the agency does not hold a consolidated file, refers to another custodian, or limits scope. |
 | `CATALOGUE CANDIDATE` | A government GIS/data catalogue lists a relevant layer, but current records, download, and rights still need layer-level verification. |
-| `DISCOVERY ONLY` | Only an agency or system candidate has been identified; no usable facility records have been verified. |
+| `DISCOVERY ONLY` | Only an agency or system candidate was identified; no usable facility records were verified. |
 
 ### Required status fields in the implementation
 
-Never compress all progress into one `verified` boolean. Track each separately:
+Never compress progress into one `verified` boolean. Track each stage separately:
 
 `DISCOVERED` → `ENDPOINT_TESTED` → `RECORDS_OBSERVED` → `ACQUIRED` → `SCHEMA_VERIFIED` → `QUALITY_REVIEWED` → `RIGHTS_REVIEWED` → `PUBLISHABLE` → `PUBLISHED`.
 
-Also record independent blockers such as `ACCESS_BLOCKED`, `HUMAN_DOWNLOAD_REQUIRED`, `FOI_REQUIRED`, `AGREEMENT_REQUIRED`, `RIGHTS_UNKNOWN`, `PARTIAL_COVERAGE`, and `STALE_SOURCE`.
-
-A homepage loading is not proof that its data endpoint works. A directory listing is not proof of an API. A file being publicly downloadable is not proof that it can be republished.
+Also record independent blockers such as `ACCESS_BLOCKED`, `HUMAN_DOWNLOAD_REQUIRED`, `FOI_REQUIRED`, `AGREEMENT_REQUIRED`, `RIGHTS_UNKNOWN`, `PARTIAL_COVERAGE`, and `STALE_SOURCE`. A homepage loading is not proof that its data endpoint works; a directory listing is not proof of an API; a public download is not proof of republication rights.
 
 ## Machine-readable source files
 
 | Path | Contents |
 |---|---|
-| `data/sources/source-candidates.json` | Curator-reviewed index of the candidates below: stable source ID, custodian, title, URLs, normalized evidence/access/rights/coverage states, limitations, and last verification date. |
+| `data/sources/source-candidates.json` | Curator-reviewed index: stable source ID, custodian, title, URLs, normalized evidence/access/rights/coverage states, limitations, and last verification date. |
 | `data/sources/region-search-ledger.json` | One probe result per regional/LGU domain, including HTTP 403 and TLS failures. |
 | `data/sources/geoportal-layers.csv` | Normalized Philippine Geoportal catalogue entries. |
 | `docs/operations/evidence/` | Dated acquisition, probe, benchmark, and cleanup evidence. |
 
-The candidate index is intentionally separate from `source.datasets`. A candidate has not been
-acquired, schema-verified, rights-reviewed, or published, and must not appear in the public
-source catalogue just because it is listed here. Promotion to a dataset remains an explicit
-ingestion decision with a release, checksum, parser, tests, and publication decision.
+The candidate index is intentionally separate from `source.datasets`. A candidate has not been acquired, schema-verified, rights-reviewed, or published, and must not appear in the public source catalogue just because it is listed here. Validate it with `uv run philfacilities-ingest source-candidates --json`.
 
-Validate the candidate index with:
-
-```bash
-uv run philfacilities-ingest source-candidates --json
-```
-
-The merged inventory adds the Markdown rows below and the dated probe ledgers to the candidate
-index. It classifies each source against the facility taxonomy and keeps the register-derived,
-candidate-derived and probe-derived evidence separate:
+The merged inventory adds the Markdown rows below and the dated probe ledgers to the candidate index, keeping register-derived, candidate-derived, and probe-derived evidence separate:
 
 ```bash
 uv run philfacilities-ingest source-inventory
 ```
 
-The command writes `var/reports/source-inventory.json` and `var/reports/source-inventory.csv`;
-use `--check` to validate without writing. The JSON keeps `provenance`, `probes` (including HTTP
-403, DNS and TLS failures), `unmatched_probes` and a state summary. An inventory row is still a
-candidate: the command does not acquire, approve rights, create a release or publish records.
+It writes `var/reports/source-inventory.json` and `var/reports/source-inventory.csv`; use `--check` to validate without writing. The JSON keeps `provenance`, `probes` (including HTTP 403, DNS and TLS failures), `unmatched_probes`, and a state summary. An inventory row is still a candidate: the command does not acquire, approve rights, create a release, or publish records.
 
-Every inventory row carries the data.md 25-field core schema. The controlled `access_state` is
-`OPEN` or `SKIPPED`; the register's original value remains in `access_state_raw`. A skipped row
-records `skip_reason`, `skip_detail`, the official `alternate_route` and `next_retry_at`, and is
-retried automatically. There is no manual or blocked queue. Fresh evidence comes from
-`probe-sources`; the complete rebuild pack (including probe ledger, download manifest, rights
-register, schema/field/crosswalk reports, OSM fills and delta) is generated by `rebuild-report`
-under `var/reports/rebuild/`.
+Every inventory row carries the data.md 25-field core schema. The controlled `access_state` is `OPEN` or `SKIPPED`; the register's original value remains in `access_state_raw`. A skipped row records `skip_reason`, `skip_detail`, the official `alternate_route`, and `next_retry_at`, and is retried automatically. There is no manual or blocked queue. Fresh evidence comes from `probe-sources`; the complete rebuild pack is generated by `rebuild-report` under `var/reports/rebuild/`.
 
 ### Editing this file
 
-`apps/ingest/philfacilities_ingest/source_inventory.py` parses this document directly. Keep the
-machine-readable structure intact when adding or editing a source:
+Keep the machine-readable structure intact when adding or editing a source:
 
 - use `# A.` through `# M.` for section headings; `##` sub-sections are prose only;
 - start each source row with `| \`source.id\` — Custodian |` and keep it on one line;
 - put official links in Markdown link syntax inside the row;
-- write evidence labels in backticks exactly as listed above — the parser maps them to the
-  inventory's `evidence_state`;
-- keep access, rights, and publication statements explicit; they drive the normalized states.
+- write evidence labels in backticks exactly as listed above;
+- keep access, rights, and publication statements explicit — they drive the normalized states.
 
-After editing, run `source-inventory --check`. Parser tests live in
-`tests/test_source_inventory.py`; validate that a new row appears with the expected states before
-relying on it.
+After editing, run `source-inventory --check`. Parser tests live in `tests/test_source_inventory.py`; confirm a new row appears with the expected states before relying on it.
+
+---
 
 ---
 

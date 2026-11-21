@@ -1,8 +1,9 @@
 # Adding a source
 
-A new source needs a rights/access decision, one adapter module, one registry entry, and one connector registration. The CLI, runner, and pipeline are generic: **do not add a `load-<source>` command or a source-specific branch to `pipeline/`.**
+> **Purpose** — The end-to-end checklist for adding a source adapter without special-casing the CLI or pipeline.
+> **See also** — [Ingestion](ingestion.md) for pipeline mechanics · [Sources](sources.md) for the research register · [Data policy](data-policy.md) for the publication decision
 
-The [source register](sources.md) records what was researched; the [data policy](data-policy.md) decides whether the exact release may be acquired and published. Code registration is not a publication decision.
+A new source needs a rights/access decision, one adapter module, one registry entry, and one connector registration. The CLI, runner, and pipeline are generic: **do not add a `load-<source>` command or a source-specific branch to `pipeline/`.** The [source register](sources.md) records what was researched; the [data policy](data-policy.md) decides whether the exact release may be acquired and published. Code registration is not a publication decision.
 
 ## 1. Checklist
 
@@ -19,8 +20,8 @@ The [source register](sources.md) records what was researched; the [data policy]
 Before writing code, establish:
 
 - the original official publisher and exact release;
-- the official URL and acquisition route (public file, public API, public directory, public GIS service) reachable without login, agreement, FOI, CAPTCHA or other human step;
-- the source publication date and reference period;
+- the official URL and acquisition route (public file, API, directory, GIS service) reachable without login, agreement, FOI, CAPTCHA, or a human step;
+- source publication date and reference period;
 - observed fields, identifiers, and record count;
 - coverage scope (national, regional, participating-LGU, selected-LGU, single-LGU);
 - ownership/operator/accreditation semantics;
@@ -28,7 +29,7 @@ Before writing code, establish:
 - personal-data, privacy, and security review;
 - the publication decision and its basis.
 
-Add the source to [sources.md](sources.md) and the rights register [`DATA-LICENSES.md`](../DATA-LICENSES.md). A homepage, catalogue entry, or search result is not a verified release.
+Add the source to [Sources](sources.md) and the rights register [`DATA-LICENSES.md`](../DATA-LICENSES.md). A homepage, catalogue entry, or search result is not a verified release.
 
 ## 3. Add source metadata
 
@@ -52,15 +53,13 @@ In `apps/ingest/philfacilities_ingest/sources/registry_data.py`, add a `RealSour
 ),
 ```
 
-Use the rights constants from `philfacilities_api.rights`, not free-form approval language. A source that requires a login, agreement, FOI request, CAPTCHA or other human step, or that carries an explicit restriction, belongs in the `skipped` group with a controlled reason from `skip_reasons.py`; it must never be silently treated as approved. The group is derived: blocked publication state or a human-only access method → `skipped`; otherwise `approved`. A missing licence, missing terms page or unstated permission is not an explicit prohibition: a public, official, verified release is recorded as `publicly_available_verified` and published with attribution, provenance and a takedown route.
+Use rights constants from `philfacilities_api.rights`, not free-form approval language. A source requiring login, agreement, FOI, CAPTCHA, or carrying an explicit restriction belongs in the `skipped` group with a controlled reason from `skip_reasons.py`; it must never be silently approved. The group is derived: blocked publication state or human-only access → `skipped`; otherwise `approved`. A missing licence or terms page is not an explicit prohibition: a public, official, verified release is recorded as `publicly_available_verified` and published with attribution, provenance, and a takedown route.
 
-`RealSource` also carries `minimum_acceptance_rate` and `minimum_acceptance_rows` (defaults `0.90` and `20`). Keep the defaults unless the verified source shape justifies a different floor, and record why in the source note. A release below its floor is quarantined before canonical writes.
+`RealSource` also carries `minimum_acceptance_rate` and `minimum_acceptance_rows` (defaults `0.90` / `20`). Keep defaults unless the verified source shape justifies a different floor, and record why.
 
 ## 4. Write the adapter
 
-Create `apps/ingest/philfacilities_ingest/sources/foo.py`. The adapter only parses preserved bytes, validates them, and returns normalized candidates. It never downloads or invents missing values.
-
-The parser owns its schema validation. Check headings/columns inside `parse()` with `require_columns()` from `.common` or an explicit set difference, and raise an error naming the missing fields.
+Create `apps/ingest/philfacilities_ingest/sources/foo.py`. The adapter only parses preserved bytes, validates them, and returns normalized candidates. It never downloads and never invents values. Check headings/columns inside `parse()` with `require_columns()` from `.common` and raise an error naming missing fields.
 
 ```python
 from ..contracts import (
@@ -96,14 +95,12 @@ class FooDirectoryAdapter:
                 )
             )
         return ParsedRelease(
-            rows=rows,
-            parser_version=self.parser_version,
-            schema_version=self.schema_version,
+            rows=rows, parser_version=self.parser_version, schema_version=self.schema_version
         )
 
     def validate(self, parsed: ParsedRelease) -> ValidationResult:
-        # Reject rows with missing required fields; record issues with their
-        # row references. Do not drop a source value silently.
+        # Reject rows with missing required fields; record issues with row
+        # references. Do not drop a source value silently.
         ...
 
     def normalize(self, parsed: ParsedRelease) -> list[FacilityCandidate]:
@@ -134,14 +131,7 @@ class FooDirectoryAdapter:
         return candidates
 ```
 
-Use shared helpers in `validators.py` rather than local copies:
-
-- `coordinate_in_philippines` / `coordinate_issue` — plausibility box only; preserve original precision.
-- `psgc_shape_issue` — decimal shape and leading zeros.
-- `missing_required_fields` — absent or empty required fields.
-- `duplicate_values` — repeated keys before canonical storage.
-
-Keep untouched source values in `raw_payload`, and document every normalization in the module docstring. Missing is not zero, false, or inactive. A registry presence is not operational status.
+Use shared helpers in `validators.py` rather than local copies: `coordinate_in_philippines` / `coordinate_issue` (plausibility only), `psgc_shape_issue`, `missing_required_fields`, `duplicate_values`. Keep untouched source values in `raw_payload` and document every normalization in the module docstring. Missing is not zero, false, or inactive; registry presence is not operational status.
 
 ## 5. Register acquisition
 
@@ -159,9 +149,7 @@ connectors["foo-directory"] = _single(
 )
 ```
 
-No acquisition code is needed for this shape. Use a source-specific connector under `sources/connectors/` only for real paging, a catalogue of multiple releases, a PDF index, WFS layers, or a non-standard signature.
-
-Add a `CheckSpec` when the source needs an HTTP probe or a catalogue marker:
+No acquisition code is needed for this shape. Use a source-specific connector under `sources/connectors/` only for real paging, a catalogue of multiple releases, a PDF index, WFS layers, or a non-standard signature. Add a `CheckSpec` when the source needs an HTTP probe or catalogue marker:
 
 ```python
 "foo-directory": CheckSpec(
@@ -170,18 +158,18 @@ Add a `CheckSpec` when the source needs an HTTP probe or a catalogue marker:
 ),
 ```
 
-A source that requires a login, agreement, FOI request, CAPTCHA or other human step is registered as `skipped` with a controlled reason and alternate route; the runner returns `status=skipped` instead of pretending to acquire data. Use `UnavailableConnector` only for a source that has no automated public route at all. Do not create a manual or blocked queue.
+A source requiring a login, agreement, FOI, CAPTCHA, or other human step is registered as `skipped` with a controlled reason and alternate route; the runner returns `status=skipped` rather than pretending to acquire data. Use `UnavailableConnector` only when there is no automated public route at all. Do not create manual or blocked queues.
 
 ## 6. Add a fixture and tests
 
-At minimum:
+At minimum, test that:
 
 - parser output is deterministic and preserves the original payload;
 - validation rejects missing required fields and records row references;
 - normalization does not invent a coordinate, PSGC code, ownership, or status;
 - `source validate <key> --fixture <path>` succeeds.
 
-Put the test in `apps/ingest/tests/` (usually `test_parsers.py` or a source-specific module). Use deterministic fixtures, never live downloads:
+Put tests in `apps/ingest/tests/` (usually `test_parsers.py` or a source-specific module), using deterministic fixtures — never live downloads:
 
 ```bash
 uv run pytest apps/ingest/tests/test_parsers.py -q
@@ -198,7 +186,7 @@ uv run philfacilities-ingest source run foo-directory \
   --input var/raw/foo/foo-directory-2026-11-16.csv --dry-run
 ```
 
-`source validate` runs `parse → validate → normalize` and prints counts and issues without opening a write transaction. `source run --dry-run` also acquires through the connector and preserves the raw artifact, but does not apply candidates.
+`source validate` runs `parse → validate → normalize` and prints counts and issues without a write transaction. `--dry-run` also acquires through the connector and preserves the raw artifact but does not apply candidates.
 
 ## 8. Load and record evidence
 
@@ -207,22 +195,22 @@ uv run philfacilities-ingest source run foo-directory
 uv run philfacilities-ingest source check foo-directory
 ```
 
-Then record:
+Then record in [Sources](sources.md) and `DATA-LICENSES.md`:
 
-- source URL, agency, dataset/release, reference period, publication date, retrieval time, checksum, parser/schema versions, and rights basis;
+- URL, agency, dataset/release, reference period, publication date, retrieval time, checksum, parser/schema versions, and rights basis;
 - the publication gate and attribution shown in the run report;
 - actual parsed/accepted/rejected counts and known exclusions;
-- any quality issues, coordinate precision, and coverage limits.
+- quality issues, coordinate precision, and coverage limits.
 
-If the source is skipped, record the controlled reason, detail, official alternate route and next automatic retry; do not load it and do not send it to a human review queue. For a large source, run `scripts/ingest_benchmark.py` before and after and store the JSON under `docs/operations/evidence/`.
+If the source is skipped, record the controlled reason, detail, official alternate route, and next retry; do not load it and do not send it to a human queue. For a large source, run `scripts/ingest_benchmark.py` before and after and store the JSON under `docs/operations/evidence/`.
 
 ## 9. Common mistakes
 
-- Adding a `load-foo` CLI command. The generic `source run foo` already exists.
-- Putting acquisition in the adapter. The connector owns URLs, retries, bounds, and signatures; the adapter owns bytes to candidates.
-- Creating a separate registry/catalog table. `REAL_SOURCES` plus `sources/catalog.py` is the single registry.
+- Adding a `load-foo` CLI command — the generic `source run foo` already exists.
+- Putting acquisition in the adapter — the connector owns URLs, retries, bounds, and signatures.
+- Creating a separate registry/catalog table — `REAL_SOURCES` plus `sources/catalog.py` is the single registry.
 - Coercing an unknown PSGC code or coordinate into a plausible value.
 - Treating an empty value as zero or `false`.
-- Publishing because a file is public. Publication requires the recorded decision in [data policy](data-policy.md).
-- Publishing personal contact fields because they are present in the source.
+- Publishing because a file is public — publication requires the recorded decision in [Data policy](data-policy.md).
+- Publishing personal contact fields because they are present.
 - Using the source publisher as the facility owner or operator without evidence.

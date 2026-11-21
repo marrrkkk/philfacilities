@@ -103,6 +103,8 @@ export function MapExplorer({
   initialReferencePeriodStart = "",
   initialReferencePeriodEnd = "",
   initialUpdatedSince = "",
+  sourceOptions = [],
+  provinceOptions = [],
 }: {
   initialType?: string;
   initialQuery?: string;
@@ -121,6 +123,8 @@ export function MapExplorer({
   initialReferencePeriodStart?: string;
   initialReferencePeriodEnd?: string;
   initialUpdatedSince?: string;
+  sourceOptions?: [string, string][];
+  provinceOptions?: [string, string][];
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -138,6 +142,9 @@ export function MapExplorer({
   const [accessClass, setAccessClass] = useState(initialAccessClass);
   const [kind, setKind] = useState(initialKind);
   const [query, setQuery] = useState(initialQuery);
+  const [province, setProvince] = useState(initialProvince);
+  const [source, setSource] = useState(initialSource);
+  const [updatedSince, setUpdatedSince] = useState(initialUpdatedSince);
   const [mobileView, setMobileView] = useState<"map" | "list">("map");
 
   // The "has coordinates" filter is a database-level constraint that this
@@ -321,14 +328,14 @@ export function MapExplorer({
         public_access_class: accessClass || undefined,
         facility_kind: kind || undefined,
         region_code: initialRegion || undefined,
-        province_code: initialProvince || undefined,
+        province_code: province || undefined,
         municipality_code: initialMunicipality || undefined,
         barangay_code: initialBarangay || undefined,
-        source: initialSource || undefined,
+        source: source || undefined,
         location_precision: initialPrecision || undefined,
         reference_period_start: initialReferencePeriodStart || undefined,
         reference_period_end: initialReferencePeriodEnd || undefined,
-        updated_since: initialUpdatedSince || undefined,
+        updated_since: updatedSince || undefined,
       };
       getFacilityMap(params, { signal: controller.signal })
         .then((data) => {
@@ -362,18 +369,56 @@ export function MapExplorer({
     initialMunicipality,
     initialOwnership,
     initialPrecision,
-    initialProvince,
     initialReferencePeriodEnd,
     initialReferencePeriodStart,
     initialRegion,
-    initialSource,
-    initialUpdatedSince,
     kind,
     ownershipType,
+    province,
     query,
     ready,
+    source,
     type,
+    updatedSince,
     viewport,
+  ]);
+
+  // Keep the shareable URL in sync with interactive filters. replaceState avoids
+  // a navigation (and a full map re-init) while making every filtered view linkable.
+  useEffect(() => {
+    if (!ready) return;
+    const params = new URLSearchParams(window.location.search);
+    const values: Record<string, string> = {
+      type,
+      q: query.trim(),
+      inclusion_class: inclusionClass,
+      ownership_type: ownershipType,
+      public_access_class: accessClass,
+      facility_kind: kind,
+      province_code: province,
+      source,
+      updated_since: updatedSince,
+    };
+    for (const [key, value] of Object.entries(values)) {
+      if (value) params.set(key, value);
+      else params.delete(key);
+    }
+    const search = params.toString();
+    const target = `${window.location.pathname}${search ? `?${search}` : ""}`;
+    if (target !== `${window.location.pathname}${window.location.search}`) {
+      window.history.replaceState(null, "", target);
+    }
+  }, [
+    ready,
+    type,
+    query,
+    inclusionClass,
+    ownershipType,
+    accessClass,
+    kind,
+    province,
+    source,
+    updatedSince,
   ]);
 
   useEffect(() => {
@@ -549,6 +594,77 @@ export function MapExplorer({
               </Select>
             </div>
           </div>
+          <details className="mt-2 border-t border-[#d1d8e6] pt-2">
+            <summary className="cursor-pointer font-ui text-xs font-bold text-[#0038a8]">
+              Location, source, and time filters
+            </summary>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <div>
+                <label htmlFor="map-province" className="sr-only">
+                  Province
+                </label>
+                <Select
+                  id="map-province"
+                  value={province}
+                  onChange={(event) => setProvince(event.target.value)}
+                >
+                  <option value="">All provinces</option>
+                  {provinceOptions.map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div>
+                <label htmlFor="map-source" className="sr-only">
+                  Source agency
+                </label>
+                <Select
+                  id="map-source"
+                  value={source}
+                  onChange={(event) => setSource(event.target.value)}
+                >
+                  <option value="">All sources</option>
+                  {sourceOptions.map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div className="col-span-2">
+                <label htmlFor="map-updated-since" className="sr-only">
+                  Updated since
+                </label>
+                <Input
+                  id="map-updated-since"
+                  value={updatedSince}
+                  onChange={(event) => setUpdatedSince(event.target.value)}
+                  placeholder="Updated since (YYYY-MM-DD)"
+                />
+              </div>
+              <div className="col-span-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setType("");
+                    setInclusionClass("");
+                    setOwnershipType("");
+                    setAccessClass("");
+                    setKind("");
+                    setQuery("");
+                    setProvince("");
+                    setSource("");
+                    setUpdatedSince("");
+                  }}
+                  className="border border-[#d1d8e6] px-3 py-1 font-ui text-xs font-bold text-[#0038a8]"
+                >
+                  Reset filters
+                </button>
+              </div>
+            </div>
+          </details>
           <p className="mt-2 flex items-center justify-between gap-2 font-ui text-xs text-[#5a5a58]">
             <span>
               {isLoading ? (
