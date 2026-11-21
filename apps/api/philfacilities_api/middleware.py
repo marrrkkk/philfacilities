@@ -9,7 +9,7 @@ import uuid
 from collections import defaultdict, deque
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from .config import get_settings
@@ -152,5 +152,12 @@ def conditional_json(request: Request, payload, max_age: int = 60):
     etag = '"' + hashlib.sha256(body).hexdigest()[:32] + '"'
     headers = {"ETag": etag, "Cache-Control": f"public, max-age={max_age}"}
     if request.headers.get("if-none-match") == etag:
-        return JSONResponse(status_code=304, content=None, headers=headers)
+        # State the empty body explicitly. Without a framing header some HTTP
+        # clients keep the connection in a state where the next streaming
+        # response (for example a bulk CSV download) is read as a continuation.
+        return Response(
+            status_code=304,
+            content=b"",
+            headers={**headers, "Content-Length": "0"},
+        )
     return JSONResponse(content=json.loads(body), headers=headers)
