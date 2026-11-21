@@ -63,8 +63,12 @@ Create `apps/ingest/philfacilities_ingest/sources/foo.py`. The adapter only pars
 
 ```python
 from ..contracts import (
-    FacilityCandidate, LocationData, ParsedRelease, ParsedRow,
-    ReleaseSpec, ValidationResult,
+    FacilityCandidate,
+    LocationData,
+    ParsedRelease,
+    ParsedRow,
+    ReleaseSpec,
+    ValidationResult,
 )
 from .common import clean_text, require_columns
 
@@ -82,14 +86,17 @@ class FooDirectoryAdapter:
         records = read_csv(spec.content)
         require_columns(records, {"id", "name", "address"})
         for line_number, record in enumerate(records, start=2):
-            rows.append(ParsedRow(
-                source_record_key=f"FOO-{record['id']}",
-                row_reference=f"line:{line_number}",
-                raw_payload=record,
-                normalized_payload=record,
-            ))
-        return ParsedRelease(rows=rows, parser_version=self.parser_version,
-                             schema_version=self.schema_version)
+            rows.append(
+                ParsedRow(
+                    source_record_key=f"FOO-{record['id']}",
+                    row_reference=f"line:{line_number}",
+                    raw_payload=record,
+                    normalized_payload=record,
+                )
+            )
+        return ParsedRelease(
+            rows=rows, parser_version=self.parser_version, schema_version=self.schema_version
+        )
 
     def validate(self, parsed: ParsedRelease) -> ValidationResult:
         # Reject rows with missing required fields; record issues with row
@@ -107,18 +114,20 @@ class FooDirectoryAdapter:
                     longitude=float(payload["longitude"]),
                     precision="map_geocoded",
                 )
-            candidates.append(FacilityCandidate(
-                source_record_key=row.source_record_key,
-                row_reference=row.row_reference,
-                source_entity_id=payload["id"],
-                display_name=clean_text(payload["name"]),
-                facility_type="government_office",
-                facility_subtype=None,
-                ownership="government",
-                record_status="active",
-                location=location,
-                inclusion_class="GOVERNMENT_FACILITY",
-            ))
+            candidates.append(
+                FacilityCandidate(
+                    source_record_key=row.source_record_key,
+                    row_reference=row.row_reference,
+                    source_entity_id=payload["id"],
+                    display_name=clean_text(payload["name"]),
+                    facility_type="government_office",
+                    facility_subtype=None,
+                    ownership="government",
+                    record_status="active",
+                    location=location,
+                    inclusion_class="GOVERNMENT_FACILITY",
+                )
+            )
         return candidates
 ```
 

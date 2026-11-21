@@ -11,6 +11,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
 import {
   getGeography,
+  getTaxonomy,
   listFacilities,
   listGeographies,
   listSources,
@@ -18,6 +19,7 @@ import {
   type DatasetOut,
 } from "@/lib/api";
 import { INCLUSION_CLASS_LABELS, titleCase } from "@/lib/format";
+import { categoryLabels, subtypeOptions } from "@/lib/taxonomy";
 import { cn } from "@/lib/utils";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -100,6 +102,7 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Se
   const raw = await searchParams;
   const q = first(raw.q).trim();
   const type = first(raw.type);
+  const subtype = first(raw.subtype);
   const inclusion = first(raw.inclusion_class);
   const ownership = first(raw.ownership);
   const ownershipType = first(raw.ownership_type);
@@ -119,6 +122,7 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Se
 
   const filterParams = {
     type: type || undefined,
+    subtype: subtype || undefined,
     inclusion_class: inclusion || undefined,
     ownership: ownership || undefined,
     ownership_type: ownershipType || undefined,
@@ -146,17 +150,21 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Se
   let result = null;
   let units: AdministrativeUnitOut[] = [];
   let sources: DatasetOut[] = [];
+  let taxonomy: Awaited<ReturnType<typeof getTaxonomy>> | null = null;
   let error: string | null = null;
 
   try {
-    const [facilityResult, regionUnits, provinceUnits, sourceRows] = await Promise.all([
-      listFacilities(query),
-      listGeographies({ level: "region", limit: 500 }).catch(() => []),
-      listGeographies({ level: "province", limit: 500 }).catch(() => []),
-      listSources().catch(() => []),
-    ]);
+    const [facilityResult, regionUnits, provinceUnits, sourceRows, taxonomyResult] =
+      await Promise.all([
+        listFacilities(query),
+        listGeographies({ level: "region", limit: 500 }).catch(() => []),
+        listGeographies({ level: "province", limit: 500 }).catch(() => []),
+        listSources().catch(() => []),
+        getTaxonomy().catch(() => null),
+      ]);
     result = facilityResult;
     sources = sourceRows;
+    taxonomy = taxonomyResult;
     const provinceOptions = provinceUnits.filter(
       (item) => !region || item.parent_psgc_code === region,
     );
@@ -234,8 +242,27 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Se
   const municipalityOptions = units.filter((item) => item.geographic_level === "municipality");
   const barangayOptions = units.filter((item) => item.geographic_level === "barangay");
 
+  // The API taxonomy is the source of truth for labels and subtype options.
+  // The local map is only a fallback when the taxonomy endpoint is unavailable.
+  const categoryTerms = taxonomy?.categories ?? [];
+  const categoryLabelMap = categoryLabels(taxonomy);
+  const categoryOptions: [string, string][] = categoryTerms.length
+    ? categoryTerms.map((term) => [term.code, term.label])
+    : Object.entries(CATEGORY_LABELS);
+  const allSubtypes = subtypeOptions(taxonomy);
+  const subtypeChoices: [string, string][] = (
+    type ? allSubtypes.filter((item) => item.categoryCode === type) : allSubtypes
+  ).map((item) => [item.code, item.label]);
+
   const activeFilters = [
-    type ? { label: CATEGORY_LABELS[type] ?? titleCase(type) } : null,
+    type ? { label: categoryLabelMap[type] ?? CATEGORY_LABELS[type] ?? titleCase(type) } : null,
+    subtype
+      ? {
+          label: `Subtype: ${
+            allSubtypes.find((item) => item.code === subtype)?.label ?? titleCase(subtype)
+          }`,
+        }
+      : null,
     inclusion
       ? {
           label: `Inclusion: ${INCLUSION_CLASS_LABELS[inclusion] ?? titleCase(inclusion)}`,
@@ -298,7 +325,18 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Se
                 <Label htmlFor="filter-type">Facility category</Label>
                 <Select id="filter-type" name="type" defaultValue={type}>
                   <option value="">All categories</option>
-                  {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
+                  {categoryOptions.map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="filter-subtype">Facility subtype</Label>
+                <Select id="filter-subtype" name="subtype" defaultValue={subtype}>
+                  <option value="">All subtypes</option>
+                  {subtypeChoices.map(([value, label]) => (
                     <option key={value} value={value}>
                       {label}
                     </option>
