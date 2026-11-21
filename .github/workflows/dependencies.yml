@@ -1,0 +1,50 @@
+name: Dependency audit
+
+# Advisory, scheduled checks. A newly published CVE must not turn an unrelated
+# pull request red; these run on a cadence and on demand instead. PR blocking
+# stays with CI's lint, test, contract and build jobs.
+on:
+  schedule:
+    - cron: "23 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dependency-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    name: Audit Python and JavaScript dependencies
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: "3.14"
+
+      - name: Install Python workspace
+        run: uv sync --locked --all-packages
+
+      - name: Python dependency audit
+        run: uv run --with pip-audit pip-audit
+
+      - uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install JavaScript workspace
+        run: pnpm install --frozen-lockfile
+
+      - name: JavaScript dependency audit (production dependencies)
+        run: pnpm audit --prod

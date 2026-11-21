@@ -79,6 +79,10 @@ test:
 test-db:
     PHILFACILITIES_TEST_DATABASE_URL="{{test_database_url}}" uv run pytest
 
+# Fail instead of skipping integration tests when the test database is unavailable.
+test-required:
+    PHILFACILITIES_TEST_DATABASE_URL="{{test_database_url}}" uv run pytest --require-integration
+
 lint:
     uv run ruff check .
     uv run ruff format --check .

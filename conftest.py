@@ -53,6 +53,19 @@ SCHEMAS = (
 )
 
 
+def pytest_addoption(parser):
+    parser.addoption(
+        "--require-integration",
+        action="store_true",
+        default=False,
+        help=(
+            "Fail (instead of skipping) integration tests when the PostGIS test "
+            "database is unavailable. CI uses this so a failed database service "
+            "cannot produce a green build with all integration tests skipped."
+        ),
+    )
+
+
 def _reset_schema(database_url: str) -> None:
     from sqlalchemy import create_engine, text
 
@@ -68,7 +81,7 @@ def _reset_schema(database_url: str) -> None:
 
 
 @pytest.fixture(scope="session")
-def seeded_database() -> str:
+def seeded_database(request: pytest.FixtureRequest) -> str:
     """Rebuild the test schema and load the deterministic synthetic demo dataset."""
 
     from sqlalchemy import create_engine, text
@@ -78,12 +91,15 @@ def seeded_database() -> str:
         with engine.connect() as connection:
             connection.execute(text("SELECT 1"))
         engine.dispose()
-    except Exception as exc:  # pragma: no cover - environment-dependent skip
-        pytest.skip(
+    except Exception as exc:  # pragma: no cover - environment-dependent skip/fail
+        message = (
             "PostGIS test database is unavailable. Start it with "
             "`docker compose -f infra/compose.yaml --profile test up -d test-db`. "
             f"({type(exc).__name__}: {exc})"
         )
+        if request.config.getoption("--require-integration"):
+            pytest.fail(message, pytrace=False)
+        pytest.skip(message)
 
     from alembic import command
     from alembic.config import Config
@@ -125,3 +141,28 @@ def openapi_client():
 
     with TestClient(app) as test_client:
         yield test_client
+
+
+def pytest_sessionfinish(session, exitstatus):
+    """Refuse a green run when integration coverage was required but absent.
+
+    The fixture-level guard above handles an unavailable database. This hook
+    also catches marker typos, changed test paths or filter expressions that
+    silently deselect every integration test.
+    """
+
+    if not session.config.getoption("--require-integration"):
+        return
+    if "not integration" in (session.config.getoption("-m") or ""):
+        return
+    if any(item.get_closest_marker("integration") for item in session.items):
+        return
+
+    message = (
+        "No integration tests were selected, but --require-integration was "
+        "passed; refusing to report a green build."
+    )
+    reporter = session.config.pluginmanager.get_plugin("terminalreporter")
+    if reporter is not None:
+        reporter.write_line(f"\nERROR: {message}", red=True)
+    session.exitstatus = pytest.ExitCode.TESTS_FAILED
