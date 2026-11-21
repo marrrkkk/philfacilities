@@ -28,6 +28,7 @@ Start with the route that matches your task, then follow the links. Each documen
 | [Getting started](getting-started.md) | Prerequisites, local setup, database, seed/real ingestion, running API and web app, common tasks, troubleshooting |
 | [Architecture](architecture.md) | Services, boundaries, request/data flow, repository map, where to change what |
 | [Public API](api.md) | Developer-facing usage: base URL, quickstart, endpoint families, filters, pagination, errors, downloads, contract workflow |
+| [API DX improvement plan](api-dx-improvement-plan.md) | Proposed phased work to reduce response noise, expose field coverage, and improve developer experience |
 | [Data model](data-model.md) | Canonical tables, provenance, identity, temporal model, constraints, migrations |
 | [Data dictionary](data-dictionary.md) | Consumer-facing fields, controlled vocabularies, null semantics, precision, rights states |
 | [Ingestion](ingestion.md) | Source registry, acquisition, parsing, validation, matching, fusion, release/publication pipeline |
