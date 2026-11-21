@@ -44,6 +44,21 @@ from philfacilities_api.rights import publication_decision_rule
 from sqlalchemy import func, literal_column, select, text
 from sqlalchemy.orm import Session
 
+from .reporting import (
+    now_iso as _now,
+)
+from .reporting import (
+    source_url_key as _source_url_key,
+)
+from .reporting import (
+    write_csv as _write_csv,
+)
+from .reporting import (
+    write_jsonl as _write_jsonl,
+)
+from .reporting import (
+    write_text as _write_text,
+)
 from .skip_reasons import SKIP_REASON_SET, SkipDecision, next_retry, skip_for_source
 from .source_inventory import write_source_inventory
 from .source_report import (
@@ -90,33 +105,6 @@ class RebuildPackPaths:
     region_search_ledger: Path
     unresolved: Path
     final_report: Path
-
-
-def _now() -> str:
-    return datetime.now(UTC).isoformat()
-
-
-def _write_csv(path: Path, rows: list[dict[str, Any]], fieldnames: list[str]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fieldnames, extrasaction="ignore")
-        writer.writeheader()
-        for row in rows:
-            writer.writerow(row)
-
-
-def _write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as handle:
-        for row in rows:
-            handle.write(json.dumps(row, ensure_ascii=False, default=str) + "\n")
-
-
-def _write_text(path: Path, text: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    if not text.endswith("\n"):
-        text += "\n"
-    path.write_text(text, encoding="utf-8")
 
 
 def _json_type(value: Any) -> str:
@@ -2187,17 +2175,6 @@ change any release or facility record.
   verified artifact in the raw store and the source is recorded as skipped.
 - Pipeline changes are code-only and reversible by revert; no raw release is rewritten.
 """
-
-
-def _source_url_key(url: str | None) -> str:
-    if not url:
-        return ""
-    parsed = urllib.parse.urlsplit(url.strip())
-    host = parsed.netloc.casefold()
-    if host.startswith("www."):
-        host = host[4:]
-    path = parsed.path.rstrip("/")
-    return f"{host}{path}".casefold()
 
 
 def _skipped_rows(inventory: dict[str, Any]) -> list[dict[str, Any]]:
