@@ -24,12 +24,13 @@ Never place restricted FOI files or agreement-bound data in a public staging or 
 |---|---|---|
 | `web` | Next.js Node runtime | Independent web deployment |
 | `api` | FastAPI ASGI container | Independent API service |
+| `mcp` | Python stdio process or Streamable HTTP ASGI service | Independent read-only adapter over `/v1`; no database access |
 | `ingest` | Python CLI/job container | Scheduled/manual job; not internet-facing |
 | PostgreSQL/PostGIS | Database service | Persistent managed or self-hosted |
 | Object storage | S3-compatible | Private raw objects; approved public exports |
 | Tiles (optional) | Martin or similar | Only if a self-hosted basemap is added |
 
-The web app calls the API over HTTP. The ingest app writes the database and raw store. No service reads another service's internal files.
+The web app calls the API over HTTP. The ingest app writes the database and raw store. The MCP service calls the API over HTTP with no database credentials; its `/mcp` endpoint is public and read-only. No service reads another service's internal files.
 
 ## 3. Configuration
 
@@ -57,6 +58,11 @@ The web app calls the API over HTTP. The ingest app writes the database and raw 
 | `PHILFACILITIES_MAX_NEARBY_RADIUS_M` | API | Radius cap |
 | `PHILFACILITIES_MAX_MAP_FEATURES` | API | Map cap |
 | `PHILFACILITIES_COVERAGE_STALE_AFTER_DAYS` | API | Coverage staleness threshold |
+| `PHILFACILITIES_API_BASE_URL` | MCP | Public API origin; use the internal origin in production |
+| `PHILFACILITIES_REQUEST_TIMEOUT_SECONDS` | MCP | Upstream request timeout |
+| `PHILFACILITIES_MCP_HOST` / `MCP_PORT` | MCP | HTTP bind address (stdio ignores these) |
+| `PHILFACILITIES_MCP_ALLOWED_HOSTS` / `MCP_ALLOWED_ORIGINS` | MCP | Required Host/Origin allowlists for hosted use |
+| `PHILFACILITIES_MCP_FORWARDED_ALLOW_IPS` | MCP | Trusted proxy addresses for forwarded headers |
 
 Use a deployment secret store for database and object-store credentials. Rotate credentials and record ownership.
 
@@ -139,6 +145,8 @@ Production monitoring and paging are **not configured**. Use `scripts/smoke_chec
 
 **Web/map:** page load and client errors, API failures, tile availability, map response sizes, accessibility regressions.
 
+**MCP:** `/healthz`, `/readyz` (upstream API reachability), tool error rate, upstream 429/5xx rate. The MCP server aggregates callers behind one IP: apply edge rate limiting to `/mcp` before a public launch and do not treat the API's per-IP limit as sufficient. See [MCP](mcp.md).
+
 `philfacilities-ingest monitoring` and `/v1/monitoring` show the latest check per dataset. `source check --due` exits `2` for actionable failures and can POST JSON to `PHILFACILITIES_ALERT_WEBHOOK_URL` when configured. `source run` and `source replay` also POST a failure summary for rows whose status is `failed`; duplicate skips and dry-run validations are not incidents.
 
 A quarantined release is an operational signal, not a publication. Inspect the run report and the release's `QualityIssue` rows (`release_empty`, `acceptance_rate_below_floor`, `parse_error`, `row_count_anomaly`) before deciding whether to fix the parser, relax the release floor with a reviewed registry change, or reacquire the source.
@@ -170,7 +178,7 @@ The full severity model and playbooks are in the [incident runbook](operations/i
 
 ## 10. Security
 
-- Public read API only; no write endpoints.
+- Public read API only; no write endpoints. The MCP server is public and read-only too, with host/origin allowlists and no database credentials.
 - Restricted source rows, personal data, credentials, SQL, and stack traces never appear in responses or logs.
 - CSV exports neutralize spreadsheet-formula injection.
 - CSP nonces, CORS allowlists, request IDs, rate limits, and bounded spatial queries are implemented.

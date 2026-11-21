@@ -89,6 +89,7 @@ Monorepo with independently deployable applications:
 - `apps/web` — Next.js App Router, TypeScript, shadcn/ui, Tailwind CSS, MapLibre GL JS.
 - `apps/api` — FastAPI, Pydantic, SQLAlchemy 2, Alembic, PostgreSQL/PostGIS reads.
 - `apps/ingest` — Python acquisition, source adapters, validation, matching, publication gates, reports.
+- `apps/mcp` — Read-only MCP adapter over `/v1` for AI clients (stdio and Streamable HTTP).
 - `packages/api-client` — TypeScript client generated from the committed OpenAPI contract.
 - `database/`, `infra/` — migrations and local PostgreSQL/PostGIS Compose services.
 
@@ -107,7 +108,7 @@ canonical facility, domain observation, geography, provenance
         ↓
 rights/publication gate
         ↓
-PostgreSQL/PostGIS → FastAPI → directory, map, downloads, third-party clients
+PostgreSQL/PostGIS → FastAPI → directory, map, downloads, MCP, third-party clients
 ```
 
 ## API
@@ -142,6 +143,31 @@ GET /v1/downloads/health-facilities.csv
 Every public response applies the same publication gate: a facility is exposed only when its canonical flag is public **and** it links to a source release whose dataset rights and publication states permit redistribution. Restricted, internal-only, quarantined, and blocked source records are excluded from detail pages, source evidence, statistics, and bulk exports.
 
 Live examples captured from the running API can be regenerated with `scripts/capture_api_examples.py`; the generated report is written under `var/reports/` and is not source-controlled. The contract is [`packages/api-client/openapi.json`](packages/api-client/openapi.json), with generated types in [`packages/api-client/src/schema.ts`](packages/api-client/src/schema.ts). See [`docs/api.md`](docs/api.md) for the endpoint reference.
+
+## MCP for AI clients
+
+A read-only [MCP](docs/mcp.md) server is available as `apps/mcp`. It calls the same publication-gated `/v1` API as the web app: no database credentials, no separate rights gate, and no reshaped responses. Ten curated tools cover facility search and provenance, nearby search, geography, population, sources, coverage, taxonomy and bulk downloads.
+
+```bash
+just mcp        # stdio: uv run philfacilities-mcp (requires just api)
+just mcp-http   # Streamable HTTP at http://127.0.0.1:8011/mcp
+just mcp-test   # tool, contract and transport tests
+```
+
+For a hosted client:
+
+```json
+{ "mcpServers": { "philfacilities": { "url": "https://mcp.example.org/mcp" } } }
+```
+
+For a local client:
+
+```bash
+claude mcp add --transport stdio philfacilities -- \
+  uv run --directory /path/to/philfacilities philfacilities-mcp
+```
+
+Hosted deployments need host/origin allowlists and edge rate limiting; see [`docs/mcp.md`](docs/mcp.md) and [ADR 0009](docs/decisions/0009-mcp-server-boundary.md).
 
 ## Data-integrity rules
 
