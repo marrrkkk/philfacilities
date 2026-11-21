@@ -58,6 +58,9 @@ jobs:
       - name: Pytest (unit, contract, integration, data quality)
         run: uv run pytest
 
+      - name: MCP tools and contract
+        run: uv run pytest apps/mcp/tests -q
+
       - name: Non-integration coverage floor
         run: uv run pytest -m "not integration" -q --cov --cov-fail-under=60
 
