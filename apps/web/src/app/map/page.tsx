@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
 
 import { MapExplorer } from "@/components/map/map-explorer";
+import {
+  listGeographies,
+  listSources,
+  type AdministrativeUnitOut,
+  type DatasetOut,
+} from "@/lib/api";
 
 export const metadata: Metadata = {
   title: "Map",
@@ -16,6 +22,17 @@ function first(value: string | string[] | undefined): string {
 
 export default async function MapPage({ searchParams }: { searchParams: SearchParams }) {
   const raw = await searchParams;
+
+  const [sources, provinces] = await Promise.all([
+    listSources().catch(() => [] as DatasetOut[]),
+    listGeographies({ level: "province", limit: 500 }).catch(() => [] as AdministrativeUnitOut[]),
+  ]);
+
+  const sourceOptions = [
+    ...new Map(sources.map((item) => [item.agency_code, item.agency])).entries(),
+  ] as [string, string][];
+  const provinceOptions = provinces.map((item) => [item.psgc_code, item.name] as [string, string]);
+
   return (
     <MapExplorer
       initialType={first(raw.type)}
@@ -35,6 +52,8 @@ export default async function MapPage({ searchParams }: { searchParams: SearchPa
       initialReferencePeriodStart={first(raw.reference_period_start)}
       initialReferencePeriodEnd={first(raw.reference_period_end)}
       initialUpdatedSince={first(raw.updated_since)}
+      sourceOptions={sourceOptions}
+      provinceOptions={provinceOptions}
     />
   );
 }
