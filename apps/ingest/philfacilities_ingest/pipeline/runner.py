@@ -66,6 +66,7 @@ from .common import (
     build_engine,
     session_factory,
 )
+from .coverage_refresh import refresh_coverage_after_publication
 from .locking import dataset_ingestion_lock
 from .release import (
     _dataset_is_public,
@@ -902,6 +903,8 @@ def _run_ingestion_locked(
         run.report_path = json_path
         run.stats = stats.snapshot()
         session.commit()
+        if run.status == "published":
+            refresh_coverage_after_publication(session)
         return IngestResult(
             dataset=spec.dataset_slug,
             release_label=spec.release_label,

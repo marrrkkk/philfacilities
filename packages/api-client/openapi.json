@@ -58,6 +58,44 @@
             }
           },
           {
+            "name": "facility_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "school",
+                    "health_facility",
+                    "government_office",
+                    "community_facility",
+                    "emergency_facility",
+                    "library",
+                    "museum",
+                    "social_welfare_facility",
+                    "public_market",
+                    "transport_facility",
+                    "utility_facility",
+                    "environmental_monitoring",
+                    "public_space",
+                    "cultural_facility",
+                    "agricultural_facility",
+                    "justice_facility",
+                    "housing_service",
+                    "other_qualifying_facility"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Alias for `type`; both are accepted and equivalent.",
+              "title": "Facility Type"
+            },
+            "description": "Alias for `type`; both are accepted and equivalent."
+          },
+          {
             "name": "subtype",
             "in": "query",
             "required": false,
@@ -488,6 +526,34 @@
               ],
               "title": "Cursor"
             }
+          },
+          {
+            "name": "total",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Set false to skip the count(*) query.",
+              "default": true,
+              "title": "Total"
+            },
+            "description": "Set false to skip the count(*) query."
+          },
+          {
+            "name": "view",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "full",
+                "compact"
+              ],
+              "type": "string",
+              "description": "compact returns twelve-key cards instead of full summaries.",
+              "default": "full",
+              "title": "View"
+            },
+            "description": "compact returns twelve-key cards instead of full summaries."
           }
         ],
         "responses": {
@@ -642,6 +708,44 @@
               ],
               "title": "Type"
             }
+          },
+          {
+            "name": "facility_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "school",
+                    "health_facility",
+                    "government_office",
+                    "community_facility",
+                    "emergency_facility",
+                    "library",
+                    "museum",
+                    "social_welfare_facility",
+                    "public_market",
+                    "transport_facility",
+                    "utility_facility",
+                    "environmental_monitoring",
+                    "public_space",
+                    "cultural_facility",
+                    "agricultural_facility",
+                    "justice_facility",
+                    "housing_service",
+                    "other_qualifying_facility"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Alias for `type`; both are accepted and equivalent.",
+              "title": "Facility Type"
+            },
+            "description": "Alias for `type`; both are accepted and equivalent."
           },
           {
             "name": "subtype",
@@ -1209,6 +1313,44 @@
             }
           },
           {
+            "name": "facility_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "school",
+                    "health_facility",
+                    "government_office",
+                    "community_facility",
+                    "emergency_facility",
+                    "library",
+                    "museum",
+                    "social_welfare_facility",
+                    "public_market",
+                    "transport_facility",
+                    "utility_facility",
+                    "environmental_monitoring",
+                    "public_space",
+                    "cultural_facility",
+                    "agricultural_facility",
+                    "justice_facility",
+                    "housing_service",
+                    "other_qualifying_facility"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Alias for `type`; both are accepted and equivalent.",
+              "title": "Facility Type"
+            },
+            "description": "Alias for `type`; both are accepted and equivalent."
+          },
+          {
             "name": "subtype",
             "in": "query",
             "required": false,
@@ -1769,6 +1911,44 @@
             }
           },
           {
+            "name": "facility_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "school",
+                    "health_facility",
+                    "government_office",
+                    "community_facility",
+                    "emergency_facility",
+                    "library",
+                    "museum",
+                    "social_welfare_facility",
+                    "public_market",
+                    "transport_facility",
+                    "utility_facility",
+                    "environmental_monitoring",
+                    "public_space",
+                    "cultural_facility",
+                    "agricultural_facility",
+                    "justice_facility",
+                    "housing_service",
+                    "other_qualifying_facility"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Alias for `type`; both are accepted and equivalent.",
+              "title": "Facility Type"
+            },
+            "description": "Alias for `type`; both are accepted and equivalent."
+          },
+          {
             "name": "subtype",
             "in": "query",
             "required": false,
@@ -2269,6 +2449,7 @@
           "facilities"
         ],
         "summary": "Facility detail",
+        "description": "view=full (default) returns the complete, byte-for-byte unchanged FacilityDetail. view=compact returns a twelve-key identity/location card built only from the summary projection, with `name` as an alias of `display_name`. Both views apply the same publication gate.\n\n**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).",
         "operationId": "get_facility_v1_facilities__facility_id__get",
         "parameters": [
           {
@@ -2278,6 +2459,20 @@
             "schema": {
               "type": "string",
               "title": "Facility Id"
+            }
+          },
+          {
+            "name": "view",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "full",
+                "compact"
+              ],
+              "type": "string",
+              "default": "full",
+              "title": "View"
             }
           }
         ],
@@ -2375,8 +2570,7 @@
               }
             }
           }
-        },
-        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
+        }
       }
     },
     "/v1/facilities/{facility_id}/sources": {
@@ -3111,6 +3305,18 @@
               ],
               "title": "Cursor"
             }
+          },
+          {
+            "name": "total",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Set false to skip the count(*) query.",
+              "default": true,
+              "title": "Total"
+            },
+            "description": "Set false to skip the count(*) query."
           }
         ],
         "responses": {
@@ -3217,6 +3423,7 @@
           "schools"
         ],
         "summary": "School detail",
+        "description": "The default `shape=wrapper` keeps the historical `{facility, resources}` keys. `shape=detail` opts in to the unified FacilityDetail shared with `GET /v1/facilities/{id}`. `view=compact` returns the twelve-key card, and `include=sources,assertions,domain` attaches only the requested sections to a compact card. `assertions` is capped at 200 rows; use the paginated `/v1/facilities/{facility_id}/assertions` endpoint for the complete claim set. School resource observations are currently empty in the working database until a public observation source is ingested.\n\n**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).",
         "operationId": "get_school_v1_schools__facility_id__get",
         "parameters": [
           {
@@ -3227,6 +3434,52 @@
               "type": "string",
               "title": "Facility Id"
             }
+          },
+          {
+            "name": "view",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "full",
+                "compact"
+              ],
+              "type": "string",
+              "default": "full",
+              "title": "View"
+            }
+          },
+          {
+            "name": "shape",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "wrapper",
+                "detail"
+              ],
+              "type": "string",
+              "default": "wrapper",
+              "title": "Shape"
+            }
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Comma-separated optional sections: sources, assertions, domain. Assertions are capped at 200; use /assertions for all claims.",
+              "title": "Include"
+            },
+            "description": "Comma-separated optional sections: sources, assertions, domain. Assertions are capped at 200; use /assertions for all claims."
           }
         ],
         "responses": {
@@ -3235,7 +3488,21 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SchoolDetailResponse"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/SchoolDetailResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/FacilityDetail"
+                    },
+                    {
+                      "$ref": "#/components/schemas/FacilityCompact"
+                    },
+                    {
+                      "$ref": "#/components/schemas/FacilityCompactExtended"
+                    }
+                  ],
+                  "title": "Response Get School V1 Schools  Facility Id  Get"
                 }
               }
             }
@@ -3323,8 +3590,7 @@
               }
             }
           }
-        },
-        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
+        }
       }
     },
     "/v1/schools/{facility_id}/resources": {
@@ -3333,6 +3599,7 @@
           "schools"
         ],
         "summary": "School resource observations",
+        "description": "Currently empty in the working database: no rights-cleared public resource-observation source has been ingested. The endpoint is kept in /v1 for compatibility and will populate when such a source is published.\n\n**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).",
         "operationId": "get_school_resources_v1_schools__facility_id__resources_get",
         "parameters": [
           {
@@ -3459,8 +3726,7 @@
               }
             }
           }
-        },
-        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
+        }
       }
     },
     "/v1/health-facilities": {
@@ -3676,6 +3942,18 @@
               ],
               "title": "Cursor"
             }
+          },
+          {
+            "name": "total",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Set false to skip the count(*) query.",
+              "default": true,
+              "title": "Total"
+            },
+            "description": "Set false to skip the count(*) query."
           }
         ],
         "responses": {
@@ -3782,6 +4060,7 @@
           "health"
         ],
         "summary": "Health facility detail",
+        "description": "The default `shape=wrapper` keeps the historical `{facility, licenses, accreditations}` keys. `shape=detail` opts in to the unified FacilityDetail shared with `GET /v1/facilities/{id}` (which already includes gated accreditations). `view=compact` returns the twelve-key card, and `include=sources,assertions,domain` attaches only the requested sections. `assertions` is capped at 200 rows; use the paginated `/v1/facilities/{facility_id}/assertions` endpoint for the complete claim set. Licences stay on this endpoint and on `/licenses`; accreditation and licensure are not claims of current operation.\n\n**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).",
         "operationId": "get_health_facility_v1_health_facilities__facility_id__get",
         "parameters": [
           {
@@ -3792,6 +4071,52 @@
               "type": "string",
               "title": "Facility Id"
             }
+          },
+          {
+            "name": "view",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "full",
+                "compact"
+              ],
+              "type": "string",
+              "default": "full",
+              "title": "View"
+            }
+          },
+          {
+            "name": "shape",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "wrapper",
+                "detail"
+              ],
+              "type": "string",
+              "default": "wrapper",
+              "title": "Shape"
+            }
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Comma-separated optional sections: sources, assertions, domain. Assertions are capped at 200; use /assertions for all claims.",
+              "title": "Include"
+            },
+            "description": "Comma-separated optional sections: sources, assertions, domain. Assertions are capped at 200; use /assertions for all claims."
           }
         ],
         "responses": {
@@ -3800,7 +4125,21 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HealthDetailResponse"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/HealthDetailResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/FacilityDetail"
+                    },
+                    {
+                      "$ref": "#/components/schemas/FacilityCompact"
+                    },
+                    {
+                      "$ref": "#/components/schemas/FacilityCompactExtended"
+                    }
+                  ],
+                  "title": "Response Get Health Facility V1 Health Facilities  Facility Id  Get"
                 }
               }
             }
@@ -3888,8 +4227,7 @@
               }
             }
           }
-        },
-        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
+        }
       }
     },
     "/v1/health-facilities/{facility_id}/licenses": {
@@ -4802,6 +5140,18 @@
               ],
               "title": "Cursor"
             }
+          },
+          {
+            "name": "total",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Set false to skip the count(*) query.",
+              "default": true,
+              "title": "Total"
+            },
+            "description": "Set false to skip the count(*) query."
           }
         ],
         "responses": {
@@ -6849,13 +7199,507 @@
           "sources"
         ],
         "summary": "Bulk facility CSV",
+        "description": "Streams publication-approved facilities in stable display-name order. Accepts the same filters as GET /v1/facilities (including the `facility_type` alias for `type`) so every category has a path to a filtered bulk export. CSV injection neutralization and keyset pagination are unchanged.\n\n**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).",
         "operationId": "download_facilities_csv_v1_downloads_facilities_csv_get",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "school",
+                    "health_facility",
+                    "government_office",
+                    "community_facility",
+                    "emergency_facility",
+                    "library",
+                    "museum",
+                    "social_welfare_facility",
+                    "public_market",
+                    "transport_facility",
+                    "utility_facility",
+                    "environmental_monitoring",
+                    "public_space",
+                    "cultural_facility",
+                    "agricultural_facility",
+                    "justice_facility",
+                    "housing_service",
+                    "other_qualifying_facility"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Type"
+            }
+          },
+          {
+            "name": "facility_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "school",
+                    "health_facility",
+                    "government_office",
+                    "community_facility",
+                    "emergency_facility",
+                    "library",
+                    "museum",
+                    "social_welfare_facility",
+                    "public_market",
+                    "transport_facility",
+                    "utility_facility",
+                    "environmental_monitoring",
+                    "public_space",
+                    "cultural_facility",
+                    "agricultural_facility",
+                    "justice_facility",
+                    "housing_service",
+                    "other_qualifying_facility"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Alias for `type`; both are additive and equivalent.",
+              "title": "Facility Type"
+            },
+            "description": "Alias for `type`; both are additive and equivalent."
+          },
+          {
+            "name": "subtype",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Subtype"
+            }
+          },
+          {
+            "name": "inclusion_class",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "GOVERNMENT_FACILITY",
+                    "PRIVATE_PUBLIC_SERVICE_PROVIDER",
+                    "PUBLIC_ACCESS_VENUE",
+                    "DISCOVERY_CANDIDATE"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Inclusion Class"
+            }
+          },
+          {
+            "name": "ownership",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "government",
+                    "private",
+                    "unknown"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ownership"
+            }
+          },
+          {
+            "name": "ownership_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "NATIONAL_GOVERNMENT",
+                    "LOCAL_GOVERNMENT",
+                    "GOCC",
+                    "PUBLIC_EDUCATIONAL_INSTITUTION",
+                    "OTHER_PUBLIC_BODY",
+                    "GOVERNMENT_UNSPECIFIED",
+                    "PRIVATE_CORPORATE",
+                    "PRIVATE_INDIVIDUAL_OR_PARTNERSHIP",
+                    "NGO_NON_PROFIT",
+                    "COOPERATIVE",
+                    "RELIGIOUS_FAITH_BASED",
+                    "PUBLIC_PRIVATE_JOINT",
+                    "PRIVATE_UNSPECIFIED",
+                    "UNKNOWN"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ownership Type"
+            }
+          },
+          {
+            "name": "operator_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "NATIONAL_GOVERNMENT",
+                    "LOCAL_GOVERNMENT",
+                    "GOCC",
+                    "PUBLIC_EDUCATIONAL_INSTITUTION",
+                    "OTHER_PUBLIC_BODY",
+                    "GOVERNMENT_UNSPECIFIED",
+                    "PRIVATE_CORPORATE",
+                    "PRIVATE_INDIVIDUAL_OR_PARTNERSHIP",
+                    "NGO_NON_PROFIT",
+                    "COOPERATIVE",
+                    "RELIGIOUS_FAITH_BASED",
+                    "PUBLIC_PRIVATE_JOINT",
+                    "PRIVATE_UNSPECIFIED",
+                    "UNKNOWN"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Operator Type"
+            }
+          },
+          {
+            "name": "public_access_class",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "PUBLIC_FREE",
+                    "PUBLIC_PAID_OR_CONDITIONAL",
+                    "SERVICE_USERS_ONLY",
+                    "APPOINTMENT_ONLY",
+                    "MEMBERS_STUDENTS_ONLY",
+                    "STAFF_ONLY",
+                    "RESTRICTED",
+                    "UNKNOWN"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Public Access Class"
+            }
+          },
+          {
+            "name": "facility_kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "facility",
+                    "site",
+                    "building",
+                    "facility_unit",
+                    "infrastructure_asset",
+                    "project"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Facility Kind"
+            }
+          },
+          {
+            "name": "function",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 60
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Function"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "name": "psgc",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 12
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Psgc"
+            }
+          },
+          {
+            "name": "region_code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 12
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Region Code"
+            }
+          },
+          {
+            "name": "province_code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 12
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Province Code"
+            }
+          },
+          {
+            "name": "municipality_code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 12
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Municipality Code"
+            }
+          },
+          {
+            "name": "barangay_code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 12
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Barangay Code"
+            }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 40
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source"
+            }
+          },
+          {
+            "name": "has_coordinates",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Has Coordinates"
+            }
+          },
+          {
+            "name": "location_precision",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "gps_verified",
+                    "field_verified",
+                    "source_gps",
+                    "map_geocoded",
+                    "barangay_centroid",
+                    "unknown"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Location Precision"
+            }
+          },
+          {
+            "name": "reference_period_start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Reference Period Start"
+            }
+          },
+          {
+            "name": "reference_period_end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Reference Period End"
+            }
+          },
+          {
+            "name": "updated_since",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Updated Since"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "One or more query parameters are invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
               }
             }
           },
@@ -6886,22 +7730,6 @@
                   "code": "facility_not_found",
                   "message": "No published facility exists with that ID.",
                   "details": null,
-                  "request_id": "synthetic-request-id"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "One or more query parameters are invalid.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                },
-                "example": {
-                  "code": "validation_error",
-                  "message": "One or more query parameters are invalid.",
-                  "details": [],
                   "request_id": "synthetic-request-id"
                 }
               }
@@ -6942,8 +7770,7 @@
               }
             }
           }
-        },
-        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
+        }
       }
     },
     "/v1/downloads/schools.csv": {
@@ -7158,13 +7985,596 @@
           "sources"
         ],
         "summary": "Bulk facility Parquet",
+        "description": "Filtered Parquet export. Accepts the same filters as GET /v1/facilities and applies the same publication gate and CSV-free column set.\n\n**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).",
         "operationId": "download_facilities_parquet_v1_downloads_facilities_parquet_get",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "school",
+                    "health_facility",
+                    "government_office",
+                    "community_facility",
+                    "emergency_facility",
+                    "library",
+                    "museum",
+                    "social_welfare_facility",
+                    "public_market",
+                    "transport_facility",
+                    "utility_facility",
+                    "environmental_monitoring",
+                    "public_space",
+                    "cultural_facility",
+                    "agricultural_facility",
+                    "justice_facility",
+                    "housing_service",
+                    "other_qualifying_facility"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Type"
+            }
+          },
+          {
+            "name": "facility_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "school",
+                    "health_facility",
+                    "government_office",
+                    "community_facility",
+                    "emergency_facility",
+                    "library",
+                    "museum",
+                    "social_welfare_facility",
+                    "public_market",
+                    "transport_facility",
+                    "utility_facility",
+                    "environmental_monitoring",
+                    "public_space",
+                    "cultural_facility",
+                    "agricultural_facility",
+                    "justice_facility",
+                    "housing_service",
+                    "other_qualifying_facility"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Alias for `type`; both are additive and equivalent.",
+              "title": "Facility Type"
+            },
+            "description": "Alias for `type`; both are additive and equivalent."
+          },
+          {
+            "name": "subtype",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Subtype"
+            }
+          },
+          {
+            "name": "inclusion_class",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "GOVERNMENT_FACILITY",
+                    "PRIVATE_PUBLIC_SERVICE_PROVIDER",
+                    "PUBLIC_ACCESS_VENUE",
+                    "DISCOVERY_CANDIDATE"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Inclusion Class"
+            }
+          },
+          {
+            "name": "ownership",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "government",
+                    "private",
+                    "unknown"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ownership"
+            }
+          },
+          {
+            "name": "ownership_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "NATIONAL_GOVERNMENT",
+                    "LOCAL_GOVERNMENT",
+                    "GOCC",
+                    "PUBLIC_EDUCATIONAL_INSTITUTION",
+                    "OTHER_PUBLIC_BODY",
+                    "GOVERNMENT_UNSPECIFIED",
+                    "PRIVATE_CORPORATE",
+                    "PRIVATE_INDIVIDUAL_OR_PARTNERSHIP",
+                    "NGO_NON_PROFIT",
+                    "COOPERATIVE",
+                    "RELIGIOUS_FAITH_BASED",
+                    "PUBLIC_PRIVATE_JOINT",
+                    "PRIVATE_UNSPECIFIED",
+                    "UNKNOWN"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ownership Type"
+            }
+          },
+          {
+            "name": "operator_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "NATIONAL_GOVERNMENT",
+                    "LOCAL_GOVERNMENT",
+                    "GOCC",
+                    "PUBLIC_EDUCATIONAL_INSTITUTION",
+                    "OTHER_PUBLIC_BODY",
+                    "GOVERNMENT_UNSPECIFIED",
+                    "PRIVATE_CORPORATE",
+                    "PRIVATE_INDIVIDUAL_OR_PARTNERSHIP",
+                    "NGO_NON_PROFIT",
+                    "COOPERATIVE",
+                    "RELIGIOUS_FAITH_BASED",
+                    "PUBLIC_PRIVATE_JOINT",
+                    "PRIVATE_UNSPECIFIED",
+                    "UNKNOWN"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Operator Type"
+            }
+          },
+          {
+            "name": "public_access_class",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "PUBLIC_FREE",
+                    "PUBLIC_PAID_OR_CONDITIONAL",
+                    "SERVICE_USERS_ONLY",
+                    "APPOINTMENT_ONLY",
+                    "MEMBERS_STUDENTS_ONLY",
+                    "STAFF_ONLY",
+                    "RESTRICTED",
+                    "UNKNOWN"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Public Access Class"
+            }
+          },
+          {
+            "name": "facility_kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "facility",
+                    "site",
+                    "building",
+                    "facility_unit",
+                    "infrastructure_asset",
+                    "project"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Facility Kind"
+            }
+          },
+          {
+            "name": "function",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 60
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Function"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "name": "psgc",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 12
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Psgc"
+            }
+          },
+          {
+            "name": "region_code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 12
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Region Code"
+            }
+          },
+          {
+            "name": "province_code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 12
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Province Code"
+            }
+          },
+          {
+            "name": "municipality_code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 12
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Municipality Code"
+            }
+          },
+          {
+            "name": "barangay_code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 12
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Barangay Code"
+            }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 40
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source"
+            }
+          },
+          {
+            "name": "has_coordinates",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Has Coordinates"
+            }
+          },
+          {
+            "name": "location_precision",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "gps_verified",
+                    "field_verified",
+                    "source_gps",
+                    "map_geocoded",
+                    "barangay_centroid",
+                    "unknown"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Location Precision"
+            }
+          },
+          {
+            "name": "reference_period_start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Reference Period Start"
+            }
+          },
+          {
+            "name": "reference_period_end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Reference Period End"
+            }
+          },
+          {
+            "name": "updated_since",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Updated Since"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "One or more query parameters are invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/taxonomy": {
+      "get": {
+        "tags": [
+          "taxonomy"
+        ],
+        "summary": "Controlled vocabularies and display labels",
+        "description": "Return the controlled codes, labels, and category-to-subtype mapping.\n\nClients should use this reference instead of hardcoding a private copy of\nthe vocabulary. It is static for a given API release and safe to cache.\n\n**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).",
+        "operationId": "get_taxonomy_v1_taxonomy_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaxonomyResponse"
+                }
               }
             }
           },
@@ -7251,25 +8661,54 @@
               }
             }
           }
-        },
-        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
+        }
       }
     },
-    "/v1/taxonomy": {
+    "/v1/fields": {
       "get": {
         "tags": [
-          "taxonomy"
+          "facilities"
         ],
-        "summary": "Controlled vocabularies and display labels",
-        "description": "Return the controlled codes, labels, and category-to-subtype mapping.\n\nClients should use this reference instead of hardcoding a private copy of\nthe vocabulary. It is static for a given API release and safe to cache.\n\n**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).",
-        "operationId": "get_taxonomy_v1_taxonomy_get",
+        "summary": "Public field coverage and null/empty semantics",
+        "description": "Reports how many public facilities have an established value for each canonical field. Every entry carries its own scope and denominator, and all counts use the same publication gate as GET /v1/facilities. Pass by_category=true to include per-category denominators. Counts are read from a materialized view refreshed after publication and cached for one hour; databases without that view compute the same figures on demand.\n\n**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).",
+        "operationId": "get_field_coverage_v1_fields_get",
+        "parameters": [
+          {
+            "name": "by_category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Include per-category populated/total denominators.",
+              "default": false,
+              "title": "By Category"
+            },
+            "description": "Include per-category populated/total denominators."
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/TaxonomyResponse"
+                  "$ref": "#/components/schemas/FieldCoverageResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "One or more query parameters are invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
                 }
               }
             }
@@ -7301,22 +8740,6 @@
                   "code": "facility_not_found",
                   "message": "No published facility exists with that ID.",
                   "details": null,
-                  "request_id": "synthetic-request-id"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "One or more query parameters are invalid.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                },
-                "example": {
-                  "code": "validation_error",
-                  "message": "One or more query parameters are invalid.",
-                  "details": [],
                   "request_id": "synthetic-request-id"
                 }
               }
@@ -8346,6 +9769,121 @@
         ],
         "title": "ChangeListResponse"
       },
+      "CompactGeographyOut": {
+        "properties": {
+          "psgc_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Psgc Code"
+          },
+          "region_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region Name"
+          },
+          "province_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Province Name"
+          },
+          "municipality_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Municipality Name"
+          }
+        },
+        "type": "object",
+        "title": "CompactGeographyOut",
+        "description": "Just the labels a card needs; the full hierarchy stays on detail."
+      },
+      "CompactLocationOut": {
+        "properties": {
+          "latitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latitude"
+          },
+          "longitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Longitude"
+          },
+          "precision": {
+            "type": "string",
+            "enum": [
+              "gps_verified",
+              "field_verified",
+              "source_gps",
+              "map_geocoded",
+              "barangay_centroid",
+              "unknown"
+            ],
+            "title": "Precision",
+            "default": "unknown"
+          },
+          "address_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address Text"
+          },
+          "psgc_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Psgc Code"
+          }
+        },
+        "type": "object",
+        "title": "CompactLocationOut",
+        "description": "Location fields needed to render a card; full precision data stays on detail."
+      },
       "ContactOut": {
         "properties": {
           "id": {
@@ -8854,6 +10392,399 @@
           "is_synthetic"
         ],
         "title": "DatasetOut"
+      },
+      "FacilityCompact": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "facility_type": {
+            "type": "string",
+            "enum": [
+              "school",
+              "health_facility",
+              "government_office",
+              "community_facility",
+              "emergency_facility",
+              "library",
+              "museum",
+              "social_welfare_facility",
+              "public_market",
+              "transport_facility",
+              "utility_facility",
+              "environmental_monitoring",
+              "public_space",
+              "cultural_facility",
+              "agricultural_facility",
+              "justice_facility",
+              "housing_service",
+              "other_qualifying_facility"
+            ],
+            "title": "Facility Type"
+          },
+          "facility_subtype": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Facility Subtype"
+          },
+          "inclusion_class": {
+            "type": "string",
+            "enum": [
+              "GOVERNMENT_FACILITY",
+              "PRIVATE_PUBLIC_SERVICE_PROVIDER",
+              "PUBLIC_ACCESS_VENUE",
+              "DISCOVERY_CANDIDATE"
+            ],
+            "title": "Inclusion Class"
+          },
+          "ownership": {
+            "type": "string",
+            "enum": [
+              "government",
+              "private",
+              "unknown"
+            ],
+            "title": "Ownership"
+          },
+          "location": {
+            "$ref": "#/components/schemas/CompactLocationOut"
+          },
+          "geography": {
+            "$ref": "#/components/schemas/CompactGeographyOut"
+          },
+          "source_refs": {
+            "items": {
+              "$ref": "#/components/schemas/SourceRefOut"
+            },
+            "type": "array",
+            "title": "Source Refs"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "display_name",
+          "facility_type",
+          "inclusion_class",
+          "ownership",
+          "location",
+          "geography",
+          "updated_at"
+        ],
+        "title": "FacilityCompact",
+        "description": "Twelve-key identity and location view for cards and link resolution.\n\n``name`` is an alias of ``display_name`` shared with map points so clients\ncan render either surface without a field mapping. Constant fields, typed\nprofiles, detail-only collections and quality are intentionally omitted.",
+        "examples": [
+          {
+            "id": "00000000-0000-4000-8000-000000000001",
+            "name": "Synthetic Example Library",
+            "slug": "synthetic-example-library",
+            "display_name": "Synthetic Example Library",
+            "facility_type": "library",
+            "facility_subtype": null,
+            "inclusion_class": "DISCOVERY_CANDIDATE",
+            "ownership": "unknown",
+            "location": {
+              "latitude": 14.6,
+              "longitude": 120.98,
+              "precision": "map_geocoded",
+              "address_text": "1 Synthetic Road, Example City",
+              "psgc_code": "9901000001"
+            },
+            "geography": {
+              "psgc_code": "9901000001",
+              "region_name": "Synthetic Region (demo)",
+              "province_name": "Synthetic Province (demo)",
+              "municipality_name": "Example City (demo)"
+            },
+            "source_refs": [
+              {
+                "agency_code": "SYN",
+                "dataset_slug": "synthetic-example-directory",
+                "source_record_id": "SYN-EXAMPLE-0001"
+              }
+            ],
+            "updated_at": "2026-11-21T09:00:00Z"
+          }
+        ]
+      },
+      "FacilityCompactExtended": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "facility_type": {
+            "type": "string",
+            "enum": [
+              "school",
+              "health_facility",
+              "government_office",
+              "community_facility",
+              "emergency_facility",
+              "library",
+              "museum",
+              "social_welfare_facility",
+              "public_market",
+              "transport_facility",
+              "utility_facility",
+              "environmental_monitoring",
+              "public_space",
+              "cultural_facility",
+              "agricultural_facility",
+              "justice_facility",
+              "housing_service",
+              "other_qualifying_facility"
+            ],
+            "title": "Facility Type"
+          },
+          "facility_subtype": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Facility Subtype"
+          },
+          "inclusion_class": {
+            "type": "string",
+            "enum": [
+              "GOVERNMENT_FACILITY",
+              "PRIVATE_PUBLIC_SERVICE_PROVIDER",
+              "PUBLIC_ACCESS_VENUE",
+              "DISCOVERY_CANDIDATE"
+            ],
+            "title": "Inclusion Class"
+          },
+          "ownership": {
+            "type": "string",
+            "enum": [
+              "government",
+              "private",
+              "unknown"
+            ],
+            "title": "Ownership"
+          },
+          "location": {
+            "$ref": "#/components/schemas/CompactLocationOut"
+          },
+          "geography": {
+            "$ref": "#/components/schemas/CompactGeographyOut"
+          },
+          "source_refs": {
+            "items": {
+              "$ref": "#/components/schemas/SourceRefOut"
+            },
+            "type": "array",
+            "title": "Source Refs"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "school": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SchoolProfileOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "health": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HealthProfileOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "utility": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UtilityProfileOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "accreditations": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/AccreditationOut"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accreditations"
+          },
+          "licenses": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/LicenseOut"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Licenses"
+          },
+          "resources": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ResourceObservationOut"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resources"
+          },
+          "sources": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/SourceEvidence"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sources"
+          },
+          "assertions": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/AttributeAssertionOut"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assertions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "display_name",
+          "facility_type",
+          "inclusion_class",
+          "ownership",
+          "location",
+          "geography",
+          "updated_at"
+        ],
+        "title": "FacilityCompactExtended",
+        "description": "Opt-in sections attached to a compact card via ``include=``.\n\nUnrequested sections are omitted by the response helper rather than\nrendered as null collections that could be mistaken for \"no published rows\nexist\". Base compact fields keep their nulls.",
+        "examples": [
+          {
+            "display_name": "Synthetic Example Library",
+            "facility_type": "library",
+            "geography": {
+              "municipality_name": "Example City (demo)",
+              "province_name": "Synthetic Province (demo)",
+              "psgc_code": "9901000001",
+              "region_name": "Synthetic Region (demo)"
+            },
+            "id": "00000000-0000-4000-8000-000000000001",
+            "inclusion_class": "DISCOVERY_CANDIDATE",
+            "location": {
+              "address_text": "1 Synthetic Road, Example City",
+              "latitude": 14.6,
+              "longitude": 120.98,
+              "precision": "map_geocoded",
+              "psgc_code": "9901000001"
+            },
+            "name": "Synthetic Example Library",
+            "ownership": "unknown",
+            "slug": "synthetic-example-library",
+            "source_refs": [
+              {
+                "agency_code": "SYN",
+                "dataset_slug": "synthetic-example-directory",
+                "source_record_id": "SYN-EXAMPLE-0001"
+              }
+            ],
+            "updated_at": "2026-11-21T09:00:00Z"
+          }
+        ]
       },
       "FacilityDetail": {
         "properties": {
@@ -9383,7 +11314,14 @@
             "default": false
           },
           "total": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Total"
           },
           "limit": {
@@ -9394,7 +11332,6 @@
         "type": "object",
         "required": [
           "items",
-          "total",
           "limit"
         ],
         "title": "FacilityListResponse"
@@ -10109,6 +12046,131 @@
           }
         ]
       },
+      "FieldCoverageEntry": {
+        "properties": {
+          "field": {
+            "type": "string",
+            "title": "Field"
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "summary",
+              "detail",
+              "profile_school",
+              "profile_health",
+              "profile_utility"
+            ],
+            "title": "Scope"
+          },
+          "populated": {
+            "type": "integer",
+            "title": "Populated"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "fill_ratio": {
+            "type": "number",
+            "title": "Fill Ratio"
+          },
+          "semantics": {
+            "type": "string",
+            "title": "Semantics"
+          }
+        },
+        "type": "object",
+        "required": [
+          "field",
+          "scope",
+          "populated",
+          "total",
+          "fill_ratio",
+          "semantics"
+        ],
+        "title": "FieldCoverageEntry",
+        "description": "How fully one public field is populated, with an explicit denominator."
+      },
+      "FieldCoverageResponse": {
+        "properties": {
+          "as_of": {
+            "type": "string",
+            "format": "date-time",
+            "title": "As Of"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/FieldCoverageEntry"
+            },
+            "type": "array",
+            "title": "Fields"
+          },
+          "by_category": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "items": {
+                    "$ref": "#/components/schemas/FieldCoverageEntry"
+                  },
+                  "type": "array"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "By Category"
+          },
+          "caveats": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Caveats"
+          }
+        },
+        "type": "object",
+        "required": [
+          "as_of",
+          "version",
+          "fields",
+          "caveats"
+        ],
+        "title": "FieldCoverageResponse",
+        "examples": [
+          {
+            "as_of": "2026-11-21T09:00:00Z",
+            "version": "1.3",
+            "fields": [
+              {
+                "field": "relationships[]",
+                "scope": "detail",
+                "populated": 0,
+                "total": 229274,
+                "fill_ratio": 0.0,
+                "semantics": "[] means no publication-cleared rows exist for this collection."
+              },
+              {
+                "field": "location.postal_code",
+                "scope": "summary",
+                "populated": 27924,
+                "total": 227911,
+                "fill_ratio": 0.1225,
+                "semantics": "null means no value supplied or established."
+              }
+            ],
+            "caveats": [
+              "Counts are derived from public facilities using the API publication gate."
+            ]
+          }
+        ]
+      },
       "GeographyCrosswalkOut": {
         "properties": {
           "from_psgc_code": {
@@ -10395,7 +12457,8 @@
           "licenses",
           "accreditations"
         ],
-        "title": "HealthDetailResponse"
+        "title": "HealthDetailResponse",
+        "description": "Legacy wrapper, kept as the default for /v1/health-facilities/{id}."
       },
       "HealthProfileOut": {
         "properties": {
@@ -11751,7 +13814,8 @@
           "facility",
           "resources"
         ],
-        "title": "SchoolDetailResponse"
+        "title": "SchoolDetailResponse",
+        "description": "Legacy wrapper, kept as the default for /v1/schools/{id}.\n\nThe generated client keeps ``facility: FacilityDetail``; compact variants\nare returned as explicit JSON and documented in the operation description."
       },
       "SchoolProfileOut": {
         "properties": {
@@ -13019,37 +15083,7 @@
         "title": "ValidationError"
       },
       "ErrorBody": {
-        "properties": {
-          "code": {
-            "title": "Code",
-            "type": "string"
-          },
-          "message": {
-            "title": "Message",
-            "type": "string"
-          },
-          "details": {
-            "anyOf": [
-              {},
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Details"
-          },
-          "request_id": {
-            "title": "Request Id",
-            "type": "string"
-          }
-        },
-        "required": [
-          "code",
-          "message",
-          "request_id"
-        ],
-        "title": "ErrorBody",
-        "type": "object",
+        "description": "The flat error envelope returned by every /v1 handler.\n\n``details`` is ``None`` when there is no structured context and a list of\nvalidation issues for 422 responses. The object is never wrapped under an\n``error`` key inside /v1; doing so would be a breaking change.",
         "examples": [
           {
             "code": "invalid_bbox",
@@ -13084,7 +15118,38 @@
             "details": null,
             "request_id": "synthetic-request-id"
           }
-        ]
+        ],
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "details": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Details"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "request_id"
+        ],
+        "title": "ErrorBody",
+        "type": "object"
       }
     }
   },

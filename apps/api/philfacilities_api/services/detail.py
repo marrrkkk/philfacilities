@@ -16,6 +16,10 @@ from ..publication import (
     public_source_record_condition,
 )
 from ..schemas import (
+    CompactGeographyOut,
+    CompactLocationOut,
+    FacilityCompact,
+    FacilityCompactListItem,
     FacilityFunctionOut,
     FacilityRelationshipOut,
     FacilityRoleOut,
@@ -26,6 +30,7 @@ from ..schemas import (
     SourceRefOut,
 )
 from .loaders import (
+    load_attribute_assertions,
     load_current_locations,
     load_functions,
     load_geography,
@@ -35,6 +40,10 @@ from .loaders import (
 )
 from .quality import quality_for
 from .search import decimal_to_float
+
+# ``include=assertions`` is a convenience view, not a paginated endpoint.
+# Clients needing the complete claim set must use /assertions.
+ASSERTION_INCLUDE_LIMIT = 200
 
 
 def build_summaries(
@@ -93,6 +102,95 @@ def build_summaries(
             )
         )
     return summaries
+
+
+def project_compact(summary) -> FacilityCompact:
+    return FacilityCompact(
+        id=summary.id,
+        name=summary.display_name,
+        slug=summary.slug,
+        display_name=summary.display_name,
+        facility_type=summary.facility_type,
+        facility_subtype=summary.facility_subtype,
+        inclusion_class=summary.inclusion_class,
+        ownership=summary.ownership,
+        location=CompactLocationOut(
+            latitude=summary.location.latitude,
+            longitude=summary.location.longitude,
+            precision=summary.location.precision,
+            address_text=summary.location.address_text,
+            psgc_code=summary.location.psgc_code,
+        ),
+        geography=CompactGeographyOut(
+            psgc_code=summary.geography.psgc_code,
+            region_name=summary.geography.region_name,
+            province_name=summary.geography.province_name,
+            municipality_name=summary.geography.municipality_name,
+        ),
+        source_refs=summary.source_refs,
+        updated_at=summary.updated_at,
+    )
+
+
+def project_compact_list_item(summary) -> FacilityCompactListItem:
+    """Lean list card: identity/location plus a source count, not full refs."""
+
+    compact = project_compact(summary)
+    return FacilityCompactListItem(
+        **compact.model_dump(exclude={"source_refs"}),
+        source_count=summary.source_count,
+    )
+
+
+def build_facility_compact(
+    session: Session,
+    facility: Facility,
+    geography_release: str | None = None,
+) -> FacilityCompact:
+    """Project the existing summary into a small card payload.
+
+    Deliberately calls only ``build_summaries``; calling ``build_facility_detail``
+    here would keep the slow collection/profile queries and defeat the purpose.
+    """
+
+    return project_compact(build_summaries(session, [facility], geography_release)[0])
+
+
+def build_facility_compact_extended(
+    session: Session,
+    facility: Facility,
+    include: set[str],
+    geography_release: str | None = None,
+    *,
+    resources: list | None = None,
+    licenses: list | None = None,
+):
+    """Attach only the explicitly requested sections to a compact card.
+
+    ``sources``, ``assertions`` and ``domain`` are opt-in: unrequested sections
+    stay ``None`` rather than rendering as an empty collection that could be
+    mistaken for "no published rows exist".
+    """
+
+    from ..schemas import FacilityCompactExtended
+
+    compact = build_facility_compact(session, facility, geography_release)
+    result = FacilityCompactExtended(**compact.model_dump())
+    if "sources" in include:
+        result.sources = load_source_evidence(session, [facility.id]).get(facility.id, [])
+    if "assertions" in include:
+        result.assertions = load_attribute_assertions(
+            session, facility.id, limit=ASSERTION_INCLUDE_LIMIT
+        )
+    if "domain" in include:
+        detail = build_facility_detail(session, facility, geography_release)
+        result.school = detail.school
+        result.health = detail.health
+        result.utility = detail.utility
+        result.accreditations = detail.accreditations
+        result.resources = resources
+        result.licenses = licenses
+    return result
 
 
 def build_facility_detail(

@@ -1,0 +1,43 @@
+{
+  "captured_at": "2026-11-21T10:56:43.806058+00:00",
+  "measurement_date": "2026-11-21",
+  "purpose": "Per-phase benchmark gates from the API DX improvement plan (section 7 workflow)",
+  "method": "scripts/api_benchmark.py --samples 10 --warmup 2 against 127.0.0.1 working DB; phase-scoped metrics below",
+  "phases": {
+    "phase_0_baseline": {
+      "evidence": "2026-11-21-api-dx-baseline.json",
+      "p50_ms": {
+        "facilities_20": 164,
+        "detail": 111,
+        "bbox": 1009
+      },
+      "p95_ms": {
+        "facilities_20": 180,
+        "detail": 118,
+        "bbox": 1212
+      },
+      "verdict": "baseline recorded before code changes; values are p50/p95 from scripts/api_benchmark.py --samples 10"
+    },
+    "phase_1_gate": {
+      "detail_compact_bytes": 1095,
+      "detail_full_bytes": 7480,
+      "fields_p50_ms": 17,
+      "fields_mv_read_ms": 13,
+      "etag_304": "tests/test_api_integration.py::test_field_coverage_by_category_and_etag passed",
+      "verdict": "compact <= 2.5 KB; coverage ETag-cached and served from refreshed MV"
+    },
+    "phase_2_gate": {
+      "filtered_downloads": "tests/test_api_integration.py::test_filtered_downloads_match_list_counts_and_stay_gated passed",
+      "domain_detail_shapes": "tests/test_api_integration.py::test_domain_details_share_the_generic_detail_shape passed",
+      "verdict": "consistency and reach checks passed; no payload regression on list endpoints"
+    },
+    "phase_3_gate": {
+      "list_100_compact_bytes": 64355,
+      "list_100_full_bytes": 151494,
+      "list_compact_p50_ms": 235,
+      "rate_limit_headers": "tests/test_api_contract.py::test_error_envelope_is_flat_on_429_and_500 passed",
+      "verdict": "compact list under 75 KiB; rate-limit and total=false additive params verified"
+    }
+  },
+  "note": "Phase 1-3 metrics were captured during the final verification pass on the cumulative implementation; the baseline file records the pre-change state."
+}

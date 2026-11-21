@@ -21,14 +21,16 @@ The public API is read-only. Records that fail the publication gate are absent: 
 8. **Synthetic records are labelled.** `is_synthetic: true` means the record is generated for demonstration and testing. It is not an official government record. The working database contains no synthetic facilities.
 9. **Source labels describe provenance, not authority.** OSM/HOT records are crowd-sourced map features. A PhilHealth accreditation confirms a time-bound benefit-package relationship, not a current service guarantee. BetterGov PSGC and population snapshots are supplementary mirrors, not the latest official PSA releases.
 10. **Rights are separate from the code licence.** The repository is Apache-2.0; the data is not. Each dataset carries its own redistribution state and publication gate.
+11. **`null` and `[]` mean different things.** `null` is no value supplied or established; `[]` is no publication-cleared rows for a collection — not "the facility has none". Neither is converted in `/v1`; `GET /v1/fields` publishes the rule and the measured fill ratio for each field, with an explicit scope denominator.
+12. **Category coverage is source-driven.** All 16 taxonomy categories are queryable through `/v1/facilities`, but authoritative typed profiles exist mainly for schools and health because rights-cleared official sources exist for them. Other categories are largely discovery-layer records; absence of a profile is not absence of a facility.
 
 ## 2. Canonical facility
 
-Endpoint: `GET /v1/facilities/{facility_id}` (UUID or public slug)
+Endpoint: `GET /v1/facilities/{facility_id}?view=full|compact` (UUID or public slug)
 List: `GET /v1/facilities`
 Bulk: `GET /v1/downloads/facilities.csv`, `GET /v1/downloads/facilities.parquet`
 
-Summary fields are returned by the list, map, and nearby endpoints. Detail adds the fields marked **detail only**.
+Summary fields are returned by the list, map, and nearby endpoints. Detail adds the fields marked **detail only**. `view=full` is the default and unchanged. `view=compact` returns 12 keys — `id`, `name` (an alias of `display_name`, shared with map points), `slug`, `display_name`, `facility_type`, `facility_subtype`, `inclusion_class`, `ownership`, a reduced `location` (latitude, longitude, precision, address_text, psgc_code), a reduced `geography` (psgc_code, region_name, province_name, municipality_name), `source_refs`, and `updated_at`. It omits constant fields, typed profiles, detail-only collections, and `quality` without issuing the detail queries.
 
 | Field | Type | Meaning |
 |---|---|---|
@@ -227,6 +229,8 @@ Additional location fields:
 
 A postal code is a source claim, not a normalized mailing address. Do not infer one from the PSGC hierarchy. A missing code means the source did not supply one; it is not an empty string or a zero.
 
+**One canonical precision path.** `location.precision` on a summary, detail, or compact detail is the canonical field. The map point shortens it to `precision`, and `location_precision` is the filter name on lists, maps, nearby searches, and filtered downloads. These are three names for the same controlled value; the API does not add a `location_precision` alias to the summary body because it would duplicate an existing field without changing its meaning.
+
 A `psgc_code` can be source-supplied or derived. Derived values keep their evidence as an `AttributeAssertion`: source code/name resolution uses `psgc-resolution-v1`, while point-in-polygon map containment uses `psgc-spatial-v1`. By default a map-derived value fills a missing code, or replaces a code only with a more specific descendant; same-level and different-branch map conflicts are reported for review rather than silently overwritten. With the map-authoritative workflow (`--prefer-map`), the containing map unit replaces same-level or different-branch source codes; the original source claim remains in its assertion, and a map result that is less specific than the source code is not downgraded. A location outside every resolved OSM boundary remains unknown. The OSM boundary layer is internal reference geometry, not an official PSA boundary release.
 
 Do not render a `barangay_centroid` or `map_geocoded` point as an exact facility pin. A map must keep a text result list available when tiles fail. Never invent coordinates for a record that has none.
@@ -256,6 +260,8 @@ Only institutional channels are published. Named staff contacts, personal mobile
 Source evidence: `GET /v1/facilities/{facility_id}/sources`
 Field claims: `GET /v1/facilities/{facility_id}/assertions?attribute=`
 Catalogue: `GET /v1/sources`, `GET /v1/sources/{source_id}`, `GET /v1/source-releases?dataset=`, `GET /v1/source-checks?dataset=`, `GET /v1/monitoring`
+
+`source_refs[].source_record_id` is the **source record key as text** (for example `SYN-DEPED-0001`), chosen so two same-named facilities from different registries can be distinguished in a list without fetching `/sources`. The `source_record_id` on a typed profile (`school`, `health`, `utility`), a contact, or another child observation is the **canonical UUID** of that source record. They are deliberately different types and are not interchangeable: use the text key to read a source row from its register, and the UUID to join canonical child rows. Full evidence, including both identifiers, lives on `GET /v1/facilities/{facility_id}/sources`.
 
 Each source evidence row describes one original record:
 
@@ -545,7 +551,7 @@ History is append-oriented. A correction creates a new event; it does not rewrit
 - Facility, school, and health lists are cursor-paginated: send `cursor`, read `next_cursor` and `has_more`. Cursors are opaque and capped in length.
 - Reference tables (geographies, accreditations, population, source checks, source releases, quality issues, match candidates) use `limit` and `offset`.
 - `limit` has a server-side maximum. Spatial bounding boxes and nearby radii are also capped.
-- Errors use `{ "error": { "code", "message", "details", "request_id" } }`. `request_id` also appears in the `X-Request-ID` response header.
+- Errors use a flat envelope: `{ "code", "message", "details", "request_id" }` (no outer `error` key). `details` is `null` unless structured context exists. `request_id` also appears in the `X-Request-ID` response header.
 - Conditional JSON responses expose `ETag`; request timing is in `X-Response-Time-Ms`.
 - CORS is restricted to configured web origins. There is no authentication for public reads, and no write or review action is exposed.
 
@@ -553,7 +559,9 @@ Full endpoint and filter reference: [API](api.md).
 
 ## 16. Current coverage caveats
 
-Measured 18 November 2026: 273,369 canonical facilities, all public, 155,230 public with coordinates, 118,139 without. These counts change as sources are added or reviewed.
+Measured 18 November 2026: 273,369 canonical facilities, all public, 155,230 public with coordinates, 118,139 without. These counts change as sources are added or reviewed. The baseline captured for the API DX plan on 21 November 2026 (229,274 published records) is in [`operations/evidence/2026-11-21-api-dx-baseline.json`](operations/evidence/2026-11-21-api-dx-baseline.json); volatile counts belong there and in `/v1/statistics`, not in prose.
+
+The registry spans 16 taxonomy categories, but authoritative profiles exist mainly for schools and health facilities: DepEd masterlists/EBEIS and DOH NHFR are the strongest rights-cleared official sources. Government offices, libraries, and public spaces arrive largely through OSM/HOT discovery layers, which cannot support authoritative domain profiles. Use the generic `facility_type` filter, `function_details`, and `roles` for those categories; `/v1/fields` shows which fields are actually populated.
 
 - Coverage counts describe processed source records, not the real-world facility universe. None of these counts establishes nationwide completeness.
 - OSM/HOT facilities are crowd-sourced map features, not official DepEd, DOH, DILG, or LGU registries. Their coordinates are often bounding-box centres (`map_geocoded`) and their operational status is unknown.

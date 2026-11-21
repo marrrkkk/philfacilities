@@ -97,9 +97,12 @@ def get_geography_facilities(
     db: Annotated[Session, Depends(get_db)],
     limit: int = Query(20, ge=1),
     cursor: str | None = None,
+    total: bool = Query(True, description="Set false to skip the count(*) query."),
 ):
     conditions = facility_conditions(psgc=psgc_code)
-    return paginated_facilities(db, conditions, clamp_limit(limit, 100, 20), cursor)
+    return paginated_facilities(
+        db, conditions, clamp_limit(limit, 100, 20), cursor, with_total=total
+    )
 
 
 @router.get(

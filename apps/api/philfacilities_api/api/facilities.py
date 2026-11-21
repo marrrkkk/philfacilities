@@ -7,7 +7,7 @@ from datetime import date, datetime
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Query
-from fastapi.responses import Response
+from fastapi.responses import JSONResponse, Response
 from geoalchemy2.types import Geography
 from sqlalchemy import Float, and_, cast, func, or_, select
 from sqlalchemy.orm import Session
@@ -43,10 +43,12 @@ from ..schemas import (
     SourceEvidence,
 )
 from ..services import (
+    build_facility_compact,
     build_facility_detail,
     build_summaries,
     load_attribute_assertions,
     load_source_evidence,
+    project_compact_list_item,
     public_source_record_condition,
 )
 from .common import get_public_facility
@@ -90,6 +92,9 @@ def _parse_bbox(raw: str, *, max_area: float | None = None) -> tuple[float, floa
 def list_facilities(
     db: Annotated[Session, Depends(get_db)],
     type: FacilityTypeFilter | None = None,
+    facility_type: FacilityTypeFilter | None = Query(
+        None, description="Alias for `type`; both are accepted and equivalent."
+    ),
     subtype: str | None = Query(None, max_length=80),
     inclusion_class: InclusionClass | None = None,
     ownership: OwnershipFilter | None = None,
@@ -116,9 +121,13 @@ def list_facilities(
     updated_since: datetime | None = None,
     limit: int = Query(20, ge=1),
     cursor: str | None = None,
+    total: bool = Query(True, description="Set false to skip the count(*) query."),
+    view: Literal["full", "compact"] = Query(
+        "full", description="compact returns twelve-key cards instead of full summaries."
+    ),
 ):
     conditions = facility_conditions(
-        facility_type=type,
+        facility_type=facility_type or type,
         facility_subtype=subtype,
         inclusion_class=inclusion_class,
         ownership=ownership,
@@ -141,7 +150,11 @@ def list_facilities(
         updated_since=updated_since,
     )
     selected_limit = clamp_limit(limit, settings.max_page_size, settings.default_page_size)
-    total = db.scalar(select(func.count()).select_from(Facility).where(*conditions)) or 0
+    total_count = (
+        db.scalar(select(func.count()).select_from(Facility).where(*conditions)) or 0
+        if total
+        else None
+    )
 
     query = select(Facility).where(*conditions)
     if cursor:
@@ -165,11 +178,24 @@ def list_facilities(
         if has_more and summaries
         else None
     )
+    if view == "compact":
+        # Same page, same gate, same loaders; only the projection is smaller.
+        return JSONResponse(
+            content={
+                "items": [
+                    project_compact_list_item(item).model_dump(mode="json") for item in summaries
+                ],
+                "next_cursor": next_cursor,
+                "has_more": has_more,
+                "total": total_count,
+                "limit": selected_limit,
+            }
+        )
     return FacilityListResponse(
         items=summaries,
         next_cursor=next_cursor,
         has_more=has_more,
-        total=total,
+        total=total_count,
         limit=selected_limit,
     )
 
@@ -179,6 +205,9 @@ def facilities_within(
     db: Annotated[Session, Depends(get_db)],
     bbox: str = Query(..., description="min_lon,min_lat,max_lon,max_lat"),
     type: FacilityTypeFilter | None = None,
+    facility_type: FacilityTypeFilter | None = Query(
+        None, description="Alias for `type`; both are accepted and equivalent."
+    ),
     subtype: str | None = Query(None, max_length=80),
     inclusion_class: InclusionClass | None = None,
     ownership: OwnershipFilter | None = None,
@@ -203,7 +232,7 @@ def facilities_within(
     min_lon, min_lat, max_lon, max_lat = _parse_bbox(bbox, max_area=settings.max_bbox_area_deg2)
     selected_limit = min(limit, settings.max_map_features)
     conditions = facility_conditions(
-        facility_type=type,
+        facility_type=facility_type or type,
         facility_subtype=subtype,
         inclusion_class=inclusion_class,
         ownership=ownership,
@@ -259,6 +288,9 @@ def facilities_map(
     bbox: str = Query(..., description="min_lon,min_lat,max_lon,max_lat"),
     zoom: int = Query(6, ge=0, le=22, description="Client zoom level; tunes cluster density."),
     type: FacilityTypeFilter | None = None,
+    facility_type: FacilityTypeFilter | None = Query(
+        None, description="Alias for `type`; both are accepted and equivalent."
+    ),
     subtype: str | None = Query(None, max_length=80),
     inclusion_class: InclusionClass | None = None,
     ownership: OwnershipFilter | None = None,
@@ -290,7 +322,7 @@ def facilities_map(
 
     min_lon, min_lat, max_lon, max_lat = _parse_bbox(bbox)
     conditions = facility_conditions(
-        facility_type=type,
+        facility_type=facility_type or type,
         facility_subtype=subtype,
         inclusion_class=inclusion_class,
         ownership=ownership,
@@ -430,6 +462,9 @@ def facilities_nearby(
     lon: float = Query(..., ge=-180, le=180),
     radius_m: int = Query(5000, ge=1),
     type: FacilityTypeFilter | None = None,
+    facility_type: FacilityTypeFilter | None = Query(
+        None, description="Alias for `type`; both are accepted and equivalent."
+    ),
     subtype: str | None = Query(None, max_length=80),
     inclusion_class: InclusionClass | None = None,
     ownership: OwnershipFilter | None = None,
@@ -460,7 +495,7 @@ def facilities_nearby(
         )
     selected_limit = min(limit, settings.max_map_features)
     conditions = facility_conditions(
-        facility_type=type,
+        facility_type=facility_type or type,
         facility_subtype=subtype,
         inclusion_class=inclusion_class,
         ownership=ownership,
@@ -508,9 +543,29 @@ def facilities_nearby(
     )
 
 
-@router.get("/{facility_id}", response_model=FacilityDetail, summary="Facility detail")
-def get_facility(facility_id: str, db: Annotated[Session, Depends(get_db)]):
+@router.get(
+    "/{facility_id}",
+    # Keep FacilityDetail as the generated-client type: web/MCP clients always
+    # use the full view. The compact branch is returned as an explicit JSON
+    # response and documented in the operation description.
+    response_model=FacilityDetail,
+    summary="Facility detail",
+    description=(
+        "view=full (default) returns the complete, byte-for-byte unchanged "
+        "FacilityDetail. view=compact returns a twelve-key identity/location card "
+        "built only from the summary projection, with `name` as an alias of "
+        "`display_name`. Both views apply the same publication gate."
+    ),
+)
+def get_facility(
+    facility_id: str,
+    db: Annotated[Session, Depends(get_db)],
+    view: Literal["full", "compact"] = "full",
+):
     facility = get_public_facility(db, facility_id)
+    if view == "compact":
+        compact = build_facility_compact(db, facility)
+        return JSONResponse(content=compact.model_dump(mode="json"))
     return build_facility_detail(db, facility)
 
 
