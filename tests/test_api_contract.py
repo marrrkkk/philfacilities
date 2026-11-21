@@ -177,3 +177,22 @@ def test_health_and_index_are_public(openapi_client):
     index = openapi_client.get("/v1").json()
     assert index["resources"]["facilities"] == "/v1/facilities"
     assert "is_synthetic" in index["notice"]
+
+
+def test_conditional_responses_have_an_empty_framed_body(openapi_client):
+    """A 304 must carry no body; a stray payload breaks keep-alive framing.
+
+    JSONResponse(status_code=304, content=None) serializes ``null``, which makes
+    uvicorn raise "Response content longer than Content-Length" and leaves the
+    connection unusable for the next streaming response.
+    """
+
+    first = openapi_client.get("/v1/taxonomy")
+    assert first.status_code == 200
+    etag = first.headers["etag"]
+
+    second = openapi_client.get("/v1/taxonomy", headers={"If-None-Match": etag})
+    assert second.status_code == 304
+    assert second.content == b""
+    assert second.headers["content-length"] == "0"
+    assert second.headers["etag"] == etag

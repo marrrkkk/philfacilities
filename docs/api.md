@@ -158,6 +158,8 @@ GET /v1/downloads/health-facilities.csv
 
 Downloads use the same publication gate as JSON endpoints. CSV cells are neutralized against spreadsheet-formula injection. Facility downloads include the summary classification fields (`official_name`, `facility_kind`, `inclusion_class`, `ownership_type`, `operator_type`, `public_access_class`) and `postal_code`, so bulk consumers do not have to reconstruct them from nested or detail-only JSON. Use downloads for full-dataset work; do not page through the list API to recreate them.
 
+Bulk exports are produced in bounded, keyset-paginated pages and CSV is streamed in ~64 KB chunks, so a national dataset does not have to be materialised in memory before the first byte is sent. The row builder deliberately avoids the detail endpoints' Pydantic round-trips; it applies the same publication predicates directly. Migration `0025_source_link_facility_index` adds a covering `facility_id` index on `source.facility_source_links` so per-page source-evidence lookups stay indexed at national scale.
+
 ## 4. Facility filters
 
 `/v1/facilities` accepts the full filter set below. `/v1/facilities/within` and `/v1/facilities/nearby` accept the same filters except `has_coordinates`, plus their required spatial parameters; they return a capped map result set and do not use cursors. `/v1/schools` and `/v1/health-facilities` accept only the subset listed in their sections above.

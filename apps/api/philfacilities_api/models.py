@@ -501,6 +501,11 @@ class FacilitySourceLink(Base):
     __tablename__ = "facility_source_links"
     __table_args__ = (
         UniqueConstraint("facility_id", "source_record_id", name="uq_links_facility_source_record"),
+        Index(
+            "ix_links_facility_id",
+            "facility_id",
+            postgresql_include=["source_record_id"],
+        ),
         Index("ix_links_source_record", "source_record_id"),
         Index("ix_links_source_entity", "source_entity_id"),
         {"schema": "source"},
