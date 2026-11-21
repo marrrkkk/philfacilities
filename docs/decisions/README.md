@@ -14,6 +14,7 @@ record only by adding a new one that supersedes it.
 | [0006](0006-basemap-provider.md) | MapLibre renderer with a configurable, licensed basemap | Proposed for production; demo in use |
 | [0007](0007-api-versioning-and-bulk-exports.md) | Stable `/v1` contract and gated bulk exports | Accepted |
 | [0008](0008-publicly-available-data-inclusion.md) | Include verified, publicly available data with no explicit prohibition | Accepted |
+| [0009](0009-mcp-server-boundary.md) | MCP is a public-API-only read adapter | Accepted |
 
 This directory satisfies the ADR list in
 [Architecture](../architecture.md#9-architecture-decisions).
