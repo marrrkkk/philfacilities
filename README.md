@@ -321,6 +321,7 @@ uv run ruff check .
 uv run ruff format --check .
 uv run mypy
 uv run pytest
+uv run pytest --require-integration   # CI mode: fail if integration tests cannot run
 
 pnpm lint
 pnpm typecheck
@@ -337,6 +338,8 @@ docker compose -f infra/compose.yaml --profile test up -d test-db
 ```
 
 The default test URL is `postgresql+psycopg://philfacilities:philfacilities@localhost:54330/philfacilities_test`. The database name must end in `_test` because fixtures reset the schema. The test suite uses deterministic synthetic fixtures; that does not make the working database synthetic.
+
+Pass `--require-integration` (or run `just test-required`) to turn a missing test database into a failure instead of a skip. CI uses that flag so a failed database service cannot produce a green build. See [Testing](docs/testing.md) for the CI job layout.
 
 ## Documentation
 
