@@ -3,16 +3,19 @@ import { ArrowRight, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
+import type { TaxonomyTermOut } from "@/lib/api";
 
 export function SearchForm({
   defaultQuery = "",
   defaultType = "",
   compact = false,
+  categories = [],
   preserve = {},
 }: {
   defaultQuery?: string;
   defaultType?: string;
   compact?: boolean;
+  categories?: TaxonomyTermOut[];
   preserve?: Record<string, string | undefined>;
 }) {
   return (
@@ -42,17 +45,20 @@ export function SearchForm({
         {!compact ? (
           <>
             <label htmlFor="site-search-type" className="sr-only">
-              Facility type
+              Facility category
             </label>
             <Select
               id="site-search-type"
               name="type"
               defaultValue={defaultType}
-              className="h-12 sm:max-w-[12rem]"
+              className="h-12 sm:max-w-[14rem]"
             >
-              <option value="">All facility types</option>
-              <option value="school">Schools</option>
-              <option value="health_facility">Health facilities</option>
+              <option value="">All categories</option>
+              {categories.map((category) => (
+                <option key={category.code} value={category.code}>
+                  {category.label}
+                </option>
+              ))}
             </Select>
           </>
         ) : null}

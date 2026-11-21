@@ -30,6 +30,12 @@ const MAP_QUERY =
   process.env.PHILFACILITIES_E2E_MAP_QUERY ?? "Bantug na Munti Primary School";
 const MAP_RESULT_NAME =
   process.env.PHILFACILITIES_E2E_MAP_RESULT_NAME ?? "Bantug na Munti Primary School";
+const CONTACT_SLUG = process.env.PHILFACILITIES_E2E_CONTACT_SLUG ?? "";
+const CONTACT_NAME = process.env.PHILFACILITIES_E2E_CONTACT_NAME ?? "";
+const CONTACT_VALUE = process.env.PHILFACILITIES_E2E_CONTACT_VALUE ?? "";
+const API_ORIGIN = new URL(
+  process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8010",
+).origin;
 
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -45,6 +51,18 @@ async function expectSearchQuery(page: Page, expected: string) {
   await expect
     .poll(() => new URL(page.url()).searchParams.get("q"), { timeout: 10_000 })
     .toBe(expected);
+}
+
+async function readTaxonomy(request: Page["request"]) {
+  const response = await request.get(`${API_ORIGIN}/v1/taxonomy`);
+  expect(response.ok()).toBeTruthy();
+  return (await response.json()) as {
+    categories: Array<{
+      code: string;
+      label: string;
+      subtypes?: Array<{ code: string; label: string }>;
+    }>;
+  };
 }
 
 async function readHeaderState(page: Page) {
@@ -88,9 +106,7 @@ test.describe("directory", () => {
     await gotoHydrated(page, "/directory");
     // Wait for the streamed results region before typing; hydration of that
     // boundary can replace the input and discard keystrokes typed too early.
-    await expect(page.getByRole("heading", { name: /matching records/i })).toBeVisible({
-      timeout: 15_000,
-    });
+    await expectDirectoryHeading(page);
     await page.locator("#filter-q").focus();
     await page.keyboard.type(SCHOOL_SEARCH);
     await page.keyboard.press("Enter");
@@ -101,11 +117,7 @@ test.describe("directory", () => {
 
   test("search narrows results and preserves the query in the URL", async ({ page }) => {
     await gotoHydrated(page, "/directory");
-    // The unfiltered counting query over the full real dataset can take a few
-    // seconds; the default 5s assertion timeout is too tight for that path.
-    await expect(page.getByRole("heading", { name: /matching records/i })).toBeVisible({
-      timeout: 15_000,
-    });
+    await expectDirectoryHeading(page);
 
     await page.locator("#filter-q").fill(SCHOOL_SEARCH);
     await page.getByRole("button", { name: "Apply filters" }).click();
@@ -143,7 +155,7 @@ test.describe("directory", () => {
 
   test("missing coordinates stay labelled as unknown", async ({ page }) => {
     await page.goto("/directory?has_coordinates=false");
-    await expect(page.getByText(/matching records/i)).toBeVisible({ timeout: 15_000 });
+    await expectDirectoryHeading(page);
     await expect(page.getByText("Coordinates unknown").first()).toBeVisible();
   });
 
@@ -161,6 +173,53 @@ test.describe("directory", () => {
     await expect(page).toHaveURL(new RegExp(`province_code=${PROVINCE_CODE}`));
     await expect(page).toHaveURL(new RegExp(`source=${SOURCE_AGENCY}`));
     await expectDirectoryHeading(page, "1 matching records");
+  });
+
+  test("loads filter vocabularies from the API taxonomy", async ({ page, request }) => {
+    const taxonomy = await readTaxonomy(request);
+    const category = taxonomy.categories.find((item) => (item.subtypes?.length ?? 0) > 0);
+    expect(category).toBeTruthy();
+    const subtype = category?.subtypes?.[0];
+    expect(subtype).toBeTruthy();
+
+    await page.goto("/directory");
+    await expectDirectoryHeading(page);
+
+    const categorySelect = page.locator("#filter-type");
+    await expect(categorySelect.locator(`option[value="${category?.code}"]`)).toHaveText(
+      category?.label ?? "",
+    );
+    const subtypeSelect = page.locator("#filter-subtype");
+    await expect(subtypeSelect.locator(`option[value="${subtype?.code}"]`)).toHaveText(
+      subtype?.label ?? "",
+    );
+    // The taxonomy endpoint is the source of truth; the directory must not
+    // fall back to a second hardcoded list.
+    const optionCount = await categorySelect.locator("option").count();
+    expect(optionCount).toBe(taxonomy.categories.length + 1);
+  });
+
+  test("applies a taxonomy subtype filter and labels it", async ({ page, request }) => {
+    const taxonomy = await readTaxonomy(request);
+    const category = taxonomy.categories.find((item) => (item.subtypes?.length ?? 0) > 0);
+    const subtype = category?.subtypes?.[0];
+    expect(category).toBeTruthy();
+    expect(subtype).toBeTruthy();
+
+    await page.goto(
+      `/directory?type=${category?.code}&subtype=${subtype?.code}&q=${encodeURIComponent(
+        SCHOOL_SEARCH,
+      )}`,
+    );
+    await expectDirectoryHeading(page);
+    await expect(page.locator("#filter-type")).toHaveValue(category?.code ?? "");
+    await expect(page.locator("#filter-subtype")).toHaveValue(subtype?.code ?? "");
+    await expect(
+      page
+        .locator('[aria-label="Active filters"]')
+        .getByText(`Subtype: ${subtype?.label ?? ""}`, { exact: true }),
+    ).toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`subtype=${subtype?.code}`));
   });
 });
 
@@ -180,6 +239,21 @@ test.describe("facility profile", () => {
     }
     await expect(page.getByRole("heading", { name: /Data quality/i })).toBeVisible();
     await expect(page.getByText(SOURCE_RECORD_KEY, { exact: true }).first()).toBeVisible();
+  });
+
+  test("renders source-supplied contacts without promising live availability", async ({
+    page,
+  }) => {
+    test.skip(!CONTACT_SLUG, "contact fixture not configured");
+    await page.goto(`/facilities/${CONTACT_SLUG}`);
+    await expect(
+      page.getByRole("heading", { name: CONTACT_NAME, level: 1 }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Contacts and visiting information" }),
+    ).toBeVisible();
+    await expect(page.getByText(CONTACT_VALUE).first()).toBeVisible();
+    await expect(page.getByText(/not live availability/)).toBeVisible();
   });
 
   test("keeps wide tables inside their own scroll region on mobile", async ({ page }, testInfo) => {
@@ -254,7 +328,9 @@ test.describe("map", () => {
 
     await page.goto(`/map?q=${encodeURIComponent(MAP_QUERY)}`);
     await expect(page.locator("canvas.maplibregl-canvas")).toBeVisible();
-    await expect(page.getByRole("alert").filter({ hasText: /basemap could not load/i })).toBeVisible({
+    await expect(
+      page.getByRole("alert").filter({ hasText: /basemap could not load/i }).first(),
+    ).toBeVisible({
       timeout: 20_000,
     });
 
@@ -269,6 +345,36 @@ test.describe("map", () => {
     ).toBeVisible({
       timeout: 20_000,
     });
+  });
+
+  test("keeps taxonomy, geography, source, and time filters in the URL", async ({ page }) => {
+    await gotoHydrated(page, `/map?type=school&source=${SOURCE_AGENCY}`);
+    await expect(page.locator("#map-type")).toHaveValue("school");
+    await expect(page.locator("#map-source")).toHaveValue(SOURCE_AGENCY);
+
+    await page
+      .locator("summary")
+      .filter({ hasText: "Location, source, and time filters" })
+      .click();
+    const requestWithProvince = page.waitForRequest((request) => {
+      if (!request.url().includes("/v1/facilities/within")) return false;
+      return (
+        new URL(request.url()).searchParams.get("province_code") === FILTER_PROVINCE_CODE
+      );
+    });
+    await page.locator("#map-province").selectOption(FILTER_PROVINCE_CODE);
+    await requestWithProvince;
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get("province_code"))
+      .toBe(FILTER_PROVINCE_CODE);
+
+    await page.locator("#map-updated-since").fill("2020-01-01");
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get("updated_since"))
+      .toBe("2020-01-01");
+
+    await page.getByRole("button", { name: "Reset filters" }).click();
+    await expect(page).toHaveURL(/\/map$/);
   });
 
   test("carries directory filters into the map instead of undefined values", async ({
@@ -326,11 +432,42 @@ test.describe("data dictionary", () => {
     ).toBeVisible();
     await expect(page.getByText("merged", { exact: true })).toBeVisible();
     await expect(
+      page.getByRole("heading", { name: "Contacts, roles, services, and relationships" }),
+    ).toBeVisible();
+    await expect(page.getByText("opening_hours", { exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dataset coverage" })).toBeVisible();
+    await expect(
+      page.getByText("NATIONAL_OFFICIAL_INVENTORY", { exact: true }),
+    ).toBeVisible();
+    await expect(page.getByText("DISCOVERY_LAYER", { exact: true })).toBeVisible();
+    await expect(
       page.getByText(/any remaining synthetic fixtures are labelled/),
     ).toBeVisible();
     await expect(
       page.locator("#main-content").getByRole("link", { name: "Dataset catalogue" }),
     ).toBeVisible();
+  });
+});
+
+test.describe("source register", () => {
+  test("shows coverage metadata and latest ingestion-run metrics", async ({ page }) => {
+    await page.goto("/sources");
+    await expect(
+      page.getByRole("heading", {
+        name: "Agencies, releases, access paths, and rights.",
+        level: 1,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Acquisition monitoring" }),
+    ).toBeVisible();
+
+    const monitoring = page.getByRole("region", { name: "Source monitoring" });
+    await expect(
+      monitoring.getByRole("columnheader", { name: "Latest ingestion run" }),
+    ).toBeVisible();
+    await expect(monitoring.getByText("Published", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText(/^Coverage: /).first()).toBeVisible();
   });
 });
 
@@ -342,6 +479,23 @@ test.describe("status", () => {
     await expect(page.getByText(/pending$/).first()).toBeVisible();
     await expect(page.getByRole("link", { name: "Pending candidates JSON" })).toBeVisible();
     await expect(page.getByText(/never merged automatically/)).toBeVisible();
+  });
+
+  test("shows latest ingestion runs and per-source run metrics", async ({ page }) => {
+    await page.goto("/status");
+    await expect(
+      page.getByRole("heading", { name: "Latest ingestion runs" }),
+    ).toBeVisible();
+
+    const finished = page.getByRole("region", { name: "Latest ingestion runs" });
+    await expect(finished.getByRole("columnheader", { name: "Report" })).toBeVisible();
+    await expect(finished.getByText("Published", { exact: true }).first()).toBeVisible();
+
+    const monitoring = page.getByRole("region", { name: "Source acquisition monitoring" });
+    await expect(
+      monitoring.getByRole("columnheader", { name: "Latest run" }),
+    ).toBeVisible();
+    await expect(monitoring.getByText(/accepted|Acceptance unknown/).first()).toBeVisible();
   });
 });
 

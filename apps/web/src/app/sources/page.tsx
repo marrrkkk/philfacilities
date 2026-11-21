@@ -11,7 +11,7 @@ import {
   listMonitoring,
   listSources,
 } from "@/lib/api";
-import { formatDateTime, titleCase } from "@/lib/format";
+import { coverageScopeLabel, formatDateTime, ingestionRunTone, titleCase } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -169,6 +169,7 @@ export default async function SourcesPage() {
                 <th className="border-b border-[#d1d8e6] p-3">Last checked</th>
                 <th className="border-b border-[#d1d8e6] p-3">Last successful acquisition</th>
                 <th className="border-b border-[#d1d8e6] p-3">Latest published release</th>
+                <th className="border-b border-[#d1d8e6] p-3">Latest ingestion run</th>
                 <th className="border-b border-[#d1d8e6] p-3">Warning</th>
               </tr>
             </thead>
@@ -215,6 +216,38 @@ export default async function SourcesPage() {
                       </span>
                     ) : null}
                   </td>
+                  <td className="border-b border-[#d1d8e6] p-3 text-xs">
+                    {item.latest_run_status ? (
+                      <>
+                        <Badge
+                          tone={ingestionRunTone(item.latest_run_status)}
+                        >
+                          {titleCase(item.latest_run_status)}
+                        </Badge>
+                        <span className="mt-1 block text-[#5a5a58]">
+                          {item.latest_run_at ? formatDateTime(item.latest_run_at) : "Time unknown"}
+                        </span>
+                        {item.latest_run_acceptance_rate != null ||
+                        item.latest_run_rejection_rate != null ||
+                        item.latest_run_duration_ms != null ? (
+                          <span className="mt-1 block text-[#5a5a58]">
+                            {item.latest_run_acceptance_rate != null
+                              ? `${(item.latest_run_acceptance_rate * 100).toFixed(1)}% accepted`
+                              : "Acceptance unknown"}
+                            {" · "}
+                            {item.latest_run_rejection_rate != null
+                              ? `${(item.latest_run_rejection_rate * 100).toFixed(1)}% rejected`
+                              : "Rejection unknown"}
+                            {item.latest_run_duration_ms != null
+                              ? ` · ${(item.latest_run_duration_ms / 1000).toFixed(1)} s`
+                              : ""}
+                          </span>
+                        ) : null}
+                      </>
+                    ) : (
+                      "No ingestion run recorded"
+                    )}
+                  </td>
                   <td className="border-b border-[#d1d8e6] p-3 text-xs text-[#5a5a58]">
                     {item.warning ?? "—"}
                   </td>
@@ -259,6 +292,7 @@ export default async function SourcesPage() {
                         {titleCase(source.publication_status)}
                       </Badge>
                       <Badge tone="muted">{titleCase(source.access_method ?? "unknown")}</Badge>
+                      <Badge tone="muted">{coverageScopeLabel(source.coverage_scope)}</Badge>
                     </div>
                     <CardTitle className="mt-3 text-xl">
                       <Link href={`/data/${source.slug}`} className="hover:underline">
@@ -268,6 +302,13 @@ export default async function SourcesPage() {
                   </CardHeader>
                   <CardContent className="space-y-2 font-sans text-sm text-[#5a5a58]">
                     <p>{source.description ?? "No description recorded."}</p>
+                    <p>
+                      Coverage:{" "}
+                      <strong className="text-[#0a0a0a]">
+                        {coverageScopeLabel(source.coverage_scope)}
+                      </strong>
+                      {source.coverage_note ? ` — ${source.coverage_note}` : ""}
+                    </p>
                     <p>
                       Latest release:{" "}
                       <strong className="text-[#0a0a0a]">
@@ -286,6 +327,11 @@ export default async function SourcesPage() {
                     </p>
                     <p>
                       Rights basis: {source.rights_basis ?? "No documented basis recorded"}
+                    </p>
+                    <p>
+                      Publication gate:{" "}
+                      {titleCase(source.publication_gate_status ?? "unknown")} ·{" "}
+                      {titleCase(source.publication_status)}
                     </p>
                     <p>
                       License: {source.license_identifier ?? "No license recorded"}
