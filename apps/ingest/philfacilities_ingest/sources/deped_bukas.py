@@ -8,16 +8,16 @@ enrollment counts by grade/strand and sex.
 The official ``deped.gov.ph`` URL returns HTTP 403 to automated clients. The
 adapter therefore accepts the same artifact from the preserved Wayback copy and
 pins its SHA-256. The release is **enrichment-only**: rows link to existing
-DepEd facilities by exact school ID, fill only missing school-profile values,
-and add dated enrollment observations. They never rename a facility, replace an
-established sector/management value, or invent coordinates or PSGC codes the
-source does not contain.
+DepEd facilities by exact school ID and fill only missing school-profile values.
+They never rename a facility, replace an established sector/management value, or
+invent coordinates or PSGC codes the source does not contain. Enrollment counts
+remain in the preserved raw release; no enrollment observations are derived.
 
-Enrollment zeroes are retained for levels the school reports as offered. A zero
-in a level the school does not offer is not a "zero enrollment" observation, so
-those non-applicable cells are omitted rather than collapsed into missing data.
-Any non-zero count is always retained even if the offering flag is false,
-because the source's own values conflict and the observation must not be lost.
+The source retains enrollment zeroes for levels the school reports as offered.
+A zero in a level the school does not offer is not a zero enrollment count, so
+those non-applicable cells are not meaningful even in the raw data. Any non-zero
+count is retained in the raw release even if the offering flag is false, because
+the source's own values conflict and the reported value must not be lost.
 """
 
 from __future__ import annotations
@@ -33,7 +33,6 @@ from philfacilities_api.taxonomy import DISCOVERY_CANDIDATE
 
 from ..acquisition import AcquisitionError, HttpAcquirer
 from ..contracts import (
-    EnrollmentData,
     FacilityCandidate,
     LocationData,
     ParsedRelease,
@@ -58,7 +57,6 @@ CSV_NAME = "Enrollment in SY 2024-2025/enrollment_2024-25.csv"
 EXPECTED_ZIP_SHA256 = "fd5dd74a62b828608c62335b7c324ddf05be58e3f05465fee68854795f5b1a92"
 EXPECTED_ROWS = 60_129
 MAX_ZIP_BYTES = 16 * 1024 * 1024
-SCHOOL_YEAR = "2024-2025"
 
 REQUIRED_COLUMNS = {
     "school_id",
@@ -181,24 +179,6 @@ MANAGEMENT_OPERATOR = {
     "non_sectarian": "PRIVATE_UNSPECIFIED",
     "sectarian": "PRIVATE_UNSPECIFIED",
     "local_international_school": "PRIVATE_UNSPECIFIED",
-}
-
-LEVEL_BY_GRADE = {
-    "kinder": "es",
-    "g1": "es",
-    "g2": "es",
-    "g3": "es",
-    "g4": "es",
-    "g5": "es",
-    "g6": "es",
-    "esng": "es",
-    "g7": "jhs",
-    "g8": "jhs",
-    "g9": "jhs",
-    "g10": "jhs",
-    "jhsng": "jhs",
-    "g11": "shs",
-    "g12": "shs",
 }
 
 
@@ -325,66 +305,12 @@ def _address_text(payload: dict[str, Any]) -> str | None:
     return ", ".join(kept) or None
 
 
-def _grade_level(column: str) -> str:
-    return column.rsplit("_", 1)[0]
-
-
-def _sex(column: str) -> str:
-    return column.rsplit("_", 1)[1]
-
-
 def _offering_flags(payload: dict[str, Any]) -> dict[str, bool | None]:
     return {
         "es": parse_bool(payload.get("offers_es")),
         "jhs": parse_bool(payload.get("offers_jhs")),
         "shs": parse_bool(payload.get("offers_shs")),
     }
-
-
-class _EnrollmentView:
-    """Re-iterable, lazily materialized enrollment cells for one school row.
-
-    The release has 62 possible grade/sex cells per school. Materializing a
-    full ``EnrollmentData`` object for every cell of all 60,129 schools at
-    normalize time holds over a million objects until the apply loop reaches
-    them. The view keeps only the source payload and builds the small list for
-    one school when the pipeline iterates it.
-    """
-
-    __slots__ = ("_payload",)
-
-    def __init__(self, payload: dict[str, Any]) -> None:
-        self._payload = payload
-
-    def __iter__(self):
-        return iter(_enrollment_observations(self._payload))
-
-    def __len__(self) -> int:
-        return sum(1 for _ in self)
-
-
-def _enrollment_observations(payload: dict[str, Any]) -> list[EnrollmentData]:
-    flags = _offering_flags(payload)
-    observations: list[EnrollmentData] = []
-    for column in ENROLLMENT_COLUMNS:
-        count = parse_int(payload.get(column))
-        if count is None:
-            continue
-        grade_level = _grade_level(column)
-        level = LEVEL_BY_GRADE.get(grade_level, "shs")
-        # A zero in a level the school does not offer is not-applicable, not a
-        # zero-enrollment observation. A positive count is always kept.
-        if count == 0 and flags.get(level) is not True:
-            continue
-        observations.append(
-            EnrollmentData(
-                school_year=SCHOOL_YEAR,
-                grade_level=grade_level,
-                sex=_sex(column),
-                learner_count=count,
-            )
-        )
-    return observations
 
 
 class DepEdBukasEnrollmentAdapter:
@@ -448,9 +374,10 @@ class DepEdBukasEnrollmentAdapter:
                 {
                     "code": "enrollment_zero_semantics",
                     "message": (
-                        "Zero counts are retained for levels the school reports as "
-                        "offered. Non-applicable zero cells for levels the school does "
-                        "not offer are omitted; positive counts are always retained."
+                        "The source reports enrollment counts by grade/strand and sex, "
+                        "including zeros for levels the school offers. Counts stay in "
+                        "the preserved raw release; no enrollment observations are "
+                        "derived into canonical records."
                     ),
                 },
                 {
@@ -629,8 +556,6 @@ class DepEdBukasEnrollmentAdapter:
                         offers_es=flags["es"],
                         offers_jhs=flags["jhs"],
                         offers_shs=flags["shs"],
-                        reference_school_year=SCHOOL_YEAR,
-                        enrollment=_EnrollmentView(payload),  # type: ignore[arg-type]
                     ),
                     enrichment_only=True,
                 )

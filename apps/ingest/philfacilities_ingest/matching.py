@@ -22,7 +22,6 @@ from philfacilities_api.models import (
     Agency,
     AttributeAssertion,
     Dataset,
-    EnrollmentObservation,
     Facility,
     FacilityChangeEvent,
     FacilityContact,
@@ -97,7 +96,6 @@ GENERIC_FACILITY_NAMES = frozenset(
 _MERGE_MODELS = (
     AttributeAssertion,
     SchoolProfile,
-    EnrollmentObservation,
     ResourceObservation,
     HealthProfile,
     UtilityProfile,

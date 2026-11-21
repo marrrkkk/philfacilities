@@ -200,6 +200,74 @@ def _source_facility(
     return facility, None
 
 
+def _same_agency_map_facility(
+    session,
+    first: Facility,
+    *,
+    name: str,
+    latitude: float,
+    longitude: float,
+    psgc_code: str,
+    subtype: str,
+    raw_payload: dict | None = None,
+    facility_type: str = "school",
+) -> Facility:
+    """Add a second OSM feature linked to the same agency/dataset/release."""
+
+    link = session.execute(
+        select(FacilitySourceLink).where(FacilitySourceLink.facility_id == first.id)
+    ).scalar_one()
+    record = session.get(SourceRecord, link.source_record_id)
+    release = session.get(Release, record.release_id)
+    suffix = uuid.uuid4().hex[:10]
+    second_record = SourceRecord(
+        release_id=release.id,
+        source_record_key=f"osm-second-{suffix}",
+        raw_payload={"name": name, **(raw_payload or {})},
+        raw_record_hash=uuid.uuid4().hex * 2,
+        validation_status="valid",
+    )
+    session.add(second_record)
+    session.flush()
+    facility = Facility(
+        slug=f"osm-second-{suffix}",
+        display_name=name,
+        official_name=name,
+        facility_type=facility_type,
+        facility_subtype=subtype,
+        ownership="unknown",
+        record_status="active_in_registry",
+        publication_status="public",
+        is_synthetic=False,
+    )
+    session.add(facility)
+    session.flush()
+    session.add(
+        FacilitySourceLink(
+            facility_id=facility.id,
+            source_record_id=second_record.id,
+            source_entity_id=f"osm:way/{suffix}",
+            match_method="new_canonical_record",
+            match_status="automatic_high_confidence",
+            match_confidence=1,
+        )
+    )
+    session.add(
+        FacilityLocation(
+            facility_id=facility.id,
+            latitude=latitude,
+            longitude=longitude,
+            psgc_code=psgc_code,
+            precision="map_geocoded",
+            address_text="",
+            review_status="source_supplied",
+            is_current=True,
+        )
+    )
+    session.flush()
+    return facility
+
+
 def _st_anne_facilities(session):
     _geography(session)
     deped, _ = _source_facility(
@@ -392,6 +460,119 @@ def test_same_school_in_different_assigned_cities_merges_on_close_points(db_sess
         assert stats["merged"] == 1
         assert deped.record_status == "active_in_registry"
         assert osm.record_status == "merged"
+    finally:
+        db_session.rollback()
+
+
+def test_same_agency_map_features_of_one_campus_merge_within_100m(db_session) -> None:
+    from philfacilities_ingest.aggregation import consolidate_facilities
+
+    try:
+        _geography(db_session)
+        campus, _ = _source_facility(
+            db_session,
+            name="Example University Lipa Campus",
+            agency_code="osm",
+            authority_level="community",
+            address="",
+            latitude=13.961715,
+            longitude=121.612162,
+            psgc_code="0431200017",
+            subtype="HIGHER_EDUCATION_INSTITUTION",
+            dataset_slug="osm-education-facilities",
+            raw_payload={"amenity": "university"},
+        )
+        gate = _same_agency_map_facility(
+            db_session,
+            campus,
+            name="Example University Lipa Campus",
+            latitude=13.962336,  # ~69 m north, like a gate vs campus polygon
+            longitude=121.612162,
+            psgc_code="0431200017",
+            subtype="OTHER_SCHOOL",
+            raw_payload={"building": "school"},
+        )
+        stats = consolidate_facilities(db_session, dry_run=True)
+        assert stats["clusters_accepted"] == 1
+        assert stats["would_merge"] == 1
+
+        stats = consolidate_facilities(db_session, dry_run=False)
+        db_session.flush()
+        assert stats["merged"] == 1
+        assert sum(f.record_status == "merged" for f in (campus, gate)) == 1
+        assert sum(f.record_status == "active_in_registry" for f in (campus, gate)) == 1
+    finally:
+        db_session.rollback()
+
+
+def test_address_only_official_and_mapped_same_name_merge(db_session) -> None:
+    from philfacilities_ingest.aggregation import consolidate_facilities
+
+    try:
+        _geography(db_session)
+        official, _ = _source_facility(
+            db_session,
+            name="Mulanay Institute Test",
+            agency_code="deped",
+            authority_level="official",
+            address="National Road, Lucena City, Quezon",
+        )
+        mapped, _ = _source_facility(
+            db_session,
+            name="Mulanay Institute Test",
+            agency_code="osm",
+            authority_level="community",
+            address="",
+            latitude=13.961715,
+            longitude=121.612162,
+            psgc_code="0431200017",
+            subtype="HIGHER_EDUCATION_INSTITUTION",
+        )
+        stats = consolidate_facilities(db_session, dry_run=True)
+        assert stats["clusters_accepted"] == 1
+        assert stats["would_merge"] == 1
+
+        stats = consolidate_facilities(db_session, dry_run=False)
+        db_session.flush()
+        assert stats["merged"] == 1
+        assert sum(f.record_status == "merged" for f in (official, mapped)) == 1
+    finally:
+        db_session.rollback()
+
+
+def test_distinct_pharmacy_branches_do_not_use_the_map_distance_rule(db_session) -> None:
+    from philfacilities_ingest.aggregation import consolidate_facilities
+
+    try:
+        _geography(db_session)
+        first, _ = _source_facility(
+            db_session,
+            name="Mercury Drug",
+            agency_code="osm",
+            authority_level="community",
+            address="",
+            facility_type="health_facility",
+            subtype="PHARMACY",
+            latitude=13.961715,
+            longitude=121.612162,
+            psgc_code="0431200017",
+            dataset_slug="osm-health-facilities",
+            raw_payload={"amenity": "pharmacy"},
+        )
+        _same_agency_map_facility(
+            db_session,
+            first,
+            name="Mercury Drug",
+            latitude=13.962336,
+            longitude=121.612162,
+            psgc_code="0431200017",
+            subtype="PHARMACY",
+            raw_payload={"amenity": "pharmacy"},
+            facility_type="health_facility",
+        )
+        stats = consolidate_facilities(db_session, dry_run=True)
+        assert stats["clusters_accepted"] == 0
+        assert stats["would_merge"] == 0
     finally:
         db_session.rollback()
 

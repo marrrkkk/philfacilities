@@ -58,7 +58,6 @@ DEFAULT_COUNTERS: dict[str, Any] = {
     "precision": {},
     "psgc_provided": 0,
     "psgc_matched": 0,
-    "enrollment_observations": 0,
     "resource_observations": 0,
     "licenses": 0,
     "accreditations": 0,

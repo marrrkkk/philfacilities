@@ -239,8 +239,8 @@ export default async function DataPage() {
               separate. Freshness is never implied by a single “updated” label.
             </p>
             <p>
-              Missing values stay unknown. No missing bed count, enrollment count, coordinate, or
-              operational status is converted to zero or inactive.
+              Missing values stay unknown. No missing bed count, coordinate, or operational status
+              is converted to zero or inactive.
             </p>
           </CardContent>
         </Card>

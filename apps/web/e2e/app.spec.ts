@@ -118,6 +118,7 @@ test.describe("directory", () => {
     await expect(
       page.locator("article").getByText(new RegExp(PRECISION_LABEL)).first(),
     ).toBeVisible();
+    await expect(page.locator("article").first()).toContainText(SOURCE_RECORD_KEY);
   });
 
   test("typing debounces and updates results without reloading the page", async ({ page }) => {

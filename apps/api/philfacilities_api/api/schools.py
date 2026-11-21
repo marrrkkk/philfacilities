@@ -9,10 +9,9 @@ from sqlalchemy.orm import Session
 
 from ..config import get_settings
 from ..db import get_db
-from ..models import EnrollmentObservation, ResourceObservation
+from ..models import ResourceObservation
 from ..pagination import clamp_limit
 from ..schemas import (
-    EnrollmentObservationOut,
     FacilityListResponse,
     ResourceObservationOut,
     SchoolDetailResponse,
@@ -72,14 +71,6 @@ def get_school(facility_id: str, db: Annotated[Session, Depends(get_db)]):
 
         raise ApiError(404, "school_not_found", "The requested facility is not a school.")
     detail = build_facility_detail(db, facility)
-    rows = db.scalars(
-        select(EnrollmentObservation)
-        .where(
-            EnrollmentObservation.facility_id == facility.id,
-            public_source_record_condition(EnrollmentObservation.source_record_id),
-        )
-        .order_by(EnrollmentObservation.school_year.desc(), EnrollmentObservation.grade_level)
-    ).all()
     resources = db.scalars(
         select(ResourceObservation)
         .where(
@@ -90,17 +81,6 @@ def get_school(facility_id: str, db: Annotated[Session, Depends(get_db)]):
     ).all()
     return SchoolDetailResponse(
         facility=detail,
-        enrollment=[
-            EnrollmentObservationOut(
-                school_year=row.school_year,
-                grade_level=row.grade_level,
-                sex=row.sex,
-                learner_count=row.learner_count,
-                observed_at=row.observed_at,
-                source_record_id=row.source_record_id,
-            )
-            for row in rows
-        ],
         resources=[
             ResourceObservationOut(
                 school_year=row.school_year,
@@ -115,39 +95,6 @@ def get_school(facility_id: str, db: Annotated[Session, Depends(get_db)]):
             for row in resources
         ],
     )
-
-
-@router.get(
-    "/{facility_id}/enrollment",
-    response_model=list[EnrollmentObservationOut],
-    summary="School enrollment observations",
-)
-def get_school_enrollment(
-    facility_id: str,
-    db: Annotated[Session, Depends(get_db)],
-    school_year: str | None = None,
-):
-    facility = get_public_facility(db, facility_id)
-    query = select(EnrollmentObservation).where(
-        EnrollmentObservation.facility_id == facility.id,
-        public_source_record_condition(EnrollmentObservation.source_record_id),
-    )
-    if school_year:
-        query = query.where(EnrollmentObservation.school_year == school_year)
-    rows = db.scalars(
-        query.order_by(EnrollmentObservation.school_year.desc(), EnrollmentObservation.grade_level)
-    ).all()
-    return [
-        EnrollmentObservationOut(
-            school_year=row.school_year,
-            grade_level=row.grade_level,
-            sex=row.sex,
-            learner_count=row.learner_count,
-            observed_at=row.observed_at,
-            source_record_id=row.source_record_id,
-        )
-        for row in rows
-    ]
 
 
 @router.get(

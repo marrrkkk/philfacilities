@@ -5,7 +5,6 @@ import io
 from openpyxl import load_workbook
 
 from ..contracts import (
-    EnrollmentData,
     FacilityCandidate,
     LocationData,
     ParsedRelease,
@@ -227,7 +226,6 @@ class DepEdMasterlistAdapter:
             longitude = parse_float(first_present(payload, LON_ALIASES))
             precision = clean_text(first_present(payload, PRECISION_ALIASES)) or "unknown"
             method = clean_text(first_present(payload, METHOD_ALIASES))
-            school_year = clean_text(first_present(payload, SCHOOL_YEAR_ALIASES))
             candidates.append(
                 FacilityCandidate(
                     source_record_key=school_id,
@@ -273,7 +271,6 @@ class DepEdMasterlistAdapter:
                         offers_shs=parse_bool(
                             first_present(payload, ["offers_shs", "senior_high_school"])
                         ),
-                        reference_school_year=school_year,
                     ),
                 )
             )
@@ -373,26 +370,11 @@ class DepEdEnrollmentAdapter:
         )
 
     def normalize(self, parsed: ParsedRelease) -> list[FacilityCandidate]:
+        # Enrollment counts stay in the preserved raw release and are validated
+        # above; no enrollment observations are derived into canonical records.
         candidates = []
         for row in parsed.rows:
             group = row.normalized_payload
-            observations = []
-            for source_row in group["rows"]:
-                observations.append(
-                    EnrollmentData(
-                        school_year=group["school_year"],
-                        grade_level=clean_text(
-                            first_present(source_row, ["grade_level", "grade", "level"])
-                        )
-                        or "total",
-                        sex=(
-                            clean_text(first_present(source_row, ["sex", "gender"])) or "all"
-                        ).lower(),
-                        learner_count=parse_int(
-                            first_present(source_row, ["learner_count", "enrolment", "enrollment"])
-                        ),
-                    )
-                )
             candidates.append(
                 FacilityCandidate(
                     source_record_key=row.source_record_key,
@@ -404,11 +386,7 @@ class DepEdEnrollmentAdapter:
                     ownership="unknown",
                     record_status="unknown",
                     location=LocationData(),
-                    school=SchoolData(
-                        deped_school_id=group["school_id"],
-                        reference_school_year=group["school_year"],
-                        enrollment=observations,
-                    ),
+                    school=SchoolData(deped_school_id=group["school_id"]),
                 )
             )
         return candidates
@@ -523,7 +501,6 @@ class DepEdResourceAdapter:
                     location=LocationData(),
                     school=SchoolData(
                         deped_school_id=group["school_id"],
-                        reference_school_year=group["school_year"],
                         resources=resources,
                     ),
                 )

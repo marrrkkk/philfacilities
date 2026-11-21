@@ -211,6 +211,11 @@ def test_facility_detail_carries_provenance_quality_and_typed_profile(client):
 
     sources = client.get("/v1/facilities/synthetic-demo-school-01/sources").json()
     assert len(sources) == detail["source_count"]
+    assert len(detail["source_refs"]) == len(sources)
+    for ref, source in zip(detail["source_refs"], sources, strict=True):
+        assert ref["agency_code"] == source["agency_code"]
+        assert ref["dataset_slug"] == source["dataset_slug"]
+        assert ref["source_record_id"] == source["source_record_id"]
 
     history = client.get("/v1/facilities/synthetic-demo-school-01/history").json()
     assert history["items"]
@@ -221,11 +226,7 @@ def test_facility_detail_carries_provenance_quality_and_typed_profile(client):
 def test_school_and_health_domain_endpoints_preserve_observations(client):
     school = client.get("/v1/schools/synthetic-demo-school-01").json()
     assert school["facility"]["facility_type"] == "school"
-    assert school["enrollment"]
-    assert any(row["school_year"] == "2024-2025" for row in school["enrollment"])
-    assert any(row["grade_level"] == "total" for row in school["enrollment"])
-    assert all(row["observed_at"] for row in school["enrollment"])
-    assert all(row["source_record_id"] for row in school["enrollment"])
+    assert "enrollment" not in school
     assert school["resources"]
     assert all(row["observed_at"] for row in school["resources"])
 
@@ -233,8 +234,7 @@ def test_school_and_health_domain_endpoints_preserve_observations(client):
         "/v1/schools/synthetic-demo-school-01/enrollment",
         params={"school_year": "2024-2025"},
     )
-    assert enrollment.status_code == 200
-    assert all(row["school_year"] == "2024-2025" for row in enrollment.json())
+    assert enrollment.status_code == 404
 
     health = client.get("/v1/health-facilities/synthetic-demo-accredited-hospital-01").json()
     assert health["facility"]["facility_type"] == "health_facility"

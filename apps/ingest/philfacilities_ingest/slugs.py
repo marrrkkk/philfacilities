@@ -19,7 +19,7 @@ from philfacilities_api.models import (
     FacilityChangeEvent,
     FacilitySlugAlias,
 )
-from sqlalchemy import insert, select, update
+from sqlalchemy import delete, insert, select, update
 from sqlalchemy.orm import Session
 
 MAX_SLUG_LENGTH = 180
@@ -238,4 +238,159 @@ def normalize_facility_slugs(
         session.execute(insert(FacilitySlugAlias), pending_aliases)
         session.execute(insert(FacilityChangeEvent), pending_events)
         stats["aliases_created"] += len(pending_aliases)
+    return stats
+
+
+_NUMERIC_SLUG = re.compile(r"^(?P<base>.+)-(?P<index>\d+)$")
+
+
+def _merged_target(session: Session, tombstone_id: uuid.UUID) -> uuid.UUID | None:
+    """Return the facility that now holds a merged tombstone's evidence."""
+
+    event = session.scalars(
+        select(FacilityChangeEvent)
+        .where(
+            FacilityChangeEvent.facility_id == tombstone_id,
+            FacilityChangeEvent.change_type == "facility_merged_into",
+        )
+        .order_by(FacilityChangeEvent.changed_at.desc())
+        .limit(1)
+    ).first()
+    target = (event.new_value or {}).get("target_facility_id") if event else None
+    if not target:
+        return None
+    try:
+        return uuid.UUID(str(target))
+    except ValueError:
+        return None
+
+
+def consolidate_numeric_slugs(
+    session: Session,
+    *,
+    dry_run: bool = True,
+    limit: int = 50_000,
+    facility_type: str | None = None,
+    example_limit: int = 20,
+    commit_every: int | None = None,
+) -> dict[str, Any]:
+    """Give a consolidated facility its clean, unnumbered slug.
+
+    Identically named rows received ``-2``, ``-3`` … slugs at ingest time. After
+    consolidation the base slug can be held by a merged tombstone that redirects
+    to the survivor. This pass frees that base slug, moves it to the survivor,
+    and keeps the numbered slug as a bookmark alias. Genuine same-name
+    facilities that are still separate are never renamed.
+    """
+
+    stats: dict[str, Any] = {
+        "facilities_scanned": 0,
+        "with_numeric_suffix": 0,
+        "renamed": 0,
+        "would_rename": 0,
+        "skipped_name": 0,
+        "skipped_collision": 0,
+        "skipped_limit": 0,
+        "aliases_created": 0,
+        "dry_run": dry_run,
+        "examples": [],
+    }
+    used = set(session.scalars(select(Facility.slug)).all())
+    query = (
+        select(Facility.id, Facility.slug, Facility.display_name)
+        .where(Facility.record_status != "merged", Facility.slug.is_not(None))
+        .order_by(Facility.created_at, Facility.id)
+    )
+    if facility_type is not None:
+        query = query.where(Facility.facility_type == facility_type)
+
+    renamed = 0
+    for facility_id, old_slug, display_name in session.execute(query).yield_per(1_000):
+        stats["facilities_scanned"] += 1
+        match = _NUMERIC_SLUG.match(old_slug)
+        if match is None:
+            continue
+        stats["with_numeric_suffix"] += 1
+        base = match.group("base")
+        # A name that legitimately ends in a number keeps its slug.
+        if _name_slug(display_name) != base:
+            stats["skipped_name"] += 1
+            continue
+        holder = session.scalars(select(Facility).where(Facility.slug == base)).first()
+        if holder is not None and holder.id != facility_id:
+            if (
+                holder.record_status != "merged"
+                or _merged_target(session, holder.id) != facility_id
+            ):
+                stats["skipped_collision"] += 1
+                continue
+        elif (
+            base in used
+            or session.scalars(
+                select(FacilitySlugAlias.id).where(FacilitySlugAlias.slug == base)
+            ).first()
+        ):
+            stats["skipped_collision"] += 1
+            continue
+
+        if dry_run:
+            stats["would_rename"] += 1
+        else:
+            if renamed >= limit:
+                stats["skipped_limit"] += 1
+                continue
+            if holder is not None and holder.id != facility_id:
+                reserved = f"merged-{holder.id}"[:MAX_SLUG_LENGTH]
+                while reserved in used:
+                    reserved = f"{reserved[: MAX_SLUG_LENGTH - 9]}-{uuid.uuid4().hex[:8]}"
+                session.execute(
+                    update(Facility).where(Facility.id == holder.id).values(slug=reserved)
+                )
+                session.execute(
+                    insert(FacilityChangeEvent).values(
+                        id=uuid.uuid4(),
+                        facility_id=holder.id,
+                        change_type="facility_slug_normalized",
+                        attribute_name="slug",
+                        old_value=base,
+                        new_value=reserved,
+                        changed_by="system:slug-consolidation",
+                    )
+                )
+                used.discard(base)
+                used.add(reserved)
+            session.execute(update(Facility).where(Facility.id == facility_id).values(slug=base))
+            session.execute(delete(FacilitySlugAlias).where(FacilitySlugAlias.slug == old_slug))
+            session.execute(
+                insert(FacilitySlugAlias).values(
+                    id=uuid.uuid4(), slug=old_slug, facility_id=facility_id
+                )
+            )
+            session.execute(
+                insert(FacilityChangeEvent).values(
+                    id=uuid.uuid4(),
+                    facility_id=facility_id,
+                    change_type="facility_slug_normalized",
+                    attribute_name="slug",
+                    old_value=old_slug,
+                    new_value=base,
+                    changed_by="system:slug-consolidation",
+                )
+            )
+            used.discard(old_slug)
+            used.add(base)
+            renamed += 1
+            stats["renamed"] = renamed
+            stats["aliases_created"] += 1
+            if commit_every is not None and commit_every > 0 and renamed % commit_every == 0:
+                session.commit()
+        if len(stats["examples"]) < example_limit:
+            stats["examples"].append(
+                {
+                    "facility_id": str(facility_id),
+                    "name": display_name,
+                    "old_slug": old_slug,
+                    "new_slug": base,
+                }
+            )
     return stats

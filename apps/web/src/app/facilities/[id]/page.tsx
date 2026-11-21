@@ -27,6 +27,7 @@ import {
   formatNumber,
   INCLUSION_CLASS_LABELS,
   isPreciseLocation,
+  registryCode,
   PRECISION_DESCRIPTIONS,
   PRECISION_LABELS,
   titleCase,
@@ -122,8 +123,11 @@ export default async function FacilityPage({ params }: { params: Params }) {
     getFacilityAssertions(id).catch(() => [] as AttributeAssertionOut[]),
   ]);
 
-  const school = typed && "enrollment" in typed ? (typed as SchoolDetailResponse) : null;
+  const school = typed && "resources" in typed ? (typed as SchoolDetailResponse) : null;
   const health = typed && "licenses" in typed ? (typed as HealthDetailResponse) : null;
+  const sourceRefs = facility.source_refs ?? [];
+  const chedCodes = [...new Set(sourceRefs.filter((ref) => ref.agency_code === "ched").map(registryCode))];
+  const depedRef = sourceRefs.find((ref) => ref.agency_code === "deped");
   const geography = facility.geography;
   const place = [geography.barangay_name, geography.municipality_name, geography.province_name, geography.region_name]
     .filter(Boolean)
@@ -347,7 +351,13 @@ export default async function FacilityPage({ params }: { params: Params }) {
                 description="School characteristics are source observations tied to a school year. They are not a live operational status."
               >
                 <dl>
-                  <DataRow label="DepEd school ID">{school.facility.school?.deped_school_id ?? "Unknown"}</DataRow>
+                  <DataRow label="DepEd school ID">
+                    {school.facility.school?.deped_school_id ??
+                      (depedRef ? registryCode(depedRef) : "Unknown")}
+                  </DataRow>
+                  {chedCodes.length > 0 ? (
+                    <DataRow label="CHED HEI code">{chedCodes.join(", ")}</DataRow>
+                  ) : null}
                   <DataRow label="Sector / ownership">
                     {school.facility.school?.sector ?? titleCase(facility.ownership)}
                   </DataRow>
@@ -368,9 +378,6 @@ export default async function FacilityPage({ params }: { params: Params }) {
                       ? titleCase(school.facility.school.settlement_type)
                       : "Unknown"}
                   </DataRow>
-                  <DataRow label="Reference school year">
-                    {school.facility.school?.reference_school_year ?? "Unknown"}
-                  </DataRow>
                   <DataRow label="Offers">
                     {[
                       school.facility.school?.offers_es ? "Elementary" : null,
@@ -381,44 +388,6 @@ export default async function FacilityPage({ params }: { params: Params }) {
                       .join(" · ") || "Unknown"}
                   </DataRow>
                 </dl>
-              </Section>
-
-              <Section
-                title="Enrollment observations"
-                description="Each row keeps its school year, grade level, sex dimension, observation time, and source record. Missing counts are not filled with zero."
-              >
-                {school.enrollment.length > 0 ? (
-                  <div className="table-scroll border border-[#d1d8e6]" role="region" aria-label="Enrollment observations" tabIndex={0}>
-                    <table className="w-full min-w-[36rem] border-collapse text-left font-sans text-sm">
-                      <thead className="bg-[#f4f7fc] font-ui text-xs uppercase tracking-wide text-[#5a5a58]">
-                        <tr>
-                          <th className="border-b border-[#d1d8e6] p-3">School year</th>
-                          <th className="border-b border-[#d1d8e6] p-3">Grade level</th>
-                          <th className="border-b border-[#d1d8e6] p-3">Sex</th>
-                          <th className="border-b border-[#d1d8e6] p-3">Learners</th>
-                          <th className="border-b border-[#d1d8e6] p-3">Observed</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {school.enrollment.map((row) => (
-                          <tr key={`${row.school_year}-${row.grade_level}-${row.sex}-${row.source_record_id}`}>
-                            <td className="border-b border-[#d1d8e6] p-3">{row.school_year}</td>
-                            <td className="border-b border-[#d1d8e6] p-3">{row.grade_level}</td>
-                            <td className="border-b border-[#d1d8e6] p-3">{titleCase(row.sex)}</td>
-                            <td className="border-b border-[#d1d8e6] p-3">{formatNumber(row.learner_count)}</td>
-                            <td className="border-b border-[#d1d8e6] p-3 text-xs text-[#5a5a58]">
-                              {formatDateTime(row.observed_at)}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <p className="font-sans text-sm text-[#5a5a58]">
-                    No enrollment observations are published for this facility.
-                  </p>
-                )}
               </Section>
 
               <Section
@@ -853,8 +822,7 @@ export default async function FacilityPage({ params }: { params: Params }) {
                 <p>This record does not support a building-level location claim.</p>
               )}
               <p>
-                Enrollment, capacity, and licensing values are dated source observations, not live
-                status.
+                Capacity and licensing values are dated source observations, not live status.
               </p>
               <Link
                 href="/about#corrections"

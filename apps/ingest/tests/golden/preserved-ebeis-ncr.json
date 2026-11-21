@@ -2,10 +2,10 @@
   "accepted_rows": 5055,
   "artifact": "var/raw/deped/deped-ebeis-masterlist-ncr/DEPED-EBEIS-NCR-2026-11-16/02aeeced9cbdc046-deped-ebeis-masterlist-ncr-2026-11-16.html",
   "candidates": 5055,
-  "generated_at": "2026-11-19T00:00:00+00:00",
+  "generated_at": "2026-11-21T00:00:00+00:00",
   "parsed_rows": 5055,
   "parser_version": "deped-ebeis-html-1.2.0",
   "rejected_rows": 0,
   "schema_version": "deped-ebeis-masterlist-html-v3",
-  "sha256": "11b75bb9ae6b6082e2122973bee40718161570f3234ad2888439b3685823acb5"
+  "sha256": "326b8a598a594828bbb7ea1f102dbd7503aacef46d3cffa116facaa03f58e6a3"
 }

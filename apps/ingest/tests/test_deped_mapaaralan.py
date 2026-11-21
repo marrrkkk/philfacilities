@@ -104,7 +104,8 @@ def test_parse_and_normalize_is_link_only_point_enrichment() -> None:
     assert candidate.school.deped_school_id == "134837"
     assert candidate.school.sector is None
     assert candidate.school.school_management is None
-    assert candidate.school.enrollment == []
+    assert candidate.operator_type == "UNKNOWN"
+    assert candidate.inclusion_class is None
 
 
 def test_duplicate_id_keeps_first_point_and_rejects_second() -> None:

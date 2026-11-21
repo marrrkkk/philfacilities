@@ -123,7 +123,7 @@ jobs:
       # the real records named in the test file.
       PHILFACILITIES_E2E_SCHOOL_SEARCH: Synthetic Demo School 01
       PHILFACILITIES_E2E_SCHOOL_NAME: Synthetic Demo School 01
-      PHILFACILITIES_E2E_SCHOOL_SLUG: synthetic-demo-school-01-deped
+      PHILFACILITIES_E2E_SCHOOL_SLUG: synthetic-demo-school-01
       PHILFACILITIES_E2E_PROVINCE_CODE: "9901000000"
       PHILFACILITIES_E2E_FILTER_SCHOOL_SEARCH: Synthetic Demo School 01
       PHILFACILITIES_E2E_FILTER_SCHOOL_NAME: Synthetic Demo School 01

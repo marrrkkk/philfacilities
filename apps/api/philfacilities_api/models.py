@@ -856,35 +856,6 @@ class SchoolProfile(Base):
     valid_to: Mapped[date | None] = mapped_column(Date)
 
 
-class EnrollmentObservation(Base):
-    __tablename__ = "enrollment_observations"
-    __table_args__ = (
-        UniqueConstraint(
-            "facility_id",
-            "school_year",
-            "grade_level",
-            "sex",
-            "source_record_id",
-            name="uq_enrollment_observation",
-        ),
-        Index("ix_school_enrollment_facility_year", "facility_id", "school_year"),
-        {"schema": "school"},
-    )
-
-    id: Mapped[uuid.UUID] = uuid_pk()
-    facility_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("core.facilities.id", ondelete="CASCADE"), nullable=False
-    )
-    school_year: Mapped[str] = mapped_column(String(20), nullable=False)
-    grade_level: Mapped[str] = mapped_column(String(40), nullable=False)
-    sex: Mapped[str] = mapped_column(String(20), nullable=False, default="all")
-    learner_count: Mapped[int | None] = mapped_column(Integer)
-    source_record_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("source.records.id", ondelete="SET NULL")
-    )
-    observed_at: Mapped[datetime] = created_at()
-
-
 class ResourceObservation(Base):
     __tablename__ = "resource_observations"
     __table_args__ = (

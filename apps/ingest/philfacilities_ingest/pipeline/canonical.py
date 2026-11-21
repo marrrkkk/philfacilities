@@ -12,7 +12,6 @@ from philfacilities_api.models import (
     Agency,
     AttributeAssertion,
     Dataset,
-    EnrollmentObservation,
     Facility,
     FacilityChangeEvent,
     FacilityContact,
@@ -345,7 +344,6 @@ def _apply_candidate(
     current_location_by_facility: dict[uuid.UUID, FacilityLocation | None] | None = None,
     record_is_new: bool = False,
     update_prefetch: FacilityUpdatePrefetch | None = None,
-    pending_observations: list[dict[str, Any]] | None = None,
 ) -> Facility | None:
     entity_id = candidate.source_entity_id or candidate.source_record_key
     facility = _find_facility_for_entity(
@@ -535,10 +533,9 @@ def _apply_candidate(
         )
         changed = {}
         if not protect_public:
-            # Enrichment-only releases (enrollment totals, resources) carry no
-            # ownership evidence. They must never replace an identified school or
-            # hospital's class with a discovery placeholder merely because their
-            # own row says "unknown".
+            # Enrichment-only releases carry no ownership evidence. They must
+            # never replace an identified school or hospital's class with a
+            # discovery placeholder merely because their own row says "unknown".
             has_classification_evidence = candidate.inclusion_class is not None or (
                 candidate.ownership or ""
             ).strip().lower() not in ("", "unknown")
@@ -554,7 +551,7 @@ def _apply_candidate(
             }
             for attribute, new_value in updates.items():
                 old_value = getattr(facility, attribute)
-                # Enrichment-only releases (enrollment/resource observations)
+                # Enrichment-only releases (for example resource observations)
                 # carry no facility name or sector. Never let a blank/unknown
                 # placeholder erase a value already established by an
                 # identifying source release.
@@ -1083,38 +1080,6 @@ def _apply_candidate(
                 )
         if profile is not None and not protect_public and not candidate.enrichment_only:
             profile.source_record_id = record.id
-        for observation in school.enrollment:
-            exists = (
-                None
-                if created or record_is_new
-                else session.scalars(
-                    select(EnrollmentObservation.id).where(
-                        EnrollmentObservation.facility_id == facility.id,
-                        EnrollmentObservation.school_year == observation.school_year,
-                        EnrollmentObservation.grade_level == observation.grade_level,
-                        EnrollmentObservation.sex == observation.sex,
-                        EnrollmentObservation.source_record_id == record.id,
-                    )
-                ).first()
-            )
-            if exists is None:
-                row = {
-                    "facility_id": facility.id,
-                    "school_year": observation.school_year,
-                    "grade_level": observation.grade_level,
-                    "sex": observation.sex,
-                    "learner_count": observation.learner_count,
-                    "source_record_id": record.id,
-                }
-                if pending_observations is not None:
-                    # Enrollment releases can carry more than a million cells.
-                    # Keep them as plain mappings and insert them in batches
-                    # after the facility rows have been flushed, rather than
-                    # building one ORM instance per cell.
-                    pending_observations.append(row)
-                else:
-                    session.add(EnrollmentObservation(**row))
-                stats["enrollment_observations"] += 1
         for observation in school.resources:
             exists = (
                 None
@@ -1379,12 +1344,12 @@ def _copy_mappings(
 ) -> None:
     """Stream insert mappings through PostgreSQL's COPY protocol.
 
-    A 60k-school enrollment release produces well over a million enrollment
-    cells and assertion rows. SQLAlchemy's executable insert sends one
-    statement per mapping through psycopg, which turns the release into
-    millions of round trips and dominates the apply stage. COPY streams the
-    same rows on the session's transaction in batches, which is both faster
-    and far cheaper in memory because no ORM instances are created.
+    A large release produces well over a million assertion rows. SQLAlchemy's
+    executable insert sends one statement per mapping through psycopg, which
+    turns the release into millions of round trips and dominates the apply
+    stage. COPY streams the same rows on the session's transaction in batches,
+    which is both faster and far cheaper in memory because no ORM instances are
+    created.
     """
 
     if not rows:
@@ -1394,33 +1359,6 @@ def _copy_mappings(
     with connection.cursor() as cursor, cursor.copy(statement) as copy:
         for row in rows:
             copy.write_row(tuple(row[column] for column in columns))
-
-
-def flush_enrollment_observations(
-    session: Session,
-    observations: list[dict[str, Any]],
-) -> None:
-    """Insert pending enrollment mappings after their facilities are flushed."""
-
-    if not observations:
-        return
-    for observation in observations:
-        observation.setdefault("id", uuid.uuid4())
-    _copy_mappings(
-        session,
-        table="school.enrollment_observations",
-        columns=(
-            "id",
-            "facility_id",
-            "school_year",
-            "grade_level",
-            "sex",
-            "learner_count",
-            "source_record_id",
-        ),
-        rows=observations,
-    )
-    observations.clear()
 
 
 def flush_attribute_assertions(session: Session) -> None:

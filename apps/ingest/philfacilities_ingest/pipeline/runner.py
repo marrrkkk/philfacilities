@@ -59,7 +59,6 @@ from .canonical import (
     _flush_new_facilities,
     _maybe_flag_cross_source,
     flush_attribute_assertions,
-    flush_enrollment_observations,
 )
 from .common import (
     APPLY_FLUSH_BATCH_SIZE,
@@ -559,7 +558,6 @@ def _run_ingestion_locked(
                 sector_by_facility.setdefault(facility_id, set()).add(value)
         applied_candidate_keys: set[str] = set()
         pending_matches: list[tuple[Facility, SourceRecord]] = []
-        pending_observations: list[dict[str, Any]] = []
         new_facilities: list[Facility] = []
         current_location_by_facility: dict[uuid.UUID, FacilityLocation | None] = {}
         # A health release can match an existing facility through a DOH code
@@ -701,7 +699,6 @@ def _run_ingestion_locked(
                 current_location_by_facility=current_location_by_facility,
                 record_is_new=candidate.source_record_key not in pre_existing_keys,
                 update_prefetch=update_prefetch,
-                pending_observations=pending_observations,
             )
             # Release the staged row after its candidate has been applied. The
             # raw payload is the largest per-row object in the run, and no
@@ -714,7 +711,6 @@ def _run_ingestion_locked(
                 _flush_new_facilities(session, new_facilities)
                 session.flush()
                 flush_attribute_assertions(session)
-                flush_enrollment_observations(session, pending_observations)
                 # Rollback snapshots and profile/location caches otherwise pin
                 # every touched facility for the whole 60k-row release. They
                 # are durable after the flush, so the next batch can reload
@@ -780,7 +776,6 @@ def _run_ingestion_locked(
         _flush_new_facilities(session, new_facilities)
         session.flush()
         flush_attribute_assertions(session)
-        flush_enrollment_observations(session, pending_observations)
         session.info.pop(BULK_ASSERTIONS_KEY, None)
         if pending_matches:
             # Deferred cross-source matching runs once, after every link exists.

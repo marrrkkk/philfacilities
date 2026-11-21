@@ -127,7 +127,7 @@ def test_rows_are_read_from_csv_and_zip() -> None:
     assert _rows_from_csv(buffer.getvalue())[0]["school_id"] == "100001"
 
 
-def test_normalize_fills_profile_and_keeps_offered_zeroes() -> None:
+def test_normalize_fills_school_profile_fields() -> None:
     adapter = DepEdBukasEnrollmentAdapter(_spec())
     candidates = adapter.normalize(
         _parsed(
@@ -163,27 +163,19 @@ def test_normalize_fills_profile_and_keeps_offered_zeroes() -> None:
     assert first.school.school_management == "deped_managed"
     assert first.school.division == "Ilocos Norte"
     assert first.school.district == "Bacarra I"
+    assert first.school.legislative_district == "1st District"
+    assert first.school.offers_es is True
+    assert first.school.offers_jhs is False
+    assert first.school.offers_shs is False
     assert first.location.address_text == "Brgy. 21, Libtong, Bacarra, Ilocos Norte"
-    by_grade_sex = {
-        (row.grade_level, row.sex): row.learner_count for row in first.school.enrollment
-    }
-    assert by_grade_sex[("kinder", "male")] == 4
-    assert by_grade_sex[("kinder", "female")] == 7
-    # ES is offered, so a zero grade count is retained as a real zero.
-    assert by_grade_sex[("g1", "male")] == 0
-    # SHS is not offered, so its zero is non-applicable and omitted.
-    assert ("g12", "female") not in by_grade_sex
-    # A positive count is retained even when its offering flag is false.
-    assert by_grade_sex[("g11_abm", "male")] == 9
 
     assert second.ownership == "private"
     assert second.operator_type == "PRIVATE_UNSPECIFIED"
     assert second.school.sector == "private"
     assert second.school.school_management == "sectarian"
-    assert ("g7", "male") in {(row.grade_level, row.sex) for row in second.school.enrollment}
-    assert ("g11_stem", "female") in {
-        (row.grade_level, row.sex) for row in second.school.enrollment
-    }
+    assert second.school.offers_es is False
+    assert second.school.offers_jhs is True
+    assert second.school.offers_shs is True
 
 
 def test_pso_sector_is_not_turned_into_an_ownership_guess() -> None:
@@ -236,3 +228,20 @@ def test_validate_rejects_duplicates_bad_sector_and_invalid_count() -> None:
     assert "invalid_learner_count" in codes
     assert validated.accepted_rows == 1
     assert validated.rejected_rows == 3
+
+
+def test_zero_counts_validate_and_blank_counts_are_not_treated_as_zero() -> None:
+    adapter = DepEdBukasEnrollmentAdapter(_spec())
+    validated = adapter.validate(
+        _parsed(
+            [
+                _row(kinder_male="0", g1_female=""),
+                _row(school_id="100002", g7_male="12"),
+            ]
+        )
+    )
+    # A reported zero is a valid count; a blank cell is missing, not a zero, and
+    # does not fail validation. Counts remain in the raw source payload.
+    assert validated.accepted_rows == 2
+    assert validated.rejected_rows == 0
+    assert validated.issues == []

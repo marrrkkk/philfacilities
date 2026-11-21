@@ -10,8 +10,8 @@ exact six-digit school ID and fill only missing sector/management/administrative
 values plus a mapped point. They never rename a facility, never replace an
 established classification, and never create a parallel school for an ID that is
 already in the EBEIS masterlist. The layer also repeats G11/G12 enrollment
-counts; those columns are deliberately not requested, because Project Bukas owns
-enrollment observations.
+counts; those columns are deliberately not requested. Enrollment counts stay in
+the preserved raw source releases only.
 
 A point is a mapped school location, not a surveyed building or parcel. It is
 published with ``map_geocoded`` precision and the source layer's own method
