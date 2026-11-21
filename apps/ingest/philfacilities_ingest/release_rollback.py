@@ -22,7 +22,6 @@ from geoalchemy2.shape import to_shape
 from philfacilities_api.models import (
     AttributeAssertion,
     Dataset,
-    EnrollmentObservation,
     Facility,
     FacilityChangeEvent,
     FacilityContact,
@@ -54,7 +53,6 @@ CHILD_MODELS = (
     FacilityRole,
     FacilityRelationship,
     SchoolProfile,
-    EnrollmentObservation,
     ResourceObservation,
     HealthProfile,
     HealthLicense,

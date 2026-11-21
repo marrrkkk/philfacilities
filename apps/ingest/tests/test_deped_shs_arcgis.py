@@ -82,7 +82,9 @@ def test_parse_and_normalize_shs_point() -> None:
     assert candidate.school.school_management == "deped_managed"
     assert candidate.school.offers_shs is True
     assert candidate.school.offering_classification == "JHS with SHS"
-    assert candidate.school.enrollment == []
+    assert candidate.school.division == "Davao City"
+    assert candidate.school.district == "Paquibato"
+    assert candidate.school.legislative_district == "2nd District"
     assert candidate.location.latitude == 7.265302
     assert candidate.location.longitude == 125.665567
     assert candidate.location.precision == "map_geocoded"

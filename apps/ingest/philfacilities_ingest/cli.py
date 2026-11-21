@@ -89,7 +89,7 @@ from .release_rollback import ReleaseRollbackError, rollback_release
 from .replay import ReplayManifestError, replay_manifest
 from .school_refinement import normalize_school_subtypes
 from .scraper import CrawlPolicy, crawl, summary_json
-from .slugs import normalize_facility_slugs
+from .slugs import consolidate_numeric_slugs, normalize_facility_slugs
 from .source_candidates import (
     load_source_candidates,
     summarize_source_candidates,
@@ -212,7 +212,7 @@ def demo_specs() -> list[tuple[str, ReleaseSpec, object]]:
     enrollment_spec = _fixture_spec(
         agency_code="deped",
         dataset_slug="demo-deped-enrollment",
-        dataset_name="Synthetic demo school enrollment observations",
+        dataset_name="Synthetic demo school enrollment source file",
         release_label="SYNTHETIC-DEMO-SY2023-2025",
         filename="synthetic-deped-enrollment-2023-2025.xlsx",
         content=deped_enrollment(),
@@ -1294,6 +1294,63 @@ def normalize_facility_slugs_command(
     engine, session = _session()
     try:
         stats = normalize_facility_slugs(
+            session,
+            dry_run=not apply,
+            limit=limit,
+            facility_type=facility_type,
+            example_limit=examples,
+            commit_every=commit_every,
+        )
+        if apply:
+            session.commit()
+        else:
+            session.rollback()
+        typer.echo(json.dumps(stats, indent=2, default=str))
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@app.command("consolidate-numeric-slugs")
+def consolidate_numeric_slugs_command(
+    apply: Annotated[
+        bool,
+        typer.Option(
+            "--apply/--dry-run",
+            help="Apply the slug renames. The default is a dry run.",
+        ),
+    ] = False,
+    limit: Annotated[
+        int,
+        typer.Option(min=1, help="Maximum facility slugs to rename in this run."),
+    ] = 50_000,
+    facility_type: Annotated[
+        str | None,
+        typer.Option("--facility-type", help="Limit the pass to one facility type."),
+    ] = None,
+    commit_every: Annotated[
+        int | None,
+        typer.Option("--commit-every", min=1, help="Commit after roughly this many renames."),
+    ] = None,
+    examples: Annotated[
+        int,
+        typer.Option(min=0, help="Maximum rename examples to include in the output."),
+    ] = 20,
+) -> None:
+    """Move a consolidated facility's clean base slug from a merged tombstone.
+
+    Numbered slugs were assigned before duplicates were merged. A survivor keeps
+    the numbered slug while the tombstone holds the clean one, so the clean URL
+    redirects. This pass gives the clean slug to the survivor and keeps the old
+    numbered slug as a bookmark alias.
+    """
+
+    engine, session = _session()
+    try:
+        stats = consolidate_numeric_slugs(
             session,
             dry_run=not apply,
             limit=limit,

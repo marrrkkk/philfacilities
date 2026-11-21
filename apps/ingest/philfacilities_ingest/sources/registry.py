@@ -167,10 +167,11 @@ DEPED_BUKAS_RIGHTS_BASIS = (
     "data. RA 8293 section 176 provides that no copyright subsists in a work of the "
     "Government of the Philippines, while prior approval may be required for "
     "commercial use. PhilFacilities publishes only institution-level fields (school "
-    "ID, name, sector, management, administrative location, offering flags and "
-    "enrollment counts) for non-commercial public-interest use with attribution, "
-    "provenance and takedown on notice. The file contains no school-head names or "
-    "other personal fields. The official deped.gov.ph URL returns HTTP 403 to "
+    "ID, name, sector, management, administrative location and offering flags) "
+    "for non-commercial public-interest use with attribution, provenance and "
+    "takedown on notice. Enrollment counts stay in the preserved raw release "
+    "and are not published as observations. The file contains no school-head "
+    "names or other personal fields. The official deped.gov.ph URL returns HTTP 403 to "
     "automated clients, so the preserved Wayback copy of the same ZIP is acquired "
     "and its SHA-256 pinned. This is a documented publication decision, not a legal "
     "opinion."
@@ -1035,8 +1036,9 @@ REAL_SOURCES: dict[str, RealSource] = {
             "Wayback copy of the same ZIP (SHA-256 "
             "fd5dd74a62b828608c62335b7c324ddf05be58e3f05465fee68854795f5b1a92) "
             "and rejects any checksum change. Rows link by exact six-digit school "
-            "ID and fill only missing profile values. Registry presence is not "
-            "proof of current operation."
+            "ID and fill only missing profile values. Enrollment counts stay in "
+            "the preserved raw release. Registry presence is not proof of "
+            "current operation."
         ),
     ),
     "deped-shs-arcgis": RealSource(
@@ -1070,9 +1072,9 @@ REAL_SOURCES: dict[str, RealSource] = {
             "7,886 school IDs are already present in the DepEd EBEIS masterlist; "
             "rows therefore enrich existing facilities by exact six-digit ID. "
             "G11/G12 enrollment columns are deliberately excluded from "
-            "acquisition because Project Bukas owns enrollment observations. "
-            "No PSGC code, operating status or building-level precision is "
-            "inferred."
+            "acquisition; enrollment counts stay in the raw source releases "
+            "only. No PSGC code, operating status or building-level precision "
+            "is inferred."
         ),
     ),
     "deped-mapaaralan": RealSource(

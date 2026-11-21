@@ -5,6 +5,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 from philfacilities_ingest.aggregation import (
+    SAME_AGENCY_MAP_POINT_DISTANCE_M,
     _conflicting_location,
     _same_agency_duplicate,
 )
@@ -55,6 +56,33 @@ def test_same_agency_duplicate_requires_exact_name_and_specific_place() -> None:
         _ref("Barangay Hall", specific=False),
     )
     assert not _is_duplicate(left, _ref("City Hall Drive, Baguio", agencies={"doh"}))
+
+
+def test_map_derived_same_agency_duplicate_allows_a_wider_point_match() -> None:
+    left = _ref("Campus Gate, Lipa")
+    right = _ref("Campus Gate, Lipa")
+    # Surveyed or unspecified points keep the tight 50 m rule.
+    assert not _is_duplicate(left, right, distance=69.0)
+    # The wider limit is explicit: map features are bbox centres and one campus
+    # can be mapped as a polygon and a gate with the same name.
+    assert _same_agency_duplicate(
+        left,
+        right,
+        name_score=1.0,
+        distance=69.0,
+        conflicting_ids=False,
+        conflicting_location=False,
+        distance_limit=SAME_AGENCY_MAP_POINT_DISTANCE_M,
+    )
+    assert not _same_agency_duplicate(
+        left,
+        right,
+        name_score=1.0,
+        distance=101.0,
+        conflicting_ids=False,
+        conflicting_location=False,
+        distance_limit=SAME_AGENCY_MAP_POINT_DISTANCE_M,
+    )
 
 
 def test_conflicting_ids_or_locations_block_same_agency_merge() -> None:

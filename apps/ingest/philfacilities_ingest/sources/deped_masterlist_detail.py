@@ -337,7 +337,6 @@ class DepEdMasterlistDetailAdapter:
                         offers_es=offers[0],
                         offers_jhs=offers[1],
                         offers_shs=offers[2],
-                        reference_school_year="2020-2021",
                     ),
                     enrichment_only=True,
                 )

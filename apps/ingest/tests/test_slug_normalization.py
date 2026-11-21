@@ -131,3 +131,39 @@ def test_merged_tombstone_keeps_its_slug(db_session) -> None:
 
     assert stats["renamed"] == 0
     assert tombstone.slug == f"retired-{suffix}-nha{suffix}"
+
+
+def test_consolidated_facility_takes_the_clean_slug_from_its_tombstone(db_session) -> None:
+    from philfacilities_ingest.slugs import consolidate_numeric_slugs
+
+    suffix = uuid.uuid4().hex[:10]
+    name = f"Consolidated Institute {suffix}"
+    base = f"consolidated-institute-{suffix}"
+    survivor = _facility(db_session, name, f"{base}-3")
+    tombstone = _facility(db_session, name, base)
+    tombstone.record_status = "merged"
+    db_session.add(
+        FacilityChangeEvent(
+            id=uuid.uuid4(),
+            facility_id=tombstone.id,
+            change_type="facility_merged_into",
+            new_value={"target_facility_id": str(survivor.id)},
+            changed_by="system:test-merge",
+        )
+    )
+    db_session.flush()
+
+    dry_run = consolidate_numeric_slugs(db_session, dry_run=True)
+    assert dry_run["would_rename"] == 1
+    assert survivor.slug == f"{base}-3"
+
+    stats = consolidate_numeric_slugs(db_session, dry_run=False)
+    db_session.flush()
+
+    assert stats["renamed"] == 1
+    assert survivor.slug == base
+    assert tombstone.slug.startswith("merged-")
+    alias = db_session.scalars(
+        select(FacilitySlugAlias).where(FacilitySlugAlias.slug == f"{base}-3")
+    ).one()
+    assert alias.facility_id == survivor.id

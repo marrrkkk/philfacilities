@@ -30,6 +30,7 @@ from typing import Any
 from philfacilities_api.models import (
     AdministrativeUnit,
     Agency,
+    AttributeAssertion,
     Dataset,
     Facility,
     FacilityChangeEvent,
@@ -78,6 +79,20 @@ AUTO_MIN_LOCATION_SCORE = 0.9
 # when they describe the same point, not merely the same city or barangay.
 # A source can legitimately publish several branches of one office in a city.
 SAME_AGENCY_POINT_DISTANCE_M = 50.0
+# Map features are bbox centres, not surveyed points. One institution is often
+# mapped as both a campus/building polygon and a gate or entrance with the same
+# name a few dozen metres away. When both points are map-derived and agree on
+# the barangay, allow a wider point match; surveyed points keep the tight rule.
+SAME_AGENCY_MAP_POINT_DISTANCE_M = 100.0
+MAP_DERIVED_PRECISIONS = frozenset({"map_geocoded", "barangay_centroid"})
+# Only the OSM education layer has the observed gate/building duplication: a
+# named institution mapped as both an amenity polygon and an entrance/building.
+# Other community layers contain distinct branches a few dozen metres apart,
+# so they keep the tight rule and any wider match stays a review candidate.
+OSM_EDUCATION_DATASET = "osm-education-facilities"
+INSTITUTION_MAP_AMENITIES = frozenset(
+    {"school", "university", "college", "kindergarten", "preschool"}
+)
 CITY_ONLY_LOCATION_SCORE = 0.6
 MAX_CLUSTER_SIZE = 8
 CONFLICTING_POINT_DISTANCE_M = 1_000.0
@@ -141,6 +156,11 @@ class _Ref:
     deped_ids: set[str] = field(default_factory=set)
     doh_ids: set[str] = field(default_factory=set)
     doe_ids: set[str] = field(default_factory=set)
+    # True when an OSM education source row carries an institution amenity tag.
+    institution_map_feature: bool = False
+    # Every published address claim for the facility. The current location's
+    # address_text can be a short subset of what a source actually supplied.
+    address_claims: list[str] = field(default_factory=list)
 
     @property
     def id(self) -> uuid.UUID:
@@ -166,6 +186,9 @@ class _Pair:
     auto_eligible: bool
     note: str
     cross_type: bool = False
+    # An address-only official row was bridged to a mapped row by locality
+    # evidence rather than a point, barangay, address token or shared ID.
+    locality_bridge: bool = False
 
 
 _SAINT_ALIASES = {"sta": "santa", "sto": "santo", "st": "saint"}
@@ -705,10 +728,51 @@ def _attach_identifiers(session: Session, refs: dict[uuid.UUID, _Ref]) -> None:
             )
         ).all():
             doe[facility_id].add(doe_id)
+    education_ids = [
+        facility_id
+        for facility_id, ref in refs.items()
+        if OSM_EDUCATION_DATASET in ref.dataset_slugs
+    ]
+    education_amenities: dict[uuid.UUID, set[str]] = defaultdict(set)
+    for chunk in _chunks(education_ids):
+        for facility_id, raw_payload in session.execute(
+            select(FacilitySourceLink.facility_id, SourceRecord.raw_payload)
+            .join(SourceRecord, FacilitySourceLink.source_record_id == SourceRecord.id)
+            .join(Release, SourceRecord.release_id == Release.id)
+            .join(Dataset, Release.dataset_id == Dataset.id)
+            .where(
+                FacilitySourceLink.facility_id.in_(chunk),
+                Dataset.slug == OSM_EDUCATION_DATASET,
+            )
+        ).all():
+            if not isinstance(raw_payload, dict):
+                continue
+            amenity = str(raw_payload.get("amenity") or "").split(";", 1)[0].strip().casefold()
+            if amenity:
+                education_amenities[facility_id].add(amenity)
+    addresses: dict[uuid.UUID, list[str]] = defaultdict(list)
+    for chunk in _chunks(facility_ids):
+        for facility_id, raw_value, normalized_value in session.execute(
+            select(
+                AttributeAssertion.facility_id,
+                AttributeAssertion.raw_value,
+                AttributeAssertion.normalized_value,
+            ).where(
+                AttributeAssertion.facility_id.in_(chunk),
+                AttributeAssertion.attribute_name == "location.address_text",
+            )
+        ).all():
+            value = raw_value or normalized_value
+            if value and value not in addresses[facility_id]:
+                addresses[facility_id].append(value)
     for facility_id, ref in refs.items():
         ref.deped_ids = deped.get(facility_id, set())
         ref.doh_ids = doh.get(facility_id, set())
         ref.doe_ids = doe.get(facility_id, set())
+        ref.address_claims = addresses.get(facility_id, [])
+        ref.institution_map_feature = bool(
+            education_amenities.get(facility_id, set()) & INSTITUTION_MAP_AMENITIES
+        )
 
 
 def _different_agencies(left: _Ref, right: _Ref) -> bool:
@@ -727,14 +791,17 @@ def _same_agency_duplicate(
     distance: float | None,
     conflicting_ids: bool,
     conflicting_location: bool,
+    distance_limit: float = SAME_AGENCY_POINT_DISTANCE_M,
 ) -> bool:
     """Whether two rows from one agency are the same point, not two branches.
 
     This is deliberately stricter than a cross-agency match. The name must be
     identical, both records must be specific named places, and the rows must
-    share a point within 50 m. The same city, barangay or free-text address
-    alone is not enough, because one agency can publish several branches of the
-    same office in one barangay and often repeats a city-level address for them.
+    share a point within ``distance_limit``. The same city, barangay or
+    free-text address alone is not enough, because one agency can publish
+    several branches of the same office in one barangay and often repeats a
+    city-level address for them. Callers may widen the limit only for
+    map-derived points that independently agree on the barangay.
     """
 
     if name_score != 1.0 or conflicting_ids or conflicting_location:
@@ -743,7 +810,7 @@ def _same_agency_duplicate(
         return False
     if not left.specific or not right.specific or left.generic or right.generic:
         return False
-    return distance is not None and distance <= SAME_AGENCY_POINT_DISTANCE_M
+    return distance is not None and distance <= distance_limit
 
 
 def _id_evidence(left: _Ref, right: _Ref) -> tuple[bool, bool]:
@@ -1017,6 +1084,14 @@ def _evaluate_pair(
         auto = False
         note = "facility type differs; review required"
     elif not different_agency:
+        map_points_agree = (
+            same_barangay
+            and OSM_EDUCATION_DATASET in left.dataset_slugs
+            and OSM_EDUCATION_DATASET in right.dataset_slugs
+            and (left.institution_map_feature or right.institution_map_feature)
+            and left.location.precision in MAP_DERIVED_PRECISIONS
+            and right.location.precision in MAP_DERIVED_PRECISIONS
+        )
         auto = _same_agency_duplicate(
             left,
             right,
@@ -1024,8 +1099,19 @@ def _evaluate_pair(
             distance=distance,
             conflicting_ids=conflicting_ids,
             conflicting_location=conflicting_location,
+            distance_limit=(
+                SAME_AGENCY_MAP_POINT_DISTANCE_M
+                if map_points_agree
+                else SAME_AGENCY_POINT_DISTANCE_M
+            ),
         )
-        note = "same-agency exact duplicate" if auto else "same agency only"
+        note = (
+            "same-agency exact map duplicate"
+            if auto and map_points_agree
+            else "same-agency exact duplicate"
+            if auto
+            else "same agency only"
+        )
     elif conflicting_ids:
         auto = False
         note = "conflicting official identifiers"
@@ -1045,7 +1131,7 @@ def _evaluate_pair(
     else:
         auto = location_score >= AUTO_MIN_LOCATION_SCORE
         note = "name variant requires strong location evidence"
-    return _Pair(
+    pair = _Pair(
         left=left,
         right=right,
         name_score=name_score,
@@ -1064,6 +1150,8 @@ def _evaluate_pair(
         note=note,
         cross_type=cross_type,
     )
+    pair.locality_bridge = _official_map_locality_bridge(pair)
+    return pair
 
 
 def _pair_key(left: _Ref, right: _Ref) -> tuple[uuid.UUID, uuid.UUID]:
@@ -1292,15 +1380,75 @@ def _auto_pair(pair: _Pair) -> bool:
     return pair.auto_eligible and not pair.cross_type
 
 
+def _official_map_locality_bridge(pair: _Pair) -> bool:
+    """Whether an address-only official row and a mapped row name one place.
+
+    A registry can publish an exact, specific name and a street/locality address
+    with no point, while OpenStreetMap publishes the same name with a bbox
+    centre. City-level name agreement is normally too weak, but an official
+    address that independently names the mapped city (or shares a street token)
+    is a second identity dimension: it is not a name match alone.
+    """
+
+    if pair.different_agency is False or pair.conflicting_ids or pair.conflicting_location:
+        return False
+    if pair.name_score != 1.0 or not pair.same_city:
+        return False
+    if not pair.left.specific or not pair.right.specific or pair.left.generic or pair.right.generic:
+        return False
+    if pair.distance_m is not None and pair.distance_m > 250:
+        return False
+    official = pair.left if pair.left.official else pair.right
+    community = pair.right if pair.left.official else pair.left
+    if official.official == community.official:
+        return False
+    if community.location.latitude is None:
+        return False
+    # An official point far from the mapped point is independent contrary
+    # evidence; only an address-only official claim can use this bridge.
+    if official.location.latitude is not None and (
+        pair.distance_m is None or pair.distance_m > 250
+    ):
+        return False
+    if pair.shared_address_tokens >= 1:
+        return True
+    official_addresses = list(official.address_claims)
+    if official.location.address_text:
+        official_addresses.append(official.location.address_text)
+    community_addresses = list(community.address_claims)
+    if community.location.address_text:
+        community_addresses.append(community.location.address_text)
+    administrative_names = frozenset(_city_aliases(community.city_name or ""))
+    official_tokens: set[str] = set()
+    for address in official_addresses:
+        official_tokens |= _street_address_tokens(address, administrative_names)
+        if community.city_name and any(
+            _mentions_admin_name(address, alias) for alias in _city_aliases(community.city_name)
+        ):
+            return True
+    community_tokens: set[str] = set()
+    for address in community_addresses:
+        community_tokens |= _street_address_tokens(address, administrative_names)
+    if official_tokens & community_tokens:
+        return True
+    return bool(
+        official.barangay_code
+        and community.barangay_code
+        and official.barangay_code == community.barangay_code
+    )
+
+
 def _strong_pair(pair: _Pair) -> bool:
     """Whether a pair has more than same-city name agreement.
 
     A shared official identifier, the same barangay, an address match, or a
-    point within 250 m. Exact names in the same city alone are not enough,
-    because chains and branches legitimately share both.
+    point within 250 m. Exact names in the same city alone are normally not
+    enough, because chains and branches legitimately share both. The exception
+    is an address-only official row whose address independently confirms the
+    mapped city or street.
     """
 
-    return pair.shared_ids or pair.location_score >= AUTO_MIN_LOCATION_SCORE
+    return pair.shared_ids or pair.location_score >= AUTO_MIN_LOCATION_SCORE or pair.locality_bridge
 
 
 def _pair_score(pair: _Pair) -> float:
@@ -1637,7 +1785,37 @@ def consolidate_facilities(
             stats["skipped_cluster_incomplete"] += 1
             continue
         edge_by_key = {_pair_key(pair.left, pair.right): pair for pair in component_pairs}
+        component_refs: dict[uuid.UUID, _Ref] = {}
+        for pair in component_pairs:
+            component_refs[pair.left.id] = pair.left
+            component_refs[pair.right.id] = pair.right
+
+        # One address-only official row can confirm a mapped place, but it
+        # cannot choose between two mapped places that are far apart. Look at
+        # the whole component, not just the proposed clique, so an ambiguous
+        # official row cannot silently merge with one of its branches.
+        ambiguous_officials: set[uuid.UUID] = set()
+        for ref in component_refs.values():
+            if not ref.official or ref.location.latitude is not None:
+                continue
+            mapped = []
+            for other in component_refs.values():
+                if other.id == ref.id:
+                    continue
+                edge = edge_by_key.get(_pair_key(ref, other))
+                if edge is not None and edge.locality_bridge:
+                    mapped.append(other)
+            for index, left in enumerate(mapped):
+                for right in mapped[index + 1 :]:
+                    distance = _distance_m(left.location, right.location)
+                    if distance is None or distance > 250:
+                        ambiguous_officials.add(ref.id)
+
         for clique_refs in component_cliques:
+            if any(ref.id in ambiguous_officials for ref in clique_refs):
+                stats["clusters_rejected"] += 1
+                stats["skipped_cluster_incomplete"] += 1
+                continue
             if any(ref.id in merged_facilities for ref in clique_refs):
                 continue
             if not dry_run and stats["merged"] >= limit:

@@ -740,7 +740,7 @@ def test_philhealth_pdf_parser_accepts_the_official_hospital_layout() -> None:
     assert candidates[0].health.bed_capacity == 50
 
 
-def test_enrollment_and_resource_parsers_preserve_observations() -> None:
+def test_enrollment_and_resource_parsers_validate_and_keep_source_counts() -> None:
     enrollment = deped_enrollment()
     enrollment_spec = _spec(
         agency="deped",
@@ -752,9 +752,12 @@ def test_enrollment_and_resource_parsers_preserve_observations() -> None:
     enrollment_parsed = enrollment_adapter.parse(enrollment_spec)
     assert len(enrollment_parsed.rows) == 24
     assert enrollment_adapter.validate(enrollment_parsed).issues == []
+    # Enrollment counts stay with the raw source row; no observations are derived.
+    assert enrollment_parsed.rows[0].raw_payload["rows"][0]["learner_count"] == 100
     enrollment_candidates = enrollment_adapter.normalize(enrollment_parsed)
     assert enrollment_candidates[0].school is not None
-    assert enrollment_candidates[0].school.enrollment[0].learner_count == 100
+    assert enrollment_candidates[0].source_entity_id == "SYN-DEPED-0001"
+    assert enrollment_candidates[0].school.deped_school_id == "SYN-DEPED-0001"
 
     resources = deped_resources()
     resource_spec = _spec(

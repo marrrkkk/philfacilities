@@ -115,14 +115,6 @@ class ContactData:
     valid_to: date | None = None
 
 
-@dataclass(slots=True)
-class EnrollmentData:
-    school_year: str
-    grade_level: str
-    sex: str = "all"
-    learner_count: int | None = None
-
-
 @dataclass
 class ResourceData:
     school_year: str
@@ -146,8 +138,6 @@ class SchoolData:
     offers_es: bool | None = None
     offers_jhs: bool | None = None
     offers_shs: bool | None = None
-    reference_school_year: str | None = None
-    enrollment: list[EnrollmentData] = field(default_factory=list)
     resources: list[ResourceData] = field(default_factory=list)
 
 
