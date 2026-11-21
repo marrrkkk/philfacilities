@@ -17,7 +17,7 @@ canonical facility, domain observation, geography, provenance
         ↓
 rights/publication gate
         ↓
-PostgreSQL/PostGIS → FastAPI → directory, map, downloads, third-party clients
+PostgreSQL/PostGIS → FastAPI → directory, map, downloads, MCP, third-party clients
 ```
 
 The canonical data, provenance, API, and source connectors are the product. The directory and map are clients.
@@ -29,6 +29,7 @@ The canonical data, provenance, API, and source connectors are the product. The 
 | `apps/api` | FastAPI read API, SQLAlchemy models, Alembic migrations, API tests |
 | `apps/ingest` | Acquisition, source registry/catalog, connectors, adapters, pipeline, matching, fusion, reports, CLI |
 | `apps/web` | Next.js App Router directory, map, facility profiles, data/source pages |
+| `apps/mcp` | Read-only MCP adapter over `/v1` for AI clients (stdio and Streamable HTTP) |
 | `packages/api-client` | OpenAPI document and generated TypeScript client |
 | `database/fixtures` | Deterministic synthetic fixtures and checksum manifest |
 | `infra` | PostgreSQL/PostGIS (and optional MinIO) Compose services |
@@ -70,6 +71,17 @@ No source-specific branch belongs in `pipeline/`; new sources register metadata 
 
 Generated from `openapi.json`. Do not hand-edit `src/schema.ts`; regenerate with `just typegen`.
 
+### MCP (`apps/mcp`)
+
+- Read-only MCP server with a curated set of task-named tools, not an endpoint dump.
+- Calls the public `/v1` API over HTTP only: no database credentials, no imports of
+  `philfacilities_api`, no arbitrary URLs, no second copy of the publication gate.
+- Passes API payloads through unchanged so nulls, `is_synthetic`, precision, rights
+  and source evidence survive. Contract tests check tool paths and arguments
+  against the committed OpenAPI document.
+- stdio for local clients; stateless Streamable HTTP at `/mcp` for hosted clients.
+  Both use the same tool code. See [MCP](mcp.md) and ADR 0009.
+
 ## 4. Data ownership
 
 | Store | Owner | Notes |
@@ -105,7 +117,7 @@ Never use restricted FOI files or agreement-bound data in a public staging or pr
 
 ## 7. Runtime dependencies
 
-- Python 3.12–3.14, `uv` workspace with `philfacilities-api` and `philfacilities-ingest`.
+- Python 3.12–3.14, `uv` workspace with `philfacilities-api`, `philfacilities-ingest` and `philfacilities-mcp`.
 - Node.js 22+ (24 tested), pnpm 12+.
 - PostgreSQL 17 + PostGIS 3.5.
 - Optional S3-compatible object storage (MinIO profile in Compose).
@@ -123,10 +135,11 @@ Never use restricted FOI files or agreement-bound data in a public staging or pr
 | Attribute conflicts | `fusion.py`, `core.facility_attribute_fusions` |
 | Rights/publication | `rights.py`, dataset/release rows, [data policy](data-policy.md) |
 | Web route or component | `apps/web/src/app/`, `apps/web/src/components/` |
+| MCP tool or transport | `apps/mcp/philfacilities_mcp/tools/`, `server.py`, `http.py`, [MCP](mcp.md) |
 | Visual token | `apps/web/src/app/globals.css`, [design system](design-system.md) |
 | Deployment/backup/monitoring | [operations](operations.md), `docs/operations/` |
 | Architecture decision | New ADR in `docs/decisions/` |
 
 ## 9. Decisions
 
-Architecture decisions are recorded in [ADRs](decisions/README.md): monorepo boundaries, canonical identity, temporal releases, data rights, coordinate precision, basemap, API versioning, and publicly available data inclusion. Add a new ADR rather than rewriting an accepted one; mark supersession explicitly.
+Architecture decisions are recorded in [ADRs](decisions/README.md): monorepo boundaries, canonical identity, temporal releases, data rights, coordinate precision, basemap, API versioning, publicly available data inclusion, and the public-API-only MCP boundary. Add a new ADR rather than rewriting an accepted one; mark supersession explicitly.

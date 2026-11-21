@@ -46,6 +46,7 @@ browser → MapLibre → /v1/facilities/map → FastAPI /v1
 - The results count and active filters are visible above the list.
 - Pagination uses the API cursor, not an offset.
 - A missing coordinate record still appears in text search; it is labelled rather than hidden.
+- Each result shows compact registry identifiers from `FacilitySummary.source_refs` (for example `CHED 04131`, `DepEd 427036`, `OSM way/156623883`). Same-named facilities from different registries stay separate; the identifier and full source key in the card's title attribute let users tell them apart.
 - Filter controls are plain form elements with labels; the mobile filter panel must remain keyboard-operable.
 - Search is debounced (~350 ms). Typing in either search input fetches `/v1/facilities` from the browser, aborts stale requests, and replaces only the result count, cards, pagination, active-filter chip, and map link. The URL is kept shareable with `history.replaceState`; the page is not reloaded. The remaining filter controls still submit a GET request.
 - Geography options load hierarchically: regions and provinces first, then municipalities for the selected province (or for the selected region's provinces and any region-direct cities such as NCR), then barangays for the selected municipality. A bookmarked child code is resolved directly when it is not in the loaded option lists.
@@ -93,7 +94,7 @@ The page presents, in order:
 4. registry classification (inclusion, ownership, operator, access, functions, status);
 5. roles and services when present;
 6. location and precision, with a map only when coordinates and a known precision exist;
-7. typed school or health information;
+7. typed school or health information, including CHED HEI and DepEd school identifiers taken from `FacilitySummary.source_refs` when the profile field is absent;
 8. licences and accreditations with validity;
 9. source records and provenance;
 10. field-level assertions and canonical history;
