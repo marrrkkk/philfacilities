@@ -33,6 +33,12 @@ data, while source rights and dataset size limit what can be published.
   or published (83,769 facilities when this decision was recorded); restricted
   and internal-only sources never enter a download.
 - Breaking changes require a new version rather than an in-place edit.
+- Filtered exports are additive: the generic `facilities.csv`/`facilities.parquet`
+  downloads accept the same filters as `GET /v1/facilities` (including the
+  `facility_type` alias), so every taxonomy category has an export path without
+  a new fixed file. They reuse the list predicates and publication gate; the
+  fixed schools/health files and keyset streaming are unchanged. No new
+  full-table-sort filter is exposed without a benchmark.
 
 ## Evidence
 
