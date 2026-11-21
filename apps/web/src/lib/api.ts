@@ -25,6 +25,9 @@ export type ReleaseOut = components["schemas"]["ReleaseOut"];
 export type QualityIssueOut = components["schemas"]["QualityIssueOut"];
 export type SourceCheckOut = components["schemas"]["SourceCheckOut"];
 export type SourceMonitoringOut = components["schemas"]["SourceMonitoringOut"];
+export type TaxonomyResponse = components["schemas"]["TaxonomyResponse"];
+export type TaxonomyTermOut = components["schemas"]["TaxonomyTermOut"];
+export type ContactOut = components["schemas"]["ContactOut"];
 
 const API_BASE =
   process.env.API_BASE_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8010";
@@ -140,7 +143,9 @@ export function listSourceReleases(dataset: string, limit = 50) {
 }
 
 export function listMonitoring() {
-  return apiGet<SourceMonitoringOut[]>("/v1/monitoring", undefined, { revalidate: 60 });
+  // Monitoring is append-only operational evidence; stale cached rows would
+  // misreport the latest run on the status and source-register pages.
+  return apiGet<SourceMonitoringOut[]>("/v1/monitoring");
 }
 
 export function listSourceChecks(limit = 50) {
@@ -183,6 +188,38 @@ export function getFacilityMap(
 ) {
   return apiGet<FacilityMapPointsResponse>("/v1/facilities/map", query, {
     signal: init?.signal,
+  });
+}
+
+/**
+ * Read every page of an administrative-unit query. The API caps each response
+ * at 500 rows, so callers must page when they need a complete lookup list.
+ */
+export async function listAllGeographies(
+  query: Query,
+  options: { pageSize?: number; maxRows?: number } = {},
+) {
+  const pageSize = options.pageSize ?? 500;
+  const maxRows = options.maxRows ?? 5000;
+  const rows: AdministrativeUnitOut[] = [];
+  let offset = 0;
+  while (rows.length < maxRows) {
+    const page = await listGeographies({ ...query, limit: pageSize, offset });
+    rows.push(...page);
+    if (page.length < pageSize) break;
+    offset += pageSize;
+  }
+  return rows;
+}
+
+export function getTaxonomy() {
+  return apiGet<TaxonomyResponse>("/v1/taxonomy", undefined, { revalidate: 86400 });
+}
+
+export function listMapFacilities(bbox: string, limit = 300) {
+  return apiGet<components["schemas"]["FacilityMapResponse"]>("/v1/facilities/within", {
+    bbox,
+    limit,
   });
 }
 

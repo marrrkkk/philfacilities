@@ -18,8 +18,10 @@ import {
   type DatasetOut,
   type QualitySummary,
   type StatisticsOut,
+  type TaxonomyResponse,
   getQualitySummary,
   getStatistics,
+  getTaxonomy,
   listSources,
 } from "@/lib/api";
 import { formatDateTime, formatNumber, titleCase } from "@/lib/format";
@@ -29,17 +31,25 @@ export const dynamic = "force-dynamic";
 
 async function loadHomeData() {
   try {
-    const [stats, quality, sources] = await Promise.all([
+    const [stats, quality, sources, taxonomy] = await Promise.all([
       getStatistics(),
       getQualitySummary(),
       listSources(),
+      getTaxonomy().catch(() => null),
     ]);
-    return { stats, quality, sources, error: null as string | null };
+    return {
+      stats,
+      quality,
+      sources,
+      taxonomy: taxonomy as TaxonomyResponse | null,
+      error: null as string | null,
+    };
   } catch (error) {
     return {
       stats: null as StatisticsOut | null,
       quality: null as QualitySummary | null,
       sources: [] as DatasetOut[],
+      taxonomy: null as TaxonomyResponse | null,
       error: error instanceof Error ? error.message : "The API is unavailable.",
     };
   }
@@ -47,28 +57,54 @@ async function loadHomeData() {
 
 const entryPoints = [
   {
+    href: "/directory?type=government_office",
+    icon: Database,
+    label: "Government offices",
+    description: "National agency field offices, city and municipal halls, barangay halls, post offices, and Negosyo Centers.",
+  },
+  {
     href: "/directory?type=school",
     icon: School,
-    label: "Schools",
-    description: "OpenStreetMap-mapped school features and DepEd EBEIS institution-level records, with source precision.",
+    label: "Education",
+    description: "Public and private schools, higher-education institutions, and training sites with source precision labels.",
   },
   {
     href: "/directory?type=health_facility",
     icon: Stethoscope,
-    label: "Health facilities",
-    description: "PhilHealth-accredited providers plus OSM-mapped health features, with dated accreditation evidence and precision labels.",
+    label: "Healthcare",
+    description: "Hospitals, rural health units, barangay health stations, clinics, and pharmacies with dated accreditation evidence.",
+  },
+  {
+    href: "/directory?type=library",
+    icon: BookOpenCheck,
+    label: "Libraries",
+    description: "Regional, provincial, city, municipal, barangay reading centres, and congressional libraries.",
+  },
+  {
+    href: "/directory?type=transport_facility",
+    icon: ArrowRight,
+    label: "Transport",
+    description: "Rail stations, ports, terminals, and other transport facilities linked to a source release.",
   },
   {
     href: "/map",
     icon: MapIcon,
     label: "Map",
-    description: "Explore geocoded records with precision-aware markers and a full text alternative.",
+    description: "Explore every geocoded category with precision-aware markers and a full text alternative.",
   },
 ];
 
 export default async function HomePage() {
-  const { stats, quality, sources, error } = await loadHomeData();
+  const { stats, quality, sources, taxonomy, error } = await loadHomeData();
   const asOf = stats?.as_of ?? quality?.as_of;
+  const categories = (taxonomy?.categories ?? [])
+    .map((category) => ({
+      ...category,
+      count: stats?.by_category?.[category.code] ?? 0,
+    }))
+    .filter((category) => category.count > 0)
+    .sort((a, b) => b.count - a.count);
+  const publishedCategories = categories.length;
 
   return (
     <>
@@ -77,16 +113,17 @@ export default async function HomePage() {
           <div>
             <p className="eyebrow rule-label text-[#0038a8]">Open public data infrastructure</p>
             <h1 className="mt-5 max-w-3xl font-display text-4xl font-extrabold leading-[0.95] tracking-tight sm:text-5xl lg:text-6xl">
-              Find a Philippine school or health facility.
+              Find a Philippine public facility.
               <span className="text-[#0038a8]"> See where the record came from.</span>
             </h1>
             <p className="mt-6 max-w-2xl font-sans text-lg leading-relaxed text-[#3f434a]">
-              PhilFacilities links agency source releases to canonical facility records. Source
-              identifiers, reference periods, retrieval times, and location precision travel with
-              every result.
+              PhilFacilities links agency source releases to canonical records for schools, health
+              facilities, government offices, libraries, transport, utilities, markets, museums,
+              housing, justice, and environmental monitoring. Source identifiers, reference periods,
+              retrieval times, and location precision travel with every result.
             </p>
             <div className="mt-8 max-w-2xl">
-              <SearchForm />
+              <SearchForm categories={taxonomy?.categories ?? []} />
             </div>
             <div className="mt-6 flex flex-wrap gap-3">
               <Link href="/directory" className={cn(buttonVariants({ variant: "blue" }))}>
@@ -116,9 +153,11 @@ export default async function HomePage() {
             ) : (
               <dl className="mt-4 grid grid-cols-2 gap-px bg-[#d1d8e6]">
                 {[
-                  ["Schools", stats?.schools],
-                  ["Health facilities", stats?.health_facilities],
+                  ["Education", stats?.schools],
+                  ["Healthcare", stats?.health_facilities],
+                  ["Published categories", publishedCategories],
                   ["With coordinates", stats?.with_coordinates],
+                  ["Source releases", stats?.source_releases],
                   ["Synthetic fixtures", stats?.synthetic],
                 ].map(([label, value]) => (
                   <div key={String(label)} className="bg-white p-4">
@@ -186,6 +225,46 @@ export default async function HomePage() {
               </Card>
             </Link>
           ))}
+        </div>
+      </section>
+
+      <section className="border-t border-[#d1d8e6] bg-[#f4f7fc]" aria-labelledby="coverage-heading">
+        <div className="container-page py-12">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="eyebrow rule-label text-[#0038a8]">Measured coverage by category</p>
+              <h2
+                id="coverage-heading"
+                className="mt-3 font-display text-3xl font-extrabold leading-tight"
+              >
+                Every category that currently has published records
+              </h2>
+            </div>
+            <p className="max-w-md font-sans text-sm leading-relaxed text-[#5a5a58]">
+              Counts are published PhilFacilities records, not the national facility universe.
+              Categories with no rights-cleared release yet are listed as zero and are not shown as
+              coverage.
+            </p>
+          </div>
+          <div className="mt-6 grid gap-px border border-[#d1d8e6] bg-[#d1d8e6] sm:grid-cols-2 lg:grid-cols-3">
+            {categories.map((category) => (
+              <Link
+                key={category.code}
+                href={`/directory?type=${category.code}`}
+                className="flex items-baseline justify-between gap-4 bg-white p-4 no-underline hover:bg-[#eef4ff]"
+              >
+                <span className="font-ui text-sm font-bold text-[#0a0a0a]">{category.label}</span>
+                <span className="font-display text-lg font-bold text-[#0038a8]">
+                  {formatNumber(category.count)}
+                </span>
+              </Link>
+            ))}
+            {categories.length === 0 ? (
+              <p className="bg-white p-4 font-sans text-sm text-[#5a5a58]">
+                Category counts are unavailable because the statistics endpoint could not be read.
+              </p>
+            ) : null}
+          </div>
         </div>
       </section>
 
