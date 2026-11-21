@@ -13,11 +13,10 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  # Shared by the python and e2e jobs. The name must end in `_test`; conftest.py
-  # refuses to run its destructive fixtures against any other database.
-  TEST_DATABASE_URL: postgresql+psycopg://philfacilities:philfacilities@localhost:54330/philfacilities_test
-
+# Each job that needs the test database declares the URL literally in its own
+# `env` block. The `env` context is not available in `jobs.<job_id>.env`, so a
+# workflow-level `env` cannot be referenced there. The name must end in `_test`;
+# conftest.py refuses to run its destructive fixtures against any other database.
 jobs:
   # Fast, database-free checks. Fail here before paying for a database or a
   # browser build.
@@ -74,8 +73,8 @@ jobs:
           --health-timeout 5s
           --health-retries 30
     env:
-      PHILFACILITIES_TEST_DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
-      DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
+      PHILFACILITIES_TEST_DATABASE_URL: postgresql+psycopg://philfacilities:philfacilities@localhost:54330/philfacilities_test
+      DATABASE_URL: postgresql+psycopg://philfacilities:philfacilities@localhost:54330/philfacilities_test
     steps:
       - uses: actions/checkout@v4
 
@@ -153,9 +152,9 @@ jobs:
           --health-timeout 5s
           --health-retries 30
     env:
-      PHILFACILITIES_DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
-      DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
-      PHILFACILITIES_TEST_DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
+      PHILFACILITIES_DATABASE_URL: postgresql+psycopg://philfacilities:philfacilities@localhost:54330/philfacilities_test
+      DATABASE_URL: postgresql+psycopg://philfacilities:philfacilities@localhost:54330/philfacilities_test
+      PHILFACILITIES_TEST_DATABASE_URL: postgresql+psycopg://philfacilities:philfacilities@localhost:54330/philfacilities_test
       API_BASE_URL: http://127.0.0.1:8010
       NEXT_PUBLIC_API_URL: http://127.0.0.1:8010
       NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
