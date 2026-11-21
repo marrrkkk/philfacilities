@@ -356,8 +356,10 @@ test.describe("map", () => {
       .locator("summary")
       .filter({ hasText: "Location, source, and time filters" })
       .click();
+    // The map fetches its viewport from /v1/facilities/map; /within is the
+    // full-summary bounds endpoint and is not used by the map component.
     const requestWithProvince = page.waitForRequest((request) => {
-      if (!request.url().includes("/v1/facilities/within")) return false;
+      if (!request.url().includes("/v1/facilities/map")) return false;
       return (
         new URL(request.url()).searchParams.get("province_code") === FILTER_PROVINCE_CODE
       );
