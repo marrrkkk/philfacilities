@@ -1,0 +1,337 @@
+{
+  "captured_at": "2026-11-21T09:04:05.000738+00:00",
+  "measurement_date": "2026-11-21",
+  "purpose": "Phase 0 baseline for docs/api-dx-improvement-plan.md",
+  "database": {
+    "source": "working PHILFACILITIES_DATABASE_URL (rights-cleared real data)",
+    "gate_definition": "public_facility_index_filter() from services/filters.py: core.facilities.publication_status == 'public'",
+    "coverage_version": "1.0",
+    "field_counts": [
+      {
+        "field": "display_name",
+        "scope": "summary",
+        "populated": 229274,
+        "total": 229274,
+        "fill_ratio": 1.0,
+        "semantics": "null means no value supplied or established; it is not zero, false, or closed"
+      },
+      {
+        "field": "facility_subtype",
+        "scope": "summary",
+        "populated": 219664,
+        "total": 229274,
+        "fill_ratio": 0.958085,
+        "semantics": "null means no value supplied or established; it is not zero, false, or closed"
+      },
+      {
+        "field": "ownership_type",
+        "scope": "summary",
+        "populated": 127414,
+        "total": 229274,
+        "fill_ratio": 0.555728,
+        "semantics": "UNKNOWN means the source did not establish an owner type"
+      },
+      {
+        "field": "operator_type",
+        "scope": "summary",
+        "populated": 117989,
+        "total": 229274,
+        "fill_ratio": 0.51462,
+        "semantics": "UNKNOWN means the source did not establish an operator type"
+      },
+      {
+        "field": "public_access_class",
+        "scope": "summary",
+        "populated": 2608,
+        "total": 229274,
+        "fill_ratio": 0.011375,
+        "semantics": "UNKNOWN means the source did not establish conditions of entry"
+      },
+      {
+        "field": "functions[]",
+        "scope": "summary",
+        "populated": 40350,
+        "total": 229274,
+        "fill_ratio": 0.17599,
+        "semantics": "[] means no publication-cleared rows exist for this collection; it does not assert that the facility has none"
+      },
+      {
+        "field": "location.postal_code",
+        "scope": "summary",
+        "populated": 27924,
+        "total": 227911,
+        "fill_ratio": 0.122522,
+        "semantics": "null means no value supplied or established; it is not zero, false, or closed; denominator is facilities with a current location"
+      },
+      {
+        "field": "location.precision",
+        "scope": "summary",
+        "populated": 168917,
+        "total": 227911,
+        "fill_ratio": 0.741153,
+        "semantics": "coordinate precision is kept with every point; centroids are not building pins"
+      },
+      {
+        "field": "official_name",
+        "scope": "detail",
+        "populated": 229274,
+        "total": 229274,
+        "fill_ratio": 1.0,
+        "semantics": "null means no value supplied or established; it is not zero, false, or closed"
+      },
+      {
+        "field": "access_conditions",
+        "scope": "detail",
+        "populated": 1718,
+        "total": 229274,
+        "fill_ratio": 0.007493,
+        "semantics": "null means no value supplied or established; it is not zero, false, or closed; null never implies unrestricted access"
+      },
+      {
+        "field": "contacts[]",
+        "scope": "detail",
+        "populated": 3175,
+        "total": 229274,
+        "fill_ratio": 0.013848,
+        "semantics": "[] means no publication-cleared rows exist for this collection; it does not assert that the facility has none"
+      },
+      {
+        "field": "services[]",
+        "scope": "detail",
+        "populated": 1539,
+        "total": 229274,
+        "fill_ratio": 0.006712,
+        "semantics": "[] means no publication-cleared rows exist for this collection; it does not assert that the facility has none"
+      },
+      {
+        "field": "roles[]",
+        "scope": "detail",
+        "populated": 2561,
+        "total": 229274,
+        "fill_ratio": 0.01117,
+        "semantics": "[] means no publication-cleared rows exist for this collection; it does not assert that the facility has none"
+      },
+      {
+        "field": "relationships[]",
+        "scope": "detail",
+        "populated": 0,
+        "total": 229274,
+        "fill_ratio": 0.0,
+        "semantics": "[] means no publication-cleared rows exist for this collection; it does not assert that the facility has none"
+      },
+      {
+        "field": "function_details[]",
+        "scope": "detail",
+        "populated": 40350,
+        "total": 229274,
+        "fill_ratio": 0.17599,
+        "semantics": "[] means no publication-cleared rows exist for this collection; it does not assert that the facility has none; duplicates functions[] on a summary"
+      },
+      {
+        "field": "sources[]",
+        "scope": "detail",
+        "populated": 229274,
+        "total": 229274,
+        "fill_ratio": 1.0,
+        "semantics": "[] means no publication-cleared rows exist for this collection; it does not assert that the facility has none; synthetic records keep their labelled source evidence"
+      },
+      {
+        "field": "school.sector",
+        "scope": "profile_school",
+        "populated": 63217,
+        "total": 106527,
+        "fill_ratio": 0.593436,
+        "semantics": "null means no value supplied or established; it is not zero, false, or closed; denominator is public schools"
+      },
+      {
+        "field": "school.school_management",
+        "scope": "profile_school",
+        "populated": 63217,
+        "total": 106527,
+        "fill_ratio": 0.593436,
+        "semantics": "null means no value supplied or established; it is not zero, false, or closed; denominator is public schools"
+      },
+      {
+        "field": "school.division",
+        "scope": "profile_school",
+        "populated": 63217,
+        "total": 106527,
+        "fill_ratio": 0.593436,
+        "semantics": "null means no value supplied or established; it is not zero, false, or closed; denominator is public schools"
+      },
+      {
+        "field": "school.district",
+        "scope": "profile_school",
+        "populated": 63217,
+        "total": 106527,
+        "fill_ratio": 0.593436,
+        "semantics": "null means no value supplied or established; it is not zero, false, or closed; denominator is public schools"
+      },
+      {
+        "field": "school.resources[]",
+        "scope": "profile_school",
+        "populated": 0,
+        "total": 106527,
+        "fill_ratio": 0.0,
+        "semantics": "[] means no publication-cleared rows exist for this collection; it does not assert that the facility has none; denominator is public schools"
+      },
+      {
+        "field": "health.licensing_status",
+        "scope": "profile_health",
+        "populated": 16552,
+        "total": 70582,
+        "fill_ratio": 0.234507,
+        "semantics": "null means no value supplied or established; it is not zero, false, or closed; denominator is public health facilities; not operational status"
+      },
+      {
+        "field": "health.accreditations[]",
+        "scope": "profile_health",
+        "populated": 13411,
+        "total": 70582,
+        "fill_ratio": 0.190006,
+        "semantics": "[] means no publication-cleared rows exist for this collection; it does not assert that the facility has none; denominator is public health facilities; accreditation is not current operation"
+      },
+      {
+        "field": "utility.resource_type",
+        "scope": "profile_utility",
+        "populated": 661,
+        "total": 661,
+        "fill_ratio": 1.0,
+        "semantics": "null means no value supplied or established; it is not zero, false, or closed; denominator is public utility facilities"
+      }
+    ]
+  },
+  "api": {
+    "base_url": "http://127.0.0.1:8010",
+    "benchmark": [
+      {
+        "name": "health",
+        "path": "/healthz",
+        "samples": 10,
+        "p50_ms": 9,
+        "p95_ms": 12,
+        "max_ms": 12,
+        "mean_bytes": 102
+      },
+      {
+        "name": "statistics",
+        "path": "/v1/statistics",
+        "samples": 10,
+        "p50_ms": 641,
+        "p95_ms": 703,
+        "max_ms": 703,
+        "mean_bytes": 3281
+      },
+      {
+        "name": "facilities",
+        "path": "/v1/facilities?limit=20",
+        "samples": 10,
+        "p50_ms": 164,
+        "p95_ms": 180,
+        "max_ms": 180,
+        "mean_bytes": 32300
+      },
+      {
+        "name": "facility detail",
+        "path": "/v1/facilities/gma-pharmacy",
+        "samples": 10,
+        "p50_ms": 111,
+        "p95_ms": 118,
+        "max_ms": 118,
+        "mean_bytes": 7480
+      },
+      {
+        "name": "bbox query",
+        "path": "/v1/facilities/within?bbox=120.9,14.4,121.1,14.7&limit=500",
+        "samples": 10,
+        "p50_ms": 1009,
+        "p95_ms": 1212,
+        "max_ms": 1212,
+        "mean_bytes": 769948
+      },
+      {
+        "name": "sources",
+        "path": "/v1/sources",
+        "samples": 10,
+        "p50_ms": 42,
+        "p95_ms": 44,
+        "max_ms": 44,
+        "mean_bytes": 175528
+      }
+    ],
+    "payload_probes": {
+      "facilities_limit_20": {
+        "path": "/v1/facilities?limit=20",
+        "samples": 5,
+        "p50_ms": 176.1,
+        "min_ms": 168.6,
+        "max_ms": 178.7,
+        "mean_bytes": 32300.0,
+        "top_level_keys": 5
+      },
+      "facilities_limit_100": {
+        "path": "/v1/facilities?limit=100",
+        "samples": 5,
+        "p50_ms": 259.0,
+        "min_ms": 250.5,
+        "max_ms": 273.8,
+        "mean_bytes": 151494.0,
+        "top_level_keys": 5
+      },
+      "facilities_type_school_limit_100": {
+        "path": "/v1/facilities?type=school&limit=100",
+        "samples": 5,
+        "p50_ms": 310.4,
+        "min_ms": 282.5,
+        "max_ms": 435.9,
+        "mean_bytes": 145214.0,
+        "top_level_keys": 5
+      },
+      "map_bbox_zoom_10": {
+        "path": "/v1/facilities/map?bbox=120,14,121,15&zoom=10",
+        "samples": 5,
+        "p50_ms": 449.2,
+        "min_ms": 422.5,
+        "max_ms": 658.8,
+        "mean_bytes": 12572.0,
+        "top_level_keys": 8
+      },
+      "taxonomy": {
+        "path": "/v1/taxonomy",
+        "samples": 5,
+        "p50_ms": 6.2,
+        "min_ms": 5.7,
+        "max_ms": 8.2,
+        "mean_bytes": 10744.0,
+        "top_level_keys": 9
+      },
+      "fields": {
+        "path": "/v1/fields?by_category=true",
+        "unavailable": "HTTP Error 404: Not Found"
+      },
+      "facility_detail_full": {
+        "path": "/v1/facilities/gma-pharmacy",
+        "samples": 5,
+        "p50_ms": 109.6,
+        "min_ms": 107.8,
+        "max_ms": 125.8,
+        "mean_bytes": 7480.0,
+        "top_level_keys": 34
+      },
+      "facility_detail_compact": {
+        "path": "/v1/facilities/gma-pharmacy?view=compact",
+        "samples": 5,
+        "p50_ms": 114.2,
+        "min_ms": 106.3,
+        "max_ms": 125.8,
+        "mean_bytes": 7480.0,
+        "top_level_keys": 34
+      }
+    }
+  },
+  "notes": [
+    "p50/p95 come from scripts/api_benchmark.py with --samples 10 --warmup 2; single-run sizes are directional.",
+    "Field counts come from scripts/api_dx_audit.py, derived from services/field_coverage.py using public_facility_index_filter().",
+    "The /v1/fields and view=compact probes were unavailable before implementation and are recorded as such."
+  ]
+}

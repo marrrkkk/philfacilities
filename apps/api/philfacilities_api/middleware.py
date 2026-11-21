@@ -65,7 +65,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             self.windows.pop(next(iter(self.windows)))
 
     async def dispatch(self, request: Request, call_next):
-        if request.url.path in {"/healthz", "/openapi.json", "/docs", "/redoc"}:
+        if request.url.path in {"/healthz", "/openapi.json", "/docs"}:
             return await call_next(request)
         client = request.client.host if request.client else "unknown"
         now = time.monotonic()
@@ -83,7 +83,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                     "details": {"limit": self.limit, "window_seconds": 60},
                     "request_id": request_id,
                 },
-                headers={"Retry-After": "60"},
+                headers={
+                    "Retry-After": "60",
+                    "X-RateLimit-Limit": str(self.limit),
+                    "X-RateLimit-Remaining": "0",
+                },
             )
         window.append(now)
         return await call_next(request)
@@ -135,14 +139,18 @@ def install_error_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(Exception)
     async def unhandled_error_handler(request: Request, exc: Exception):
+        # ServerErrorMiddleware sits outside the context middleware, so a 500
+        # never returns through it. Set the correlation header here as well.
+        request_id = getattr(request.state, "request_id", "unknown")
         return JSONResponse(
             status_code=500,
             content={
                 "code": "internal_error",
                 "message": "An unexpected error occurred.",
                 "details": None,
-                "request_id": getattr(request.state, "request_id", "unknown"),
+                "request_id": request_id,
             },
+            headers={"X-Request-ID": request_id},
         )
 
 

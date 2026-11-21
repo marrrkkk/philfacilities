@@ -18,6 +18,283 @@ def _items(client, path: str, **params):
     return response.json()
 
 
+FULL_DETAIL_GOLDEN_KEYS = {
+    "access_conditions",
+    "accreditations",
+    "contacts",
+    "created_at",
+    "display_name",
+    "facility_kind",
+    "facility_subtype",
+    "facility_type",
+    "function_details",
+    "functions",
+    "geography",
+    "health",
+    "id",
+    "inclusion_class",
+    "is_synthetic",
+    "location",
+    "official_name",
+    "operator_type",
+    "ownership",
+    "ownership_type",
+    "public_access_class",
+    "publication_status",
+    "quality",
+    "record_status",
+    "relationships",
+    "roles",
+    "school",
+    "services",
+    "slug",
+    "source_count",
+    "source_refs",
+    "sources",
+    "updated_at",
+    "utility",
+}
+
+
+def test_domain_details_share_the_generic_detail_shape(client):
+    school = _items(client, "/v1/facilities", type="school", limit=1)["items"][0]["slug"]
+    health = _items(client, "/v1/facilities", type="health_facility", limit=1)["items"][0]["slug"]
+
+    cases = (
+        (f"/v1/schools/{school}", "resources", "school"),
+        (f"/v1/health-facilities/{health}", "licenses", "health"),
+    )
+    for path, collection_key, profile_key in cases:
+        wrapper = client.get(path).json()
+        assert set(wrapper) == (
+            {"facility", "resources"}
+            if collection_key == "resources"
+            else {"facility", "licenses", "accreditations"}
+        )
+        assert set(wrapper["facility"]) == FULL_DETAIL_GOLDEN_KEYS
+        assert wrapper["facility"][profile_key] is not None
+
+        unified = client.get(path, params={"shape": "detail"}).json()
+        assert set(unified) == FULL_DETAIL_GOLDEN_KEYS
+        generic = client.get(
+            f"/v1/facilities/{school if profile_key == 'school' else health}"
+        ).json()
+        for field in ("id", "display_name", "facility_type", "inclusion_class", "ownership"):
+            assert unified[field] == generic[field]
+        assert unified["location"] == generic["location"]
+
+        compact = client.get(path, params={"shape": "detail", "view": "compact"}).json()
+        assert len(compact) <= 12
+        assert compact["name"] == compact["display_name"]
+
+        wrapper_compact = client.get(path, params={"view": "compact"}).json()
+        assert len(wrapper_compact["facility"]) == 12
+
+        with_sources = client.get(path, params={"view": "compact", "include": "sources"}).json()
+        assert "sources" in with_sources["facility"]
+        assert "school" not in with_sources["facility"]
+
+        invalid = client.get(path, params={"include": "bogus"})
+        assert invalid.status_code == 400
+        assert invalid.json()["code"] == "invalid_include"
+
+    # Every domain collection row must trace to a public source record.
+    evidence = {
+        row["source_record_uuid"] for row in client.get(f"/v1/facilities/{health}/sources").json()
+    }
+    detail = client.get(f"/v1/health-facilities/{health}").json()
+    for row in detail["licenses"] + detail["accreditations"]:
+        assert row["source_record_id"] in evidence
+
+
+def test_field_coverage_counts_use_the_public_gate(client, db_session):
+    payload = _items(client, "/v1/fields")
+    assert payload["version"]
+    assert payload["caveats"]
+    fields = {entry["field"]: entry for entry in payload["fields"]}
+
+    for entry in payload["fields"]:
+        assert 0 <= entry["populated"] <= entry["total"] <= 22
+        expected_ratio = round(entry["populated"] / entry["total"], 6) if entry["total"] else 0.0
+        assert entry["fill_ratio"] == expected_ratio
+        assert entry["semantics"]
+
+    # Synthetic demo fixtures have no relationships; they do carry one resource
+    # observation per school (the working database has none, see the baseline).
+    assert fields["relationships[]"]["populated"] == 0
+    assert fields["relationships[]"]["total"] == 22
+    assert fields["school.resources[]"]["populated"] == 12
+    assert fields["school.resources[]"]["total"] == 12
+    # All 22 demo facilities have a current location row (7 have no coordinates);
+    # the denominator is rows, not facilities with coordinates.
+    assert fields["location.postal_code"]["total"] == 22
+    assert fields["school.sector"]["total"] == 12  # schools only, not all facilities
+    assert fields["health.licensing_status"]["total"] == 10  # health facilities only
+
+    # An internal facility with a filled field must not change any public count.
+    from philfacilities_api.models import Facility
+
+    hidden = Facility(
+        slug="coverage-internal-fixture",
+        display_name="Internal coverage fixture",
+        facility_type="library",
+        inclusion_class="GOVERNMENT_FACILITY",
+        ownership="government",
+        ownership_type="GOVERNMENT_AGENCY",
+        operator_type="UNKNOWN",
+        public_access_class="PUBLIC_FREE",
+        record_status="active",
+        publication_status="internal",
+        is_synthetic=True,
+        official_name="Should not be counted",
+    )
+    db_session.add(hidden)
+    db_session.commit()
+    try:
+        after = {entry["field"]: entry for entry in _items(client, "/v1/fields")["fields"]}
+        assert after["official_name"]["populated"] == fields["official_name"]["populated"]
+        assert after["public_access_class"]["total"] == fields["public_access_class"]["total"]
+        assert after["relationships[]"]["total"] == fields["relationships[]"]["total"]
+    finally:
+        db_session.delete(hidden)
+        db_session.commit()
+
+
+def test_field_coverage_materialized_view_reconciles_with_on_demand(db_session):
+    """The projection must not drift from the declarative field definitions."""
+
+    from philfacilities_api.services.coverage_mv import (
+        MV_NAME,
+        coverage_mv_fresh,
+        read_coverage_mv,
+    )
+    from philfacilities_api.services.field_coverage import (
+        FIELD_COVERAGE_VERSION,
+        FIELDS,
+        collect_field_coverage,
+    )
+    from sqlalchemy import text
+
+    assert coverage_mv_fresh(db_session), "demo load must refresh the view after publication"
+    assert read_coverage_mv(db_session)["version"] == FIELD_COVERAGE_VERSION
+    # The reader back-fills zero entries for declared fields, so comparing its
+    # output alone cannot detect a field added after migration 0026. Compare the
+    # view's own rows with fields that have eligible public facilities; a field
+    # with no eligible rows legitimately has no MV row.
+    stored_fields = {
+        row.field for row in db_session.execute(text(f"SELECT DISTINCT field FROM {MV_NAME}")).all()
+    }
+    projected = read_coverage_mv(db_session, by_category=True)
+    computed = collect_field_coverage(db_session, by_category=True)
+    eligible_fields = {
+        entry["field"] for entries in computed["by_category"].values() for entry in entries
+    }
+    assert stored_fields == eligible_fields
+    assert stored_fields <= {definition.path for definition in FIELDS}
+    projected_fields = {entry["field"]: entry for entry in projected["fields"]}
+    computed_fields = {entry["field"]: entry for entry in computed["fields"]}
+    assert set(projected_fields) == set(computed_fields)
+    for field, entry in computed_fields.items():
+        assert projected_fields[field]["populated"] == entry["populated"], field
+        assert projected_fields[field]["total"] == entry["total"], field
+        assert projected_fields[field]["scope"] == entry["scope"], field
+    assert set(projected["by_category"]) == set(computed["by_category"])
+
+
+def test_publication_refresh_hook_updates_field_coverage(client, db_session):
+    """The ingest hook must move the projection after a new public record."""
+
+    from philfacilities_api.models import Facility
+    from philfacilities_api.services.coverage_mv import read_coverage_mv
+    from philfacilities_ingest.pipeline.coverage_refresh import (
+        refresh_coverage_after_publication,
+    )
+
+    def official_name_populated() -> int:
+        return next(
+            entry["populated"]
+            for entry in read_coverage_mv(db_session)["fields"]
+            if entry["field"] == "official_name"
+        )
+
+    before = official_name_populated()
+    facility = Facility(
+        slug="coverage-refresh-hook",
+        display_name="Coverage refresh hook fixture",
+        official_name="Refreshed official name",
+        facility_type="library",
+        inclusion_class="GOVERNMENT_FACILITY",
+        ownership="government",
+        record_status="active",
+        publication_status="public",
+        is_synthetic=True,
+    )
+    db_session.add(facility)
+    db_session.commit()
+    try:
+        refresh_coverage_after_publication(db_session)
+        assert official_name_populated() == before + 1
+        payload = client.get("/v1/fields").json()
+        assert (
+            next(
+                entry["populated"]
+                for entry in payload["fields"]
+                if entry["field"] == "official_name"
+            )
+            == before + 1
+        )
+    finally:
+        db_session.delete(facility)
+        db_session.commit()
+        refresh_coverage_after_publication(db_session)
+
+
+def test_field_coverage_by_category_and_etag(client):
+    payload = _items(client, "/v1/fields", by_category="true")
+    assert set(payload["by_category"]) == {"school", "health_facility"}
+    school_entries = {entry["field"]: entry for entry in payload["by_category"]["school"]}
+    assert school_entries["school.sector"]["total"] == 12
+    assert school_entries["school.sector"]["populated"] <= 12
+    overall = {entry["field"]: entry for entry in payload["fields"]}
+    assert school_entries["school.sector"]["populated"] == overall["school.sector"]["populated"]
+
+    first = client.get("/v1/fields")
+    etag = first.headers["etag"]
+    assert first.headers["cache-control"] == "public, max-age=3600"
+    second = client.get("/v1/fields", headers={"If-None-Match": etag})
+    assert second.status_code == 304
+    assert second.content == b""
+    assert second.headers["content-length"] == "0"
+    assert second.headers["etag"] == etag
+
+
+def test_compact_detail_is_small_and_full_view_is_unchanged(client):
+    path = "/v1/facilities/synthetic-demo-school-01"
+    default = client.get(path)
+    assert default.status_code == 200
+    assert set(default.json()) == FULL_DETAIL_GOLDEN_KEYS
+    explicit_full = client.get(path, params={"view": "full"})
+    assert explicit_full.json() == default.json()
+
+    compact_response = client.get(path, params={"view": "compact"})
+    assert compact_response.status_code == 200
+    compact = compact_response.json()
+    assert len(compact) <= 12
+    assert len(compact_response.content) < 2_500
+    assert compact["name"] == compact["display_name"] == "Synthetic Demo School 01"
+    assert compact["id"] == default.json()["id"]
+    assert {"sources", "school", "health", "contacts", "relationships", "quality"} <= set(
+        default.json()
+    )
+    assert not {"sources", "school", "health", "contacts", "relationships", "quality"} & set(
+        compact
+    )
+
+    missing = client.get("/v1/facilities/does-not-exist", params={"view": "compact"})
+    assert missing.status_code == 404
+    assert missing.json()["code"] == "facility_not_found"
+
+
 def test_statistics_and_facility_inventory_agree(client):
     stats = _items(client, "/v1/statistics")
     facilities = _items(client, "/v1/facilities", limit=100)
@@ -38,6 +315,39 @@ def test_statistics_and_facility_inventory_agree(client):
     }
     assert any("synthetic" in caveat.lower() for caveat in stats["caveats"])
     assert all(item["is_synthetic"] for item in facilities["items"])
+
+
+def test_compact_list_keeps_pages_and_cuts_payload(client):
+    full = client.get("/v1/facilities", params={"limit": 100})
+    compact = client.get("/v1/facilities", params={"limit": 100, "view": "compact"})
+    assert full.status_code == compact.status_code == 200
+    full_payload, compact_payload = full.json(), compact.json()
+    assert full_payload["total"] == compact_payload["total"] == 22
+    assert full_payload["next_cursor"] == compact_payload["next_cursor"]
+    assert len(compact_payload["items"]) == len(full_payload["items"]) == 22
+    assert all(len(item) == 12 for item in compact_payload["items"])
+    assert all(
+        "name" in item and item["name"] == item["display_name"] for item in compact_payload["items"]
+    )
+    assert all("quality" not in item for item in compact_payload["items"])
+    assert all(
+        "source_count" in item and "source_refs" not in item for item in compact_payload["items"]
+    )
+    assert len(compact.content) < len(full.content) * 0.7
+
+
+def test_total_false_skips_the_count_without_changing_pages(client):
+    default = _items(client, "/v1/facilities", limit=5)
+    assert default["total"] == 22
+    lean = _items(client, "/v1/facilities", limit=5, total="false")
+    assert lean["total"] is None
+    assert lean["items"] == default["items"]
+    assert lean["has_more"] == default["has_more"]
+    assert lean["next_cursor"] == default["next_cursor"]
+
+    schools = _items(client, "/v1/schools", limit=5, total="false")
+    assert schools["total"] is None
+    assert len(schools["items"]) == 5
 
 
 def test_cursor_pagination_is_stable_and_duplicate_free(client):
@@ -700,6 +1010,66 @@ def test_bulk_downloads_match_publication_gate(client):
     table = pq.read_table(io.BytesIO(parquet_response.content))
     assert table.num_rows == 22
     assert "display_name" in table.column_names
+
+
+def test_filtered_downloads_match_list_counts_and_stay_gated(client, db_session):
+    """Every category can be exported by filtering the generic download."""
+
+    for params, expected in (
+        ({"type": "school"}, 12),
+        ({"facility_type": "health_facility"}, 10),
+        ({"has_coordinates": "true"}, 15),
+        ({"source": "deped"}, None),
+        ({"type": "school", "psgc": "99"}, None),
+        ({"q": "Synthetic Demo School"}, None),
+        ({"location_precision": "source_gps"}, None),
+    ):
+        listed = _items(client, "/v1/facilities", limit=100, **params)
+        if expected is not None:
+            assert listed["total"] == expected
+        csv_response = client.get("/v1/downloads/facilities.csv", params=params)
+        assert csv_response.status_code == 200, csv_response.text
+        rows = list(csv.DictReader(io.StringIO(csv_response.text)))
+        assert len(rows) == listed["total"]
+        assert all(row["publication_status"] == "public" for row in rows)
+        assert all(row["is_synthetic"] == "True" for row in rows)
+        assert [row["display_name"] for row in rows] == sorted(
+            row["display_name"] for row in rows
+        ), "export ordering must remain stable"
+
+    parquet = client.get("/v1/downloads/facilities.parquet", params={"type": "library"})
+    assert parquet.status_code == 404  # no matching rows -> same gate as the list
+    school_parquet = client.get("/v1/downloads/facilities.parquet", params={"type": "school"})
+    assert school_parquet.status_code == 200
+    assert pq.read_table(io.BytesIO(school_parquet.content)).num_rows == 12
+
+    # A hidden facility must never appear in a filtered export.
+    from philfacilities_api.models import Facility
+
+    hidden = Facility(
+        slug="download-internal-fixture",
+        display_name="Hidden library export fixture",
+        facility_type="library",
+        inclusion_class="GOVERNMENT_FACILITY",
+        ownership="government",
+        record_status="active",
+        publication_status="internal",
+        is_synthetic=True,
+    )
+    db_session.add(hidden)
+    db_session.commit()
+    try:
+        rows = list(
+            csv.DictReader(
+                io.StringIO(
+                    client.get("/v1/downloads/facilities.csv", params={"type": "library"}).text
+                )
+            )
+        )
+        assert all(row["id"] != str(hidden.id) for row in rows)
+    finally:
+        db_session.delete(hidden)
+        db_session.commit()
 
 
 def test_bulk_downloads_chunk_facility_id_lookups(client, monkeypatch):

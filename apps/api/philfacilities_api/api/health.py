@@ -13,12 +13,28 @@ from ..models import HealthAccreditation, HealthLicense
 from ..pagination import clamp_limit
 from ..schemas import (
     AccreditationOut,
+    FacilityCompact,
+    FacilityCompactExtended,
+    FacilityDetail,
     FacilityListResponse,
     HealthDetailResponse,
     LicenseOut,
 )
-from ..services import build_facility_detail, public_source_record_condition
-from .common import get_public_facility, paginated_facilities
+from ..services import (
+    build_facility_compact,
+    build_facility_compact_extended,
+    build_facility_detail,
+    public_source_record_condition,
+)
+from .common import (
+    DetailShape,
+    DetailView,
+    compact_extended_response,
+    compact_wrapper_response,
+    get_public_facility,
+    paginated_facilities,
+    parse_include,
+)
 from .query import facility_conditions
 
 router = APIRouter(prefix="/health-facilities", tags=["health"])
@@ -63,6 +79,7 @@ def list_health_facilities(
     reference_period_end: date | None = None,
     limit: int = Query(20, ge=1),
     cursor: str | None = None,
+    total: bool = Query(True, description="Set false to skip the count(*) query."),
 ):
     conditions = facility_conditions(
         facility_type="health_facility",
@@ -83,11 +100,41 @@ def list_health_facilities(
         conditions,
         clamp_limit(limit, settings.max_page_size, settings.default_page_size),
         cursor,
+        with_total=total,
     )
 
 
-@router.get("/{facility_id}", response_model=HealthDetailResponse, summary="Health facility detail")
-def get_health_facility(facility_id: str, db: Annotated[Session, Depends(get_db)]):
+@router.get(
+    "/{facility_id}",
+    response_model=(
+        HealthDetailResponse | FacilityDetail | FacilityCompact | FacilityCompactExtended
+    ),
+    summary="Health facility detail",
+    description=(
+        "The default `shape=wrapper` keeps the historical "
+        "`{facility, licenses, accreditations}` keys. `shape=detail` opts in to the "
+        "unified FacilityDetail shared with `GET /v1/facilities/{id}` (which already "
+        "includes gated accreditations). `view=compact` returns the twelve-key card, "
+        "and `include=sources,assertions,domain` attaches only the requested sections. "
+        "`assertions` is capped at 200 rows; use the paginated "
+        "`/v1/facilities/{facility_id}/assertions` endpoint for the complete claim set. "
+        "Licences stay on this endpoint and on `/licenses`; accreditation and "
+        "licensure are not claims of current operation."
+    ),
+)
+def get_health_facility(
+    facility_id: str,
+    db: Annotated[Session, Depends(get_db)],
+    view: DetailView = "full",
+    shape: DetailShape = "wrapper",
+    include: str | None = Query(
+        None,
+        description=(
+            "Comma-separated optional sections: sources, assertions, domain. "
+            "Assertions are capped at 200; use /assertions for all claims."
+        ),
+    ),
+):
     facility = get_public_facility(db, facility_id)
     if facility.facility_type != "health_facility":
         from ..errors import ApiError
@@ -95,8 +142,8 @@ def get_health_facility(facility_id: str, db: Annotated[Session, Depends(get_db)
         raise ApiError(
             404, "health_facility_not_found", "The requested facility is not a health facility."
         )
-    detail = build_facility_detail(db, facility)
-    licenses = db.scalars(
+    sections = parse_include(include)
+    license_rows = db.scalars(
         select(HealthLicense)
         .where(
             HealthLicense.facility_id == facility.id,
@@ -104,30 +151,54 @@ def get_health_facility(facility_id: str, db: Annotated[Session, Depends(get_db)
         )
         .order_by(HealthLicense.valid_until.desc().nullslast())
     ).all()
-    accreditations = db.scalars(
-        select(HealthAccreditation)
-        .where(
-            HealthAccreditation.facility_id == facility.id,
-            public_source_record_condition(HealthAccreditation.source_record_id),
+    licenses = [
+        LicenseOut(
+            id=row.id,
+            issuing_authority=row.issuing_authority,
+            license_number=row.license_number,
+            license_type=row.license_type,
+            source_status=row.source_status,
+            valid_from=row.valid_from,
+            valid_until=row.valid_until,
+            source_record_id=row.source_record_id,
         )
-        .order_by(HealthAccreditation.valid_until.desc().nullslast())
-    ).all()
-    return HealthDetailResponse(
-        facility=detail,
-        licenses=[
-            LicenseOut(
-                id=row.id,
-                issuing_authority=row.issuing_authority,
-                license_number=row.license_number,
-                license_type=row.license_type,
-                source_status=row.source_status,
-                valid_from=row.valid_from,
-                valid_until=row.valid_until,
-                source_record_id=row.source_record_id,
+        for row in license_rows
+    ]
+    accreditations = [
+        _accreditation(row)
+        for row in db.scalars(
+            select(HealthAccreditation)
+            .where(
+                HealthAccreditation.facility_id == facility.id,
+                public_source_record_condition(HealthAccreditation.source_record_id),
             )
-            for row in licenses
-        ],
-        accreditations=[_accreditation(row) for row in accreditations],
+            .order_by(HealthAccreditation.valid_until.desc().nullslast())
+        ).all()
+    ]
+
+    if shape == "detail":
+        if view == "compact":
+            if sections:
+                return compact_extended_response(
+                    build_facility_compact_extended(db, facility, sections, licenses=licenses),
+                    sections,
+                )
+            return build_facility_compact(db, facility)
+        return build_facility_detail(db, facility)
+
+    if view == "compact":
+        compact = (
+            build_facility_compact_extended(db, facility, sections, licenses=licenses)
+            if sections
+            else build_facility_compact(db, facility)
+        )
+        return compact_wrapper_response(
+            compact, sections, licenses=licenses, accreditations=accreditations
+        )
+    return HealthDetailResponse(
+        facility=build_facility_detail(db, facility),
+        licenses=licenses,
+        accreditations=accreditations,
     )
 
 

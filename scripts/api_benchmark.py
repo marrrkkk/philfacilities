@@ -31,8 +31,11 @@ ENDPOINTS = [
     ("health", "/healthz"),
     ("statistics", "/v1/statistics"),
     ("facilities", "/v1/facilities?limit=20"),
+    ("list compact", "/v1/facilities?limit=100&view=compact"),
+    ("list full", "/v1/facilities?limit=100"),
     ("bbox query", "/v1/facilities/within?bbox=120.9,14.4,121.1,14.7&limit=500"),
     ("sources", "/v1/sources"),
+    ("fields (cached)", "/v1/fields"),
 ]
 
 
@@ -87,7 +90,9 @@ def _first_facility_detail_path(base_url: str, timeout: float) -> str:
 
 def run(base_url: str, samples: int, warmup: int, timeout: float) -> list[Result]:
     endpoints = list(ENDPOINTS)
-    endpoints.insert(3, ("facility detail", _first_facility_detail_path(base_url, timeout)))
+    detail_path = _first_facility_detail_path(base_url, timeout)
+    endpoints.insert(3, ("facility detail", detail_path))
+    endpoints.insert(4, ("detail compact", detail_path + "?view=compact"))
     results: list[Result] = []
     for name, path in endpoints:
         url = base_url.rstrip("/") + path

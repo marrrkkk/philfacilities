@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
 pytestmark = pytest.mark.contract
@@ -23,6 +25,7 @@ REQUIRED_PATHS = {
     "/v1/schools",
     "/v1/schools/{facility_id}",
     "/v1/schools/{facility_id}/resources",
+    "/v1/fields",
     "/v1/health-facilities",
     "/v1/health-facilities/{facility_id}",
     "/v1/health-facilities/{facility_id}/accreditations",
@@ -93,6 +96,20 @@ def test_openapi_contains_the_public_read_contract(openapi_client):
     assert facility_summary["source_count"]["type"] == "integer"
     assert facility_summary["source_refs"]["items"]["$ref"].endswith("SourceRefOut")
     assert facility_summary["location"]["$ref"].endswith("LocationOut")
+
+
+def test_interactive_docs_render_the_openapi_contract(openapi_client):
+    docs = openapi_client.get("/docs")
+    assert docs.status_code == 200
+    assert "scalar" in docs.text.lower()
+    assert "/openapi.json" in docs.text
+    assert "#0038a8" in docs.text  # design-system primary token
+    assert "#2b2b2b" in docs.text  # dark-mode code surface
+    assert "--scalar-radius: 0px" in docs.text
+    assert ".light-mode.light-mode" in docs.text  # outranks Scalar's own theme CSS
+    assert ".scalar-code-block" in docs.text
+    assert "forceDarkModeState" not in docs.text
+    assert "/docs" not in openapi_client.get("/openapi.json").json()["paths"]
 
 
 def test_openapi_is_read_only(openapi_client):
@@ -176,7 +193,201 @@ def test_health_and_index_are_public(openapi_client):
 
     index = openapi_client.get("/v1").json()
     assert index["resources"]["facilities"] == "/v1/facilities"
+    # Discovery links must not drift as endpoints are added.
+    assert index["resources"]["taxonomy"] == "/v1/taxonomy"
+    assert index["resources"]["statistics"] == "/v1/statistics"
+    assert index["resources"]["category_counts"].startswith("/v1/statistics")
+    assert index["resources"]["fields"] == "/v1/fields"
     assert "is_synthetic" in index["notice"]
+
+
+def test_index_description_states_category_breadth(openapi_client):
+    document = openapi_client.get("/openapi.json").json()
+    description = document["info"]["description"]
+    assert "16 categories" in description
+    assert "/v1/taxonomy" in description
+
+
+def test_field_coverage_is_a_documented_read_only_endpoint(openapi_client):
+    document = openapi_client.get("/openapi.json").json()
+    operation = document["paths"]["/v1/fields"]["get"]
+    assert operation["responses"]["200"]["content"]["application/json"]["schema"]["$ref"].endswith(
+        "FieldCoverageResponse"
+    )
+    assert {"by_category"} <= {parameter["name"] for parameter in operation.get("parameters", [])}
+    entry = document["components"]["schemas"]["FieldCoverageEntry"]["properties"]
+    assert {"field", "scope", "populated", "total", "fill_ratio", "semantics"} <= set(entry)
+    assert set(entry["scope"]["enum"]) == {
+        "summary",
+        "detail",
+        "profile_school",
+        "profile_health",
+        "profile_utility",
+    }
+
+
+def _assert_flat_error(response, expected_status: int) -> dict:
+    assert response.status_code == expected_status, response.text
+    body = response.json()
+    assert set(body) == {"code", "message", "details", "request_id"}
+    assert isinstance(body["code"], str) and body["code"]
+    assert isinstance(body["message"], str) and body["message"]
+    assert response.headers["X-Request-ID"] == "contract-request-id"
+    assert body["request_id"] == response.headers["X-Request-ID"]
+    return body
+
+
+@pytest.mark.parametrize(
+    ("path", "params", "expected_status", "expected_code"),
+    [
+        ("/v1/does-not-exist", {}, 404, "not_found"),
+        ("/v1/facilities/within", {"bbox": "not-a-bbox"}, 400, "invalid_bbox"),
+        ("/v1/facilities", {"limit": 0}, 422, "validation_error"),
+    ],
+)
+def test_error_envelope_is_flat_on_400_404_and_422(
+    openapi_client, path, params, expected_status, expected_code
+):
+    response = openapi_client.get(
+        path, params=params, headers={"X-Request-ID": "contract-request-id"}
+    )
+    assert _assert_flat_error(response, expected_status)["code"] == expected_code
+
+
+def test_error_envelope_is_flat_on_429_and_500():
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from philfacilities_api.middleware import (
+        RateLimitMiddleware,
+        RequestContextMiddleware,
+        install_error_handlers,
+    )
+
+    limited = FastAPI()
+
+    @limited.get("/probe")
+    def probe():
+        return {"ok": True}
+
+    limited.add_middleware(RateLimitMiddleware, limit=1)
+    limited.add_middleware(RequestContextMiddleware)
+    install_error_handlers(limited)
+    with TestClient(limited, raise_server_exceptions=False) as client:
+        client.get("/probe")
+        limited_response = client.get("/probe", headers={"X-Request-ID": "contract-request-id"})
+    assert _assert_flat_error(limited_response, 429)["code"] == "rate_limit_exceeded"
+    assert "Retry-After" in limited_response.headers
+    assert limited_response.headers["X-RateLimit-Limit"] == "1"
+    assert limited_response.headers["X-RateLimit-Remaining"] == "0"
+
+    failing = FastAPI()
+
+    @failing.get("/boom")
+    def boom():
+        raise RuntimeError("test-only failure")
+
+    failing.add_middleware(RequestContextMiddleware)
+    install_error_handlers(failing)
+    with TestClient(failing, raise_server_exceptions=False) as client:
+        failing_response = client.get("/boom", headers={"X-Request-ID": "contract-request-id"})
+    assert _assert_flat_error(failing_response, 500)["code"] == "internal_error"
+
+
+def test_openapi_error_responses_reference_the_flat_schema(openapi_client):
+    document = openapi_client.get("/openapi.json").json()
+    error_schema = document["components"]["schemas"]["ErrorBody"]
+    assert set(error_schema["properties"]) == {"code", "message", "details", "request_id"}
+    detail = document["paths"]["/v1/facilities"]["get"]["responses"]
+    for status in ("400", "404", "422", "429", "500"):
+        reference = detail[status]["content"]["application/json"]["schema"]["$ref"]
+        assert reference == "#/components/schemas/ErrorBody"
+
+
+def test_list_endpoints_document_total_false(openapi_client):
+    document = openapi_client.get("/openapi.json").json()
+    for path in (
+        "/v1/facilities",
+        "/v1/schools",
+        "/v1/health-facilities",
+        "/v1/geographies/{psgc_code}/facilities",
+    ):
+        parameters = {p["name"] for p in document["paths"][path]["get"]["parameters"]}
+        assert "total" in parameters
+        if path == "/v1/facilities":
+            assert "view" in parameters
+
+
+def test_response_schemas_carry_synthetic_examples(openapi_client):
+    document = openapi_client.get("/openapi.json").json()
+    schemas = document["components"]["schemas"]
+    for name in ("FacilitySummary", "FacilityDetail", "FacilityCompact", "FacilityMapPoint"):
+        examples = schemas[name].get("examples")
+        assert examples and "Synthetic" in json.dumps(examples[0])
+    detail_example = schemas["FacilityDetail"]["examples"][0]
+    assert detail_example["school"] is None
+    assert detail_example["relationships"] == []
+    compact_example = schemas["FacilityCompact"]["examples"][0]
+    assert compact_example["name"] == compact_example["display_name"]
+    assert len(compact_example) == 12
+    error_examples = schemas["ErrorBody"]["examples"]
+    assert {example["code"] for example in error_examples} >= {
+        "validation_error",
+        "invalid_bbox",
+        "facility_not_found",
+        "rate_limit_exceeded",
+    }
+    notes = document["paths"]["/v1/facilities"]["get"]["description"]
+    assert all(
+        phrase in notes for phrase in ("Publication gate", "Freshness", "Coordinates", "/v1/fields")
+    )
+
+
+def test_domain_details_document_unified_shapes(openapi_client):
+    document = openapi_client.get("/openapi.json").json()
+    for path in ("/v1/schools/{facility_id}", "/v1/health-facilities/{facility_id}"):
+        operation = document["paths"][path]["get"]
+        parameters = {parameter["name"] for parameter in operation.get("parameters", [])}
+        assert {"view", "shape", "include"} <= parameters
+    assert "FacilityCompactExtended" in document["components"]["schemas"]
+    resources = document["paths"]["/v1/schools/{facility_id}/resources"]["get"]
+    assert "currently empty" in resources["description"].lower()
+
+
+def test_filtered_downloads_document_list_filters(openapi_client):
+    document = openapi_client.get("/openapi.json").json()
+    for path in ("/v1/downloads/facilities.csv", "/v1/downloads/facilities.parquet"):
+        parameters = {p["name"] for p in document["paths"][path]["get"]["parameters"]}
+        assert {
+            "type",
+            "facility_type",
+            "subtype",
+            "psgc",
+            "region_code",
+            "province_code",
+            "municipality_code",
+            "source",
+            "has_coordinates",
+            "location_precision",
+            "reference_period_start",
+            "reference_period_end",
+            "q",
+        } <= parameters
+
+
+def test_documented_error_example_matches_a_real_422_response(openapi_client):
+    """Prose cannot drift again: the fenced example must be the runtime shape."""
+
+    import json
+    import re
+    from pathlib import Path
+
+    api_doc = (Path(__file__).resolve().parents[1] / "docs/api.md").read_text(encoding="utf-8")
+    errors_section = api_doc.split("## 8. Errors", 1)[1]
+    example = json.loads(re.search(r"```json\n(.*?)\n```", errors_section, re.S).group(1))
+    actual = openapi_client.get("/v1/facilities", params={"limit": 0}).json()
+    assert set(example) == set(actual)
+    assert example["code"] == actual["code"]
+    assert example["message"] == actual["message"]
 
 
 def test_conditional_responses_have_an_empty_framed_body(openapi_client):

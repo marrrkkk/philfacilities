@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import contextlib
 import uuid
+from typing import Literal
 
+from fastapi.responses import JSONResponse
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session
 
@@ -11,6 +13,73 @@ from ..models import Facility, FacilitySlugAlias
 from ..pagination import decode_cursor, encode_cursor
 from ..schemas import FacilityListResponse
 from ..services import build_summaries, facility_is_public, resolve_merged_facility
+
+DetailView = Literal["full", "compact"]
+DetailShape = Literal["wrapper", "detail"]
+INCLUDE_SECTIONS = frozenset({"sources", "assertions", "domain"})
+SECTION_FIELDS = {
+    "sources": ("sources",),
+    "assertions": ("assertions",),
+    "domain": ("school", "health", "utility", "accreditations", "licenses", "resources"),
+}
+EXTENDED_FIELDS = frozenset(field for fields in SECTION_FIELDS.values() for field in fields)
+
+
+def _json_value(value):
+    if isinstance(value, list):
+        return [_json_value(item) for item in value]
+    return value.model_dump(mode="json") if hasattr(value, "model_dump") else value
+
+
+def _compact_payload(model, sections: set[str]) -> dict:
+    """Keep all twelve compact fields (including nulls), add only asked-for sections."""
+
+    payload = model.model_dump(mode="json", exclude=EXTENDED_FIELDS)
+    for section in sorted(sections):
+        for field in SECTION_FIELDS[section]:
+            value = getattr(model, field)
+            if value is None:
+                continue  # an unestablished section is absent, never a fake []
+            payload[field] = _json_value(value)
+    return payload
+
+
+def compact_extended_response(model, sections: set[str]) -> JSONResponse:
+    """Serialize opt-in sections, omitting unrequested ones entirely.
+
+    A typed extended model is used for the OpenAPI contract, but FastAPI's
+    union serializer would otherwise emit every optional section as ``null``.
+    Explicit JSON keeps `include=` additive and honest without dropping nulls
+    from the underlying compact card.
+    """
+
+    return JSONResponse(content=_compact_payload(model, sections))
+
+
+def compact_wrapper_response(model, sections: set[str], **collections) -> JSONResponse:
+    """Serialize a legacy wrapper whose facility is an extended compact card."""
+
+    payload = {"facility": _compact_payload(model, sections)}
+    for key, values in collections.items():
+        payload[key] = _json_value(values)
+    return JSONResponse(content=payload)
+
+
+def parse_include(include: str | None) -> set[str]:
+    """Validate the additive ``include=`` CSV used by domain detail endpoints."""
+
+    if not include or not include.strip():
+        return set()
+    sections = {part.strip() for part in include.split(",") if part.strip()}
+    unknown = sections - set(INCLUDE_SECTIONS)
+    if unknown:
+        raise ApiError(
+            400,
+            "invalid_include",
+            "include accepts sources, assertions, and domain.",
+            {"unknown": sorted(unknown)},
+        )
+    return sections
 
 
 def get_public_facility(db: Session, identifier: str) -> Facility:
@@ -41,8 +110,13 @@ def paginated_facilities(
     conditions: list,
     limit: int,
     cursor: str | None,
+    with_total: bool = True,
 ) -> FacilityListResponse:
-    total = db.scalar(select(func.count()).select_from(Facility).where(*conditions)) or 0
+    total = (
+        db.scalar(select(func.count()).select_from(Facility).where(*conditions)) or 0
+        if with_total
+        else None
+    )
     query = select(Facility).where(*conditions)
     if cursor:
         updated_at, facility_id = decode_cursor(cursor)

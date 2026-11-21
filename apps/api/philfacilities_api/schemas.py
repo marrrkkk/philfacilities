@@ -6,6 +6,14 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from philfacilities_api.examples import (
+    COMPACT_EXAMPLE,
+    DETAIL_EXAMPLE,
+    ERROR_EXAMPLES,
+    FIELD_COVERAGE_EXAMPLE,
+    MAP_POINT_EXAMPLE,
+    SUMMARY_EXAMPLE,
+)
 from philfacilities_api.taxonomy import (
     ACCESS_CLASSES,
     CONTACT_TYPES,
@@ -299,6 +307,8 @@ class SourceRefOut(BaseModel):
 
 
 class FacilitySummary(BaseModel):
+    model_config = ConfigDict(json_schema_extra={"examples": [SUMMARY_EXAMPLE]})
+
     id: uuid.UUID
     slug: str | None = None
     display_name: str
@@ -322,6 +332,8 @@ class FacilitySummary(BaseModel):
 
 
 class FacilityDetail(FacilitySummary):
+    model_config = ConfigDict(json_schema_extra={"examples": [DETAIL_EXAMPLE]})
+
     official_name: str | None = None
     access_conditions: str | None = None
     school: SchoolProfileOut | None = None
@@ -338,11 +350,96 @@ class FacilityDetail(FacilitySummary):
     created_at: datetime
 
 
+class CompactLocationOut(BaseModel):
+    """Location fields needed to render a card; full precision data stays on detail."""
+
+    latitude: float | None = None
+    longitude: float | None = None
+    precision: LocationPrecision = "unknown"
+    address_text: str | None = None
+    psgc_code: str | None = None
+
+
+class CompactGeographyOut(BaseModel):
+    """Just the labels a card needs; the full hierarchy stays on detail."""
+
+    psgc_code: str | None = None
+    region_name: str | None = None
+    province_name: str | None = None
+    municipality_name: str | None = None
+
+
+class FacilityCompact(BaseModel):
+    """Twelve-key identity and location view for cards and link resolution.
+
+    ``name`` is an alias of ``display_name`` shared with map points so clients
+    can render either surface without a field mapping. Constant fields, typed
+    profiles, detail-only collections and quality are intentionally omitted.
+    """
+
+    model_config = ConfigDict(json_schema_extra={"examples": [COMPACT_EXAMPLE]})
+
+    id: uuid.UUID
+    name: str
+    slug: str | None = None
+    display_name: str
+    facility_type: FacilityType
+    facility_subtype: str | None = None
+    inclusion_class: InclusionClass
+    ownership: Ownership
+    location: CompactLocationOut
+    geography: CompactGeographyOut
+    source_refs: list[SourceRefOut] = Field(default_factory=list)
+    updated_at: datetime
+
+
+class FacilityCompactExtended(FacilityCompact):
+    """Opt-in sections attached to a compact card via ``include=``.
+
+    Unrequested sections are omitted by the response helper rather than
+    rendered as null collections that could be mistaken for "no published rows
+    exist". Base compact fields keep their nulls.
+    """
+
+    school: SchoolProfileOut | None = None
+    health: HealthProfileOut | None = None
+    utility: UtilityProfileOut | None = None
+    accreditations: list[AccreditationOut] | None = None
+    licenses: list[LicenseOut] | None = None
+    resources: list[ResourceObservationOut] | None = None
+    sources: list[SourceEvidence] | None = None
+    assertions: list[AttributeAssertionOut] | None = None
+
+
+class FacilityCompactListItem(BaseModel):
+    """Compact card for list views.
+
+    Same identity/location shape as ``FacilityCompact`` but ``source_refs`` is
+    replaced by ``source_count``: a 100-item page stays under the 75 KiB DX
+    target. Full refs remain on detail and compact detail.
+    """
+
+    id: uuid.UUID
+    name: str
+    slug: str | None = None
+    display_name: str
+    facility_type: FacilityType
+    facility_subtype: str | None = None
+    inclusion_class: InclusionClass
+    ownership: Ownership
+    location: CompactLocationOut
+    geography: CompactGeographyOut
+    source_count: int
+    updated_at: datetime
+
+
 class FacilityListResponse(BaseModel):
     items: list[FacilitySummary]
     next_cursor: str | None = None
     has_more: bool = False
-    total: int
+    # ``total=false`` skips the count(*) for clients that only need pages.
+    # The default path still returns an integer, so existing clients are unchanged.
+    total: int | None = None
     limit: int
 
 
@@ -355,6 +452,8 @@ class FacilityMapResponse(BaseModel):
 
 class FacilityMapPoint(BaseModel):
     """Minimal map feature; deliberately excludes detail-only summary fields."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [MAP_POINT_EXAMPLE]})
 
     id: uuid.UUID
     slug: str | None = None
@@ -393,11 +492,19 @@ class NearbyResponse(BaseModel):
 
 
 class SchoolDetailResponse(BaseModel):
+    """Legacy wrapper, kept as the default for /v1/schools/{id}.
+
+    The generated client keeps ``facility: FacilityDetail``; compact variants
+    are returned as explicit JSON and documented in the operation description.
+    """
+
     facility: FacilityDetail
     resources: list[ResourceObservationOut]
 
 
 class HealthDetailResponse(BaseModel):
+    """Legacy wrapper, kept as the default for /v1/health-facilities/{id}."""
+
     facility: FacilityDetail
     licenses: list[LicenseOut]
     accreditations: list[AccreditationOut]
@@ -755,7 +862,37 @@ class TaxonomyResponse(BaseModel):
     contact_types: list[TaxonomyTermOut]
 
 
+class FieldCoverageEntry(BaseModel):
+    """How fully one public field is populated, with an explicit denominator."""
+
+    field: str
+    scope: Literal["summary", "detail", "profile_school", "profile_health", "profile_utility"]
+    populated: int
+    total: int
+    fill_ratio: float
+    semantics: str
+
+
+class FieldCoverageResponse(BaseModel):
+    model_config = ConfigDict(json_schema_extra={"examples": [FIELD_COVERAGE_EXAMPLE]})
+
+    as_of: datetime
+    version: str
+    fields: list[FieldCoverageEntry]
+    by_category: dict[str, list[FieldCoverageEntry]] | None = None
+    caveats: list[str]
+
+
 class ErrorBody(BaseModel):
+    """The flat error envelope returned by every /v1 handler.
+
+    ``details`` is ``None`` when there is no structured context and a list of
+    validation issues for 422 responses. The object is never wrapped under an
+    ``error`` key inside /v1; doing so would be a breaking change.
+    """
+
+    model_config = ConfigDict(json_schema_extra={"examples": list(ERROR_EXAMPLES.values())})
+
     code: str
     message: str
     details: Any | None = None

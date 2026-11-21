@@ -101,7 +101,9 @@ export interface paths {
         };
         /**
          * Facility detail
-         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         * @description view=full (default) returns the complete, byte-for-byte unchanged FacilityDetail. view=compact returns a twelve-key identity/location card built only from the summary projection, with `name` as an alias of `display_name`. Both views apply the same publication gate.
+         *
+         *     **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
          */
         get: operations["get_facility_v1_facilities__facility_id__get"];
         put?: never;
@@ -221,7 +223,9 @@ export interface paths {
         };
         /**
          * School detail
-         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         * @description The default `shape=wrapper` keeps the historical `{facility, resources}` keys. `shape=detail` opts in to the unified FacilityDetail shared with `GET /v1/facilities/{id}`. `view=compact` returns the twelve-key card, and `include=sources,assertions,domain` attaches only the requested sections to a compact card. `assertions` is capped at 200 rows; use the paginated `/v1/facilities/{facility_id}/assertions` endpoint for the complete claim set. School resource observations are currently empty in the working database until a public observation source is ingested.
+         *
+         *     **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
          */
         get: operations["get_school_v1_schools__facility_id__get"];
         put?: never;
@@ -241,7 +245,9 @@ export interface paths {
         };
         /**
          * School resource observations
-         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         * @description Currently empty in the working database: no rights-cleared public resource-observation source has been ingested. The endpoint is kept in /v1 for compatibility and will populate when such a source is published.
+         *
+         *     **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
          */
         get: operations["get_school_resources_v1_schools__facility_id__resources_get"];
         put?: never;
@@ -281,7 +287,9 @@ export interface paths {
         };
         /**
          * Health facility detail
-         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         * @description The default `shape=wrapper` keeps the historical `{facility, licenses, accreditations}` keys. `shape=detail` opts in to the unified FacilityDetail shared with `GET /v1/facilities/{id}` (which already includes gated accreditations). `view=compact` returns the twelve-key card, and `include=sources,assertions,domain` attaches only the requested sections. `assertions` is capped at 200 rows; use the paginated `/v1/facilities/{facility_id}/assertions` endpoint for the complete claim set. Licences stay on this endpoint and on `/licenses`; accreditation and licensure are not claims of current operation.
+         *
+         *     **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
          */
         get: operations["get_health_facility_v1_health_facilities__facility_id__get"];
         put?: never;
@@ -721,7 +729,9 @@ export interface paths {
         };
         /**
          * Bulk facility CSV
-         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         * @description Streams publication-approved facilities in stable display-name order. Accepts the same filters as GET /v1/facilities (including the `facility_type` alias for `type`) so every category has a path to a filtered bulk export. CSV injection neutralization and keyset pagination are unchanged.
+         *
+         *     **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
          */
         get: operations["download_facilities_csv_v1_downloads_facilities_csv_get"];
         put?: never;
@@ -781,7 +791,9 @@ export interface paths {
         };
         /**
          * Bulk facility Parquet
-         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         * @description Filtered Parquet export. Accepts the same filters as GET /v1/facilities and applies the same publication gate and CSV-free column set.
+         *
+         *     **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
          */
         get: operations["download_facilities_parquet_v1_downloads_facilities_parquet_get"];
         put?: never;
@@ -809,6 +821,28 @@ export interface paths {
          *     **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
          */
         get: operations["get_taxonomy_v1_taxonomy_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/fields": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Public field coverage and null/empty semantics
+         * @description Reports how many public facilities have an established value for each canonical field. Every entry carries its own scope and denominator, and all counts use the same publication gate as GET /v1/facilities. Pass by_category=true to include per-category denominators. Counts are read from a materialized view refreshed after publication and cached for one hour; databases without that view compute the same figures on demand.
+         *
+         *     **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
+        get: operations["get_field_coverage_v1_fields_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1079,6 +1113,40 @@ export interface components {
              */
             has_more: boolean;
         };
+        /**
+         * CompactGeographyOut
+         * @description Just the labels a card needs; the full hierarchy stays on detail.
+         */
+        CompactGeographyOut: {
+            /** Psgc Code */
+            psgc_code?: string | null;
+            /** Region Name */
+            region_name?: string | null;
+            /** Province Name */
+            province_name?: string | null;
+            /** Municipality Name */
+            municipality_name?: string | null;
+        };
+        /**
+         * CompactLocationOut
+         * @description Location fields needed to render a card; full precision data stays on detail.
+         */
+        CompactLocationOut: {
+            /** Latitude */
+            latitude?: number | null;
+            /** Longitude */
+            longitude?: number | null;
+            /**
+             * Precision
+             * @default unknown
+             * @enum {string}
+             */
+            precision: "gps_verified" | "field_verified" | "source_gps" | "map_geocoded" | "barangay_centroid" | "unknown";
+            /** Address Text */
+            address_text?: string | null;
+            /** Psgc Code */
+            psgc_code?: string | null;
+        };
         /** ContactOut */
         ContactOut: {
             /**
@@ -1234,6 +1302,174 @@ export interface components {
             publication_gate_status?: string | null;
             latest_release?: components["schemas"]["LatestReleaseOut"] | null;
             latest_geography_release?: components["schemas"]["GeographyReleaseOut"] | null;
+        };
+        /**
+         * FacilityCompact
+         * @description Twelve-key identity and location view for cards and link resolution.
+         *
+         *     ``name`` is an alias of ``display_name`` shared with map points so clients
+         *     can render either surface without a field mapping. Constant fields, typed
+         *     profiles, detail-only collections and quality are intentionally omitted.
+         * @example {
+         *       "id": "00000000-0000-4000-8000-000000000001",
+         *       "name": "Synthetic Example Library",
+         *       "slug": "synthetic-example-library",
+         *       "display_name": "Synthetic Example Library",
+         *       "facility_type": "library",
+         *       "facility_subtype": null,
+         *       "inclusion_class": "DISCOVERY_CANDIDATE",
+         *       "ownership": "unknown",
+         *       "location": {
+         *         "latitude": 14.6,
+         *         "longitude": 120.98,
+         *         "precision": "map_geocoded",
+         *         "address_text": "1 Synthetic Road, Example City",
+         *         "psgc_code": "9901000001"
+         *       },
+         *       "geography": {
+         *         "psgc_code": "9901000001",
+         *         "region_name": "Synthetic Region (demo)",
+         *         "province_name": "Synthetic Province (demo)",
+         *         "municipality_name": "Example City (demo)"
+         *       },
+         *       "source_refs": [
+         *         {
+         *           "agency_code": "SYN",
+         *           "dataset_slug": "synthetic-example-directory",
+         *           "source_record_id": "SYN-EXAMPLE-0001"
+         *         }
+         *       ],
+         *       "updated_at": "2026-11-21T09:00:00Z"
+         *     }
+         */
+        FacilityCompact: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Slug */
+            slug?: string | null;
+            /** Display Name */
+            display_name: string;
+            /**
+             * Facility Type
+             * @enum {string}
+             */
+            facility_type: "school" | "health_facility" | "government_office" | "community_facility" | "emergency_facility" | "library" | "museum" | "social_welfare_facility" | "public_market" | "transport_facility" | "utility_facility" | "environmental_monitoring" | "public_space" | "cultural_facility" | "agricultural_facility" | "justice_facility" | "housing_service" | "other_qualifying_facility";
+            /** Facility Subtype */
+            facility_subtype?: string | null;
+            /**
+             * Inclusion Class
+             * @enum {string}
+             */
+            inclusion_class: "GOVERNMENT_FACILITY" | "PRIVATE_PUBLIC_SERVICE_PROVIDER" | "PUBLIC_ACCESS_VENUE" | "DISCOVERY_CANDIDATE";
+            /**
+             * Ownership
+             * @enum {string}
+             */
+            ownership: "government" | "private" | "unknown";
+            location: components["schemas"]["CompactLocationOut"];
+            geography: components["schemas"]["CompactGeographyOut"];
+            /** Source Refs */
+            source_refs?: components["schemas"]["SourceRefOut"][];
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * FacilityCompactExtended
+         * @description Opt-in sections attached to a compact card via ``include=``.
+         *
+         *     Unrequested sections are omitted by the response helper rather than
+         *     rendered as null collections that could be mistaken for "no published rows
+         *     exist". Base compact fields keep their nulls.
+         * @example {
+         *       "display_name": "Synthetic Example Library",
+         *       "facility_type": "library",
+         *       "geography": {
+         *         "municipality_name": "Example City (demo)",
+         *         "province_name": "Synthetic Province (demo)",
+         *         "psgc_code": "9901000001",
+         *         "region_name": "Synthetic Region (demo)"
+         *       },
+         *       "id": "00000000-0000-4000-8000-000000000001",
+         *       "inclusion_class": "DISCOVERY_CANDIDATE",
+         *       "location": {
+         *         "address_text": "1 Synthetic Road, Example City",
+         *         "latitude": 14.6,
+         *         "longitude": 120.98,
+         *         "precision": "map_geocoded",
+         *         "psgc_code": "9901000001"
+         *       },
+         *       "name": "Synthetic Example Library",
+         *       "ownership": "unknown",
+         *       "slug": "synthetic-example-library",
+         *       "source_refs": [
+         *         {
+         *           "agency_code": "SYN",
+         *           "dataset_slug": "synthetic-example-directory",
+         *           "source_record_id": "SYN-EXAMPLE-0001"
+         *         }
+         *       ],
+         *       "updated_at": "2026-11-21T09:00:00Z"
+         *     }
+         */
+        FacilityCompactExtended: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Slug */
+            slug?: string | null;
+            /** Display Name */
+            display_name: string;
+            /**
+             * Facility Type
+             * @enum {string}
+             */
+            facility_type: "school" | "health_facility" | "government_office" | "community_facility" | "emergency_facility" | "library" | "museum" | "social_welfare_facility" | "public_market" | "transport_facility" | "utility_facility" | "environmental_monitoring" | "public_space" | "cultural_facility" | "agricultural_facility" | "justice_facility" | "housing_service" | "other_qualifying_facility";
+            /** Facility Subtype */
+            facility_subtype?: string | null;
+            /**
+             * Inclusion Class
+             * @enum {string}
+             */
+            inclusion_class: "GOVERNMENT_FACILITY" | "PRIVATE_PUBLIC_SERVICE_PROVIDER" | "PUBLIC_ACCESS_VENUE" | "DISCOVERY_CANDIDATE";
+            /**
+             * Ownership
+             * @enum {string}
+             */
+            ownership: "government" | "private" | "unknown";
+            location: components["schemas"]["CompactLocationOut"];
+            geography: components["schemas"]["CompactGeographyOut"];
+            /** Source Refs */
+            source_refs?: components["schemas"]["SourceRefOut"][];
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            school?: components["schemas"]["SchoolProfileOut"] | null;
+            health?: components["schemas"]["HealthProfileOut"] | null;
+            utility?: components["schemas"]["UtilityProfileOut"] | null;
+            /** Accreditations */
+            accreditations?: components["schemas"]["AccreditationOut"][] | null;
+            /** Licenses */
+            licenses?: components["schemas"]["LicenseOut"][] | null;
+            /** Resources */
+            resources?: components["schemas"]["ResourceObservationOut"][] | null;
+            /** Sources */
+            sources?: components["schemas"]["SourceEvidence"][] | null;
+            /** Assertions */
+            assertions?: components["schemas"]["AttributeAssertionOut"][] | null;
         };
         /**
          * FacilityDetail
@@ -1460,7 +1696,7 @@ export interface components {
              */
             has_more: boolean;
             /** Total */
-            total: number;
+            total?: number | null;
             /** Limit */
             limit: number;
         };
@@ -1753,6 +1989,72 @@ export interface components {
              */
             updated_at: string;
         };
+        /**
+         * FieldCoverageEntry
+         * @description How fully one public field is populated, with an explicit denominator.
+         */
+        FieldCoverageEntry: {
+            /** Field */
+            field: string;
+            /**
+             * Scope
+             * @enum {string}
+             */
+            scope: "summary" | "detail" | "profile_school" | "profile_health" | "profile_utility";
+            /** Populated */
+            populated: number;
+            /** Total */
+            total: number;
+            /** Fill Ratio */
+            fill_ratio: number;
+            /** Semantics */
+            semantics: string;
+        };
+        /**
+         * FieldCoverageResponse
+         * @example {
+         *       "as_of": "2026-11-21T09:00:00Z",
+         *       "version": "1.3",
+         *       "fields": [
+         *         {
+         *           "field": "relationships[]",
+         *           "scope": "detail",
+         *           "populated": 0,
+         *           "total": 229274,
+         *           "fill_ratio": 0,
+         *           "semantics": "[] means no publication-cleared rows exist for this collection."
+         *         },
+         *         {
+         *           "field": "location.postal_code",
+         *           "scope": "summary",
+         *           "populated": 27924,
+         *           "total": 227911,
+         *           "fill_ratio": 0.1225,
+         *           "semantics": "null means no value supplied or established."
+         *         }
+         *       ],
+         *       "caveats": [
+         *         "Counts are derived from public facilities using the API publication gate."
+         *       ]
+         *     }
+         */
+        FieldCoverageResponse: {
+            /**
+             * As Of
+             * Format: date-time
+             */
+            as_of: string;
+            /** Version */
+            version: string;
+            /** Fields */
+            fields: components["schemas"]["FieldCoverageEntry"][];
+            /** By Category */
+            by_category?: {
+                [key: string]: components["schemas"]["FieldCoverageEntry"][];
+            } | null;
+            /** Caveats */
+            caveats: string[];
+        };
         /** GeographyCrosswalkOut */
         GeographyCrosswalkOut: {
             /** From Psgc Code */
@@ -1826,7 +2128,10 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
-        /** HealthDetailResponse */
+        /**
+         * HealthDetailResponse
+         * @description Legacy wrapper, kept as the default for /v1/health-facilities/{id}.
+         */
         HealthDetailResponse: {
             facility: components["schemas"]["FacilityDetail"];
             /** Licenses */
@@ -2248,7 +2553,13 @@ export interface components {
             /** Source Record Id */
             source_record_id?: string | null;
         };
-        /** SchoolDetailResponse */
+        /**
+         * SchoolDetailResponse
+         * @description Legacy wrapper, kept as the default for /v1/schools/{id}.
+         *
+         *     The generated client keeps ``facility: FacilityDetail``; compact variants
+         *     are returned as explicit JSON and documented in the operation description.
+         */
         SchoolDetailResponse: {
             facility: components["schemas"]["FacilityDetail"];
             /** Resources */
@@ -2635,6 +2946,11 @@ export interface components {
         };
         /**
          * ErrorBody
+         * @description The flat error envelope returned by every /v1 handler.
+         *
+         *     ``details`` is ``None`` when there is no structured context and a list of
+         *     validation issues for 422 responses. The object is never wrapped under an
+         *     ``error`` key inside /v1; doing so would be a breaking change.
          * @example {
          *       "code": "invalid_bbox",
          *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
@@ -2695,6 +3011,8 @@ export interface operations {
         parameters: {
             query?: {
                 type?: ("school" | "health_facility" | "government_office" | "community_facility" | "emergency_facility" | "library" | "museum" | "social_welfare_facility" | "public_market" | "transport_facility" | "utility_facility" | "environmental_monitoring" | "public_space" | "cultural_facility" | "agricultural_facility" | "justice_facility" | "housing_service" | "other_qualifying_facility") | null;
+                /** @description Alias for `type`; both are accepted and equivalent. */
+                facility_type?: ("school" | "health_facility" | "government_office" | "community_facility" | "emergency_facility" | "library" | "museum" | "social_welfare_facility" | "public_market" | "transport_facility" | "utility_facility" | "environmental_monitoring" | "public_space" | "cultural_facility" | "agricultural_facility" | "justice_facility" | "housing_service" | "other_qualifying_facility") | null;
                 subtype?: string | null;
                 inclusion_class?: ("GOVERNMENT_FACILITY" | "PRIVATE_PUBLIC_SERVICE_PROVIDER" | "PUBLIC_ACCESS_VENUE" | "DISCOVERY_CANDIDATE") | null;
                 ownership?: ("government" | "private" | "unknown") | null;
@@ -2719,6 +3037,10 @@ export interface operations {
                 updated_since?: string | null;
                 limit?: number;
                 cursor?: string | null;
+                /** @description Set false to skip the count(*) query. */
+                total?: boolean;
+                /** @description compact returns twelve-key cards instead of full summaries. */
+                view?: "full" | "compact";
             };
             header?: never;
             path?: never;
@@ -2831,6 +3153,8 @@ export interface operations {
                 /** @description min_lon,min_lat,max_lon,max_lat */
                 bbox: string;
                 type?: ("school" | "health_facility" | "government_office" | "community_facility" | "emergency_facility" | "library" | "museum" | "social_welfare_facility" | "public_market" | "transport_facility" | "utility_facility" | "environmental_monitoring" | "public_space" | "cultural_facility" | "agricultural_facility" | "justice_facility" | "housing_service" | "other_qualifying_facility") | null;
+                /** @description Alias for `type`; both are accepted and equivalent. */
+                facility_type?: ("school" | "health_facility" | "government_office" | "community_facility" | "emergency_facility" | "library" | "museum" | "social_welfare_facility" | "public_market" | "transport_facility" | "utility_facility" | "environmental_monitoring" | "public_space" | "cultural_facility" | "agricultural_facility" | "justice_facility" | "housing_service" | "other_qualifying_facility") | null;
                 subtype?: string | null;
                 inclusion_class?: ("GOVERNMENT_FACILITY" | "PRIVATE_PUBLIC_SERVICE_PROVIDER" | "PUBLIC_ACCESS_VENUE" | "DISCOVERY_CANDIDATE") | null;
                 ownership?: ("government" | "private" | "unknown") | null;
@@ -2965,6 +3289,8 @@ export interface operations {
                 /** @description Client zoom level; tunes cluster density. */
                 zoom?: number;
                 type?: ("school" | "health_facility" | "government_office" | "community_facility" | "emergency_facility" | "library" | "museum" | "social_welfare_facility" | "public_market" | "transport_facility" | "utility_facility" | "environmental_monitoring" | "public_space" | "cultural_facility" | "agricultural_facility" | "justice_facility" | "housing_service" | "other_qualifying_facility") | null;
+                /** @description Alias for `type`; both are accepted and equivalent. */
+                facility_type?: ("school" | "health_facility" | "government_office" | "community_facility" | "emergency_facility" | "library" | "museum" | "social_welfare_facility" | "public_market" | "transport_facility" | "utility_facility" | "environmental_monitoring" | "public_space" | "cultural_facility" | "agricultural_facility" | "justice_facility" | "housing_service" | "other_qualifying_facility") | null;
                 subtype?: string | null;
                 inclusion_class?: ("GOVERNMENT_FACILITY" | "PRIVATE_PUBLIC_SERVICE_PROVIDER" | "PUBLIC_ACCESS_VENUE" | "DISCOVERY_CANDIDATE") | null;
                 ownership?: ("government" | "private" | "unknown") | null;
@@ -3097,6 +3423,8 @@ export interface operations {
                 lon: number;
                 radius_m?: number;
                 type?: ("school" | "health_facility" | "government_office" | "community_facility" | "emergency_facility" | "library" | "museum" | "social_welfare_facility" | "public_market" | "transport_facility" | "utility_facility" | "environmental_monitoring" | "public_space" | "cultural_facility" | "agricultural_facility" | "justice_facility" | "housing_service" | "other_qualifying_facility") | null;
+                /** @description Alias for `type`; both are accepted and equivalent. */
+                facility_type?: ("school" | "health_facility" | "government_office" | "community_facility" | "emergency_facility" | "library" | "museum" | "social_welfare_facility" | "public_market" | "transport_facility" | "utility_facility" | "environmental_monitoring" | "public_space" | "cultural_facility" | "agricultural_facility" | "justice_facility" | "housing_service" | "other_qualifying_facility") | null;
                 subtype?: string | null;
                 inclusion_class?: ("GOVERNMENT_FACILITY" | "PRIVATE_PUBLIC_SERVICE_PROVIDER" | "PUBLIC_ACCESS_VENUE" | "DISCOVERY_CANDIDATE") | null;
                 ownership?: ("government" | "private" | "unknown") | null;
@@ -3225,7 +3553,9 @@ export interface operations {
     };
     get_facility_v1_facilities__facility_id__get: {
         parameters: {
-            query?: never;
+            query?: {
+                view?: "full" | "compact";
+            };
             header?: never;
             path: {
                 facility_id: string;
@@ -3795,6 +4125,8 @@ export interface operations {
                 reference_period_end?: string | null;
                 limit?: number;
                 cursor?: string | null;
+                /** @description Set false to skip the count(*) query. */
+                total?: boolean;
             };
             header?: never;
             path?: never;
@@ -3903,7 +4235,12 @@ export interface operations {
     };
     get_school_v1_schools__facility_id__get: {
         parameters: {
-            query?: never;
+            query?: {
+                view?: "full" | "compact";
+                shape?: "wrapper" | "detail";
+                /** @description Comma-separated optional sections: sources, assertions, domain. Assertions are capped at 200; use /assertions for all claims. */
+                include?: string | null;
+            };
             header?: never;
             path: {
                 facility_id: string;
@@ -3918,7 +4255,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchoolDetailResponse"];
+                    "application/json": components["schemas"]["SchoolDetailResponse"] | components["schemas"]["FacilityDetail"] | components["schemas"]["FacilityCompact"] | components["schemas"]["FacilityCompactExtended"];
                 };
             };
             /** @description Invalid filter or request parameter. */
@@ -4139,6 +4476,8 @@ export interface operations {
                 reference_period_end?: string | null;
                 limit?: number;
                 cursor?: string | null;
+                /** @description Set false to skip the count(*) query. */
+                total?: boolean;
             };
             header?: never;
             path?: never;
@@ -4247,7 +4586,12 @@ export interface operations {
     };
     get_health_facility_v1_health_facilities__facility_id__get: {
         parameters: {
-            query?: never;
+            query?: {
+                view?: "full" | "compact";
+                shape?: "wrapper" | "detail";
+                /** @description Comma-separated optional sections: sources, assertions, domain. Assertions are capped at 200; use /assertions for all claims. */
+                include?: string | null;
+            };
             header?: never;
             path: {
                 facility_id: string;
@@ -4262,7 +4606,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HealthDetailResponse"];
+                    "application/json": components["schemas"]["HealthDetailResponse"] | components["schemas"]["FacilityDetail"] | components["schemas"]["FacilityCompact"] | components["schemas"]["FacilityCompactExtended"];
                 };
             };
             /** @description Invalid filter or request parameter. */
@@ -4931,6 +5275,8 @@ export interface operations {
             query?: {
                 limit?: number;
                 cursor?: string | null;
+                /** @description Set false to skip the count(*) query. */
+                total?: boolean;
             };
             header?: never;
             path: {
@@ -6697,7 +7043,31 @@ export interface operations {
     };
     download_facilities_csv_v1_downloads_facilities_csv_get: {
         parameters: {
-            query?: never;
+            query?: {
+                type?: ("school" | "health_facility" | "government_office" | "community_facility" | "emergency_facility" | "library" | "museum" | "social_welfare_facility" | "public_market" | "transport_facility" | "utility_facility" | "environmental_monitoring" | "public_space" | "cultural_facility" | "agricultural_facility" | "justice_facility" | "housing_service" | "other_qualifying_facility") | null;
+                /** @description Alias for `type`; both are additive and equivalent. */
+                facility_type?: ("school" | "health_facility" | "government_office" | "community_facility" | "emergency_facility" | "library" | "museum" | "social_welfare_facility" | "public_market" | "transport_facility" | "utility_facility" | "environmental_monitoring" | "public_space" | "cultural_facility" | "agricultural_facility" | "justice_facility" | "housing_service" | "other_qualifying_facility") | null;
+                subtype?: string | null;
+                inclusion_class?: ("GOVERNMENT_FACILITY" | "PRIVATE_PUBLIC_SERVICE_PROVIDER" | "PUBLIC_ACCESS_VENUE" | "DISCOVERY_CANDIDATE") | null;
+                ownership?: ("government" | "private" | "unknown") | null;
+                ownership_type?: ("NATIONAL_GOVERNMENT" | "LOCAL_GOVERNMENT" | "GOCC" | "PUBLIC_EDUCATIONAL_INSTITUTION" | "OTHER_PUBLIC_BODY" | "GOVERNMENT_UNSPECIFIED" | "PRIVATE_CORPORATE" | "PRIVATE_INDIVIDUAL_OR_PARTNERSHIP" | "NGO_NON_PROFIT" | "COOPERATIVE" | "RELIGIOUS_FAITH_BASED" | "PUBLIC_PRIVATE_JOINT" | "PRIVATE_UNSPECIFIED" | "UNKNOWN") | null;
+                operator_type?: ("NATIONAL_GOVERNMENT" | "LOCAL_GOVERNMENT" | "GOCC" | "PUBLIC_EDUCATIONAL_INSTITUTION" | "OTHER_PUBLIC_BODY" | "GOVERNMENT_UNSPECIFIED" | "PRIVATE_CORPORATE" | "PRIVATE_INDIVIDUAL_OR_PARTNERSHIP" | "NGO_NON_PROFIT" | "COOPERATIVE" | "RELIGIOUS_FAITH_BASED" | "PUBLIC_PRIVATE_JOINT" | "PRIVATE_UNSPECIFIED" | "UNKNOWN") | null;
+                public_access_class?: ("PUBLIC_FREE" | "PUBLIC_PAID_OR_CONDITIONAL" | "SERVICE_USERS_ONLY" | "APPOINTMENT_ONLY" | "MEMBERS_STUDENTS_ONLY" | "STAFF_ONLY" | "RESTRICTED" | "UNKNOWN") | null;
+                facility_kind?: ("facility" | "site" | "building" | "facility_unit" | "infrastructure_asset" | "project") | null;
+                function?: string | null;
+                q?: string | null;
+                psgc?: string | null;
+                region_code?: string | null;
+                province_code?: string | null;
+                municipality_code?: string | null;
+                barangay_code?: string | null;
+                source?: string | null;
+                has_coordinates?: boolean | null;
+                location_precision?: ("gps_verified" | "field_verified" | "source_gps" | "map_geocoded" | "barangay_centroid" | "unknown") | null;
+                reference_period_start?: string | null;
+                reference_period_end?: string | null;
+                updated_since?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -7021,7 +7391,31 @@ export interface operations {
     };
     download_facilities_parquet_v1_downloads_facilities_parquet_get: {
         parameters: {
-            query?: never;
+            query?: {
+                type?: ("school" | "health_facility" | "government_office" | "community_facility" | "emergency_facility" | "library" | "museum" | "social_welfare_facility" | "public_market" | "transport_facility" | "utility_facility" | "environmental_monitoring" | "public_space" | "cultural_facility" | "agricultural_facility" | "justice_facility" | "housing_service" | "other_qualifying_facility") | null;
+                /** @description Alias for `type`; both are additive and equivalent. */
+                facility_type?: ("school" | "health_facility" | "government_office" | "community_facility" | "emergency_facility" | "library" | "museum" | "social_welfare_facility" | "public_market" | "transport_facility" | "utility_facility" | "environmental_monitoring" | "public_space" | "cultural_facility" | "agricultural_facility" | "justice_facility" | "housing_service" | "other_qualifying_facility") | null;
+                subtype?: string | null;
+                inclusion_class?: ("GOVERNMENT_FACILITY" | "PRIVATE_PUBLIC_SERVICE_PROVIDER" | "PUBLIC_ACCESS_VENUE" | "DISCOVERY_CANDIDATE") | null;
+                ownership?: ("government" | "private" | "unknown") | null;
+                ownership_type?: ("NATIONAL_GOVERNMENT" | "LOCAL_GOVERNMENT" | "GOCC" | "PUBLIC_EDUCATIONAL_INSTITUTION" | "OTHER_PUBLIC_BODY" | "GOVERNMENT_UNSPECIFIED" | "PRIVATE_CORPORATE" | "PRIVATE_INDIVIDUAL_OR_PARTNERSHIP" | "NGO_NON_PROFIT" | "COOPERATIVE" | "RELIGIOUS_FAITH_BASED" | "PUBLIC_PRIVATE_JOINT" | "PRIVATE_UNSPECIFIED" | "UNKNOWN") | null;
+                operator_type?: ("NATIONAL_GOVERNMENT" | "LOCAL_GOVERNMENT" | "GOCC" | "PUBLIC_EDUCATIONAL_INSTITUTION" | "OTHER_PUBLIC_BODY" | "GOVERNMENT_UNSPECIFIED" | "PRIVATE_CORPORATE" | "PRIVATE_INDIVIDUAL_OR_PARTNERSHIP" | "NGO_NON_PROFIT" | "COOPERATIVE" | "RELIGIOUS_FAITH_BASED" | "PUBLIC_PRIVATE_JOINT" | "PRIVATE_UNSPECIFIED" | "UNKNOWN") | null;
+                public_access_class?: ("PUBLIC_FREE" | "PUBLIC_PAID_OR_CONDITIONAL" | "SERVICE_USERS_ONLY" | "APPOINTMENT_ONLY" | "MEMBERS_STUDENTS_ONLY" | "STAFF_ONLY" | "RESTRICTED" | "UNKNOWN") | null;
+                facility_kind?: ("facility" | "site" | "building" | "facility_unit" | "infrastructure_asset" | "project") | null;
+                function?: string | null;
+                q?: string | null;
+                psgc?: string | null;
+                region_code?: string | null;
+                province_code?: string | null;
+                municipality_code?: string | null;
+                barangay_code?: string | null;
+                source?: string | null;
+                has_coordinates?: boolean | null;
+                location_precision?: ("gps_verified" | "field_verified" | "source_gps" | "map_geocoded" | "barangay_centroid" | "unknown") | null;
+                reference_period_start?: string | null;
+                reference_period_end?: string | null;
+                updated_since?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -7143,6 +7537,117 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TaxonomyResponse"];
+                };
+            };
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    get_field_coverage_v1_fields_get: {
+        parameters: {
+            query?: {
+                /** @description Include per-category populated/total denominators. */
+                by_category?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FieldCoverageResponse"];
                 };
             };
             /** @description Invalid filter or request parameter. */

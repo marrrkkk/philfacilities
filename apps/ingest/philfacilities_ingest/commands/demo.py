@@ -22,6 +22,7 @@ from ..pipeline import (
     run_ingestion,
     run_psgc_ingestion,
 )
+from ..pipeline.coverage_refresh import refresh_coverage_after_publication
 from .support import (
     SYNTHETIC_AGENCY_NAMES as SYNTHETIC_AGENCY_NAMES,
 )
@@ -110,6 +111,7 @@ def load_demo(
             if result.issues:
                 typer.echo(f"  warnings/issues: {len(result.issues)}")
         session.commit()
+        refresh_coverage_after_publication(session)
         typer.echo("Synthetic demo data loaded. All records are labelled is_synthetic=true.")
     finally:
         session.close()

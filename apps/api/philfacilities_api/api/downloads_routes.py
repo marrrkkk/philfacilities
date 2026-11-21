@@ -12,13 +12,13 @@ import csv
 import io
 from collections import defaultdict
 from collections.abc import Iterator
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
-from typing import Annotated
+from typing import Annotated, Literal
 
 import pyarrow as pa
 import pyarrow.parquet as pq
-from fastapi import Depends
+from fastapi import Depends, Query
 from fastapi.responses import Response, StreamingResponse
 from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session
@@ -40,9 +40,19 @@ from ..publication import (
     public_dataset_condition,
     public_dataset_release_condition,
 )
+from ..schemas import (
+    AccessClass,
+    FacilityKind,
+    FacilityType,
+    InclusionClass,
+    LocationPrecision,
+    OperatorType,
+    OwnershipType,
+)
 from ..services import public_facility_index_filter
 from ..services.loaders import _chunked, _walk_ancestors, latest_geographic_release
 from ..services.quality import _urban_rural
+from .query import facility_conditions
 from .sources_common import _MATCH_STATUSES as _MATCH_STATUSES
 from .sources_common import router as router
 from .sources_common import settings as settings
@@ -90,19 +100,28 @@ PAGE_SIZE = 10_000
 PARQUET_BATCH_SIZE = 5_000
 
 
-def _download_conditions(facility_type: str | None = None) -> list:
+def _download_conditions(
+    conditions: list | None = None, *, facility_type: str | None = None
+) -> list:
     # Bulk reads use the same indexed publication gate as the directory list.
     # The CTE-backed public_source_condition() is reserved for detail endpoints:
     # recomputing it for every export page dominated total export time. The gate
     # itself is unchanged -- both predicates resolve to publication_status=public.
-    conditions = list(public_facility_index_filter())
+    # Filtered exports pass the very list of conditions built by facility_conditions()
+    # so a filter cannot be interpreted differently in two surfaces.
+    if conditions is not None:
+        return list(conditions)
+    result = list(public_facility_index_filter())
     if facility_type:
-        conditions.append(Facility.facility_type == facility_type)
-    return conditions
+        result.append(Facility.facility_type == facility_type)
+    return result
 
 
 def _iter_pages(
-    db: Session, facility_type: str | None, page_size: int = PAGE_SIZE
+    db: Session,
+    facility_type: str | None = None,
+    page_size: int = PAGE_SIZE,
+    conditions: list | None = None,
 ) -> Iterator[list[Facility]]:
     """Yield publication-approved facilities in stable display-name order.
 
@@ -110,7 +129,7 @@ def _iter_pages(
     ordering (display name, then id) without a deep OFFSET.
     """
 
-    conditions = _download_conditions(facility_type)
+    conditions = _download_conditions(conditions, facility_type=facility_type)
     after_name: str | None = None
     after_id = None
     while True:
@@ -292,25 +311,33 @@ def _iter_row_dicts(db: Session, facilities: list[Facility]) -> Iterator[dict]:
         }
 
 
-def _download_rows(db: Session, facility_type: str | None) -> list[dict]:
+def _download_rows(
+    db: Session, facility_type: str | None = None, conditions: list | None = None
+) -> list[dict]:
     """Materialise every export row (kept for callers that need a list)."""
 
     rows: list[dict] = []
-    for page in _iter_pages(db, facility_type):
+    for page in _iter_pages(db, facility_type, conditions=conditions):
         rows.extend(_iter_row_dicts(db, page))
     return rows
 
 
-def _assert_has_rows(db: Session, facility_type: str | None) -> None:
+def _assert_has_rows(
+    db: Session, facility_type: str | None = None, conditions: list | None = None
+) -> None:
     first = db.scalars(
-        select(Facility.id).where(*_download_conditions(facility_type)).limit(1)
+        select(Facility.id)
+        .where(*_download_conditions(conditions, facility_type=facility_type))
+        .limit(1)
     ).first()
     if not first:
         raise ApiError(404, "no_downloadable_data", "No publication-approved facility rows exist.")
 
 
-def _stream_csv(name: str, facility_type: str | None, db: Session) -> StreamingResponse:
-    _assert_has_rows(db, facility_type)
+def _stream_csv(
+    name: str, facility_type: str | None, db: Session, conditions: list | None = None
+) -> StreamingResponse:
+    _assert_has_rows(db, facility_type, conditions)
 
     def generate() -> Iterator[bytes]:
         # The generator runs after the route returns, so it owns its session.
@@ -321,7 +348,7 @@ def _stream_csv(name: str, facility_type: str | None, db: Session) -> StreamingR
             writer = csv.DictWriter(buffer, fieldnames=list(DOWNLOAD_COLUMNS))
             writer.writeheader()
             pending = buffer.getvalue()
-            for page in _iter_pages(stream_db, facility_type):
+            for page in _iter_pages(stream_db, facility_type, conditions=conditions):
                 for row in _iter_row_dicts(stream_db, page):
                     buffer.seek(0)
                     buffer.truncate(0)
@@ -344,12 +371,14 @@ def _stream_csv(name: str, facility_type: str | None, db: Session) -> StreamingR
     )
 
 
-def _build_parquet(db: Session, facility_type: str | None) -> bytes:
-    _assert_has_rows(db, facility_type)
+def _build_parquet(
+    db: Session, facility_type: str | None = None, conditions: list | None = None
+) -> bytes:
+    _assert_has_rows(db, facility_type, conditions)
     sink = io.BytesIO()
     writer: pq.ParquetWriter | None = None
     try:
-        for page in _iter_pages(db, facility_type):
+        for page in _iter_pages(db, facility_type, conditions=conditions):
             rows = list(_iter_row_dicts(db, page))
             for start in range(0, len(rows), PARQUET_BATCH_SIZE):
                 batch = rows[start : start + PARQUET_BATCH_SIZE]
@@ -367,9 +396,78 @@ def _build_parquet(db: Session, facility_type: str | None) -> bytes:
     return sink.getvalue()
 
 
-@router.get("/downloads/facilities.csv", summary="Bulk facility CSV")
-def download_facilities_csv(db: Annotated[Session, Depends(get_db)]):
-    return _stream_csv("facilities", None, db)
+def download_filters(
+    type: FacilityType | None = None,
+    facility_type: FacilityType | None = Query(
+        None, description="Alias for `type`; both are additive and equivalent."
+    ),
+    subtype: str | None = Query(None, max_length=80),
+    inclusion_class: InclusionClass | None = None,
+    ownership: Literal["government", "private", "unknown"] | None = None,
+    ownership_type: OwnershipType | None = None,
+    operator_type: OperatorType | None = None,
+    public_access_class: AccessClass | None = None,
+    facility_kind: FacilityKind | None = None,
+    function: str | None = Query(None, max_length=60),
+    q: str | None = Query(None, max_length=200),
+    psgc: str | None = Query(None, max_length=12),
+    region_code: str | None = Query(None, max_length=12),
+    province_code: str | None = Query(None, max_length=12),
+    municipality_code: str | None = Query(None, max_length=12),
+    barangay_code: str | None = Query(None, max_length=12),
+    source: str | None = Query(None, max_length=40),
+    has_coordinates: bool | None = None,
+    location_precision: LocationPrecision | None = None,
+    reference_period_start: date | None = None,
+    reference_period_end: date | None = None,
+    updated_since: datetime | None = None,
+) -> list:
+    """Build the same predicates as GET /v1/facilities for a filtered export.
+
+    A single shared builder means a category, geography, source, or period filter
+    means exactly the same thing in the JSON list and in the bulk download.
+    """
+
+    return facility_conditions(
+        facility_type=facility_type or type,
+        facility_subtype=subtype,
+        inclusion_class=inclusion_class,
+        ownership=ownership,
+        ownership_type=ownership_type,
+        operator_type=operator_type,
+        public_access_class=public_access_class,
+        facility_kind=facility_kind,
+        function=function,
+        q=q,
+        psgc=psgc,
+        region_code=region_code,
+        province_code=province_code,
+        municipality_code=municipality_code,
+        barangay_code=barangay_code,
+        source=source,
+        has_coordinates=has_coordinates,
+        location_precision=location_precision,
+        reference_period_start=reference_period_start,
+        reference_period_end=reference_period_end,
+        updated_since=updated_since,
+    )
+
+
+@router.get(
+    "/downloads/facilities.csv",
+    summary="Bulk facility CSV",
+    description=(
+        "Streams publication-approved facilities in stable display-name order. "
+        "Accepts the same filters as GET /v1/facilities (including the `facility_type` "
+        "alias for `type`) so every category has a path to a filtered bulk export. "
+        "CSV injection neutralization and keyset pagination are unchanged."
+    ),
+)
+def download_facilities_csv(
+    db: Annotated[Session, Depends(get_db)],
+    filters: Annotated[list, Depends(download_filters)],
+):
+    return _stream_csv("facilities", None, db, filters)
 
 
 @router.get("/downloads/schools.csv", summary="Bulk school CSV")
@@ -382,10 +480,20 @@ def download_health_csv(db: Annotated[Session, Depends(get_db)]):
     return _stream_csv("health-facilities", "health_facility", db)
 
 
-@router.get("/downloads/facilities.parquet", summary="Bulk facility Parquet")
-def download_facilities_parquet(db: Annotated[Session, Depends(get_db)]):
+@router.get(
+    "/downloads/facilities.parquet",
+    summary="Bulk facility Parquet",
+    description=(
+        "Filtered Parquet export. Accepts the same filters as GET /v1/facilities "
+        "and applies the same publication gate and CSV-free column set."
+    ),
+)
+def download_facilities_parquet(
+    db: Annotated[Session, Depends(get_db)],
+    filters: Annotated[list, Depends(download_filters)],
+):
     return Response(
-        content=_build_parquet(db, None),
+        content=_build_parquet(db, None, filters),
         media_type="application/vnd.apache.parquet",
         headers={
             "Content-Disposition": (

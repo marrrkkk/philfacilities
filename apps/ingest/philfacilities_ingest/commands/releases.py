@@ -18,6 +18,7 @@ from sqlalchemy import func, select
 
 from ..compare import ReleaseComparisonError, compare_releases
 from ..manifest import render_release_notes, write_release_manifest
+from ..pipeline.coverage_refresh import refresh_coverage_after_publication
 from ..release_rollback import ReleaseRollbackError, rollback_release
 from ..sources.registry import (
     apply_publication_decisions,
@@ -273,6 +274,7 @@ def release_rollback_command(
         )
         if not dry_run:
             session.commit()
+            refresh_coverage_after_publication(session)
     except ReleaseRollbackError as exc:
         session.rollback()
         typer.echo(f"Rollback refused: {exc}", err=True)

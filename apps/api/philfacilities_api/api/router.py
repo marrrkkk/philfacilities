@@ -5,6 +5,7 @@ from fastapi import APIRouter
 from . import (
     accreditations,
     facilities,
+    fields,
     geography,
     health,
     population,
@@ -22,3 +23,4 @@ api_router.include_router(geography.router)
 api_router.include_router(population.router)
 api_router.include_router(sources.router)
 api_router.include_router(taxonomy.router)
+api_router.include_router(fields.router)
