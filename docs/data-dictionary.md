@@ -1,12 +1,13 @@
 # Data dictionary
 
-**Version:** 2.0 — 18 November 2026
-**API contract:** OpenAPI 3 at `/openapi.json`; interactive docs at `/docs`
-**Bulk data:** `/v1/downloads/facilities.csv`, `facilities.parquet`, `schools.csv`, `health-facilities.csv`
+> **Purpose** — The values a consumer sees through the public API, bulk downloads, and facility profiles.
+> **Audience** — API consumers, data analysts, web developers, and agents interpreting API responses.
+> **Machine contract** — [`packages/api-client/openapi.json`](../packages/api-client/openapi.json) defines types and required fields. Controlled vocabularies are owned by `apps/api/philfacilities_api/taxonomy.py`; rights states by `apps/api/philfacilities_api/rights.py`.
+> **See also** — [Public API](api.md) · [Data model](data-model.md) · [Data policy](data-policy.md) · [Sources](sources.md)
 
-This dictionary describes the values a consumer sees through the public API, bulk downloads, and facility profiles. It is descriptive; the OpenAPI document is the machine-readable contract for types and required fields, and `apps/api/philfacilities_api/taxonomy.py` is the source of truth for controlled vocabularies.
+This dictionary is descriptive. If it disagrees with the OpenAPI document or the vocabulary code, the code is authoritative — fix the prose in the same change.
 
-The public API is read-only. Records that fail the publication gate are absent: they are not returned with `null` fields, a redacted name, or a "private" marker.
+The public API is read-only. Records that fail the publication gate are absent: they are not returned with `null` fields, a redacted name, or a "private" marker. Bulk data is available at `/v1/downloads/facilities.csv`, `facilities.parquet`, `schools.csv`, and `health-facilities.csv`.
 
 ## 1. Reading rules
 

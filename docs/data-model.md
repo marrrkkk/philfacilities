@@ -1,7 +1,8 @@
 # Data model
 
-**Source of truth:** `apps/api/philfacilities_api/models.py` and the Alembic migrations in `apps/api/migrations/versions/`.
-**Consumer view:** [data dictionary](data-dictionary.md) and the OpenAPI document.
+> **Authoritative sources** — `apps/api/philfacilities_api/models.py` and Alembic migrations in `apps/api/migrations/versions/`.
+> **Consumer view** — [Data dictionary](data-dictionary.md) and the OpenAPI document.
+> **See also** — [Ingestion](ingestion.md) · [Data policy](data-policy.md) · [Architecture](architecture.md)
 
 The model separates four things that are easy to conflate: the canonical facility, the source record that produced it, the source release that preserved it, and the publication decision that allows it to be public.
 
@@ -11,7 +12,7 @@ The model separates four things that are easy to conflate: the canonical facilit
 - Source records are immutable. Re-ingestion creates a new release or a new source record; it does not rewrite the old payload.
 - One facility may link to many source records. One source record links to at most one canonical facility.
 - A name match alone never merges facilities. Ambiguous pairs go to `quality.match_candidates`.
-- `NULL` means unknown or not supplied. It is not zero, `false`, inactive, or “not applicable”.
+- `NULL` means unknown or not supplied — not zero, `false`, inactive, or "not applicable".
 - PSGC codes are strings (`varchar(12)`), preserving leading zeros. Geography is release-linked.
 - Coordinate precision and method travel with the point. A bounding-box centre is not a building location.
 - A licence or accreditation is not operational status and does not imply government ownership.
@@ -23,9 +24,10 @@ The model separates four things that are easy to conflate: the canonical facilit
 |---|---|
 | `source` | Agencies, datasets, releases, raw records, facility links, ingestion runs, source checks, rollback snapshots |
 | `core` | Canonical facilities, functions, services, roles, relationships, locations, attribute assertions/fusions |
-| `geo` | Geographic releases, administrative units, crosswalks |
+| `geo` | Geographic releases, administrative units, crosswalks, OSM boundary reference geometry |
 | `school` | School profiles and resource observations |
 | `health` | Health profiles, licences, accreditations |
+| `utility` | DOE power-plant profiles |
 | `stats` | Population and household observations, kept separate from facilities |
 | `quality` | Data-quality issues, identity-match candidates, publication gates |
 | `history` | Canonical change events |
@@ -38,29 +40,29 @@ The model separates four things that are easy to conflate: the canonical facilit
 
 ### `source.datasets`
 
-One row per dataset. Key fields: `agency_id`, `slug` (unique per agency), `name`, `description`, `source_url`, `access_method`, `terms_url`, `license_identifier`, `redistribution_status`, `rights_basis`, `attribution_text`, `personal_data_status`, `publication_status`, `authority_level`, `coverage_scope`, `coverage_note`, `update_pattern`, `schema_version`, `is_public_source`, `is_synthetic`. `authority_level` is `official`, `community`, `synthetic`, or `unknown`; fusion reads it instead of inferring authority from a dataset name.
+One row per dataset: `agency_id`, `slug` (unique per agency), `name`, `description`, `source_url`, `access_method`, `terms_url`, `license_identifier`, `redistribution_status`, `rights_basis`, `attribution_text`, `personal_data_status`, `publication_status`, `authority_level`, `coverage_scope`, `coverage_note`, `update_pattern`, `schema_version`, `is_public_source`, `is_synthetic`. `authority_level` is `official`, `community`, `synthetic`, or `unknown`; fusion reads it rather than inferring authority from a name.
 
-`redistribution_status` is the rights vocabulary from `apps/api/philfacilities_api/rights.py`; `publication_status` is the editorial gate (`blocked`, `review_required`, `approved`, `published`, …). Both must pass before public exposure. See [data policy](data-policy.md).
+`redistribution_status` comes from `apps/api/philfacilities_api/rights.py`; `publication_status` is the editorial gate (`blocked`, `review_required`, `approved`, `published`, …). Both must pass before public exposure — see [Data policy](data-policy.md).
 
 ### `source.releases`
 
-One row per immutable release. Key fields: `dataset_id`, `source_release_label`, `source_published_at`, `reference_period_start`, `reference_period_end`, `retrieved_at`, `processed_at`, `raw_object_uri`, `sha256`, `file_format`, `file_size_bytes`, `row_count_reported`, `row_count_parsed`, `ingestion_status`, `terms_review_status`, `publication_status`, `parser_version`, `schema_version`, `notes`.
+One row per immutable release: `dataset_id`, `source_release_label`, `source_published_at`, `reference_period_start`, `reference_period_end`, `retrieved_at`, `processed_at`, `raw_object_uri`, `sha256`, `file_format`, `file_size_bytes`, `row_count_reported`, `row_count_parsed`, `ingestion_status`, `terms_review_status`, `publication_status`, `parser_version`, `schema_version`, `notes`.
 
 Unique on `(dataset_id, sha256)`. A changed file is a new release; an unchanged checksum is skipped unless the parser version changed, in which case the preserved release is reprocessed. A failed, empty, or below-floor release is quarantined without changing the previous published release. A failed reprocess of an already-published release keeps that release `published` and skips staging so its last good source records remain intact; the next run retries it rather than treating the checksum as a duplicate.
 
 ### `source.records`
 
-Raw source rows/pages. Key fields: `release_id`, `source_record_key` (unique within release), `row_number_or_page`, `raw_payload` JSONB, `raw_record_hash`, `parsed_at`, `validation_status`. The original column names and values remain in `raw_payload`.
+Raw source rows/pages: `release_id`, `source_record_key` (unique within release), `row_number_or_page`, `raw_payload` JSONB, `raw_record_hash`, `parsed_at`, `validation_status`. Original column names and values remain in `raw_payload`.
 
 ### `source.facility_source_links`
 
-The identity link. Key fields: `facility_id`, `source_record_id` (unique together), `source_entity_id`, `match_method`, `match_confidence` (0–1), `match_status`, `evidence` JSONB, `valid_from`, `valid_to`, `reviewed_by`, `reviewed_at`. Match status vocabulary: `automatic_high_confidence`, `human_confirmed`, `candidate`, `rejected`, `unresolved`.
+The identity link: `facility_id`, `source_record_id` (unique together), `source_entity_id`, `match_method`, `match_confidence` (0–1), `match_status`, `evidence` JSONB, `valid_from`, `valid_to`, `reviewed_by`, `reviewed_at`. Match status vocabulary: `automatic_high_confidence`, `human_confirmed`, `candidate`, `rejected`, `unresolved`.
 
 ### Operations tables
 
 - `source.ingestion_runs` — start/finish, status, stats, report path, error summary.
 - `source.source_checks` — append-only reachability checks: status, URL, final URL, HTTP status, ETag, Last-Modified, content type/length, checksum, duration, message, `next_check_at`.
-- `source.release_facility_snapshots` — pre-release canonical state used by `release rollback`; records whether the release created the facility and the prior child state.
+- `source.release_facility_snapshots` — pre-release canonical state used by `release rollback`.
 
 ## 4. Canonical facility
 
@@ -87,83 +89,51 @@ The identity link. Key fields: `facility_id`, `source_record_id` (unique togethe
 
 ### Related `core` tables
 
-- `facility_functions` — dated, source-backed purposes (e.g. `EVACUATION`), with capacity and source evidence. Unique per facility/function/source record.
-- `facility_services` — source-backed services, with source field and validity.
+- `facility_functions` — dated, source-backed purposes (e.g. `EVACUATION`) with capacity and evidence.
+- `facility_services` — source-backed services with source field and validity.
 - `facility_roles` — owner, operator, manager, host, landlord, funder, regulator, licensor, accreditor, recognition authority, affiliator. Roles are separate by design.
 - `facility_relationships` — `LOCATED_WITHIN`, `SHARED_SITE`, `HOSTED_AT`, `PARENT_OF`, `SUCCESSOR_OF`, `REPLACED_BY`.
-- `facility_locations` — point geometry (PostGIS `geography(Point,4326)`), latitude/longitude, precision, method, address text, PSGC, validity, review status, `is_current`. A partial unique index allows only one current location per facility.
-- `facility_contacts` — source-linked institutional phone, email, website, and opening-hours rows. Unique on `(facility_id, contact_type, value, source_record_id)`. A merge moves contacts to the surviving facility; a duplicate that would violate the unique key stays on the source tombstone. Release rollback snapshots and restores contacts with the other child evidence.
+- `facility_locations` — point geometry (PostGIS `geography(Point,4326)`), lat/lon, precision, method, address text, PSGC, validity, review status, `is_current`. A partial unique index allows only one current location per facility.
+- `facility_contacts` — source-linked institutional phone, email, website, and hours. Unique on `(facility_id, contact_type, value, source_record_id)`; a duplicate contact stays on a merge tombstone rather than violating the key.
 - `attribute_assertions` — one source claim per attribute: source record, source field, raw value, normalized value, transformation version, review status.
-- `facility_attribute_fusions` — one derived value per facility/attribute plus `selected_source_record_id`, selection method, status (`agreed`, `conflict`, `single_source`), confidence, distinct-value count, claim count, algorithm version, and every alternative in `alternatives` JSONB. Fusion is automated and consumes only claims from each dataset's latest published, rights-cleared release: agreed values and conflicts with a clear authority winner are applied without a review step, while equal-authority conflicts remain derived-only.
+- `facility_attribute_fusions` — one derived value per facility/attribute plus selected source, selection method, status (`agreed`, `conflict`, `single_source`), confidence, counts, algorithm version, and every alternative in `alternatives` JSONB. Fusion consumes only claims from each dataset's latest published, rights-cleared release.
 
 ## 5. Geography
 
-### `geo.geographic_releases`
-
-`release_label` (unique), `reference_date`, `published_at`, `retrieved_at`, `raw_object_uri`, `sha256`, `source_url`, `is_synthetic`. `is_synthetic` separates demo geography from real PSGC snapshots; coordinate gap-fill and facility geography validation never select synthetic units for real facilities.
-
-### `geo.administrative_units`
-
-`release_id`, `psgc_code`, `name`, `geographic_level`, `parent_psgc_code`, `correspondence_code`, `old_name`, `city_class`, `income_classification`, `urban_rural`, `island_region`, `valid_from`, `valid_to`. Unique on `(release_id, psgc_code)`. Codes are never assumed timeless.
-
-### `geo.geography_crosswalk`
-
-Maps a code in one release to a code in another, with a change type and evidence. Used by the geography crosswalk endpoint and release comparisons.
-
-### `geo.osm_admin_boundaries`
-
-Derived reference geometry from one preserved Geofabrik PBF snapshot. `osm_type`/`osm_id` identify the OSM object, `admin_level` is the OSM level, `ref` is the raw tag, and `psgc_code` is the resolved current-release code (null when unresolved). `geographic_level`, `parent_psgc_code`, `resolution_method`, `area_deg2`, `release_label`, `source_url`, `source_sha256`, `source_published_at`, `retrieved_at` and `imported_at` record provenance. A GiST index supports point-in-polygon lookups. This is not a PSA boundary release and is not exposed as an official geography layer.
+- `geo.geographic_releases` — `release_label` (unique), `reference_date`, `published_at`, `retrieved_at`, `raw_object_uri`, `sha256`, `source_url`, `is_synthetic`. Synthetic demo geography is never used to geocode real facilities.
+- `geo.administrative_units` — `release_id`, `psgc_code`, `name`, `geographic_level`, `parent_psgc_code`, `correspondence_code`, `old_name`, `city_class`, `income_classification`, `urban_rural`, `valid_from`, `valid_to`. Unique on `(release_id, psgc_code)`; codes are never assumed timeless.
+- `geo.geography_crosswalk` — maps a code in one release to another, with change type and evidence.
+- `geo.osm_admin_boundaries` — derived reference geometry from one preserved Geofabrik PBF snapshot: `osm_type`/`osm_id`, `admin_level`, raw `ref`, resolved current-release `psgc_code` (null when unresolved), provenance fields, and a GiST index for point-in-polygon lookups. Not an official PSA boundary layer.
 
 ## 6. Domain tables
 
-### School (`school`)
-
-- `profiles` — `facility_id`, `deped_school_id`, `sector`, `school_management`, `division`, `district`, `legislative_district`, `settlement_type`, `offering_classification`, `offers_es`, `offers_jhs`, `offers_shs`, source record, validity.
-- `resource_observations` — long format by school year and resource code; numeric/text value and unit.
-
-### Health (`health`)
-
-- `profiles` — DOH facility ID, facility major type, facility type detail, facility category, ownership sub-classification, licensing status, bed capacity, source record, validity. The DOH NHFR release fills these institutional fields; `bed_capacity=0` is a source value and is not the same as null (unknown).
-- `licenses` — issuing authority, licence number/type, source status, validity.
-- `accreditations` — authority, provider category, benefit package, accreditation category, bed count, sector code, source status, validity, source-as-of date, page reference. Accreditation is many-to-many and time-bounded. Contact fields remain on the accreditation row and are exposed only when its source record passes the public publication gate.
-
-### Utility (`utility`)
-
-- `profiles` — `facility_id`, DOE facility code, resource type, technology type, connection type, grid, owner type, contract type, installed and dependable capacity in MW, unit count, commissioning date, source record, validity. The DOE existing-power-plant lists fill these fields; registry presence is not proof of current operation.
-
-### Statistics (`stats`)
-
-`population_observations` stores one row per source observation with PSGC code, level, name, indicator code/label, value, unit, reference date/period, dimensions JSONB, source URL, source update time, and retrieval time. It is intentionally not part of `core.facilities`; a population count is never a facility attribute or capacity.
+- **School (`school`)** — `profiles` (DepEd ID, sector, management, division, district, legislative district, settlement type, offering classification, offering flags, source record, validity); `resource_observations` (long format by school year and resource code).
+- **Health (`health`)** — `profiles` (DOH facility ID, major/detail type, category, ownership subclassification, licensing status, bed capacity, source record, validity; `bed_capacity=0` is a source value, not null); `licenses` (authority, number/type, source status, validity); `accreditations` (authority, provider category, benefit package, category, bed count, sector code, source status, validity, as-of date, page reference).
+- **Utility (`utility`)** — `profiles` (DOE facility code, resource/technology/connection type, grid, owner type, contract type, installed/dependable MW, unit count, commissioning date, source record, validity). Registry presence is not proof of current operation.
+- **Statistics (`stats`)** — `population_observations`, one row per source observation with code, level, name, indicator, value, unit, reference date/period, dimensions, source URL, and retrieval time. A population count is never a facility attribute.
 
 ## 7. Quality, identity, and history
 
-### `quality.issues`
-
-`facility_id`, `source_record_id`, `release_id`, `issue_code`, `severity`, `message`, `details`, `status`, `created_at`, `resolved_at`. Common codes include `location_missing`, `duplicate_osm_id`, `missing_facility_name`, and `coordinate_outside_philippines_bbox`.
-
-### `quality.match_candidates`
-
-Deterministic identity proposals. Key fields: `candidate_key` (SHA-256 of match method + algorithm version + source record + proposed facility), `source_record_id`, `source_facility_id`, `candidate_facility_id`, agency codes, `match_method`, `algorithm_version`, `match_confidence`, `match_status` (`pending`, `accepted`, `rejected`, `merged`), `evidence`, reviewer metadata, and `resolution` (merge audit). Evidence with `cross_type: true` marks a review-only facility-type disagreement; it is never merged automatically. Reviewer names and notes are never public.
-
-### `quality.publication_gates`
-
-One row per dataset: `status`, `scope` JSONB, reviewer, reviewed time, notes. The API checks the dataset rights state, the dataset gate, and the release gate.
-
-### `history.facility_change_events`
-
-`facility_id`, `change_type`, `attribute_name`, `old_value`, `new_value`, `source_record_id`, `changed_at`, `changed_by`. Used for history endpoints, merge audit, and release rollback evidence.
+- `quality.issues` — `facility_id`, `source_record_id`, `release_id`, `issue_code`, `severity`, `message`, `details`, `status`, timestamps. Common codes: `location_missing`, `duplicate_osm_id`, `missing_facility_name`, `coordinate_outside_philippines_bbox`.
+- `quality.match_candidates` — deterministic identity proposals keyed by SHA-256 of method + algorithm version + source record + proposed facility; includes method, version, confidence, `match_status` (`pending`, `accepted`, `rejected`, `merged`), evidence, reviewer metadata, and merge `resolution`. `cross_type: true` marks review-only type disagreements. Reviewer names and notes are never public.
+- `quality.publication_gates` — one row per dataset: status, scope JSONB, reviewer, reviewed time, notes.
+- `history.facility_change_events` — `facility_id`, `change_type`, `attribute_name`, `old_value`, `new_value`, `source_record_id`, `changed_at`, `changed_by`. Used for history endpoints, merge audit, and rollback evidence.
 
 ## 8. Identity resolution rules
 
-Preferred order:
+Preferred evidence order:
 
-1. Exact source-specific stable ID within the same agency/source system.
-2. Explicit official crosswalk or shared identifier.
-3. Exact normalized name + same PSGC unit + compatible facility subtype, with address evidence.
-4. Similar name + locality + address/phone evidence produces a candidate only.
-5. Conflicting IDs or distant coordinates remain unmerged candidates until the resolution pass.
+1. exact source-specific stable ID within the same agency/source system;
+2. explicit official crosswalk or shared identifier;
+3. exact normalized name + same PSGC unit + compatible subtype, with address evidence;
+4. similar name + locality + address/phone evidence — candidate only;
+5. conflicting IDs or distant coordinates — unmerged candidate until the resolution pass.
 
-Candidates live in `quality.match_candidates`. The automated path merges only evidence-backed clusters: strong location bridges (same barangay, address, shared official ID, or points within 250 m) plus every pair in the cluster being eligible. A map-derived OSM education pair may use a 100 m same-agency point bridge when the exact institution name, barangay, dataset and institution amenity agree; other community layers keep the 50 m point rule so distinct nearby branches are not merged. An address-only official row can bridge to a mapped community row only when exact names, city and independent address claims agree and no competing distant mapped point makes the official row ambiguous. Every less certain candidate stays `pending` with its evidence. `pending` is not a human approval queue. `match-candidates-resolve` re-evaluates the queue, merges a pair only when it still qualifies and the target is the preferred survivor, and rejects stale, cross-type, conflicting or weak pairs with a recorded reason. Rejection is terminal for that pair and algorithm version. Explicit accept/reject/merge commands exist for operator investigation, not as a prerequisite for publication. A merge moves source links, locations, observations, profiles, licences, accreditations, contacts, assertions, and issues to the surviving facility. Duplicate contacts stay on the source tombstone rather than violating `uq_facility_contact_source`; only contacts that moved are restored by undo. The retired facility stays as an internal `merged` tombstone. Change events `facility_merged_into` and `facility_merged_from` preserve the audit trail.
+Candidates live in `quality.match_candidates`. The automated path merges only evidence-backed clusters: a strong location bridge (same barangay, address, shared official ID, or points within 250 m) plus every pair in the cluster being eligible. A map-derived OSM education pair may use a 100 m same-agency point bridge when the exact institution name, barangay, dataset, and institution amenity agree; other community layers keep the 50 m rule. An address-only official row can bridge to a mapped community row only when exact names, city, and independent address claims agree. Every less certain candidate stays `pending`.
+
+`pending` is not a human approval queue. `match-candidates-resolve` re-evaluates the queue against current evidence, merges a pair only when it still qualifies and the target is the preferred survivor, and terminally rejects stale, cross-type, conflicting, or weak pairs with a reason. A merge moves source links, locations, profiles, contacts, assertions, and issues to the survivor; the retired facility stays as an internal `merged` tombstone with change events. Undo restores only rows that actually moved.
+
+See [Ingestion](ingestion.md) for the full matching policy.
 
 ## 9. Time semantics
 
@@ -178,12 +148,12 @@ Keep these distinct:
 
 ## 10. Location precision
 
-Allowed values: `gps_verified`, `field_verified`, `source_gps`, `map_geocoded`, `barangay_centroid`, `unknown`. Keep the source-supplied method in `method` (for example `openstreetmap_bbox_center`). A map marker must not imply more precision than the recorded value. Missing coordinates stay missing; the directory still lists the facility.
+Allowed values: `gps_verified`, `field_verified`, `source_gps`, `map_geocoded`, `barangay_centroid`, `unknown`. Keep the source method in `method` (for example `openstreetmap_bbox_center`). A map marker must not imply more precision than the recorded value. Missing coordinates stay missing; the directory still lists the facility.
 
 ## 11. Migrations and schema changes
 
-- Alembic revisions live in `apps/api/migrations/versions/`; the current head is applied to a fresh database and the test database.
+- Alembic revisions live in `apps/api/migrations/versions/`; the current head is applied to fresh and test databases.
 - Models use a naming convention; keep constraint and index names stable once released.
 - Add columns as nullable or with a safe server default; backfill before adding a non-null constraint.
 - Update the API response schema, OpenAPI document, TypeScript client, data dictionary, and tests in the same change when a public field changes.
-- See [contributing](contributing.md) for the contract-regeneration command.
+- Do not edit an already-applied migration in a released branch. See [Contributing](contributing.md).
