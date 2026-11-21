@@ -40,6 +40,7 @@ from philfacilities_api.rights import (
     RIGHTS_UNKNOWN,
 )
 
+from .reporting import source_url_key as _source_url_key
 from .source_inventory import REQUIRED_OUTPUT_FIELDS, summarize_source_inventory
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -542,18 +543,6 @@ def _publisher_identity(source: dict[str, Any]) -> tuple[str, str, str, str | No
     if "accredited_providers" in source_id or "provider-category" in title:
         return custodian or "PhilHealth", "government_regulator", "REGULATOR_ACCREDITOR", domain
     return custodian or "UNKNOWN", "government", "OFFICIAL_CUSTODIAN", domain
-
-
-def _source_url_key(url: str | None) -> str:
-    """Normalize a source URL for exact artifact-to-register matching."""
-
-    if not url:
-        return ""
-    parsed = urlparse(str(url).strip())
-    host = parsed.netloc.casefold()
-    if host.startswith("www."):
-        host = host[4:]
-    return f"{host}{parsed.path.rstrip('/')}".casefold()
 
 
 def attach_published_release_evidence(payload: dict[str, Any], session: Any) -> list[str]:
