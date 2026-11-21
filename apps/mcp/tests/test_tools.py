@@ -196,3 +196,20 @@ def test_invalid_arguments_are_rejected_by_the_input_schema():
         assert result.is_error is True
 
     asyncio.run(run())
+
+
+@pytest.mark.parametrize("radius_m", [0, 50_001, 10_000_000])
+def test_nearby_radius_is_bounded_to_the_api_cap(radius_m):
+    """An impossible radius must fail schema validation, not reach the API."""
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        raise AssertionError("a rejected radius must not call the API")
+
+    async def run() -> None:
+        async with server_with(handler) as server, Client(server) as client:
+            result = await client.call_tool(
+                "find_nearby_facilities", {"lat": 14.5, "lon": 121.0, "radius_m": radius_m}
+            )
+        assert result.is_error is True
+
+    asyncio.run(run())

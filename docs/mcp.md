@@ -79,6 +79,8 @@ Client config: `{ "mcpServers": { "philfacilities": { "url": "https://mcp.exampl
 | `get_taxonomy` | Which filter codes are valid? | `/v1/taxonomy` |
 | `get_download_links` | Where are the public bulk exports? | `/v1/downloads/*` |
 
+Input schemas enforce the API's real bounds so invalid calls fail fast with a clear schema error: `search_facilities.limit` is capped at 100 (API `max_page_size`), `find_nearby_facilities.limit` at 500 (`max_map_features`), and `find_nearby_facilities.radius_m` at 50,000 m (`max_nearby_radius_m`). The `location_precision` filter lists its valid values in the tool description; a contract test checks them against `openapi.json` so the two cannot drift.
+
 Internal review endpoints (match candidates, source checks, monitoring, quality issues) are intentionally not tools. Tools are marked read-only and idempotent in their MCP annotations. Every result is an object with one `result` key whose value is the API payload passed through unchanged — preserving `null`, `is_synthetic`, precision/method, reference periods, rights, licence, and attribution. Deferred: school/health profiles, accreditations, change history, and recent changes.
 
 ## 5. Reading results responsibly

@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/assets/philfacilities-icon.svg" alt="PhilFacilities icon — a facility pin grounded on a registry baseline" width="96" height="96">
+</p>
+
 # PhilFacilities
 
 [![CI](https://github.com/marrrkkk/philfacilities/actions/workflows/ci.yml/badge.svg)](https://github.com/marrrkkk/philfacilities/actions/workflows/ci.yml)
