@@ -62,6 +62,17 @@ api:
 web:
     pnpm --filter @philfacilities/web dev
 
+# Local stdio MCP server. Requires the API to be running (just api).
+mcp:
+    uv run philfacilities-mcp
+
+# Hosted-style Streamable HTTP MCP server on 127.0.0.1:8011.
+mcp-http:
+    uv run philfacilities-mcp-http
+
+mcp-test:
+    uv run pytest apps/mcp/tests -q
+
 test:
     uv run pytest
 

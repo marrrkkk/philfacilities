@@ -16,11 +16,12 @@ dev = [
 ]
 
 [tool.uv.workspace]
-members = ["apps/api", "apps/ingest"]
+members = ["apps/api", "apps/ingest", "apps/mcp"]
 
 [tool.uv.sources]
 philfacilities-api = { workspace = true }
 philfacilities-ingest = { workspace = true }
+philfacilities-mcp = { workspace = true }
 
 [tool.ruff]
 line-length = 100
@@ -32,7 +33,7 @@ select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
 ignore = ["B008"]
 
 [tool.pytest.ini_options]
-testpaths = ["apps/ingest/tests", "tests"]
+testpaths = ["apps/ingest/tests", "apps/mcp/tests", "tests"]
 addopts = "-ra"
 markers = [
   "integration: requires a live PostgreSQL/PostGIS database",
@@ -41,7 +42,7 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["apps/api/philfacilities_api", "apps/ingest/philfacilities_ingest"]
+source = ["apps/api/philfacilities_api", "apps/ingest/philfacilities_ingest", "apps/mcp/philfacilities_mcp"]
 
 [tool.mypy]
 python_version = "3.12"
