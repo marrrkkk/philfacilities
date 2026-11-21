@@ -48,6 +48,7 @@ from .schemas import (
     LocationOut,
     QualityWarning,
     SourceEvidence,
+    SourceRefOut,
 )
 
 
@@ -617,6 +618,14 @@ def build_summaries(
                 ),
                 geography=geo or GeographyOut(),
                 source_count=len(sources),
+                source_refs=[
+                    SourceRefOut(
+                        agency_code=source.agency_code,
+                        dataset_slug=source.dataset_slug,
+                        source_record_id=source.source_record_id,
+                    )
+                    for source in sources
+                ],
                 updated_at=facility.updated_at,
             )
         )
@@ -631,7 +640,6 @@ def build_facility_detail(
     from sqlalchemy import func
 
     from .models import (
-        EnrollmentObservation,
         FacilityContact,
         HealthAccreditation,
         HealthProfile,
@@ -672,29 +680,6 @@ def build_facility_detail(
             )
         ).first()
         if profile:
-            latest_year = session.scalar(
-                select(func.max(EnrollmentObservation.school_year)).where(
-                    EnrollmentObservation.facility_id == facility.id,
-                    public_source_record_condition(EnrollmentObservation.source_record_id),
-                )
-            )
-            total = None
-            if latest_year:
-                rows = session.scalars(
-                    select(EnrollmentObservation).where(
-                        EnrollmentObservation.facility_id == facility.id,
-                        EnrollmentObservation.school_year == latest_year,
-                        public_source_record_condition(EnrollmentObservation.source_record_id),
-                    )
-                ).all()
-                if any(row.grade_level == "total" and row.sex == "all" for row in rows):
-                    total = sum(
-                        row.learner_count or 0
-                        for row in rows
-                        if row.grade_level == "total" and row.sex == "all"
-                    )
-                else:
-                    total = sum(row.learner_count or 0 for row in rows)
             school = SchoolProfileOut(
                 deped_school_id=profile.deped_school_id,
                 sector=profile.sector,
@@ -707,8 +692,6 @@ def build_facility_detail(
                 offers_es=profile.offers_es,
                 offers_jhs=profile.offers_jhs,
                 offers_shs=profile.offers_shs,
-                reference_school_year=latest_year,
-                enrollment_total=total,
                 source_record_id=profile.source_record_id,
             )
     elif facility.facility_type == "health_facility":

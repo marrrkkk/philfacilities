@@ -2514,68 +2514,6 @@
         }
       }
     },
-    "/v1/schools/{facility_id}/enrollment": {
-      "get": {
-        "tags": [
-          "schools"
-        ],
-        "summary": "School enrollment observations",
-        "operationId": "get_school_enrollment_v1_schools__facility_id__enrollment_get",
-        "parameters": [
-          {
-            "name": "facility_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Facility Id"
-            }
-          },
-          {
-            "name": "school_year",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "School Year"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/EnrollmentObservationOut"
-                  },
-                  "title": "Response Get School Enrollment V1 Schools  Facility Id  Enrollment Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/v1/schools/{facility_id}/resources": {
       "get": {
         "tags": [
@@ -5577,6 +5515,7 @@
               {
                 "type": "string",
                 "enum": [
+                  "NATIONAL",
                   "NATIONAL_OFFICIAL_INVENTORY",
                   "NATIONAL_PARTIAL",
                   "REGIONAL",
@@ -5679,58 +5618,6 @@
           "is_synthetic"
         ],
         "title": "DatasetOut"
-      },
-      "EnrollmentObservationOut": {
-        "properties": {
-          "school_year": {
-            "type": "string",
-            "title": "School Year"
-          },
-          "grade_level": {
-            "type": "string",
-            "title": "Grade Level"
-          },
-          "sex": {
-            "type": "string",
-            "title": "Sex"
-          },
-          "learner_count": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Learner Count"
-          },
-          "observed_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Observed At"
-          },
-          "source_record_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Source Record Id"
-          }
-        },
-        "type": "object",
-        "required": [
-          "school_year",
-          "grade_level",
-          "sex",
-          "observed_at"
-        ],
-        "title": "EnrollmentObservationOut"
       },
       "FacilityDetail": {
         "properties": {
@@ -5915,6 +5802,13 @@
             "type": "integer",
             "title": "Source Count",
             "default": 0
+          },
+          "source_refs": {
+            "items": {
+              "$ref": "#/components/schemas/SourceRefOut"
+            },
+            "type": "array",
+            "title": "Source Refs"
           },
           "updated_at": {
             "type": "string",
@@ -6808,6 +6702,13 @@
             "type": "integer",
             "title": "Source Count",
             "default": 0
+          },
+          "source_refs": {
+            "items": {
+              "$ref": "#/components/schemas/SourceRefOut"
+            },
+            "type": "array",
+            "title": "Source Refs"
           },
           "updated_at": {
             "type": "string",
@@ -8459,13 +8360,6 @@
           "facility": {
             "$ref": "#/components/schemas/FacilityDetail"
           },
-          "enrollment": {
-            "items": {
-              "$ref": "#/components/schemas/EnrollmentObservationOut"
-            },
-            "type": "array",
-            "title": "Enrollment"
-          },
           "resources": {
             "items": {
               "$ref": "#/components/schemas/ResourceObservationOut"
@@ -8477,7 +8371,6 @@
         "type": "object",
         "required": [
           "facility",
-          "enrollment",
           "resources"
         ],
         "title": "SchoolDetailResponse"
@@ -8604,28 +8497,6 @@
               }
             ],
             "title": "Offers Shs"
-          },
-          "reference_school_year": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Reference School Year"
-          },
-          "enrollment_total": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Enrollment Total"
           },
           "source_record_id": {
             "anyOf": [
@@ -9344,6 +9215,30 @@
           "publication_status"
         ],
         "title": "SourceMonitoringOut"
+      },
+      "SourceRefOut": {
+        "properties": {
+          "agency_code": {
+            "type": "string",
+            "title": "Agency Code"
+          },
+          "dataset_slug": {
+            "type": "string",
+            "title": "Dataset Slug"
+          },
+          "source_record_id": {
+            "type": "string",
+            "title": "Source Record Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "agency_code",
+          "dataset_slug",
+          "source_record_id"
+        ],
+        "title": "SourceRefOut",
+        "description": "Compact public identity of one source record behind a facility.\n\nRaw source values are preserved in the source record; this ref exists so a\nlist result can distinguish registries that publish the same facility name."
       },
       "StatisticsOut": {
         "properties": {

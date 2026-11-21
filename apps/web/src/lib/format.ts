@@ -65,6 +65,32 @@ export function isPreciseLocation(precision: string | null | undefined): boolean
   );
 }
 
+export type SourceRefLike = {
+  agency_code: string;
+  dataset_slug: string;
+  source_record_id: string;
+};
+
+/** The agency-issued identifier alone, for profile field rows. */
+export function registryCode(ref: SourceRefLike): string {
+  const key = ref.source_record_id;
+  if (ref.agency_code === "ched") return key.split(":")[2] || key;
+  if (ref.agency_code === "deped") return key.split(":")[0];
+  return key;
+}
+
+/** Compact registry identity for a source record, for list results. */
+export function formatSourceRef(ref: SourceRefLike): string {
+  const key = ref.source_record_id;
+  if (ref.agency_code === "ched") {
+    const code = key.split(":")[2];
+    return code ? `CHED ${code}` : "CHED";
+  }
+  if (ref.agency_code === "deped") return `DepEd ${key.split(":")[0]}`;
+  if (/^(way|node|relation)\//.test(key)) return `OSM ${key}`;
+  return `${titleCase(ref.agency_code)} ${key}`;
+}
+
 export const INCLUSION_CLASS_LABELS: Record<string, string> = {
   GOVERNMENT_FACILITY: "Government facility",
   PRIVATE_PUBLIC_SERVICE_PROVIDER: "Private public-service provider",

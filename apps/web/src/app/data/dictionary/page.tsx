@@ -88,9 +88,6 @@ const schoolFields = [
   ["settlement_type", "Source settlement class: urban, partially urban, or rural."],
   ["offering_classification", "Combined source offering category retained verbatim."],
   ["offers_es, offers_jhs, offers_shs", "Tri-state: true, false, or null for unknown."],
-  ["reference_school_year", "School year the profile describes."],
-  ["enrollment_total", "Latest total when an observation exists; otherwise null."],
-  ["enrollment[]", "Dated observations by school year, grade level, and sex."],
   ["resources[]", "Dated ICT/WASH/resource observations with numeric or text values."],
 ];
 
@@ -203,8 +200,7 @@ export default function DataDictionaryPage() {
         <AlertTitle>Missing is not zero, false, or inactive</AlertTitle>
         <AlertDescription>
           A null value means the source did not supply a usable value. It never means zero
-          enrollment, zero beds, closed, or not operating. Registry presence is not real-time
-          operational status.
+          beds, closed, or not operating. Registry presence is not real-time operational status.
         </AlertDescription>
       </Alert>
 

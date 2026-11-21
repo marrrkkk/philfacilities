@@ -31,7 +31,6 @@ const families = [
     endpoints: [
       "GET /v1/schools",
       "GET /v1/schools/{id-or-slug}",
-      "GET /v1/schools/{id-or-slug}/enrollment",
       "GET /v1/schools/{id-or-slug}/resources",
       "GET /v1/health-facilities",
       "GET /v1/health-facilities/{id-or-slug}",

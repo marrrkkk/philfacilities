@@ -29,7 +29,6 @@ from philfacilities_ingest.acquisition import send_ingestion_failure_alert
 from philfacilities_ingest.cli import app as cli_app
 from philfacilities_ingest.config import get_settings
 from philfacilities_ingest.contracts import (
-    EnrollmentData,
     FacilityCandidate,
     FunctionData,
     LocationData,
@@ -328,14 +327,6 @@ def test_internal_release_cannot_rewrite_public_facility_or_leak_children(
         offers_es=True,
         offers_jhs=True,
         offers_shs=True,
-        enrollment=[
-            EnrollmentData(
-                school_year="2024-2025",
-                grade_level="total",
-                sex="all",
-                learner_count=100,
-            )
-        ],
     )
     public_candidate = _candidate(
         key=f"public-{token}",
@@ -376,14 +367,6 @@ def test_internal_release_cannot_rewrite_public_facility_or_leak_children(
         deped_school_id=internal_deped_id,
         sector="private",
         offers_shs=False,
-        enrollment=[
-            EnrollmentData(
-                school_year="2025-2026",
-                grade_level="total",
-                sex="all",
-                learner_count=999,
-            )
-        ],
     )
     internal_candidate = _candidate(
         key=f"internal-{token}",
@@ -479,7 +462,6 @@ def test_internal_release_cannot_rewrite_public_facility_or_leak_children(
     assert detail["display_name"] == public_name
     assert detail["school"]["sector"] == "public"
     assert detail["school"]["offers_shs"] is True
-    assert detail["school"]["enrollment_total"] == 100
     assert [row["function_code"] for row in detail["function_details"]] == ["classroom"]
     assert [row["service_code"] for row in detail["services"]] == ["elementary"]
     assert float(detail["location"]["latitude"]) == pytest.approx(14.5995)
@@ -494,8 +476,7 @@ def test_internal_release_cannot_rewrite_public_facility_or_leak_children(
     assert assertions
     assert {row["source"]["dataset_slug"] for row in assertions} == {public_dataset}
 
-    enrollment = client.get(f"/v1/schools/{facility.slug}/enrollment").json()
-    assert [row["learner_count"] for row in enrollment] == [100]
+    assert client.get(f"/v1/schools/{facility.slug}/enrollment").status_code == 404
 
 
 def test_latest_published_release_controls_current_membership(db_session, client) -> None:

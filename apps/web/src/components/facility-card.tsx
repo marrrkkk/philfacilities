@@ -5,6 +5,7 @@ import type { FacilitySummary } from "@/lib/api";
 import {
   ACCESS_LABELS,
   formatDateTime,
+  formatSourceRef,
   INCLUSION_CLASS_LABELS,
   PRECISION_LABELS,
   titleCase,
@@ -29,6 +30,9 @@ export function FacilityCard({ facility }: { facility: FacilitySummary }) {
   const inclusionLabel =
     INCLUSION_CLASS_LABELS[facility.inclusion_class] ?? titleCase(facility.inclusion_class);
   const accessLabel = ACCESS_LABELS[facility.public_access_class];
+  const registryRefs = (facility.source_refs ?? [])
+    .map((ref) => ({ ref, label: formatSourceRef(ref) }))
+    .filter((entry, index, all) => all.findIndex((item) => item.label === entry.label) === index);
 
   return (
     <article className="group border-b border-[#d1d8e6] bg-white">
@@ -71,6 +75,19 @@ export function FacilityCard({ facility }: { facility: FacilitySummary }) {
                   : "Coordinates unknown"}
               </span>
             </p>
+            {registryRefs.length > 0 ? (
+              <p className="font-ui text-xs">
+                <span className="font-semibold uppercase tracking-wide">Registry ID:</span>{" "}
+                {registryRefs.map(({ ref, label }, index) => (
+                  <span key={`${ref.dataset_slug}:${ref.source_record_id}`}>
+                    {index > 0 ? " · " : ""}
+                    <span title={`${ref.agency_code} · ${ref.dataset_slug} · ${ref.source_record_id}`}>
+                      {label}
+                    </span>
+                  </span>
+                ))}
+              </p>
+            ) : null}
             <p>
               Source records: {facility.source_count} · Canonical record updated{" "}
               {formatDateTime(facility.updated_at)}

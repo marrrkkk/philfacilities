@@ -200,23 +200,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/schools/{facility_id}/enrollment": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** School enrollment observations */
-        get: operations["get_school_enrollment_v1_schools__facility_id__enrollment_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/schools/{facility_id}/resources": {
         parameters: {
             query?: never;
@@ -1112,7 +1095,7 @@ export interface components {
              */
             publication_status: string;
             /** Coverage Scope */
-            coverage_scope?: ("NATIONAL_OFFICIAL_INVENTORY" | "NATIONAL_PARTIAL" | "REGIONAL" | "PARTICIPATING_LGUS" | "SELECTED_LGUS" | "SINGLE_LGU" | "DIRECTORY_SUBSET" | "DISCOVERY_LAYER" | "UNKNOWN_COVERAGE") | null;
+            coverage_scope?: ("NATIONAL" | "NATIONAL_OFFICIAL_INVENTORY" | "NATIONAL_PARTIAL" | "REGIONAL" | "PARTICIPATING_LGUS" | "SELECTED_LGUS" | "SINGLE_LGU" | "DIRECTORY_SUBSET" | "DISCOVERY_LAYER" | "UNKNOWN_COVERAGE") | null;
             /** Coverage Note */
             coverage_note?: string | null;
             /** Update Pattern */
@@ -1127,24 +1110,6 @@ export interface components {
             publication_gate_status?: string | null;
             latest_release?: components["schemas"]["LatestReleaseOut"] | null;
             latest_geography_release?: components["schemas"]["GeographyReleaseOut"] | null;
-        };
-        /** EnrollmentObservationOut */
-        EnrollmentObservationOut: {
-            /** School Year */
-            school_year: string;
-            /** Grade Level */
-            grade_level: string;
-            /** Sex */
-            sex: string;
-            /** Learner Count */
-            learner_count?: number | null;
-            /**
-             * Observed At
-             * Format: date-time
-             */
-            observed_at: string;
-            /** Source Record Id */
-            source_record_id?: string | null;
         };
         /** FacilityDetail */
         FacilityDetail: {
@@ -1219,6 +1184,8 @@ export interface components {
              * @default 0
              */
             source_count: number;
+            /** Source Refs */
+            source_refs?: components["schemas"]["SourceRefOut"][];
             /**
              * Updated At
              * Format: date-time
@@ -1514,6 +1481,8 @@ export interface components {
              * @default 0
              */
             source_count: number;
+            /** Source Refs */
+            source_refs?: components["schemas"]["SourceRefOut"][];
             /**
              * Updated At
              * Format: date-time
@@ -2018,8 +1987,6 @@ export interface components {
         /** SchoolDetailResponse */
         SchoolDetailResponse: {
             facility: components["schemas"]["FacilityDetail"];
-            /** Enrollment */
-            enrollment: components["schemas"]["EnrollmentObservationOut"][];
             /** Resources */
             resources: components["schemas"]["ResourceObservationOut"][];
         };
@@ -2047,10 +2014,6 @@ export interface components {
             offers_jhs?: boolean | null;
             /** Offers Shs */
             offers_shs?: boolean | null;
-            /** Reference School Year */
-            reference_school_year?: string | null;
-            /** Enrollment Total */
-            enrollment_total?: number | null;
             /** Source Record Id */
             source_record_id?: string | null;
         };
@@ -2265,6 +2228,21 @@ export interface components {
             next_check_at?: string | null;
             /** Warning */
             warning?: string | null;
+        };
+        /**
+         * SourceRefOut
+         * @description Compact public identity of one source record behind a facility.
+         *
+         *     Raw source values are preserved in the source record; this ref exists so a
+         *     list result can distinguish registries that publish the same facility name.
+         */
+        SourceRefOut: {
+            /** Agency Code */
+            agency_code: string;
+            /** Dataset Slug */
+            dataset_slug: string;
+            /** Source Record Id */
+            source_record_id: string;
         };
         /** StatisticsOut */
         StatisticsOut: {
@@ -2838,39 +2816,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SchoolDetailResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_school_enrollment_v1_schools__facility_id__enrollment_get: {
-        parameters: {
-            query?: {
-                school_year?: string | null;
-            };
-            header?: never;
-            path: {
-                facility_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["EnrollmentObservationOut"][];
                 };
             };
             /** @description Validation Error */

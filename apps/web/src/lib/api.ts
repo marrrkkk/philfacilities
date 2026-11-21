@@ -17,7 +17,6 @@ export type AttributeAssertionOut = components["schemas"]["AttributeAssertionOut
 export type SchoolProfileOut = components["schemas"]["SchoolProfileOut"];
 export type HealthProfileOut = components["schemas"]["HealthProfileOut"];
 export type AccreditationOut = components["schemas"]["AccreditationOut"];
-export type EnrollmentObservationOut = components["schemas"]["EnrollmentObservationOut"];
 export type ResourceObservationOut = components["schemas"]["ResourceObservationOut"];
 export type LicenseOut = components["schemas"]["LicenseOut"];
 export type SchoolDetailResponse = components["schemas"]["SchoolDetailResponse"];

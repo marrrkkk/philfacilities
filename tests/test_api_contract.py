@@ -22,7 +22,6 @@ REQUIRED_PATHS = {
     "/v1/accreditations",
     "/v1/schools",
     "/v1/schools/{facility_id}",
-    "/v1/schools/{facility_id}/enrollment",
     "/v1/schools/{facility_id}/resources",
     "/v1/health-facilities",
     "/v1/health-facilities/{facility_id}",
@@ -64,6 +63,8 @@ def test_openapi_contains_the_public_read_contract(openapi_client):
     assert document["info"]["description"].find("is_synthetic") > 0
     paths = set(document["paths"])
     assert paths == REQUIRED_PATHS
+    assert "/v1/schools/{facility_id}/enrollment" not in paths
+    assert "EnrollmentObservationOut" not in document["components"]["schemas"]
 
     schema_names = set(document["components"]["schemas"])
     assert {
@@ -90,6 +91,7 @@ def test_openapi_contains_the_public_read_contract(openapi_client):
     facility_summary = document["components"]["schemas"]["FacilitySummary"]["properties"]
     assert facility_summary["is_synthetic"]["type"] == "boolean"
     assert facility_summary["source_count"]["type"] == "integer"
+    assert facility_summary["source_refs"]["items"]["$ref"].endswith("SourceRefOut")
     assert facility_summary["location"]["$ref"].endswith("LocationOut")
 
 

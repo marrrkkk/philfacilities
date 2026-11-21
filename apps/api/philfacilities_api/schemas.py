@@ -31,6 +31,8 @@ FacilityKind = Literal[
     "project",
 ]
 CoverageScope = Literal[
+    # Legacy value still present in earlier retained source datasets.
+    "NATIONAL",
     "NATIONAL_OFFICIAL_INVENTORY",
     "NATIONAL_PARTIAL",
     "REGIONAL",
@@ -149,17 +151,6 @@ class SchoolProfileOut(BaseModel):
     offers_es: bool | None = None
     offers_jhs: bool | None = None
     offers_shs: bool | None = None
-    reference_school_year: str | None = None
-    enrollment_total: int | None = None
-    source_record_id: uuid.UUID | None = None
-
-
-class EnrollmentObservationOut(BaseModel):
-    school_year: str
-    grade_level: str
-    sex: str
-    learner_count: int | None = None
-    observed_at: datetime
     source_record_id: uuid.UUID | None = None
 
 
@@ -295,6 +286,18 @@ class ContactOut(BaseModel):
     review_status: str
 
 
+class SourceRefOut(BaseModel):
+    """Compact public identity of one source record behind a facility.
+
+    Raw source values are preserved in the source record; this ref exists so a
+    list result can distinguish registries that publish the same facility name.
+    """
+
+    agency_code: str
+    dataset_slug: str
+    source_record_id: str
+
+
 class FacilitySummary(BaseModel):
     id: uuid.UUID
     slug: str | None = None
@@ -314,6 +317,7 @@ class FacilitySummary(BaseModel):
     location: LocationOut
     geography: GeographyOut
     source_count: int = 0
+    source_refs: list[SourceRefOut] = Field(default_factory=list)
     updated_at: datetime
 
 
@@ -390,7 +394,6 @@ class NearbyResponse(BaseModel):
 
 class SchoolDetailResponse(BaseModel):
     facility: FacilityDetail
-    enrollment: list[EnrollmentObservationOut]
     resources: list[ResourceObservationOut]
 
 
