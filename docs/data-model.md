@@ -24,7 +24,7 @@ The model separates four things that are easy to conflate: the canonical facilit
 | `source` | Agencies, datasets, releases, raw records, facility links, ingestion runs, source checks, rollback snapshots |
 | `core` | Canonical facilities, functions, services, roles, relationships, locations, attribute assertions/fusions |
 | `geo` | Geographic releases, administrative units, crosswalks |
-| `school` | School profiles, enrollment observations, resource observations |
+| `school` | School profiles and resource observations |
 | `health` | Health profiles, licences, accreditations |
 | `stats` | Population and household observations, kept separate from facilities |
 | `quality` | Data-quality issues, identity-match candidates, publication gates |
@@ -119,7 +119,6 @@ Derived reference geometry from one preserved Geofabrik PBF snapshot. `osm_type`
 ### School (`school`)
 
 - `profiles` — `facility_id`, `deped_school_id`, `sector`, `school_management`, `division`, `district`, `legislative_district`, `settlement_type`, `offering_classification`, `offers_es`, `offers_jhs`, `offers_shs`, source record, validity.
-- `enrollment_observations` — long format by school year, grade level, and sex; learner count nullable.
 - `resource_observations` — long format by school year and resource code; numeric/text value and unit.
 
 ### Health (`health`)
@@ -164,7 +163,7 @@ Preferred order:
 4. Similar name + locality + address/phone evidence produces a candidate only.
 5. Conflicting IDs or distant coordinates remain unmerged candidates until the resolution pass.
 
-Candidates live in `quality.match_candidates`. The automated path merges only the exact normalized name + same PSGC + exact address rule; every less certain candidate stays `pending` with its evidence. `pending` is not a human approval queue. `match-candidates-resolve` re-evaluates the queue, merges a pair only when it still qualifies and the target is the preferred survivor, and rejects stale, cross-type, conflicting or weak pairs with a recorded reason. Rejection is terminal for that pair and algorithm version. Explicit accept/reject/merge commands exist for operator investigation, not as a prerequisite for publication. A merge moves source links, locations, observations, profiles, licences, accreditations, contacts, assertions, and issues to the surviving facility. Duplicate contacts stay on the source tombstone rather than violating `uq_facility_contact_source`; only contacts that moved are restored by undo. The retired facility stays as an internal `merged` tombstone. Change events `facility_merged_into` and `facility_merged_from` preserve the audit trail.
+Candidates live in `quality.match_candidates`. The automated path merges only evidence-backed clusters: strong location bridges (same barangay, address, shared official ID, or points within 250 m) plus every pair in the cluster being eligible. A map-derived OSM education pair may use a 100 m same-agency point bridge when the exact institution name, barangay, dataset and institution amenity agree; other community layers keep the 50 m point rule so distinct nearby branches are not merged. An address-only official row can bridge to a mapped community row only when exact names, city and independent address claims agree and no competing distant mapped point makes the official row ambiguous. Every less certain candidate stays `pending` with its evidence. `pending` is not a human approval queue. `match-candidates-resolve` re-evaluates the queue, merges a pair only when it still qualifies and the target is the preferred survivor, and rejects stale, cross-type, conflicting or weak pairs with a recorded reason. Rejection is terminal for that pair and algorithm version. Explicit accept/reject/merge commands exist for operator investigation, not as a prerequisite for publication. A merge moves source links, locations, observations, profiles, licences, accreditations, contacts, assertions, and issues to the surviving facility. Duplicate contacts stay on the source tombstone rather than violating `uq_facility_contact_source`; only contacts that moved are restored by undo. The retired facility stays as an internal `merged` tombstone. Change events `facility_merged_into` and `facility_merged_from` preserve the audit trail.
 
 ## 9. Time semantics
 

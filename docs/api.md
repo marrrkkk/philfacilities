@@ -76,6 +76,8 @@ GET /v1/facilities/{facility_id}/export.csv   (not in OpenAPI)
 
 `/sources` returns the publication-cleared source records behind the facility. `/assertions` returns the exact source claims behind canonical fields; use `attribute=` to narrow to one field (for example `location.precision`). A field may have multiple claims; the endpoint does not pick a winner or erase a disagreement. `/history` returns canonical change events.
 
+Every `FacilitySummary` also carries `source_refs[]` — the agency code, dataset slug and source record key for each public source behind the current membership. It is a compact identity aid for list results: registries that publish the same facility name (for example CHED `04131` and DepEd `427036` for two different University of Batangas records) can be told apart without fetching `/sources` for every card. Full provenance remains on `/sources`.
+
 Detail responses include `location.postal_code` when the source supplied one, and `contacts[]` for source-linked institutional phone, email, website, and opening-hours channels. Contacts keep their `source_record_id` and `source_field`; the API does not select one source's phone number as the national truth. Accreditation phone, email, street address, and municipality stay inside `accreditations[]` because they describe a time-bounded accreditation row, not necessarily the facility's current general contact details. A school detail carries `school`; a health facility carries `health`; a power plant carries `utility` with DOE resource, grid, capacity, unit and commissioning fields. Each profile is null when no public source record supplies it.
 
 The per-facility CSV export returns a small flat row and is hidden from the OpenAPI schema, so it does not appear in generated clients. It applies the same publication gate as the JSON detail. Use `/v1/downloads/facilities.csv` for bulk analysis.
@@ -85,7 +87,6 @@ The per-facility CSV export returns a small flat row and is hidden from the Open
 ```http
 GET /v1/schools
 GET /v1/schools/{facility_id}
-GET /v1/schools/{facility_id}/enrollment?school_year=...
 GET /v1/schools/{facility_id}/resources?school_year=...
 ```
 

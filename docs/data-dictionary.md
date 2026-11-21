@@ -10,7 +10,7 @@ The public API is read-only. Records that fail the publication gate are absent: 
 
 ## 1. Reading rules
 
-1. **`null` means unknown or not supplied.** It does not mean zero, `false`, inactive, closed, or not applicable. An empty enrollment count is not `0`; an absent bed count is not `0`.
+1. **`null` means unknown or not supplied.** It does not mean zero, `false`, inactive, closed, or not applicable. An absent bed count is not `0`.
 2. **A source publication date is not a retrieval date.** `source_published_at`, the reference period, `retrieved_at`, and `processed_at` are separate facts.
 3. **`updated_at` is a PhilFacilities edit time.** It is not an agency's update time and does not imply that the facility changed in the real world.
 4. **Codes are strings.** PSGC codes preserve leading zeros. Do not parse them as integers.
@@ -397,7 +397,7 @@ The current release is the BetterGov Q2 2024 mirror (`PSGC-Q2-2024-BETTERGOV`), 
 
 ## 9. School domain
 
-Endpoints: `GET /v1/schools`, `GET /v1/schools/{facility_id}`, `GET /v1/schools/{facility_id}/enrollment`, `GET /v1/schools/{facility_id}/resources`
+Endpoints: `GET /v1/schools`, `GET /v1/schools/{facility_id}`, `GET /v1/schools/{facility_id}/resources`
 Bulk: `GET /v1/downloads/schools.csv`
 
 | Field | Meaning |
@@ -411,18 +411,15 @@ Bulk: `GET /v1/downloads/schools.csv`
 | `settlement_type` | Source settlement class: `urban`, `partially_urban`, or `rural` |
 | `offering_classification` | Combined offering category exactly as published, such as `purely_es` or `jhs_with_shs` |
 | `offers_es`, `offers_jhs`, `offers_shs` | Whether the source says the school offers each level |
-| `reference_school_year` | School year the profile describes |
-| `enrollment_total` | Latest total when a matching observation exists; otherwise null |
-| `enrollment[]` | Dated observations by school year, grade level, and sex |
 | `resources[]` | Dated ICT/WASH/resource observations with numeric or text values |
 
-Boolean school offerings are tri-state: `true`, `false`, or `null` for unknown. Do not treat null as `false`. Enrollment observations remain separate rows so historical years are not overwritten.
+Boolean school offerings are tri-state: `true`, `false`, or `null` for unknown. Do not treat null as `false`.
 
 The SY 2020-2021 DepEd Masterlist supplies explicit sector evidence for 60,924 exact six-digit BEIS IDs. Its `Public` rows map to `ownership=government`, `ownership_type=GOVERNMENT_UNSPECIFIED`, `inclusion_class=GOVERNMENT_FACILITY`; `Private` rows map to `ownership=private`, `ownership_type=PRIVATE_UNSPECIFIED`, `inclusion_class=PRIVATE_PUBLIC_SERVICE_PROVIDER`; and `SUCs/LUCs` rows map to `ownership=government`, `ownership_type=PUBLIC_EDUCATIONAL_INSTITUTION`, `inclusion_class=GOVERNMENT_FACILITY`. The release is enrichment-only: it fills unknown values by exact BEIS ID and never renames a facility, replaces a school profile's established values, or downgrades an established classification.
 
 BetterGov Open Data Portal dataset 41 republishes the same masterlist as a CC BY 4.0 CSV. It adds the school division, district, legislative district, settlement type, management class, and combined offering classification that are clipped or absent in the PDF. It is a second enrichment-only release keyed by the same six-digit BEIS ID. It never creates an unmatched school. Derived offering booleans are set only from the explicit combined categories; unknown categories stay null.
 
-Most currently published schools come from the HOT/OSM education extract. They are crowd-sourced map features, not DepEd records: `deped_school_id`, `sector`, `school_management`, and the offering flags are normally null, and enrollment/resources endpoints return an empty list unless a public observation exists. DepEd EBEIS rows are published with institution-level fields, and school-head names are withheld. Of the 83,218 EBEIS IDs, 60,924 carry sector, management, division, district, legislative-district, settlement, and offering values from the 2020 masterlist; 11,614 newer six-digit IDs, 9,579 seven-digit private-school variants, and 1,101 five-digit IDs remain unknown. Do not interpret an OSM school as an official DepEd school.
+Most currently published schools come from the HOT/OSM education extract. They are crowd-sourced map features, not DepEd records: `deped_school_id`, `sector`, `school_management`, and the offering flags are normally null, and the resources endpoint returns an empty list unless a public observation exists. DepEd EBEIS rows are published with institution-level fields, and school-head names are withheld. Of the 83,218 EBEIS IDs, 60,924 carry sector, management, division, district, legislative-district, settlement, and offering values from the 2020 masterlist; 11,614 newer six-digit IDs, 9,579 seven-digit private-school variants, and 1,101 five-digit IDs remain unknown. Do not interpret an OSM school as an official DepEd school.
 
 ## 10. Health domain
 
