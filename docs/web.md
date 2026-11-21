@@ -30,9 +30,12 @@ Route files live in `apps/web/src/app/`; reusable components in `apps/web/src/co
 - Server components fetch from the API in `apps/web/src/lib/api.ts`.
 - `API_BASE_URL` is used server-side. `NEXT_PUBLIC_API_URL` is used by browser components and inlined at build time.
 - Live facility data is fetched with `cache: "no-store"`. Reference data such as administrative units and the source register may use short `revalidate` windows (30–300 seconds). Do not cache facility data indefinitely.
+- Live data pages use `export const dynamic = "force-dynamic"` so counts, status, and provenance are not frozen at build time.
+- Monitoring is fetched without a cache because it reports the latest run.
 - A 404 from a detail endpoint maps to `notFound()`. Other API failures surface an error state; they do not render invented fallback data.
 - The browser map calls `/v1/facilities/map` directly with `NEXT_PUBLIC_API_URL`; server components use the internal API origin.
 - All API types come from `@philfacilities/api-client/schema`. Do not redeclare response shapes by hand.
+- Category, subtype, inclusion, ownership, operator, facility-kind, access, and contact labels come from `GET /v1/taxonomy`. `apps/web/src/lib/taxonomy.ts` maps codes to labels; do not add a second hardcoded vocabulary.
 
 ```text
 browser → Next.js server component → lib/api.ts → FastAPI /v1
@@ -51,6 +54,8 @@ browser → MapLibre → /v1/facilities/map → FastAPI /v1
 - Search is debounced (~350 ms). Typing in either search input fetches `/v1/facilities` from the browser, aborts stale requests, and replaces only the result count, cards, pagination, active-filter chip, and map link. The URL is kept shareable with `history.replaceState`; the page is not reloaded. The remaining filter controls still submit a GET request.
 - Geography options load hierarchically: regions and provinces first, then municipalities for the selected province (or for the selected region's provinces and any region-direct cities such as NCR), then barangays for the selected municipality. A bookmarked child code is resolved directly when it is not in the loaded option lists.
 - Search is also available from the header and landing page through `SearchForm`, which submits a GET request to `/directory`.
+- Geography options come from `/v1/geographies`, paginated to completion. Barangays are loaded only for the selected city or municipality; do not issue a national barangay query.
+- Subtype options are grouped under their taxonomy category. Selecting a category must not silently keep an incompatible subtype.
 
 When adding a filter:
 
@@ -65,8 +70,11 @@ When adding a filter:
 
 - The basemap is configured in `apps/web/src/lib/map-style.ts`.
 - MapLibre's worker is copied to `public/vendor/maplibre-gl` by `scripts/copy-maplibre-worker.mjs`; `configureMapLibreWorker()` must run before creating a map.
-- Viewport queries are debounced and abort stale requests. The endpoint returns individual points up to 500 records; above that threshold the server returns grid clusters with counts, so wide and national views always draw markers instead of failing.
+- Viewport queries to `/v1/facilities/map` are debounced and abort stale requests. The endpoint returns individual points up to 500 records; above that threshold the server returns grid clusters with counts, so wide and national views always draw markers instead of failing.
 - Cluster circles show their record count. Selecting a circle zooms in; selecting an individual marker opens the facility card.
+- Bounds queries to `/v1/facilities/within` are debounced and capped (`MAX_MAP_FEATURES`); the response reports truncation.
+- Every map filter is kept in the URL and sent to the bounds query: taxonomy category/subtype, inclusion, ownership, operator type, facility kind, access class, region, province, municipality, barangay, source agency, precision, reference period, and update time. Changing a parent geography clears its dependent selections.
+- The directory's map link carries the same filter state and drops only `has_coordinates=false`, which cannot produce a mapped subset.
 - Markers must reflect recorded precision. Do not render a `barangay_centroid` or `unknown` point as a building-level pin.
 - The result list is a full text alternative, not a fallback afterthought. In points mode it lists every returned facility; in cluster mode it lists every count circle and never replaces the list with a map-only view.
 - The directory must remain usable if tiles fail. Map failure is not a page failure.

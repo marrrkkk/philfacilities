@@ -5,7 +5,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { type QualitySummary, type SourceMonitoringOut, apiBaseUrl, getHealth, getQualitySummary, listMonitoring } from "@/lib/api";
-import { formatDateTime, formatNumber, titleCase } from "@/lib/format";
+import { formatDateTime, formatNumber, ingestionRunTone, titleCase } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -127,7 +127,7 @@ export default async function StatusPage() {
                       {run.dataset}
                     </td>
                     <td className="border-b border-[#d1d8e6] p-3">
-                      <Badge tone={run.status === "published" ? "success" : "warning"}>
+                      <Badge tone={ingestionRunTone(run.status)}>
                         {titleCase(run.status)}
                       </Badge>
                     </td>
@@ -164,6 +164,7 @@ export default async function StatusPage() {
                   <th className="border-b border-[#d1d8e6] p-3">HTTP</th>
                   <th className="border-b border-[#d1d8e6] p-3">Last success</th>
                   <th className="border-b border-[#d1d8e6] p-3">Latest release</th>
+                  <th className="border-b border-[#d1d8e6] p-3">Latest run</th>
                 </tr>
               </thead>
               <tbody>
@@ -202,6 +203,36 @@ export default async function StatusPage() {
                           {formatNumber(item.latest_release_rows)} rows
                         </span>
                       ) : null}
+                    </td>
+                    <td className="border-b border-[#d1d8e6] p-3 text-xs">
+                      {item.latest_run_status ? (
+                        <>
+                          <Badge
+                            tone={ingestionRunTone(item.latest_run_status)}
+                          >
+                            {titleCase(item.latest_run_status)}
+                          </Badge>
+                          {item.latest_run_at ? (
+                            <span className="mt-1 block text-[#5a5a58]">
+                              {formatDateTime(item.latest_run_at)}
+                            </span>
+                          ) : null}
+                          <span className="mt-1 block text-[#5a5a58]">
+                            {item.latest_run_acceptance_rate != null
+                              ? `${(item.latest_run_acceptance_rate * 100).toFixed(1)}% accepted`
+                              : "Acceptance unknown"}
+                            {" · "}
+                            {item.latest_run_rejection_rate != null
+                              ? `${(item.latest_run_rejection_rate * 100).toFixed(1)}% rejected`
+                              : "Rejection unknown"}
+                            {item.latest_run_duration_ms != null
+                              ? ` · ${(item.latest_run_duration_ms / 1000).toFixed(1)} s`
+                              : ""}
+                          </span>
+                        </>
+                      ) : (
+                        "No run recorded"
+                      )}
                     </td>
                   </tr>
                 ))}

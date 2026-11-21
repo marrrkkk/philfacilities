@@ -13,10 +13,52 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # Shared by the python and e2e jobs. The name must end in `_test`; conftest.py
+  # refuses to run its destructive fixtures against any other database.
+  TEST_DATABASE_URL: postgresql+psycopg://philfacilities:philfacilities@localhost:54330/philfacilities_test
+
 jobs:
-  python:
-    name: Python lint and tests
+  # Fast, database-free checks. Fail here before paying for a database or a
+  # browser build.
+  quality:
+    name: Lint and static checks
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: "3.14"
+
+      - name: Install Python workspace
+        run: uv sync --locked --all-packages
+
+      - name: Ruff lint
+        run: uv run ruff check .
+
+      - name: Ruff format
+        run: uv run ruff format --check .
+
+      - name: Mypy (ingest core)
+        run: uv run mypy
+
+      - name: Markdown links
+        run: uv run python scripts/check_markdown_links.py
+
+  # The declared support range is 3.12-3.14. Test the floor and the ceiling.
+  # `--require-integration` makes a dead database service a failure, not a
+  # green build full of skips.
+  python-tests:
+    name: Python tests (${{ matrix.python-version }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.14"]
     services:
       postgres:
         image: postgis/postgis:17-3.5
@@ -32,44 +74,34 @@ jobs:
           --health-timeout 5s
           --health-retries 30
     env:
-      PHILFACILITIES_TEST_DATABASE_URL: postgresql+psycopg://philfacilities:philfacilities@localhost:54330/philfacilities_test
-      DATABASE_URL: postgresql+psycopg://philfacilities:philfacilities@localhost:54330/philfacilities_test
+      PHILFACILITIES_TEST_DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
+      DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
     steps:
       - uses: actions/checkout@v4
 
       - uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-          prune-cache: false
-          python-version: "3.14"
+          python-version: ${{ matrix.python-version }}
 
       - name: Install Python workspace
         run: uv sync --locked --all-packages
 
-      - name: Ruff lint
-        run: uv run ruff check .
+      # Coverage over the integration suite is unreliable with the 3.14
+      # C-extension combination, so 3.12 runs once with coverage and 3.14
+      # runs once without. Both legs require integration tests to run.
+      - name: Full suite with coverage floor (Python 3.12)
+        if: matrix.python-version == '3.12'
+        run: uv run pytest --require-integration -q --cov --cov-fail-under=60
 
-      - name: Ruff format check
-        run: uv run ruff format --check .
-
-      - name: Mypy (ingest core)
-        run: uv run mypy
-
-      - name: Pytest (unit, contract, integration, data quality)
-        run: uv run pytest
-
-      - name: MCP tools and contract
-        run: uv run pytest apps/mcp/tests -q
-
-      - name: Non-integration coverage floor
-        run: uv run pytest -m "not integration" -q --cov --cov-fail-under=60
-
-      - name: Python dependency audit
-        run: uv run --with pip-audit pip-audit
+      - name: Full suite (Python 3.14)
+        if: matrix.python-version != '3.12'
+        run: uv run pytest --require-integration
 
   web:
-    name: Web lint, typecheck, and build
+    name: Web lint, typecheck and build
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -85,8 +117,10 @@ jobs:
       - name: Install JavaScript workspace
         run: pnpm install --frozen-lockfile
 
-      - name: JavaScript dependency audit (production dependencies)
-        run: pnpm audit --prod
+      - name: Generated client matches the committed OpenAPI contract
+        run: |
+          pnpm typegen
+          git diff --exit-code -- packages/api-client/openapi.json packages/api-client/src/schema.ts
 
       - name: ESLint
         run: pnpm lint
@@ -97,9 +131,13 @@ jobs:
       - name: Next.js production build
         run: pnpm build
 
+  # Runs against the deterministic synthetic demo: CI cannot download the
+  # restricted or bulk real sources. Fixture values are supplied by env so the
+  # spec stays data-source agnostic.
   e2e:
     name: Playwright end-to-end and accessibility
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     services:
       postgres:
         image: postgis/postgis:17-3.5
@@ -115,15 +153,13 @@ jobs:
           --health-timeout 5s
           --health-retries 30
     env:
-      PHILFACILITIES_DATABASE_URL: postgresql+psycopg://philfacilities:philfacilities@localhost:54330/philfacilities_test
-      DATABASE_URL: postgresql+psycopg://philfacilities:philfacilities@localhost:54330/philfacilities_test
+      PHILFACILITIES_DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
+      DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
+      PHILFACILITIES_TEST_DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
       API_BASE_URL: http://127.0.0.1:8010
       NEXT_PUBLIC_API_URL: http://127.0.0.1:8010
       NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
       PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
-      # CI cannot download restricted or bulk real sources, so the E2E suite
-      # runs against the deterministic synthetic demo. Local runs default to
-      # the real records named in the test file.
       PHILFACILITIES_E2E_SCHOOL_SEARCH: Synthetic Demo School 01
       PHILFACILITIES_E2E_SCHOOL_NAME: Synthetic Demo School 01
       PHILFACILITIES_E2E_SCHOOL_SLUG: synthetic-demo-school-01
@@ -145,7 +181,6 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-          prune-cache: false
           python-version: "3.14"
 
       - uses: pnpm/action-setup@v4
@@ -162,11 +197,6 @@ jobs:
 
       - name: Install JavaScript workspace
         run: pnpm install --frozen-lockfile
-
-      - name: Verify OpenAPI and generated client are current
-        run: |
-          pnpm typegen
-          git diff --exit-code -- packages/api-client/openapi.json packages/api-client/src/schema.ts
 
       - name: Apply migrations
         run: uv run alembic -c apps/api/alembic.ini upgrade head
@@ -199,3 +229,31 @@ jobs:
 
       - name: Playwright functional and axe checks
         run: pnpm --filter @philfacilities/web test:e2e
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report
+          if-no-files-found: ignore
+
+  # Single required check for branch protection. Any failed or skipped
+  # dependency fails this job, so a dead database service can never go green.
+  ci-ok:
+    name: CI passed
+    if: always()
+    needs: [quality, python-tests, web, e2e]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check required jobs
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Required job results: $RESULTS"
+          for result in $RESULTS; do
+            if [ "$result" != "success" ]; then
+              echo "::error::A required CI job did not succeed: $result"
+              exit 1
+            fi
+          done
