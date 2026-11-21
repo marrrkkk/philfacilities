@@ -60,37 +60,37 @@ const entryPoints = [
     href: "/directory?type=government_office",
     icon: Database,
     label: "Government offices",
-    description: "National agency field offices, city and municipal halls, barangay halls, post offices, and Negosyo Centers.",
+    description: "Field offices, city and municipal halls, barangay halls, and post offices.",
   },
   {
     href: "/directory?type=school",
     icon: School,
     label: "Education",
-    description: "Public and private schools, higher-education institutions, and training sites with source precision labels.",
+    description: "Public and private schools, universities, and training sites.",
   },
   {
     href: "/directory?type=health_facility",
     icon: Stethoscope,
     label: "Healthcare",
-    description: "Hospitals, rural health units, barangay health stations, clinics, and pharmacies with dated accreditation evidence.",
+    description: "Hospitals, rural health units, barangay health stations, clinics, and pharmacies.",
   },
   {
     href: "/directory?type=library",
     icon: BookOpenCheck,
     label: "Libraries",
-    description: "Regional, provincial, city, municipal, barangay reading centres, and congressional libraries.",
+    description: "Public libraries, reading centres, and congressional libraries.",
   },
   {
     href: "/directory?type=transport_facility",
     icon: ArrowRight,
     label: "Transport",
-    description: "Rail stations, ports, terminals, and other transport facilities linked to a source release.",
+    description: "Rail stations, ports, and terminals.",
   },
   {
     href: "/map",
     icon: MapIcon,
     label: "Map",
-    description: "Explore every geocoded category with precision-aware markers and a full text alternative.",
+    description: "Mapped facilities with precision-aware markers and a full text list.",
   },
 ];
 
@@ -105,22 +105,33 @@ export default async function HomePage() {
     .filter((category) => category.count > 0)
     .sort((a, b) => b.count - a.count);
   const publishedCategories = categories.length;
+  const categoryLink = (category: (typeof categories)[number]) => (
+    <Link
+      key={category.code}
+      href={`/directory?type=${category.code}`}
+      className="flex items-baseline justify-between gap-4 bg-white p-4 no-underline hover:bg-[#eef4ff]"
+    >
+      <span className="font-ui text-sm font-bold text-[#0a0a0a]">{category.label}</span>
+      <span className="font-display text-lg font-bold text-[#0038a8]">
+        {formatNumber(category.count)}
+      </span>
+    </Link>
+  );
 
   return (
     <>
       <section className="border-b border-[#d1d8e6] bg-[#f4f7fc]">
         <div className="container-page grid gap-10 py-14 lg:grid-cols-[1.15fr_0.85fr] lg:py-20">
           <div>
-            <p className="eyebrow rule-label text-[#0038a8]">Open public data infrastructure</p>
+            <p className="eyebrow rule-label text-[#0038a8]">Open facility data</p>
             <h1 className="mt-5 max-w-3xl font-display text-4xl font-extrabold leading-[0.95] tracking-tight sm:text-5xl lg:text-6xl">
               Find a Philippine public facility.
-              <span className="text-[#0038a8]"> See where the record came from.</span>
+              <span className="text-[#0038a8]"> See the source behind every record.</span>
             </h1>
             <p className="mt-6 max-w-2xl font-sans text-lg leading-relaxed text-[#3f434a]">
-              PhilFacilities links agency source releases to canonical records for schools, health
-              facilities, government offices, libraries, transport, utilities, markets, museums,
-              housing, justice, and environmental monitoring. Source identifiers, reference periods,
-              retrieval times, and location precision travel with every result.
+              PhilFacilities links published records to the agency release they came from. Search
+              schools, health facilities, government offices, libraries, and more. Each record keeps
+              its source ID, reference period, and location precision.
             </p>
             <div className="mt-8 max-w-2xl">
               <SearchForm categories={taxonomy?.categories ?? []} />
@@ -130,12 +141,12 @@ export default async function HomePage() {
                 Browse the directory
               </Link>
               <Link href="/data" className={cn(buttonVariants({ variant: "outline" }))}>
-                Inspect the data sources
+                View data sources
               </Link>
             </div>
           </div>
 
-          <aside className="border border-[#c3ccdd] bg-white p-6">
+          <aside className="border border-[#c3ccdd] bg-white p-6 lg:self-start">
             <div className="flex items-center justify-between gap-3 border-b border-[#d1d8e6] pb-4">
               <div>
                 <p className="eyebrow text-[#5a5a58]">Measured coverage</p>
@@ -158,9 +169,11 @@ export default async function HomePage() {
                   ["Published categories", publishedCategories],
                   ["With coordinates", stats?.with_coordinates],
                   ["Source releases", stats?.source_releases],
-                  ["Synthetic fixtures", stats?.synthetic],
-                ].map(([label, value]) => (
-                  <div key={String(label)} className="bg-white p-4">
+                ].map(([label, value], index, items) => (
+                  <div
+                    key={String(label)}
+                    className={cn("bg-white p-4", index === items.length - 1 && "col-span-2")}
+                  >
                     <dt className="font-ui text-[11px] font-bold uppercase tracking-wide text-[#5a5a58]">
                       {label}
                     </dt>
@@ -172,8 +185,8 @@ export default async function HomePage() {
               </dl>
             )}
             <p className="mt-4 border-t border-[#d1d8e6] pt-4 font-ui text-xs leading-relaxed text-[#5a5a58]">
-              As of {asOf ? formatDateTime(asOf) : "an unknown time"}. Counts describe published
-              PhilFacilities records, not the complete national facility universe.
+              As of {asOf ? formatDateTime(asOf) : "an unknown time"}. Counts cover published
+              records only, not every facility in the country.
             </p>
           </aside>
         </div>
@@ -182,20 +195,18 @@ export default async function HomePage() {
       <div className="container-page">
         {stats && stats.synthetic > 0 ? (
         <Alert tone="warning" className="mt-8">
-          <AlertTitle>Labelled synthetic fixtures are mixed with real source records</AlertTitle>
+          <AlertTitle>This environment includes labelled synthetic records</AlertTitle>
           <AlertDescription>
-            {formatNumber(stats.synthetic)} generated records remain for regression testing and are
-            marked <code className="font-bold">is_synthetic=true</code> everywhere. All other
-            published facilities trace to a registered real source release. Do not cite a synthetic
-            record as official government data.
+            {formatNumber(stats.synthetic)} generated records remain for testing, each marked{" "}
+            <code className="font-bold">is_synthetic=true</code>. Do not cite them as official data.
           </AlertDescription>
         </Alert>
       ) : (
         <Alert tone="success" className="mt-8">
-          <AlertTitle>Published records trace to real, rights-cleared releases</AlertTitle>
+          <AlertTitle>Only rights-cleared records are published</AlertTitle>
           <AlertDescription>
-            The directory and API expose only facilities whose source release permits publication.
-            Coverage is partial and source-specific; it is not a claim of complete national coverage.
+            The directory and API show facilities whose source permits publication. Coverage varies
+            by source.
           </AlertDescription>
         </Alert>
       )}
@@ -205,20 +216,17 @@ export default async function HomePage() {
         <div className="grid gap-6 md:grid-cols-3">
           {entryPoints.map((entry) => (
             <Link key={entry.href} href={entry.href} className="group no-underline">
-              <Card className="h-full transition-colors group-hover:border-[#0038a8]">
+              <Card className="flex h-full flex-col transition-colors group-hover:border-[#0038a8]">
                 <CardHeader className="flex flex-row items-start justify-between gap-4">
-                  <div>
-                    <p className="eyebrow text-[#5a5a58]">Entry point</p>
-                    <CardTitle className="mt-2 text-2xl">{entry.label}</CardTitle>
-                  </div>
+                  <CardTitle className="text-2xl">{entry.label}</CardTitle>
                   <entry.icon aria-hidden="true" className="size-6 text-[#0038a8]" />
                 </CardHeader>
-                <CardContent>
+                <CardContent className="flex flex-1 flex-col">
                   <p className="font-sans text-sm leading-relaxed text-[#5a5a58]">
                     {entry.description}
                   </p>
-                  <span className="mt-4 inline-flex items-center gap-1 font-ui text-sm font-bold text-[#0038a8]">
-                    Open {entry.label.toLowerCase()}
+                  <span className="mt-auto inline-flex items-center gap-1 pt-4 font-ui text-sm font-bold text-[#0038a8]">
+                    View {entry.label.toLowerCase()}
                     <ArrowRight aria-hidden="true" className="size-4" />
                   </span>
                 </CardContent>
@@ -237,31 +245,18 @@ export default async function HomePage() {
                 id="coverage-heading"
                 className="mt-3 font-display text-3xl font-extrabold leading-tight"
               >
-                Every category that currently has published records
+                Categories with published records
               </h2>
             </div>
             <p className="max-w-md font-sans text-sm leading-relaxed text-[#5a5a58]">
-              Counts are published PhilFacilities records, not the national facility universe.
-              Categories with no rights-cleared release yet are listed as zero and are not shown as
-              coverage.
+              Counts cover published records only. Categories without a release are omitted.
             </p>
           </div>
-          <div className="mt-6 grid gap-px border border-[#d1d8e6] bg-[#d1d8e6] sm:grid-cols-2 lg:grid-cols-3">
-            {categories.map((category) => (
-              <Link
-                key={category.code}
-                href={`/directory?type=${category.code}`}
-                className="flex items-baseline justify-between gap-4 bg-white p-4 no-underline hover:bg-[#eef4ff]"
-              >
-                <span className="font-ui text-sm font-bold text-[#0a0a0a]">{category.label}</span>
-                <span className="font-display text-lg font-bold text-[#0038a8]">
-                  {formatNumber(category.count)}
-                </span>
-              </Link>
-            ))}
+          <div className="mt-6 grid gap-px border border-[#d1d8e6] bg-[#d1d8e6] sm:grid-cols-2">
+            {categories.map(categoryLink)}
             {categories.length === 0 ? (
               <p className="bg-white p-4 font-sans text-sm text-[#5a5a58]">
-                Category counts are unavailable because the statistics endpoint could not be read.
+                Category counts are unavailable.
               </p>
             ) : null}
           </div>
@@ -271,21 +266,19 @@ export default async function HomePage() {
       <section className="border-y border-[#d1d8e6] bg-white">
         <div className="container-page grid gap-10 py-14 lg:grid-cols-[0.9fr_1.1fr]">
           <div>
-            <p className="eyebrow rule-label text-[#0038a8]">How the records work</p>
+            <p className="eyebrow rule-label text-[#0038a8]">Data semantics</p>
             <h2 className="mt-4 font-display text-3xl font-extrabold leading-tight sm:text-4xl">
-              Provenance is part of the product, not a footer.
+              What every API record keeps.
             </h2>
             <p className="mt-4 font-sans text-base leading-relaxed text-[#5a5a58]">
-              A canonical facility is a join key, not a claim that two agencies describe the same
-              real-world building perfectly. We keep source rows, stable agency identifiers,
-              reference periods, and location precision attached to every published record.
+              Published records carry their source identifiers, reference period, and location
+              precision. Missing values stay null.
             </p>
             <ul className="mt-6 space-y-3 font-sans text-sm">
               {[
-                ["Source truth is preserved", "Original release files and source values are retained."],
-                ["Unknown is not false", "Missing capacity or status stays unknown; it is never zero or inactive."],
-                ["No silent merges", "Ambiguous matches keep their evidence and review status."],
-                ["API outlives the UI", "The public read contract is versioned and independently useful."],
+                ["Source values are preserved", "Original identifiers and values are never overwritten."],
+                ["Null means unknown", "Missing capacity or status is never zero, false, or closed."],
+                ["No auto-merges", "Ambiguous matches keep their evidence and review state."],
               ].map(([title, description]) => (
                 <li key={title} className="flex gap-3">
                   <ShieldCheck aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-[#1f6b3a]" />
@@ -302,7 +295,7 @@ export default async function HomePage() {
             <div className="flex items-end justify-between gap-4">
               <div>
                 <p className="eyebrow text-[#5a5a58]">Source register</p>
-                <h2 className="mt-2 font-display text-2xl font-bold">Latest releases in this environment</h2>
+                <h2 className="mt-2 font-display text-2xl font-bold">Latest source releases</h2>
               </div>
               <Link href="/data" className="font-ui text-sm font-bold text-[#0038a8]">
                 All datasets
@@ -349,12 +342,11 @@ export default async function HomePage() {
           <div className="min-w-0">
             <p className="eyebrow rule-label text-[#fcd116]">For developers and researchers</p>
             <h2 className="mt-4 max-w-2xl font-display text-3xl font-extrabold leading-tight sm:text-4xl">
-              Query the same source-linked records the directory uses.
+              Query the same records the directory uses.
             </h2>
             <p className="mt-3 max-w-2xl font-sans text-sm leading-relaxed text-white/70">
-              The OpenAPI contract is the boundary between the data product and its clients.
-              Cursor pagination, explicit source evidence, quality warnings, and dated releases are
-              part of the response model.
+              The OpenAPI contract is the boundary for clients. It includes cursor pagination,
+              source evidence, quality warnings, and dated releases.
             </p>
             <pre
               className="mt-5 overflow-x-auto border border-white/20 bg-white/5 p-4 font-mono text-xs leading-relaxed text-white/85 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"

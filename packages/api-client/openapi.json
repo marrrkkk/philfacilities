@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "PhilFacilities API",
-    "description": "PhilFacilities is an independent, source-linked registry of Philippine schools and\nhealth facilities. This API exposes canonical facility records, original source\nidentifiers, dated domain observations, provenance, and measured quality signals.\n\n**Read the fields carefully.** `updated_at` is when PhilFacilities changed its canonical\nrecord, not when an agency updated a source. Source publication dates, reference periods,\nretrieval times, and processing times are separate fields on every source record.\n\nNo authentication is required for the public read endpoints in this release. Only\nrecords linked to a rights-cleared, publication-approved source release are exposed;\nrestricted, internal-only, quarantined, and blocked source records are excluded. Any\nremaining synthetic demonstration records are labelled with `is_synthetic: true` and\nmust not be treated as official government records.",
+    "description": "PhilFacilities is an independent, source-linked registry of Philippine facilities\nacross 16 categories (schools, health facilities, government offices, libraries,\npublic spaces, and others). This API exposes canonical facility records, original\nsource identifiers, dated domain observations, provenance, and measured quality\nsignals. Authoritative typed profiles exist mainly for schools and health facilities,\nwhere rights-cleared official sources exist; other categories are largely\ndiscovery-layer records served by the generic facility endpoints. Use\n`/v1/taxonomy` for the authoritative category list and `/v1/statistics#by_category`\nfor published counts, and `/v1/fields` to see how populated each field is.\n\n**Read the fields carefully.** `updated_at` is when PhilFacilities changed its canonical\nrecord, not when an agency updated a source. Source publication dates, reference periods,\nretrieval times, and processing times are separate fields on every source record.\n\nNo authentication is required for the public read endpoints in this release. Only\nrecords linked to a rights-cleared, publication-approved source release are exposed;\nrestricted, internal-only, quarantined, and blocked source records are excluded. Any\nremaining synthetic demonstration records are labelled with `is_synthetic: true` and\nmust not be treated as official government records.",
     "contact": {
       "name": "PhilFacilities",
       "url": "https://github.com/philfacilities"
@@ -502,16 +502,90 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "One or more query parameters are invalid.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
                 }
               }
             }
           }
-        }
+        },
+        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
       }
     },
     "/v1/facilities/within": {
@@ -978,16 +1052,90 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "One or more query parameters are invalid.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
                 }
               }
             }
           }
-        }
+        },
+        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
       }
     },
     "/v1/facilities/map": {
@@ -996,7 +1144,7 @@
           "facilities"
         ],
         "summary": "Clustered map points for a viewport",
-        "description": "Return viewport points or a bounded grid of count clusters.\n\nThe browser map cannot download hundreds of thousands of full facility\nsummaries. This endpoint asks only for the coordinates and labels it needs,\nand switches to server-side clusters once the viewport exceeds\n``max_map_points``. The viewport is never rejected for being large: wide\nzoom levels return a small number of large count circles instead of failing.",
+        "description": "Return viewport points or a bounded grid of count clusters.\n\nThe browser map cannot download hundreds of thousands of full facility\nsummaries. This endpoint asks only for the coordinates and labels it needs,\nand switches to server-side clusters once the viewport exceeds\n``max_map_points``. The viewport is never rejected for being large: wide\nzoom levels return a small number of large count circles instead of failing.\n\n**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).",
         "operationId": "facilities_map_v1_facilities_map_get",
         "parameters": [
           {
@@ -1458,11 +1606,84 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "One or more query parameters are invalid.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
                 }
               }
             }
@@ -1956,16 +2177,90 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "One or more query parameters are invalid.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
                 }
               }
             }
           }
-        }
+        },
+        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
       }
     },
     "/v1/facilities/{facility_id}": {
@@ -1998,16 +2293,90 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "One or more query parameters are invalid.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
                 }
               }
             }
           }
-        }
+        },
+        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
       }
     },
     "/v1/facilities/{facility_id}/sources": {
@@ -2044,16 +2413,90 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "One or more query parameters are invalid.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
                 }
               }
             }
           }
-        }
+        },
+        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
       }
     },
     "/v1/facilities/{facility_id}/assertions": {
@@ -2121,16 +2564,90 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "One or more query parameters are invalid.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
                 }
               }
             }
           }
-        }
+        },
+        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
       }
     },
     "/v1/facilities/{facility_id}/accreditations": {
@@ -2167,16 +2684,90 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "One or more query parameters are invalid.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
                 }
               }
             }
           }
-        }
+        },
+        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
       }
     },
     "/v1/facilities/{facility_id}/history": {
@@ -2221,16 +2812,90 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "One or more query parameters are invalid.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
                 }
               }
             }
           }
-        }
+        },
+        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
       }
     },
     "/v1/schools": {
@@ -2460,16 +3125,90 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "One or more query parameters are invalid.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
                 }
               }
             }
           }
-        }
+        },
+        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
       }
     },
     "/v1/schools/{facility_id}": {
@@ -2502,16 +3241,90 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "One or more query parameters are invalid.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
                 }
               }
             }
           }
-        }
+        },
+        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
       }
     },
     "/v1/schools/{facility_id}/resources": {
@@ -2564,16 +3377,90 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "One or more query parameters are invalid.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
                 }
               }
             }
           }
-        }
+        },
+        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
       }
     },
     "/v1/health-facilities": {
@@ -2803,16 +3690,90 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "One or more query parameters are invalid.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
                 }
               }
             }
           }
-        }
+        },
+        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
       }
     },
     "/v1/health-facilities/{facility_id}": {
@@ -2845,16 +3806,90 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "One or more query parameters are invalid.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
                 }
               }
             }
           }
-        }
+        },
+        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
       }
     },
     "/v1/health-facilities/{facility_id}/licenses": {
@@ -2891,16 +3926,90 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "One or more query parameters are invalid.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
                 }
               }
             }
           }
-        }
+        },
+        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
       }
     },
     "/v1/health-facilities/{facility_id}/accreditations": {
@@ -2937,16 +4046,90 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "One or more query parameters are invalid.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
                 }
               }
             }
           }
-        }
+        },
+        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
       }
     },
     "/v1/accreditations": {
@@ -3154,16 +4337,90 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "One or more query parameters are invalid.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
                 }
               }
             }
           }
-        }
+        },
+        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
       }
     },
     "/v1/geographies": {
@@ -3284,16 +4541,90 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "One or more query parameters are invalid.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
                 }
               }
             }
           }
-        }
+        },
+        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
       }
     },
     "/v1/geographies/{psgc_code}": {
@@ -3342,16 +4673,90 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "One or more query parameters are invalid.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
                 }
               }
             }
           }
-        }
+        },
+        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
       }
     },
     "/v1/geographies/{psgc_code}/facilities": {
@@ -3411,16 +4816,90 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "One or more query parameters are invalid.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
                 }
               }
             }
           }
-        }
+        },
+        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
       }
     },
     "/v1/geography-releases": {
@@ -3444,8 +4923,92 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "One or more query parameters are invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
           }
-        }
+        },
+        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
       }
     },
     "/v1/geography-crosswalk": {
@@ -3491,16 +5054,90 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "One or more query parameters are invalid.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
                 }
               }
             }
           }
-        }
+        },
+        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
       }
     },
     "/v1/population": {
@@ -3641,16 +5278,90 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "One or more query parameters are invalid.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
                 }
               }
             }
           }
-        }
+        },
+        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
       }
     },
     "/v1/sources": {
@@ -3674,8 +5385,92 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "One or more query parameters are invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
           }
-        }
+        },
+        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
       }
     },
     "/v1/sources/{source_id}": {
@@ -3708,16 +5503,90 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "One or more query parameters are invalid.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
                 }
               }
             }
           }
-        }
+        },
+        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
       }
     },
     "/v1/source-checks": {
@@ -3773,16 +5642,90 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "One or more query parameters are invalid.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
                 }
               }
             }
           }
-        }
+        },
+        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
       }
     },
     "/v1/monitoring": {
@@ -3806,8 +5749,92 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "One or more query parameters are invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
           }
-        }
+        },
+        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
       }
     },
     "/v1/source-releases": {
@@ -3863,16 +5890,90 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "One or more query parameters are invalid.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
                 }
               }
             }
           }
-        }
+        },
+        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
       }
     },
     "/v1/quality/summary": {
@@ -3892,8 +5993,92 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "One or more query parameters are invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
           }
-        }
+        },
+        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
       }
     },
     "/v1/quality/issues": {
@@ -3959,16 +6144,90 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "One or more query parameters are invalid.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
                 }
               }
             }
           }
-        }
+        },
+        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
       }
     },
     "/v1/quality/match-candidates": {
@@ -4020,16 +6279,90 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "One or more query parameters are invalid.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
                 }
               }
             }
           }
-        }
+        },
+        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
       }
     },
     "/v1/quality/match-candidates/{candidate_id}": {
@@ -4062,16 +6395,90 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "One or more query parameters are invalid.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
                 }
               }
             }
           }
-        }
+        },
+        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
       }
     },
     "/v1/statistics": {
@@ -4091,8 +6498,92 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "One or more query parameters are invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
           }
-        }
+        },
+        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
       }
     },
     "/v1/coverage": {
@@ -4112,8 +6603,92 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "One or more query parameters are invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
           }
-        }
+        },
+        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
       }
     },
     "/v1/changes": {
@@ -4182,16 +6757,90 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "One or more query parameters are invalid.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
                 }
               }
             }
           }
-        }
+        },
+        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
       }
     },
     "/v1/downloads/facilities.csv": {
@@ -4209,8 +6858,92 @@
                 "schema": {}
               }
             }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "One or more query parameters are invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
           }
-        }
+        },
+        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
       }
     },
     "/v1/downloads/schools.csv": {
@@ -4228,8 +6961,92 @@
                 "schema": {}
               }
             }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "One or more query parameters are invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
           }
-        }
+        },
+        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
       }
     },
     "/v1/downloads/health-facilities.csv": {
@@ -4247,8 +7064,92 @@
                 "schema": {}
               }
             }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "One or more query parameters are invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
           }
-        }
+        },
+        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
       }
     },
     "/v1/downloads/facilities.parquet": {
@@ -4266,8 +7167,92 @@
                 "schema": {}
               }
             }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "One or more query parameters are invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
           }
-        }
+        },
+        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
       }
     },
     "/v1/taxonomy": {
@@ -4276,7 +7261,7 @@
           "taxonomy"
         ],
         "summary": "Controlled vocabularies and display labels",
-        "description": "Return the controlled codes, labels, and category-to-subtype mapping.\n\nClients should use this reference instead of hardcoding a private copy of\nthe vocabulary. It is static for a given API release and safe to cache.",
+        "description": "Return the controlled codes, labels, and category-to-subtype mapping.\n\nClients should use this reference instead of hardcoding a private copy of\nthe vocabulary. It is static for a given API release and safe to cache.\n\n**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).",
         "operationId": "get_taxonomy_v1_taxonomy_get",
         "responses": {
           "200": {
@@ -4285,6 +7270,89 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TaxonomyResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "One or more query parameters are invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
                 }
               }
             }
@@ -4307,8 +7375,92 @@
                 "schema": {}
               }
             }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "One or more query parameters are invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
           }
-        }
+        },
+        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
       }
     },
     "/v1": {
@@ -4326,8 +7478,92 @@
                 "schema": {}
               }
             }
+          },
+          "400": {
+            "description": "Invalid filter or request parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "invalid_bbox",
+                  "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No publication-approved resource with that identifier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "facility_not_found",
+                  "message": "No published facility exists with that ID.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "One or more query parameters are invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "One or more query parameters are invalid.",
+                  "details": [],
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests. Retry after the current window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "rate_limit_exceeded",
+                  "message": "Too many requests. Retry after the current window.",
+                  "details": {
+                    "limit": 120,
+                    "window_seconds": 60
+                  },
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "example": {
+                  "code": "internal_error",
+                  "message": "An unexpected error occurred.",
+                  "details": null,
+                  "request_id": "synthetic-request-id"
+                }
+              }
+            }
           }
-        }
+        },
+        "description": "**Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records)."
       }
     }
   },
@@ -5940,7 +9176,93 @@
           "quality",
           "created_at"
         ],
-        "title": "FacilityDetail"
+        "title": "FacilityDetail",
+        "examples": [
+          {
+            "id": "00000000-0000-4000-8000-000000000001",
+            "slug": "synthetic-example-library",
+            "display_name": "Synthetic Example Library",
+            "facility_type": "library",
+            "facility_subtype": null,
+            "facility_kind": "facility",
+            "inclusion_class": "DISCOVERY_CANDIDATE",
+            "ownership": "unknown",
+            "ownership_type": "UNKNOWN",
+            "operator_type": "UNKNOWN",
+            "public_access_class": "UNKNOWN",
+            "record_status": "active",
+            "publication_status": "public",
+            "is_synthetic": true,
+            "functions": [],
+            "location": {
+              "latitude": 14.6,
+              "longitude": 120.98,
+              "precision": "map_geocoded",
+              "method": null,
+              "address_text": "1 Synthetic Road, Example City",
+              "postal_code": null,
+              "psgc_code": "9901000001",
+              "review_status": "source_supplied"
+            },
+            "geography": {
+              "psgc_code": "9901000001",
+              "region_name": "Synthetic Region (demo)",
+              "province_name": "Synthetic Province (demo)",
+              "municipality_name": "Example City (demo)"
+            },
+            "source_count": 1,
+            "source_refs": [
+              {
+                "agency_code": "SYN",
+                "dataset_slug": "synthetic-example-directory",
+                "source_record_id": "SYN-EXAMPLE-0001"
+              }
+            ],
+            "updated_at": "2026-11-21T09:00:00Z",
+            "official_name": null,
+            "access_conditions": null,
+            "school": null,
+            "health": null,
+            "utility": null,
+            "accreditations": [],
+            "contacts": [],
+            "function_details": [],
+            "services": [],
+            "roles": [],
+            "relationships": [],
+            "sources": [
+              {
+                "id": "00000000-0000-4000-8000-000000000002",
+                "agency": "Synthetic Agency (demo)",
+                "agency_code": "SYN",
+                "dataset": "Synthetic Example Directory (demo)",
+                "dataset_slug": "synthetic-example-directory",
+                "release_id": "00000000-0000-4000-8000-000000000003",
+                "release_label": "SYNTHETIC-DEMO-2026-11-21",
+                "source_record_id": "SYN-EXAMPLE-0001",
+                "source_record_uuid": "00000000-0000-4000-8000-000000000002",
+                "retrieved_at": "2026-11-21T09:00:00Z",
+                "match_method": "source_key",
+                "match_status": "single_source",
+                "match_confidence": 1.0,
+                "is_synthetic": true
+              }
+            ],
+            "quality": {
+              "identity_status": "source_linked",
+              "location_precision": "map_geocoded",
+              "warnings": [
+                {
+                  "code": "approximate_coordinate",
+                  "severity": "info",
+                  "message": "This point is geocoded, not a verified building location."
+                }
+              ],
+              "source_count": 1
+            },
+            "created_at": "2026-11-21T09:00:00Z"
+          }
+        ]
       },
       "FacilityFunctionOut": {
         "properties": {
@@ -6193,7 +9515,19 @@
           "longitude"
         ],
         "title": "FacilityMapPoint",
-        "description": "Minimal map feature; deliberately excludes detail-only summary fields."
+        "description": "Minimal map feature; deliberately excludes detail-only summary fields.",
+        "examples": [
+          {
+            "id": "00000000-0000-4000-8000-000000000001",
+            "slug": "synthetic-example-library",
+            "name": "Synthetic Example Library",
+            "facility_type": "library",
+            "inclusion_class": "DISCOVERY_CANDIDATE",
+            "precision": "map_geocoded",
+            "latitude": 14.6,
+            "longitude": 120.98
+          }
+        ]
       },
       "FacilityMapPointsResponse": {
         "properties": {
@@ -6729,7 +10063,51 @@
           "geography",
           "updated_at"
         ],
-        "title": "FacilitySummary"
+        "title": "FacilitySummary",
+        "examples": [
+          {
+            "id": "00000000-0000-4000-8000-000000000001",
+            "slug": "synthetic-example-library",
+            "display_name": "Synthetic Example Library",
+            "facility_type": "library",
+            "facility_subtype": null,
+            "facility_kind": "facility",
+            "inclusion_class": "DISCOVERY_CANDIDATE",
+            "ownership": "unknown",
+            "ownership_type": "UNKNOWN",
+            "operator_type": "UNKNOWN",
+            "public_access_class": "UNKNOWN",
+            "record_status": "active",
+            "publication_status": "public",
+            "is_synthetic": true,
+            "functions": [],
+            "location": {
+              "latitude": 14.6,
+              "longitude": 120.98,
+              "precision": "map_geocoded",
+              "method": null,
+              "address_text": "1 Synthetic Road, Example City",
+              "postal_code": null,
+              "psgc_code": "9901000001",
+              "review_status": "source_supplied"
+            },
+            "geography": {
+              "psgc_code": "9901000001",
+              "region_name": "Synthetic Region (demo)",
+              "province_name": "Synthetic Province (demo)",
+              "municipality_name": "Example City (demo)"
+            },
+            "source_count": 1,
+            "source_refs": [
+              {
+                "agency_code": "SYN",
+                "dataset_slug": "synthetic-example-directory",
+                "source_record_id": "SYN-EXAMPLE-0001"
+              }
+            ],
+            "updated_at": "2026-11-21T09:00:00Z"
+          }
+        ]
       },
       "GeographyCrosswalkOut": {
         "properties": {
@@ -9639,6 +13017,74 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "ErrorBody": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "details": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Details"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "request_id"
+        ],
+        "title": "ErrorBody",
+        "type": "object",
+        "examples": [
+          {
+            "code": "invalid_bbox",
+            "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+            "details": null,
+            "request_id": "synthetic-request-id"
+          },
+          {
+            "code": "facility_not_found",
+            "message": "No published facility exists with that ID.",
+            "details": null,
+            "request_id": "synthetic-request-id"
+          },
+          {
+            "code": "validation_error",
+            "message": "One or more query parameters are invalid.",
+            "details": [],
+            "request_id": "synthetic-request-id"
+          },
+          {
+            "code": "rate_limit_exceeded",
+            "message": "Too many requests. Retry after the current window.",
+            "details": {
+              "limit": 120,
+              "window_seconds": 60
+            },
+            "request_id": "synthetic-request-id"
+          },
+          {
+            "code": "internal_error",
+            "message": "An unexpected error occurred.",
+            "details": null,
+            "request_id": "synthetic-request-id"
+          }
+        ]
       }
     }
   },

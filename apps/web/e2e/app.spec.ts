@@ -442,9 +442,7 @@ test.describe("data dictionary", () => {
       page.getByText("NATIONAL_OFFICIAL_INVENTORY", { exact: true }),
     ).toBeVisible();
     await expect(page.getByText("DISCOVERY_LAYER", { exact: true })).toBeVisible();
-    await expect(
-      page.getByText(/any remaining synthetic fixtures are labelled/),
-    ).toBeVisible();
+    await expect(page.getByRole("link", { name: "OpenAPI JSON" })).toBeVisible();
     await expect(
       page.locator("#main-content").getByRole("link", { name: "Dataset catalogue" }),
     ).toBeVisible();

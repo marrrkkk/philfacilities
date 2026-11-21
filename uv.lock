@@ -1239,6 +1239,7 @@ dependencies = [
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "python-dateutil" },
+    { name = "scalar-fastapi" },
     { name = "sqlalchemy" },
     { name = "uvicorn", extra = ["standard"] },
 ]
@@ -1259,6 +1260,7 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.10" },
     { name = "pydantic-settings", specifier = ">=2.7" },
     { name = "python-dateutil", specifier = ">=2.9" },
+    { name = "scalar-fastapi", specifier = ">=1.10" },
     { name = "sqlalchemy", specifier = ">=2.1.0" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.34" },
 ]
@@ -2057,6 +2059,20 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/49/c5/0a5ce655109cb96b8dfad36908a4e108d15f5dc2eff8fbc3146c4312e704/s3transfer-0.19.3.tar.gz", hash = "sha256:8326acc3d056d7f7b8a37110c7d2aea41f67e83f6ae79cd3b5fbcca34c726406", size = 166087, upload-time = "2026-10-19T19:19:49.751Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e2/a4/88f9e10498759121060b8050a1554753dfc04df39bbbcc7aad9ecc8d9440/s3transfer-0.19.3-py3-none-any.whl", hash = "sha256:24eb7535804306355e31c952a90022bf5b2f9d760f9a11062c7493a217c08553", size = 90252, upload-time = "2026-10-19T19:19:48.309Z" },
+]
+
+[[package]]
+name = "scalar-fastapi"
+version = "1.10.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "fastapi" },
+    { name = "pydantic" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/7b/3a/6c1dada2a2a110669a8b19642a32d79785124a4bd46158ca3babf85d72a0/scalar_fastapi-1.10.1.tar.gz", hash = "sha256:f44ae2c1c8f36360e7694e1774a52ad1e95779c0a6dbab4e94d90b950e82dfa6", size = 11453, upload-time = "2026-11-19T22:24:01.177Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/50/9b/2aba1ca8e7daa0aa89d022eb5f9ccc55517ed5fe8550ecc30c9e800d9eed/scalar_fastapi-1.10.1-py3-none-any.whl", hash = "sha256:93d1708e1afbac081cb816391acad8b05d8433582159f799774c7c9a1a32f0e9", size = 8852, upload-time = "2026-11-19T22:24:00.106Z" },
 ]
 
 [[package]]

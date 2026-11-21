@@ -4,7 +4,6 @@ import { ExternalLink } from "lucide-react";
 
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { apiBaseUrl } from "@/lib/api";
 
@@ -36,7 +35,6 @@ const facilityFields = [
   ["location.postal_code", "string or null", "Postal code preserved as text. Null means the source did not supply one."],
   ["record_status", "controlled string", "Registry presence, not real-time operational status."],
   ["publication_status", "public or internal", "Only public records appear in the public API."],
-  ["is_synthetic", "boolean", "True for generated demonstration records."],
   ["created_at, updated_at", "timestamp", "PhilFacilities record times, not agency update times."],
   ["source_count", "integer", "Number of linked source records supporting the canonical record."],
 ];
@@ -84,7 +82,6 @@ const provenanceFields = [
   ["match_confidence", "Numeric confidence for the recorded link method."],
   ["rights_status, publication_status", "Dataset redistribution state and publication gate."],
   ["license_identifier, attribution_text", "Recorded licence and required attribution."],
-  ["is_synthetic", "Whether the source dataset is synthetic."],
 ];
 
 const redistributionValues = [
@@ -151,7 +148,7 @@ function FieldTable({
   return (
     <div className="mt-5 min-w-0 overflow-hidden border border-[#d1d8e6]">
       <div className="table-scroll" role="region" aria-label={caption} tabIndex={0}>
-        <table className="w-full min-w-[42rem] border-collapse text-left font-sans text-sm">
+        <table className="w-full min-w-[36rem] border-collapse text-left font-sans text-sm">
           <caption className="sr-only">{caption}</caption>
           <thead className="bg-[#f4f7fc] font-ui text-xs uppercase tracking-wide text-[#5a5a58]">
             <tr>
@@ -185,19 +182,14 @@ export default function DataDictionaryPage() {
   return (
     <div className="container-page py-10">
       <Breadcrumbs items={[{ label: "Data & Sources", href: "/data" }, { label: "Data dictionary" }]} />
-      <div className="flex flex-wrap items-center gap-2">
-        <p className="eyebrow rule-label text-[#0038a8]">Data dictionary</p>
-        <Badge tone="success">Real sources + labelled fixtures</Badge>
-      </div>
+      <p className="eyebrow rule-label text-[#0038a8]">Data dictionary</p>
       <h1 className="mt-4 max-w-4xl font-display text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl">
         Every field, its meaning, and what the data cannot tell you.
       </h1>
       <p className="mt-4 max-w-3xl font-sans text-base leading-relaxed text-[#5a5a58]">
-        This dictionary describes the public API, downloads, and facility profiles. The OpenAPI
-        document remains the machine-readable contract. Category, subtype, ownership, operator,
-        contact, and access labels come from <code>GET /v1/taxonomy</code>, so clients do not need a
-        second hardcoded vocabulary. Published records trace to a registered source release; any
-        remaining synthetic fixtures are labelled <code>is_synthetic=true</code>.
+        This dictionary covers the public API, downloads, and facility profiles. The OpenAPI document
+        is the machine-readable contract. Category, ownership, access, and contact labels come from{" "}
+        <code>GET /v1/taxonomy</code>, so clients need no second vocabulary.
       </p>
 
       <div className="mt-6 flex flex-wrap gap-3">
@@ -237,39 +229,25 @@ export default function DataDictionaryPage() {
         <h2 id="reading-rules" className="font-display text-2xl font-extrabold">
           Reading rules
         </h2>
-        <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-xl">Four different times</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 font-sans text-sm leading-relaxed text-[#5a5a58]">
-              <p>
-                <code>source_published_at</code> is the agency&apos;s publication time. The
-                reference period is what the data describes. <code>retrieved_at</code> is when
-                PhilFacilities acquired the file. <code>processed_at</code> is when ETL finished.
-              </p>
-              <p>
-                <code>updated_at</code> is when PhilFacilities changed its canonical record. It is
-                not an agency update.
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-xl">Codes and coordinates</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 font-sans text-sm leading-relaxed text-[#5a5a58]">
-              <p>
-                PSGC values are strings and may contain leading zeros. Do not parse them as
-                integers.
-              </p>
-              <p>
-                Coordinates are WGS 84. Read <code>location.precision</code> before presenting a
-                point as a building location. Area-level points stay labelled.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+        <dl className="mt-4 grid gap-x-8 gap-y-4 border border-[#d1d8e6] bg-white p-5 font-sans text-sm sm:grid-cols-2">
+          {[
+            ["source_published_at", "When the agency published the release."],
+            ["Reference period", "What the data describes."],
+            ["retrieved_at", "When PhilFacilities acquired the file."],
+            ["processed_at", "When ETL finished."],
+            ["updated_at", "When PhilFacilities changed the record, not the agency."],
+            ["PSGC codes", "Strings; keep leading zeros."],
+            ["Coordinates", "WGS 84. Read location.precision before showing a building pin."],
+            ["Area-level points", "Stay labelled; never present them as buildings."],
+          ].map(([term, meaning]) => (
+            <div key={term}>
+              <dt className="font-ui text-xs font-bold uppercase tracking-wide text-[#0a0a0a]">
+                {term}
+              </dt>
+              <dd className="mt-0.5 text-[#5a5a58]">{meaning}</dd>
+            </div>
+          ))}
+        </dl>
       </section>
 
       <section className="mt-10" aria-labelledby="facility-fields">
@@ -278,7 +256,7 @@ export default function DataDictionaryPage() {
         </h2>
         <p className="mt-2 max-w-3xl font-sans text-sm leading-relaxed text-[#5a5a58]">
           Endpoint: <code>GET /v1/facilities/&#123;id-or-slug&#125;</code>. Bulk downloads expose a
-          flattened subset and keep <code>is_synthetic</code> and publication status visible.
+          flattened subset with publication status visible.
         </p>
         <FieldTable
           caption="Canonical facility fields"
@@ -368,10 +346,9 @@ export default function DataDictionaryPage() {
           Dataset coverage
         </h2>
         <p className="mt-2 max-w-3xl font-sans text-sm leading-relaxed text-[#5a5a58]">
-          Coverage is a property of the source dataset, not of the facility record. A national
-          registry can still be partial; a single-LGU release is not a national statement. Read{" "}
-          <code>coverage_scope</code> and <code>coverage_note</code> together, and never treat a
-          published count as the size of the real-world facility universe.
+          Coverage belongs to the source dataset, not the facility. Read{" "}
+          <code>coverage_scope</code> and <code>coverage_note</code> together; a published count is
+          not the size of the real-world universe.
         </p>
         <FieldTable
           caption="Dataset coverage scopes"
@@ -385,9 +362,9 @@ export default function DataDictionaryPage() {
           Identity matching and review
         </h2>
         <p className="mt-2 max-w-3xl font-sans text-sm leading-relaxed text-[#5a5a58]">
-          The matcher proposes candidates using exact normalized names, the same current PSGC unit,
-          compatible facility types, and different agencies. It never merges automatically.
-          Endpoint: <code>GET /v1/quality/match-candidates?status=pending</code>.
+          The matcher proposes candidates from names, PSGC units, facility types, and agencies; it
+          never merges automatically. Endpoint:{" "}
+          <code>GET /v1/quality/match-candidates?status=pending</code>.
         </p>
         <FieldTable
           caption="Identity match candidate statuses"
@@ -395,10 +372,8 @@ export default function DataDictionaryPage() {
           rows={matchStatuses.map(([value, meaning]) => [value, "enum", meaning])}
         />
         <p className="mt-3 max-w-3xl font-sans text-sm leading-relaxed text-[#5a5a58]">
-          Reviewer decisions are applied with the ingestion CLI. Rejected pairs are retained so the
-          same candidate is not generated repeatedly. Merging is a separate explicit operation that
-          moves evidence to the surviving facility, retires the duplicate as an internal tombstone,
-          and records change events on both records.
+          Reviewing and merging are separate explicit steps. Evidence moves to the survivor; the
+          duplicate is retired with an audit trail.
         </p>
       </section>
 
@@ -406,7 +381,7 @@ export default function DataDictionaryPage() {
         <h2 id="domain-fields" className="font-display text-2xl font-extrabold">
           School, health, and utility fields
         </h2>
-        <div className="mt-4 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <div className="mt-4 space-y-6">
           <div className="min-w-0">
             <h3 className="font-display text-xl font-extrabold">Schools</h3>
             <FieldTable
@@ -433,10 +408,9 @@ export default function DataDictionaryPage() {
           </div>
         </div>
         <p className="mt-4 max-w-3xl font-sans text-sm leading-relaxed text-[#5a5a58]">
-          Licences and accreditations are time-bounded records, not a real-time guarantee that a
-          service is available or reimbursable. School offerings are tri-state: true, false, or null
-          for unknown. Power-plant capacity is a registry rating, not metered output or proof that
-          the plant is operating.
+          Licences and accreditations are time-bounded, not proof of current service. School
+          offerings are tri-state (true, false, null). Capacity is a registry rating, not metered
+          output.
         </p>
       </section>
 
@@ -484,11 +458,10 @@ export default function DataDictionaryPage() {
           Publication caveats
         </h2>
         <ul className="mt-4 max-w-3xl space-y-2 font-sans text-sm leading-relaxed text-[#5a5a58]">
-          <li>Published records are a partial, source-specific subset. The dataset catalogue lists the sources currently represented; DepEd EBEIS institution-level records are published with personal fields withheld, while some official PSA, DepEd machine-readable, and DOH files remain blocked or unacquired.</li>
-          <li>Source-data rights are separate from the Apache-2.0 code licence. Check the source release before reuse.</li>
-          <li>The map uses demonstration tiles; a production provider and licence are not selected.</li>
-          <li>Production backups, monitoring, WAF/TLS, and an external security review are not configured.</li>
-          <li>Spatial queries and pagination are capped server-side; clients must handle structured errors and provide a text alternative to the map.</li>
+          <li>Published records are a partial, source-specific subset; some official files remain blocked or unacquired.</li>
+          <li>Source-data rights are separate from the Apache-2.0 code licence. Check the release before reuse.</li>
+          <li>The map uses demonstration tiles; no production provider is selected.</li>
+          <li>Spatial queries and pagination are capped; handle structured errors and provide a text alternative to the map.</li>
         </ul>
         <p className="mt-4 font-sans text-sm leading-relaxed text-[#5a5a58]">
           The repository copy of this dictionary is{" "}

@@ -11,7 +11,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Search and list facilities */
+        /**
+         * Search and list facilities
+         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
         get: operations["list_facilities_v1_facilities_get"];
         put?: never;
         post?: never;
@@ -28,7 +31,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Facilities inside a bbox */
+        /**
+         * Facilities inside a bbox
+         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
         get: operations["facilities_within_v1_facilities_within_get"];
         put?: never;
         post?: never;
@@ -54,6 +60,8 @@ export interface paths {
          *     and switches to server-side clusters once the viewport exceeds
          *     ``max_map_points``. The viewport is never rejected for being large: wide
          *     zoom levels return a small number of large count circles instead of failing.
+         *
+         *     **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
          */
         get: operations["facilities_map_v1_facilities_map_get"];
         put?: never;
@@ -71,7 +79,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Facilities near a point */
+        /**
+         * Facilities near a point
+         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
         get: operations["facilities_nearby_v1_facilities_nearby_get"];
         put?: never;
         post?: never;
@@ -88,7 +99,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Facility detail */
+        /**
+         * Facility detail
+         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
         get: operations["get_facility_v1_facilities__facility_id__get"];
         put?: never;
         post?: never;
@@ -105,7 +119,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Source records behind a facility */
+        /**
+         * Source records behind a facility
+         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
         get: operations["get_facility_sources_v1_facilities__facility_id__sources_get"];
         put?: never;
         post?: never;
@@ -122,7 +139,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Field-level source claims behind a facility */
+        /**
+         * Field-level source claims behind a facility
+         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
         get: operations["get_facility_assertions_v1_facilities__facility_id__assertions_get"];
         put?: never;
         post?: never;
@@ -139,7 +159,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Dated accreditation assertions */
+        /**
+         * Dated accreditation assertions
+         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
         get: operations["get_facility_accreditations_v1_facilities__facility_id__accreditations_get"];
         put?: never;
         post?: never;
@@ -156,7 +179,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Canonical change timeline */
+        /**
+         * Canonical change timeline
+         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
         get: operations["get_facility_history_v1_facilities__facility_id__history_get"];
         put?: never;
         post?: never;
@@ -173,7 +199,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List schools */
+        /**
+         * List schools
+         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
         get: operations["list_schools_v1_schools_get"];
         put?: never;
         post?: never;
@@ -190,7 +219,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** School detail */
+        /**
+         * School detail
+         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
         get: operations["get_school_v1_schools__facility_id__get"];
         put?: never;
         post?: never;
@@ -207,7 +239,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** School resource observations */
+        /**
+         * School resource observations
+         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
         get: operations["get_school_resources_v1_schools__facility_id__resources_get"];
         put?: never;
         post?: never;
@@ -224,7 +259,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List health facilities */
+        /**
+         * List health facilities
+         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
         get: operations["list_health_facilities_v1_health_facilities_get"];
         put?: never;
         post?: never;
@@ -241,7 +279,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Health facility detail */
+        /**
+         * Health facility detail
+         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
         get: operations["get_health_facility_v1_health_facilities__facility_id__get"];
         put?: never;
         post?: never;
@@ -258,7 +299,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Health facility licenses */
+        /**
+         * Health facility licenses
+         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
         get: operations["get_health_licenses_v1_health_facilities__facility_id__licenses_get"];
         put?: never;
         post?: never;
@@ -275,7 +319,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Health facility accreditations */
+        /**
+         * Health facility accreditations
+         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
         get: operations["get_health_accreditations_v1_health_facilities__facility_id__accreditations_get"];
         put?: never;
         post?: never;
@@ -292,7 +339,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List health accreditations */
+        /**
+         * List health accreditations
+         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
         get: operations["list_accreditations_v1_accreditations_get"];
         put?: never;
         post?: never;
@@ -309,7 +359,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** PSGC administrative units */
+        /**
+         * PSGC administrative units
+         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
         get: operations["list_geographies_v1_geographies_get"];
         put?: never;
         post?: never;
@@ -326,7 +379,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** One PSGC administrative unit */
+        /**
+         * One PSGC administrative unit
+         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
         get: operations["get_geography_v1_geographies__psgc_code__get"];
         put?: never;
         post?: never;
@@ -343,7 +399,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Facilities in a PSGC area */
+        /**
+         * Facilities in a PSGC area
+         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
         get: operations["get_geography_facilities_v1_geographies__psgc_code__facilities_get"];
         put?: never;
         post?: never;
@@ -360,7 +419,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** PSGC release history */
+        /**
+         * PSGC release history
+         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
         get: operations["list_geography_releases_v1_geography_releases_get"];
         put?: never;
         post?: never;
@@ -377,7 +439,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Code changes between two PSGC releases */
+        /**
+         * Code changes between two PSGC releases
+         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
         get: operations["get_geography_crosswalk_v1_geography_crosswalk_get"];
         put?: never;
         post?: never;
@@ -394,7 +459,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Approved 2024 Census population observations */
+        /**
+         * Approved 2024 Census population observations
+         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
         get: operations["population_v1_population_get"];
         put?: never;
         post?: never;
@@ -411,7 +479,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Dataset and source catalogue */
+        /**
+         * Dataset and source catalogue
+         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
         get: operations["list_sources_v1_sources_get"];
         put?: never;
         post?: never;
@@ -428,7 +499,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** One dataset */
+        /**
+         * One dataset
+         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
         get: operations["get_source_v1_sources__source_id__get"];
         put?: never;
         post?: never;
@@ -445,7 +519,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Append-only source monitoring checks */
+        /**
+         * Append-only source monitoring checks
+         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
         get: operations["list_source_checks_v1_source_checks_get"];
         put?: never;
         post?: never;
@@ -462,7 +539,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Source monitoring dashboard */
+        /**
+         * Source monitoring dashboard
+         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
         get: operations["monitoring_v1_monitoring_get"];
         put?: never;
         post?: never;
@@ -479,7 +559,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Source releases */
+        /**
+         * Source releases
+         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
         get: operations["list_source_releases_v1_source_releases_get"];
         put?: never;
         post?: never;
@@ -496,7 +579,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Quality overview */
+        /**
+         * Quality overview
+         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
         get: operations["quality_summary_v1_quality_summary_get"];
         put?: never;
         post?: never;
@@ -513,7 +599,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Open data quality issues */
+        /**
+         * Open data quality issues
+         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
         get: operations["quality_issues_v1_quality_issues_get"];
         put?: never;
         post?: never;
@@ -530,7 +619,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Deterministic identity-match review queue */
+        /**
+         * Deterministic identity-match review queue
+         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
         get: operations["list_match_candidates_v1_quality_match_candidates_get"];
         put?: never;
         post?: never;
@@ -547,7 +639,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** One identity-match candidate */
+        /**
+         * One identity-match candidate
+         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
         get: operations["get_match_candidate_v1_quality_match_candidates__candidate_id__get"];
         put?: never;
         post?: never;
@@ -564,7 +659,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Measured coverage statistics */
+        /**
+         * Measured coverage statistics
+         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
         get: operations["statistics_v1_statistics_get"];
         put?: never;
         post?: never;
@@ -581,7 +679,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Registry coverage by class and source */
+        /**
+         * Registry coverage by class and source
+         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
         get: operations["coverage_v1_coverage_get"];
         put?: never;
         post?: never;
@@ -598,7 +699,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Canonical change feed */
+        /**
+         * Canonical change feed
+         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
         get: operations["changes_v1_changes_get"];
         put?: never;
         post?: never;
@@ -615,7 +719,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Bulk facility CSV */
+        /**
+         * Bulk facility CSV
+         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
         get: operations["download_facilities_csv_v1_downloads_facilities_csv_get"];
         put?: never;
         post?: never;
@@ -632,7 +739,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Bulk school CSV */
+        /**
+         * Bulk school CSV
+         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
         get: operations["download_schools_csv_v1_downloads_schools_csv_get"];
         put?: never;
         post?: never;
@@ -649,7 +759,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Bulk health facility CSV */
+        /**
+         * Bulk health facility CSV
+         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
         get: operations["download_health_csv_v1_downloads_health_facilities_csv_get"];
         put?: never;
         post?: never;
@@ -666,7 +779,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Bulk facility Parquet */
+        /**
+         * Bulk facility Parquet
+         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
         get: operations["download_facilities_parquet_v1_downloads_facilities_parquet_get"];
         put?: never;
         post?: never;
@@ -689,6 +805,8 @@ export interface paths {
          *
          *     Clients should use this reference instead of hardcoding a private copy of
          *     the vocabulary. It is static for a given API release and safe to cache.
+         *
+         *     **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
          */
         get: operations["get_taxonomy_v1_taxonomy_get"];
         put?: never;
@@ -706,7 +824,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Service health */
+        /**
+         * Service health
+         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
         get: operations["healthz_healthz_get"];
         put?: never;
         post?: never;
@@ -723,7 +844,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** API index */
+        /**
+         * API index
+         * @description **Publication gate:** only rights-cleared, publication-approved records are returned. **Freshness:** `updated_at` is a PhilFacilities edit time, not an agency update time. **Coordinates:** WGS 84 and often approximate; read `location.precision` before presenting a point as a building. **Coverage:** `GET /v1/fields` reports how populated each field is (synthetic examples in the schemas are labelled and are not official records).
+         */
         get: operations["api_index_v1_get"];
         put?: never;
         post?: never;
@@ -1111,7 +1235,93 @@ export interface components {
             latest_release?: components["schemas"]["LatestReleaseOut"] | null;
             latest_geography_release?: components["schemas"]["GeographyReleaseOut"] | null;
         };
-        /** FacilityDetail */
+        /**
+         * FacilityDetail
+         * @example {
+         *       "id": "00000000-0000-4000-8000-000000000001",
+         *       "slug": "synthetic-example-library",
+         *       "display_name": "Synthetic Example Library",
+         *       "facility_type": "library",
+         *       "facility_subtype": null,
+         *       "facility_kind": "facility",
+         *       "inclusion_class": "DISCOVERY_CANDIDATE",
+         *       "ownership": "unknown",
+         *       "ownership_type": "UNKNOWN",
+         *       "operator_type": "UNKNOWN",
+         *       "public_access_class": "UNKNOWN",
+         *       "record_status": "active",
+         *       "publication_status": "public",
+         *       "is_synthetic": true,
+         *       "functions": [],
+         *       "location": {
+         *         "latitude": 14.6,
+         *         "longitude": 120.98,
+         *         "precision": "map_geocoded",
+         *         "method": null,
+         *         "address_text": "1 Synthetic Road, Example City",
+         *         "postal_code": null,
+         *         "psgc_code": "9901000001",
+         *         "review_status": "source_supplied"
+         *       },
+         *       "geography": {
+         *         "psgc_code": "9901000001",
+         *         "region_name": "Synthetic Region (demo)",
+         *         "province_name": "Synthetic Province (demo)",
+         *         "municipality_name": "Example City (demo)"
+         *       },
+         *       "source_count": 1,
+         *       "source_refs": [
+         *         {
+         *           "agency_code": "SYN",
+         *           "dataset_slug": "synthetic-example-directory",
+         *           "source_record_id": "SYN-EXAMPLE-0001"
+         *         }
+         *       ],
+         *       "updated_at": "2026-11-21T09:00:00Z",
+         *       "official_name": null,
+         *       "access_conditions": null,
+         *       "school": null,
+         *       "health": null,
+         *       "utility": null,
+         *       "accreditations": [],
+         *       "contacts": [],
+         *       "function_details": [],
+         *       "services": [],
+         *       "roles": [],
+         *       "relationships": [],
+         *       "sources": [
+         *         {
+         *           "id": "00000000-0000-4000-8000-000000000002",
+         *           "agency": "Synthetic Agency (demo)",
+         *           "agency_code": "SYN",
+         *           "dataset": "Synthetic Example Directory (demo)",
+         *           "dataset_slug": "synthetic-example-directory",
+         *           "release_id": "00000000-0000-4000-8000-000000000003",
+         *           "release_label": "SYNTHETIC-DEMO-2026-11-21",
+         *           "source_record_id": "SYN-EXAMPLE-0001",
+         *           "source_record_uuid": "00000000-0000-4000-8000-000000000002",
+         *           "retrieved_at": "2026-11-21T09:00:00Z",
+         *           "match_method": "source_key",
+         *           "match_status": "single_source",
+         *           "match_confidence": 1,
+         *           "is_synthetic": true
+         *         }
+         *       ],
+         *       "quality": {
+         *         "identity_status": "source_linked",
+         *         "location_precision": "map_geocoded",
+         *         "warnings": [
+         *           {
+         *             "code": "approximate_coordinate",
+         *             "severity": "info",
+         *             "message": "This point is geocoded, not a verified building location."
+         *           }
+         *         ],
+         *         "source_count": 1
+         *       },
+         *       "created_at": "2026-11-21T09:00:00Z"
+         *     }
+         */
         FacilityDetail: {
             /**
              * Id
@@ -1268,6 +1478,16 @@ export interface components {
         /**
          * FacilityMapPoint
          * @description Minimal map feature; deliberately excludes detail-only summary fields.
+         * @example {
+         *       "id": "00000000-0000-4000-8000-000000000001",
+         *       "slug": "synthetic-example-library",
+         *       "name": "Synthetic Example Library",
+         *       "facility_type": "library",
+         *       "inclusion_class": "DISCOVERY_CANDIDATE",
+         *       "precision": "map_geocoded",
+         *       "latitude": 14.6,
+         *       "longitude": 120.98
+         *     }
          */
         FacilityMapPoint: {
             /**
@@ -1408,7 +1628,51 @@ export interface components {
             /** Valid To */
             valid_to?: string | null;
         };
-        /** FacilitySummary */
+        /**
+         * FacilitySummary
+         * @example {
+         *       "id": "00000000-0000-4000-8000-000000000001",
+         *       "slug": "synthetic-example-library",
+         *       "display_name": "Synthetic Example Library",
+         *       "facility_type": "library",
+         *       "facility_subtype": null,
+         *       "facility_kind": "facility",
+         *       "inclusion_class": "DISCOVERY_CANDIDATE",
+         *       "ownership": "unknown",
+         *       "ownership_type": "UNKNOWN",
+         *       "operator_type": "UNKNOWN",
+         *       "public_access_class": "UNKNOWN",
+         *       "record_status": "active",
+         *       "publication_status": "public",
+         *       "is_synthetic": true,
+         *       "functions": [],
+         *       "location": {
+         *         "latitude": 14.6,
+         *         "longitude": 120.98,
+         *         "precision": "map_geocoded",
+         *         "method": null,
+         *         "address_text": "1 Synthetic Road, Example City",
+         *         "postal_code": null,
+         *         "psgc_code": "9901000001",
+         *         "review_status": "source_supplied"
+         *       },
+         *       "geography": {
+         *         "psgc_code": "9901000001",
+         *         "region_name": "Synthetic Region (demo)",
+         *         "province_name": "Synthetic Province (demo)",
+         *         "municipality_name": "Example City (demo)"
+         *       },
+         *       "source_count": 1,
+         *       "source_refs": [
+         *         {
+         *           "agency_code": "SYN",
+         *           "dataset_slug": "synthetic-example-directory",
+         *           "source_record_id": "SYN-EXAMPLE-0001"
+         *         }
+         *       ],
+         *       "updated_at": "2026-11-21T09:00:00Z"
+         *     }
+         */
         FacilitySummary: {
             /**
              * Id
@@ -2369,6 +2633,55 @@ export interface components {
             /** Context */
             ctx?: Record<string, never>;
         };
+        /**
+         * ErrorBody
+         * @example {
+         *       "code": "invalid_bbox",
+         *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+         *       "details": null,
+         *       "request_id": "synthetic-request-id"
+         *     }
+         * @example {
+         *       "code": "facility_not_found",
+         *       "message": "No published facility exists with that ID.",
+         *       "details": null,
+         *       "request_id": "synthetic-request-id"
+         *     }
+         * @example {
+         *       "code": "validation_error",
+         *       "message": "One or more query parameters are invalid.",
+         *       "details": [],
+         *       "request_id": "synthetic-request-id"
+         *     }
+         * @example {
+         *       "code": "rate_limit_exceeded",
+         *       "message": "Too many requests. Retry after the current window.",
+         *       "details": {
+         *         "limit": 120,
+         *         "window_seconds": 60
+         *       },
+         *       "request_id": "synthetic-request-id"
+         *     }
+         * @example {
+         *       "code": "internal_error",
+         *       "message": "An unexpected error occurred.",
+         *       "details": null,
+         *       "request_id": "synthetic-request-id"
+         *     }
+         */
+        ErrorBody: {
+            /** Code */
+            code: string;
+            /** Message */
+            message: string;
+            /**
+             * Details
+             * @default null
+             */
+            details: unknown | null;
+            /** Request Id */
+            request_id: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -2422,13 +2735,92 @@ export interface operations {
                     "application/json": components["schemas"]["FacilityListResponse"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -2475,13 +2867,92 @@ export interface operations {
                     "application/json": components["schemas"]["FacilityMapResponse"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -2529,13 +3000,92 @@ export interface operations {
                     "application/json": components["schemas"]["FacilityMapPointsResponse"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -2583,13 +3133,92 @@ export interface operations {
                     "application/json": components["schemas"]["NearbyResponse"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -2614,13 +3243,92 @@ export interface operations {
                     "application/json": components["schemas"]["FacilityDetail"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -2645,13 +3353,92 @@ export interface operations {
                     "application/json": components["schemas"]["SourceEvidence"][];
                 };
             };
-            /** @description Validation Error */
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -2680,13 +3467,92 @@ export interface operations {
                     "application/json": components["schemas"]["AttributeAssertionOut"][];
                 };
             };
-            /** @description Validation Error */
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -2711,13 +3577,92 @@ export interface operations {
                     "application/json": components["schemas"]["AccreditationOut"][];
                 };
             };
-            /** @description Validation Error */
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -2744,13 +3689,92 @@ export interface operations {
                     "application/json": components["schemas"]["ChangeListResponse"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -2787,13 +3811,92 @@ export interface operations {
                     "application/json": components["schemas"]["FacilityListResponse"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -2818,13 +3921,92 @@ export interface operations {
                     "application/json": components["schemas"]["SchoolDetailResponse"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -2851,13 +4033,92 @@ export interface operations {
                     "application/json": components["schemas"]["ResourceObservationOut"][];
                 };
             };
-            /** @description Validation Error */
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -2894,13 +4155,92 @@ export interface operations {
                     "application/json": components["schemas"]["FacilityListResponse"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -2925,13 +4265,92 @@ export interface operations {
                     "application/json": components["schemas"]["HealthDetailResponse"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -2956,13 +4375,92 @@ export interface operations {
                     "application/json": components["schemas"]["LicenseOut"][];
                 };
             };
-            /** @description Validation Error */
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -2987,13 +4485,92 @@ export interface operations {
                     "application/json": components["schemas"]["AccreditationOut"][];
                 };
             };
-            /** @description Validation Error */
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -3029,13 +4606,92 @@ export interface operations {
                     "application/json": components["schemas"]["AccreditationListResponse"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -3068,13 +4724,92 @@ export interface operations {
                     "application/json": components["schemas"]["AdministrativeUnitOut"][];
                 };
             };
-            /** @description Validation Error */
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -3101,13 +4836,92 @@ export interface operations {
                     "application/json": components["schemas"]["AdministrativeUnitOut"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -3135,13 +4949,92 @@ export interface operations {
                     "application/json": components["schemas"]["FacilityListResponse"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -3162,6 +5055,94 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GeographyReleaseOut"][];
+                };
+            };
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -3187,13 +5168,92 @@ export interface operations {
                     "application/json": components["schemas"]["GeographyCrosswalkOut"][];
                 };
             };
-            /** @description Validation Error */
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -3228,13 +5288,92 @@ export interface operations {
                     "application/json": components["schemas"]["PopulationListResponse"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -3255,6 +5394,94 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DatasetOut"][];
+                };
+            };
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -3279,13 +5506,92 @@ export interface operations {
                     "application/json": components["schemas"]["DatasetOut"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -3311,13 +5617,92 @@ export interface operations {
                     "application/json": components["schemas"]["SourceCheckOut"][];
                 };
             };
-            /** @description Validation Error */
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -3338,6 +5723,94 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SourceMonitoringOut"][];
+                };
+            };
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -3363,13 +5836,92 @@ export interface operations {
                     "application/json": components["schemas"]["ReleaseOut"][];
                 };
             };
-            /** @description Validation Error */
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -3390,6 +5942,94 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["QualitySummary"];
+                };
+            };
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -3416,13 +6056,92 @@ export interface operations {
                     "application/json": components["schemas"]["QualityIssueOut"][];
                 };
             };
-            /** @description Validation Error */
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -3448,13 +6167,92 @@ export interface operations {
                     "application/json": components["schemas"]["MatchCandidateListResponse"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -3479,13 +6277,92 @@ export interface operations {
                     "application/json": components["schemas"]["MatchCandidateOut"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -3508,6 +6385,94 @@ export interface operations {
                     "application/json": components["schemas"]["StatisticsOut"];
                 };
             };
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
         };
     };
     coverage_v1_coverage_get: {
@@ -3526,6 +6491,94 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CoverageOut"];
+                };
+            };
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -3552,13 +6605,92 @@ export interface operations {
                     "application/json": components["schemas"]["ChangeListResponse"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -3581,6 +6713,94 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
         };
     };
     download_schools_csv_v1_downloads_schools_csv_get: {
@@ -3599,6 +6819,94 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -3621,6 +6929,94 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
         };
     };
     download_facilities_parquet_v1_downloads_facilities_parquet_get: {
@@ -3639,6 +7035,94 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -3661,6 +7145,94 @@ export interface operations {
                     "application/json": components["schemas"]["TaxonomyResponse"];
                 };
             };
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
         };
     };
     healthz_healthz_get: {
@@ -3681,6 +7253,94 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
         };
     };
     api_index_v1_get: {
@@ -3699,6 +7359,94 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Invalid filter or request parameter. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "invalid_bbox",
+                     *       "message": "bbox must be min_lon,min_lat,max_lon,max_lat.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No publication-approved resource with that identifier. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "facility_not_found",
+                     *       "message": "No published facility exists with that ID.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description One or more query parameters are invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "validation_error",
+                     *       "message": "One or more query parameters are invalid.",
+                     *       "details": [],
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too many requests. Retry after the current window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "rate_limit_exceeded",
+                     *       "message": "Too many requests. Retry after the current window.",
+                     *       "details": {
+                     *         "limit": 120,
+                     *         "window_seconds": 60
+                     *       },
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description An unexpected error occurred. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "internal_error",
+                     *       "message": "An unexpected error occurred.",
+                     *       "details": null,
+                     *       "request_id": "synthetic-request-id"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
