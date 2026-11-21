@@ -13,7 +13,8 @@ This directory explains how the system works and how to change it safely. Start 
 | Working on the web app | [Web app](web.md) → [Design system](design-system.md) |
 | Adding or fixing a source | [Adding a source](adding-a-source.md) → [Ingestion](ingestion.md) → [Sources](sources.md) |
 | Reviewing data rights or privacy | [Data policy](data-policy.md) → [Data dictionary](data-dictionary.md) |
-| Consuming the data | [API](api.md) → [Data dictionary](data-dictionary.md) → [Sources](sources.md) |
+| Consuming the data through AI tools | [MCP](mcp.md) → [API](api.md) → [Data dictionary](data-dictionary.md) |
+| Consuming the data directly | [API](api.md) → [Data dictionary](data-dictionary.md) → [Sources](sources.md) |
 | Operating a deployment | [Operations](operations.md) → runbooks in [`operations/`](operations/) |
 | Contributing a change | [Contributing](contributing.md) → [Testing](testing.md) |
 
@@ -29,6 +30,7 @@ This directory explains how the system works and how to change it safely. Start 
 | [Adding a source](adding-a-source.md) | End-to-end checklist and patterns for a new source adapter |
 | [Sources](sources.md) | Research register of candidate and active sources, evidence labels, access reality |
 | [API](api.md) | Endpoint families, filters, pagination, errors, caching, contract workflow |
+| [MCP](mcp.md) | Read-only MCP adapter: transports, tools, client setup, caveats, operations |
 | [Web app](web.md) | Routes, data flow, directory, map, profile, security, accessibility, common changes |
 | [Design system](design-system.md) | Measured reference values, fonts, colour, geometry, components, change procedure |
 | [Data policy](data-policy.md) | Inclusion, ownership, rights, privacy, publication gate, takedown, review evidence |
@@ -40,7 +42,7 @@ Retained evidence and decisions:
 
 | Path | Contents |
 |---|---|
-| [`decisions/`](decisions/) | Architecture decision records (ADRs) 0001–0008 |
+| [`decisions/`](decisions/) | Architecture decision records (ADRs) 0001–0009 |
 | [`operations/`](operations/) | Backup/restore, incident, and security-review runbooks plus dated evidence |
 | [`design-audit/`](design-audit/) | Live-reference measurements, screenshots, and implementation captures |
 | [`../data.md`](../data.md) | Source-discovery, pipeline-adjustment and full-rebuild brief; research deliverables for coverage and gaps |
@@ -65,6 +67,7 @@ This documentation describes those sources. If code and prose disagree, fix the 
 apps/web/                  Next.js App Router client (directory, map, profiles, data pages)
 apps/api/                  FastAPI read API, SQLAlchemy models, Alembic migrations
 apps/ingest/               Acquisition, source adapters, validation, matching, fusion, reports
+apps/mcp/                  Read-only MCP adapter over the public API (stdio and Streamable HTTP)
 packages/api-client/       OpenAPI contract and generated TypeScript client
 data/sources/              Candidate index, probe ledger, Geoportal layer index
 data/templates/            LGU inventory template
@@ -90,10 +93,11 @@ canonical facility, domain observations, geography, provenance
         ↓
 rights/publication gate
         ↓
-PostgreSQL/PostGIS → FastAPI → directory, map, downloads, third-party clients
+PostgreSQL/PostGIS → FastAPI → directory, map, downloads, MCP, third-party clients
 ```
 
 - The web app reads the public API through `packages/api-client`; it never connects to PostgreSQL and never imports ingest internals.
+- The MCP server is another read-only client of the public API. It has no database credentials, no second copy of the publication gate and no reshaped response schemas.
 - The API is read-only and applies one publication gate to every public response.
 - Ingestion may store restricted records, but they remain internal and are excluded from public endpoints and bulk exports.
 - Raw source releases are preserved with checksums and release metadata. Source values, nulls, and identifiers are not overwritten by normalization.

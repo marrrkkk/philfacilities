@@ -7,6 +7,7 @@ A passing API test is not proof that the source data is correct. The suite has s
 | Path | Coverage |
 |---|---|
 | `apps/ingest/tests/` | Adapter contract, parser/golden replay, registry integrity, pipeline idempotency, fusion, matching/merge, manifest, LGU inventory, source report, stats |
+| `apps/mcp/tests/` | MCP client boundary, curated tool surface, tool/contract checks, stateless HTTP transport |
 | `tests/` | API contract and integration, rights, identity matching, inclusion model, population/PSGC, release rollback, scheduling, discovery/scraper, storage integrity, source candidates/inventory, validation gates, pipeline hardening (acceptance floors, locks, replay, latest-release membership, manual-import governance), domain source tests |
 | `tests/contract/` | OpenAPI and client-drift fixtures |
 | `tests/data-quality/` | Data-quality invariants |
@@ -43,6 +44,7 @@ Focused runs:
 uv run pytest apps/ingest/tests/test_parsers.py -q
 uv run pytest apps/ingest/tests/test_adapter_contract.py -q
 uv run pytest tests/test_api_contract.py -q
+uv run pytest apps/mcp/tests -q
 uv run pytest tests/test_pipeline_reprocess.py -q
 uv run pytest tests/test_pipeline_hardening.py tests/test_storage.py -q
 uv run pytest -m "not integration"
@@ -158,6 +160,24 @@ Use `-m "not integration"` for a fast local pass.
 
 Contract tests run without a live database; integration tests need the test database.
 
+### MCP tests
+
+- the client accepts only public API paths, drops unset arguments while keeping
+  `false`/`0`, preserves nulls, and maps API error envelopes to readable tool errors;
+- transport timeouts and connection failures are sanitized, with no internal URL
+  or stack trace reaching the model;
+- the in-memory MCP client sees exactly the curated tool set, all marked read-only;
+- tool calls return API payloads unchanged under the `result` envelope, including
+  array responses from `/v1/sources` and `/v1/geographies`; provenance merges
+  sources and field assertions, and invalid arguments fail schema validation;
+- every tool path and query argument exists in the committed OpenAPI document, and
+  no internal review endpoint is exposed;
+- stateless HTTP serves `/healthz`, `/readyz` and a JSON-RPC handshake, and rejects
+  unknown Host headers.
+
+None of these tests needs the database or a live API; upstream calls use
+`httpx.MockTransport`. See [MCP](mcp.md).
+
 ### Web tests
 
 `apps/web/e2e/app.spec.ts` covers directory search/filters, facility profile, map selection, mobile filter sheet, source details, data dictionary, and error/empty states. It also checks:
@@ -188,7 +208,7 @@ Quality is per attribute and source, not one opaque score. The suite and `/v1/qu
 - PSGC existence/hierarchy and preserved leading zeros;
 - coordinate range and Philippines-bbox plausibility (flag, do not silently delete);
 - precision/method distribution and mass-duplicate coordinates;
-- missing-vs-zero semantics for enrollment, beds, population, and dates;
+- missing-vs-zero semantics for beds, population, and dates;
 - every public source-derived field links to a source record/release;
 - publication date, reference period, retrieval time, and processing time remain distinct;
 - blocked/internal evidence is excluded from public outputs;

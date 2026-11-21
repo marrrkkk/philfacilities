@@ -12,6 +12,7 @@ Start with `README.md`, then `docs/README.md`. Read only the route that matches 
 |---|---|
 | Local setup | `docs/getting-started.md` |
 | API / contract | `docs/api.md`, `docs/data-model.md`, `docs/testing.md` |
+| MCP server | `docs/mcp.md`, `docs/api.md`, `docs/decisions/0009-mcp-server-boundary.md` |
 | Web / UI | `docs/web.md`, `docs/design-system.md` |
 | Ingestion / source | `docs/ingestion.md`, `docs/adding-a-source.md`, `docs/sources.md` |
 | Rights / privacy | `docs/data-policy.md`, `docs/data-dictionary.md` |
@@ -19,13 +20,14 @@ Start with `README.md`, then `docs/README.md`. Read only the route that matches 
 
 ## Architecture
 
-- Monorepo: `apps/web`, `apps/api`, `apps/ingest`, `packages/api-client`.
+- Monorepo: `apps/web`, `apps/api`, `apps/ingest`, `apps/mcp`, `packages/api-client`.
 - Web: Next.js App Router, TypeScript, shadcn/ui, Tailwind CSS, MapLibre.
 - API: FastAPI, Pydantic, SQLAlchemy 2, Alembic.
 - ETL: Python, uv, Polars/DuckDB/PyArrow and source-specific parsers.
 - Database: PostgreSQL + PostGIS.
 - Raw source files: private S3-compatible object storage by default.
 - OpenAPI is the contract; generate the TypeScript client from it.
+- MCP is a read-only adapter over the public `/v1` API: no DB credentials, no imported API internals, no duplicate vocabularies or rights states.
 - `apps/api/philfacilities_api/taxonomy.py` owns controlled vocabularies; `rights.py` owns rights/publication states.
 
 ## Commands
@@ -34,6 +36,9 @@ Start with `README.md`, then `docs/README.md`. Read only the route that matches 
 just setup                 # install, start DB, migrate
 just api                   # FastAPI on 127.0.0.1:8010
 just web                   # Next.js on 127.0.0.1:3000
+just mcp                   # MCP stdio server (needs the API running)
+just mcp-http              # MCP Streamable HTTP on 127.0.0.1:8011
+just mcp-test              # MCP tool, contract and transport tests
 just demo                  # synthetic demo data
 uv run philfacilities-ingest source run --group approved
 
