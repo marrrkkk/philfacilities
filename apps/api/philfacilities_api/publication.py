@@ -9,9 +9,45 @@ the controlled rights vocabulary; it has no dependency on API response schemas.
 from __future__ import annotations
 
 from sqlalchemy import and_, exists, or_, select
+from sqlalchemy.dialects.postgresql import distinct_on
 
 from .models import Dataset, Release, SourceRecord
 from .rights import PUBLIC_GATE_STATUSES, PUBLIC_RIGHTS
+
+
+def latest_public_release_cte():
+    """Newest published release per dataset as a materializable CTE.
+
+    Directory counts and pages need the current evidence set in one hashed
+    subquery. Building it once avoids a nested-loop probe for every facility row.
+    """
+
+    return (
+        select(Release.id.label("id"), Release.dataset_id.label("dataset_id"))
+        .where(
+            Release.ingestion_status == "published",
+            Release.publication_status.in_(tuple(PUBLIC_GATE_STATUSES)),
+        )
+        .ext(distinct_on(Release.dataset_id))
+        .order_by(
+            Release.dataset_id,
+            Release.retrieved_at.desc(),
+            Release.created_at.desc(),
+        )
+        .cte("latest_public_release")
+    )
+
+
+def public_dataset_condition():
+    """True when a dataset's rights and publication state allow public records."""
+
+    return or_(
+        Dataset.is_synthetic.is_(True),
+        and_(
+            Dataset.redistribution_status.in_(tuple(PUBLIC_RIGHTS)),
+            Dataset.publication_status.in_(tuple(PUBLIC_GATE_STATUSES)),
+        ),
+    )
 
 
 def latest_published_release_id(dataset_id_column):

@@ -22,7 +22,7 @@ const facilityFields = [
   ["facility_type", "controlled string", "Broad category: school, health facility, government office, community facility, library, museum, transport, utility, and related categories."],
   ["facility_subtype", "string or null", "Category-specific subtype. Null means the source did not establish one."],
   ["facility_kind", "controlled string", "facility, site, building, facility_unit, infrastructure_asset, or project."],
-  ["inclusion_class", "controlled string", "Government facility, private public-service provider, public-access venue, or internal discovery candidate."],
+  ["inclusion_class", "controlled string", "Government facility, private public-service provider, public-access venue, or unclassified record."],
   ["ownership", "government, private, unknown", "Source-reported ownership. Unknown is not assumed public."],
   ["ownership_type, operator_type", "controlled string", "Specific public, private, joint, or unknown owner/operator type; ownership and operation are separate."],
   ["public_access_class", "controlled string", "PUBLIC_FREE, PUBLIC_PAID_OR_CONDITIONAL, SERVICE_USERS_ONLY, APPOINTMENT_ONLY, MEMBERS_STUDENTS_ONLY, STAFF_ONLY, RESTRICTED, or UNKNOWN."],
@@ -464,7 +464,7 @@ export default function DataDictionaryPage() {
           Publication caveats
         </h2>
         <ul className="mt-4 max-w-3xl space-y-2 font-sans text-sm leading-relaxed text-[#5a5a58]">
-          <li>Published records are a partial, source-specific subset. The dataset catalogue lists the sources currently represented; DepEd EBEIS canonical rows remain internal and official PSA/DepEd/DOH files remain blocked or unacquired.</li>
+          <li>Published records are a partial, source-specific subset. The dataset catalogue lists the sources currently represented; DepEd EBEIS institution-level records are published with personal fields withheld, while some official PSA, DepEd machine-readable, and DOH files remain blocked or unacquired.</li>
           <li>Source-data rights are separate from the Apache-2.0 code licence. Check the source release before reuse.</li>
           <li>The map uses demonstration tiles; a production provider and licence are not selected.</li>
           <li>Production backups, monitoring, WAF/TLS, and an external security review are not configured.</li>

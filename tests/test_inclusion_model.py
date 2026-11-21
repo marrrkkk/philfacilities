@@ -8,8 +8,8 @@ import pytest
 from philfacilities_api.taxonomy import (
     DISCOVERY_CANDIDATE,
     GOVERNMENT_FACILITY,
+    INCLUSION_CLASSES,
     PRIVATE_PUBLIC_SERVICE_PROVIDER,
-    PUBLIC_INCLUSION_CLASSES,
     derive_inclusion_class,
     ownership_type_from_legacy,
 )
@@ -36,7 +36,7 @@ def test_unknown_ownership_is_never_guessed_as_government() -> None:
 
 def test_statistics_report_inclusion_classes_separately(client):
     stats = _items(client, "/v1/statistics")
-    assert set(stats["by_inclusion_class"]) <= set(PUBLIC_INCLUSION_CLASSES)
+    assert set(stats["by_inclusion_class"]) <= set(INCLUSION_CLASSES)
     assert sum(stats["by_inclusion_class"].values()) == stats["published_facilities"]
     assert sum(stats["by_ownership_type"].values()) == stats["published_facilities"]
     assert sum(stats["by_category"].values()) == stats["published_facilities"]
@@ -93,7 +93,7 @@ def test_coverage_reports_source_scope_and_class_counts(client):
     assert coverage["registry_records"] >= coverage["published_records"]
 
     class_rows = {row["key"]: row for row in coverage["by_inclusion_class"]}
-    assert set(class_rows) <= set(PUBLIC_INCLUSION_CLASSES)
+    assert set(class_rows) <= set(INCLUSION_CLASSES)
     published = coverage["published_records"]
     assert sum(row["facility_count"] for row in class_rows.values()) == published
 

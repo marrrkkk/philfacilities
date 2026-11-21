@@ -7,7 +7,7 @@ from collections import defaultdict
 from datetime import UTC, datetime
 from decimal import Decimal
 
-from sqlalchemy import and_, case, exists, func, or_, select
+from sqlalchemy import and_, case, func, or_, select
 from sqlalchemy.orm import Session
 
 from .models import (
@@ -27,11 +27,13 @@ from .models import (
     SourceRecord,
 )
 from .publication import (
-    latest_published_release_id as _latest_published_release_id,
-)
-from .publication import (
+    latest_public_release_cte,
+    public_dataset_condition,
     public_dataset_release_condition,
     public_source_record_condition,
+)
+from .publication import (
+    latest_published_release_id as _latest_published_release_id,
 )
 from .schemas import (
     AttributeAssertionOut,
@@ -53,23 +55,24 @@ def decimal_to_float(value: Decimal | None) -> float | None:
 
 
 def public_source_condition():
-    """True when a facility has a rights-cleared link in its current release."""
+    """True when a facility has a rights-cleared link in its current release.
 
-    return exists(
-        select(1)
-        .select_from(FacilitySourceLink)
+    The evidence set is built once in a CTE instead of probing source links per
+    facility. At national scale the correlated form turned an unfiltered
+    directory count into a multi-second nested loop.
+    """
+
+    latest = latest_public_release_cte()
+    public_links = (
+        select(FacilitySourceLink.facility_id)
         .join(SourceRecord, FacilitySourceLink.source_record_id == SourceRecord.id)
-        .join(Release, SourceRecord.release_id == Release.id)
-        .join(Dataset, Release.dataset_id == Dataset.id)
-        .where(
-            FacilitySourceLink.facility_id == Facility.id,
-            public_dataset_release_condition(),
-            # A facility is current only while the newest published release of
-            # that dataset still contains it.
-            Release.id == _latest_published_release_id(Dataset.id),
-        )
-        .correlate(Facility)
+        .join(latest, SourceRecord.release_id == latest.c.id)
+        .join(Dataset, latest.c.dataset_id == Dataset.id)
+        .where(public_dataset_condition())
+        .distinct()
+        .cte("public_facility_links")
     )
+    return Facility.id.in_(select(public_links.c.facility_id))
 
 
 def public_facility_filter() -> list:

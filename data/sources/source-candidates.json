@@ -171,7 +171,7 @@
       "rights_state": "PUBLISHED",
       "coverage_scope": "NATIONAL_PARTIAL",
       "priority": "P1",
-      "notes": "`ACQUIRED AND PUBLISHED`. Public server-rendered directory read on 15 Nov 2026: 18 regional directories, 280 pages, 2,716 rows, 2,711 unique after duplicate rejection. No login/CAPTCHA/prohibition encountered. Institutional fields published under `PUBLICLY_AVAILABLE_VERIFIED`; contact details and head names discarded; 123 `Others`/CHED-supervised/unrecognised rows remain internal; no coordinates or PSGC codes.",
+      "notes": "`ACQUIRED AND PUBLISHED`. Public server-rendered directory read on 15 Nov 2026: 18 regional directories, 280 pages, 2,716 rows, 2,711 unique after duplicate rejection. No login/CAPTCHA/prohibition encountered. Institutional fields published under `PUBLICLY_AVAILABLE_VERIFIED`; contact details and head names discarded; 123 `Others`/CHED-supervised/unrecognised rows are published as unclassified records; no coordinates or PSGC codes.",
       "next_action": "**P1.** Seek a campus-level or complete export; retain regional-directory scope and `NATIONAL_PARTIAL` coverage.",
       "tracker_ids": [],
       "last_verified": "2026-11-15"
@@ -204,11 +204,11 @@
       ],
       "evidence_state": "DIRECTORY_CONTENT_VERIFIED",
       "access_state": "OPEN",
-      "rights_state": "REVIEW_REQUIRED",
+      "rights_state": "PUBLISHED",
       "coverage_scope": "NATIONAL_PARTIAL",
       "priority": "P0",
-      "notes": "`DIRECTORY CONTENT VERIFIED AND ACQUIRED`. The public EBEIS result form exposes 19 region groups (18 regions plus PSO). Live page counts total 83,218 rows on 16 Nov 2026: Region I 4,370; Region II 3,705; Region III 7,781; Region IV-A 9,660; MIMAROPA 3,114; Region V 5,476; Region VI 4,383; Region VII 4,873; Region VIII 5,157; Region IX 4,113; Region X 4,541; Region XI 3,971; Region XII 3,614; CARAGA 2,995; BARMM 4,268; CAR 2,613; NCR 5,055; NIR 3,451; PSO 78. All region result sets are ingested internal-only pending terms/privacy review. School-head names remain in the private raw store and are omitted from normalized records; ownership/sector is not reliably exposed, so canonical rows remain discovery candidates. DepEd Machine-Ready files remain blocked by HTTP 403/human terms flow.",
-      "next_action": "**P1.** Obtain an authoritative sector/ownership field or separate DepEd releases before public canonical publication; retain release-level publication for institutional fields only. Refresh all region result sets on the next school year and compare row counts.",
+      "notes": "`DIRECTORY CONTENT VERIFIED AND ACQUIRED`. The public EBEIS result form exposes 19 region groups (18 regions plus PSO). Live page counts total 83,218 rows on 16 Nov 2026: Region I 4,370; Region II 3,705; Region III 7,781; Region IV-A 9,660; MIMAROPA 3,114; Region V 5,476; Region VI 4,383; Region VII 4,873; Region VIII 5,157; Region IX 4,113; Region X 4,541; Region XI 3,971; Region XII 3,614; CARAGA 2,995; BARMM 4,268; CAR 2,613; NCR 5,055; NIR 3,451; PSO 78. All region result sets are published with institution-level fields. School-head names remain in the private raw store and are omitted from normalized records; ownership/sector is not reliably exposed, so canonical rows are published as unclassified records. DepEd Machine-Ready files remain blocked by HTTP 403/human terms flow.",
+      "next_action": "**P1.** Maintain institution-level publication with personal fields withheld. Obtain an authoritative sector/ownership field or separate DepEd releases to replace unclassified records. Refresh all region result sets on the next school year and compare row counts.",
       "tracker_ids": [],
       "last_verified": "2026-11-15"
     },

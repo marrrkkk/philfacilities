@@ -66,10 +66,10 @@ export default function AboutPage() {
         <AlertTitle>Partial real-data environment</AlertTitle>
         <AlertDescription>
           Published records currently come from PhilHealth accredited-provider PDFs, BetterGov&apos;s
-          PSGC snapshot, and HOT/OSM facility extracts, with documented rights and attribution.
-          Official PSA, DepEd, and DOH files still require human download or an institutional
-          agreement; those sources remain blocked or internal-only. Labelled synthetic fixtures may
-          remain for testing and are never official government records.
+          PSGC snapshot, HOT/OSM facility extracts, and DepEd EBEIS institution-level records,
+          with documented rights and attribution. The PSA PSGC workbook, DepEd machine-readable
+          files, and DOH NHFR/HFSRB files remain blocked or unacquired. Labelled synthetic fixtures
+          may remain for testing and are never official government records.
         </AlertDescription>
       </Alert>
 
@@ -79,7 +79,7 @@ export default function AboutPage() {
             <h2 className="font-display text-2xl font-extrabold">What the product covers</h2>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               {[
-                ["Schools", "OSM-mapped schools and DepEd EBEIS records where publication terms allow; EBEIS remains internal-only pending review."],
+                ["Schools", "OSM-mapped schools and DepEd EBEIS institution-level records. School-head names and other personal fields stay private."],
                 ["Health facilities", "PhilHealth accredited providers with dated package evidence, plus OSM-mapped health features and precision labels."],
                 ["Geography", "BetterGov's Q2 2024 PSGC snapshot, versioned separately from agency releases and never treated as the latest PSA release."],
                 ["Provenance", "Source record IDs, release labels, reference periods, retrieval and processing times, match evidence, and rights status."],

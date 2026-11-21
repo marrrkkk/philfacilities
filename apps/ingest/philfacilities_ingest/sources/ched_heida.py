@@ -16,7 +16,7 @@ The directory type is the only ownership evidence used here:
 * ``Chartered State College/University`` -> public educational institution;
 * ``Local Government College/University`` -> local-government institution;
 * ``Private ...`` -> private public-service provider;
-* ``Others`` or an unrecognised type -> internal discovery candidate.
+* ``Others`` or an unrecognised type -> published as an unclassified record.
 
 A directory listing is not proof that an institution is currently operating, and
 no coordinates, PSGC codes, campus count or public-access conditions are inferred.
@@ -420,8 +420,9 @@ class ChedHeidaAdapter:
                     "code": "ownership_from_institutional_type",
                     "message": (
                         "Ownership is classified only from the published institutional "
-                        "type. 'Others' and unrecognised types remain internal discovery "
-                        "candidates because the source does not establish ownership."
+                        "type. 'Others' and unrecognised types are published as "
+                        "unclassified records because the source does not establish "
+                        "ownership."
                     ),
                 },
                 {
@@ -482,7 +483,7 @@ class ChedHeidaAdapter:
                         "ownership_not_established",
                         "warning",
                         f"HEI {name} has institutional type {hei_type!r}, which does not "
-                        "establish ownership; it remains an internal discovery candidate.",
+                        "establish ownership; it is published as an unclassified record.",
                         {"institution_type": hei_type},
                         row.row_reference,
                     )
@@ -492,8 +493,8 @@ class ChedHeidaAdapter:
                     ValidationIssue(
                         "unclassified_institution_type",
                         "warning",
-                        f"HEI {name} has institutional type {hei_type!r}; it remains an "
-                        "internal discovery candidate.",
+                        f"HEI {name} has institutional type {hei_type!r}; it is "
+                        "published as an unclassified record.",
                         {"institution_type": hei_type},
                         row.row_reference,
                     )

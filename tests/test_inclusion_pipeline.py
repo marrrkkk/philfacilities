@@ -1,11 +1,14 @@
 """Ownership-inclusive ingestion invariants.
 
-These tests exercise the pipeline with synthetic, internal-only releases so they
-do not perturb public fixture counts. They cover the rules that cannot be proven
-from parser output alone:
+These tests exercise the pipeline with isolated test-only releases. Publication
+tests use a non-synthetic, rights-cleared release so the API gate cannot take its
+synthetic shortcut. They cover the rules that cannot be proven from parser output
+alone:
 
 * a licence/accreditation never turns a private provider into a government facility;
-* conflicting provider sectors stay unknown and internal;
+* conflicting provider sectors stay unknown and carry the unclassified label;
+* unclassified records in a rights-cleared release are published with the
+  explicit unclassified label and remain visible through the public API gate;
 * enrichment-only releases cannot demote an already-classified facility;
 * a government service counter hosted in a private building keeps its own class;
 * review-required sources never publish records even when the parser succeeds.
@@ -14,6 +17,7 @@ from parser output alone:
 from __future__ import annotations
 
 import uuid
+from dataclasses import replace
 from datetime import UTC, date, datetime
 from typing import ClassVar
 
@@ -113,6 +117,21 @@ def _spec(token: str, *, suffix: str = "", agency: str | None = None) -> Release
     )
 
 
+def _public_spec(token: str, *, suffix: str = "") -> ReleaseSpec:
+    """A non-synthetic release with a reviewed public-rights decision."""
+
+    spec = _spec(token, suffix=suffix)
+    return replace(
+        spec,
+        redistribution_status="publicly_available_verified",
+        requested_publication_status="published",
+        access_method="manual_file",
+        license_identifier=None,
+        is_synthetic=False,
+        notes="Test-only release with a reviewed public-rights decision; not an official dataset.",
+    )
+
+
 def _candidate(
     key: str,
     name: str,
@@ -148,7 +167,7 @@ def _candidate(
         ownership_type=ownership_type,
         inclusion_class=inclusion_class,
         public_access_class="SERVICE_USERS_ONLY",
-        record_status="operational",
+        record_status="unknown",
         location=LocationData(
             latitude=latitude,
             longitude=longitude,
@@ -198,9 +217,13 @@ def test_private_accreditation_never_implies_government_ownership(db_session) ->
     assert facility.publication_status == "internal"
 
 
-def test_conflicting_sector_codes_stay_unknown_and_internal(db_session) -> None:
+def test_conflicting_sector_codes_stay_unclassified(db_session) -> None:
+    """Mixed sector evidence is labelled, not treated as a publication block."""
+
+    from philfacilities_api.services import facility_is_public
+
     token = uuid.uuid4().hex[:10]
-    spec = _spec(token)
+    spec = _public_spec(token)
     entity_id = "mixed-sector-provider"
     candidates = [
         _candidate("mixed-g", "Synthetic Mixed Hospital", entity_id=entity_id, sector_code="G"),
@@ -219,7 +242,79 @@ def test_conflicting_sector_codes_stay_unknown_and_internal(db_session) -> None:
     assert facility.ownership == "unknown"
     assert facility.ownership_type == "UNKNOWN"
     assert facility.inclusion_class == "DISCOVERY_CANDIDATE"
-    assert facility.publication_status == "internal"
+    assert facility.publication_status == "public"
+    assert facility_is_public(db_session, facility)
+
+
+def test_unclassified_record_in_public_release_is_published(db_session) -> None:
+    """Unknown ownership is a label, not a publication block."""
+
+    from philfacilities_api.services import facility_is_public
+
+    token = uuid.uuid4().hex[:10]
+    spec = _public_spec(token)
+    candidate = _candidate(
+        "unclassified-provider",
+        "Synthetic Unclassified Clinic",
+        ownership="unknown",
+        ownership_type="UNKNOWN",
+        inclusion_class=None,
+    )
+
+    result = run_ingestion(
+        spec=spec,
+        adapter=_StaticAdapter(spec, [candidate]),
+        session=db_session,
+    )
+    assert result.status == "published"
+
+    facility = _facility_for_release(db_session, result.release_id)
+    assert facility is not None
+    assert facility.ownership == "unknown"
+    assert facility.ownership_type == "UNKNOWN"
+    assert facility.inclusion_class == "DISCOVERY_CANDIDATE"
+    assert facility.publication_status == "public"
+    # The facility must not take the synthetic shortcut in the API gate.
+    assert facility.is_synthetic is False
+    assert facility_is_public(db_session, facility)
+
+
+def test_enrichment_release_keeps_unclassified_facility_public(db_session) -> None:
+    """A later unknown-ownership row must not demote an already-public record."""
+
+    token = uuid.uuid4().hex[:10]
+    entity_id = "stable-unclassified-provider"
+    first_spec = _public_spec(token, suffix="-A")
+    first_candidate = _candidate(
+        "unclassified-first",
+        "Synthetic Stable Unclassified Clinic",
+        entity_id=entity_id,
+    )
+    first = run_ingestion(
+        spec=first_spec,
+        adapter=_StaticAdapter(first_spec, [first_candidate]),
+        session=db_session,
+    )
+    assert first.status == "published"
+
+    second_spec = _public_spec(token, suffix="-B")
+    second_candidate = _candidate(
+        "unclassified-enrichment",
+        "Synthetic Stable Unclassified Clinic",
+        entity_id=entity_id,
+        inclusion_class=None,
+    )
+    second = run_ingestion(
+        spec=second_spec,
+        adapter=_StaticAdapter(second_spec, [second_candidate]),
+        session=db_session,
+    )
+    assert second.status == "published"
+
+    facility = _facility_for_release(db_session, second.release_id)
+    assert facility is not None
+    assert facility.inclusion_class == "DISCOVERY_CANDIDATE"
+    assert facility.publication_status == "public"
 
 
 def test_duplicate_entity_rows_replace_the_current_location(db_session) -> None:

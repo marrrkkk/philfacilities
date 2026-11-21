@@ -1,9 +1,9 @@
 """DepEd EBEIS public school-masterlist HTML connector.
 
 The EBEIS result page is a public, server-rendered HTML table. It contains school
-head names, so the dataset is ingested as internal-only until DepEd's terms and
-privacy position are reviewed. The parser preserves the full source row in the
-private source-record store; the public API never exposes this dataset.
+head names, so only institution-level fields are normalized and published; the
+full source row stays in the private source-record store and personal fields are
+never exposed by the public API.
 """
 
 from __future__ import annotations

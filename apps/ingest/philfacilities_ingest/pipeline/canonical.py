@@ -223,8 +223,9 @@ def _apply_sector_ownership(
     PhilHealth's provider directory publishes a ``SEC`` value per accreditation. It
     is source-supplied sector evidence, not an inference from accreditation itself.
     A facility is only classified when every known accreditation agrees; a mixed
-    facility stays ``unknown`` and internal. An explicit ownership value from a
-    stronger source is never overwritten.
+    facility stays ``unknown`` and is labelled ``DISCOVERY_CANDIDATE``. An explicit
+    ownership value from a stronger source is never overwritten, and publication
+    still follows the source rights gate rather than the class label.
     """
 
     if (candidate.ownership or "").strip().lower() != "unknown":
@@ -269,11 +270,7 @@ def _apply_sector_ownership(
     facility.ownership = ownership
     facility.ownership_type = ownership_type
     facility.inclusion_class = inclusion_class
-    publication = (
-        "public"
-        if _dataset_is_public(dataset, gate) and inclusion_class in PUBLIC_INCLUSION_CLASSES
-        else "internal"
-    )
+    publication = "public" if _dataset_is_public(dataset, gate) else "internal"
     facility.publication_status = publication
     facility.updated_at = datetime.now(UTC)
     stats["facilities_updated"] += 1
@@ -339,9 +336,11 @@ def _apply_candidate(
             )
         )
         return None
-    can_be_public = (
-        _dataset_is_public(dataset, gate) and inclusion_class in PUBLIC_INCLUSION_CLASSES
-    )
+    # Publication is a rights/safety decision, not a classification decision.
+    # Records whose ownership is unknown stay public and are labelled
+    # DISCOVERY_CANDIDATE, so the registry can maximize coverage without
+    # asserting an owner the source never supplied.
+    can_be_public = _dataset_is_public(dataset, gate)
     # Canonical fields of an already public facility are owned by the
     # rights-cleared release that published it. Internal releases may still add
     # assertions and gated child rows, but not rewrite what the public sees.
@@ -435,9 +434,9 @@ def _apply_candidate(
         changed = {}
         if not protect_public:
             # Enrichment-only releases (enrollment totals, resources) carry no
-            # ownership evidence. They must never demote an identified school or
-            # hospital to an internal discovery candidate merely because their own
-            # row says "unknown".
+            # ownership evidence. They must never replace an identified school or
+            # hospital's class with a discovery placeholder merely because their
+            # own row says "unknown".
             has_classification_evidence = candidate.inclusion_class is not None or (
                 candidate.ownership or ""
             ).strip().lower() not in ("", "unknown")
@@ -472,18 +471,7 @@ def _apply_candidate(
                     "old": old_conditions,
                     "new": candidate.access_conditions,
                 }
-            if (
-                has_classification_evidence
-                and inclusion_class == DISCOVERY_CANDIDATE
-                and facility.publication_status != "internal"
-            ):
-                old_publication = facility.publication_status
-                facility.publication_status = "internal"
-                changed["publication_status"] = {
-                    "old": old_publication,
-                    "new": "internal",
-                }
-            elif can_be_public and facility.publication_status != "public":
+            if can_be_public and facility.publication_status != "public":
                 old_publication = facility.publication_status
                 facility.publication_status = "public"
                 changed["publication_status"] = {

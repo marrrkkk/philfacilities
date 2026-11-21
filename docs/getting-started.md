@@ -73,7 +73,7 @@ uv run philfacilities-ingest source run osm-health
 uv run philfacilities-ingest source run osm-education
 ```
 
-DepEd EBEIS is deliberately separate. Its source release is approved for institution-level publication with school-head names withheld, while canonical rows stay `internal` pending field-level mapping and privacy review:
+DepEd EBEIS is deliberately separate. Its source release is published for institution-level fields with school-head names withheld, and its canonical rows are published as unclassified records pending field-level mapping:
 
 ```bash
 uv run philfacilities-ingest source run deped-ebeis --region ncr

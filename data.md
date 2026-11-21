@@ -228,7 +228,7 @@ a facility point.
 ### 4.4 Inclusion and ownership
 
 Classify every record under [`docs/data-policy.md`](docs/data-policy.md) as `GOVERNMENT_FACILITY`,
-`PRIVATE_PUBLIC_SERVICE_PROVIDER`, `PUBLIC_ACCESS_VENUE` or internal-only `DISCOVERY_CANDIDATE`.
+`PRIVATE_PUBLIC_SERVICE_PROVIDER`, `PUBLIC_ACCESS_VENUE` or published-as-unclassified `DISCOVERY_CANDIDATE`.
 Record owner, operator, manager, host/landlord, funder, regulator, licensor, accreditor, recognition
 authority, public-access class, and the evidence for each. A government licence or accreditation
 does not make a private provider government-owned. A government service desk inside a private mall is
