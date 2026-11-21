@@ -84,9 +84,8 @@ export default function ApiPage() {
         The data and API outlive this interface.
       </h1>
       <p className="mt-4 max-w-3xl font-sans text-base leading-relaxed text-[#5a5a58]">
-        The OpenAPI document is the contract. The web directory, map, and profiles consume the same
-        read API that researchers and other applications can call. Every response keeps source
-        evidence, reference periods, and quality warnings attached.
+        The OpenAPI document is the contract. The directory, map, and profiles use the same read
+        API. Responses carry source evidence, reference periods, and quality warnings.
       </p>
 
       <div className="mt-6 flex flex-wrap gap-3">
@@ -118,10 +117,8 @@ export default function ApiPage() {
       <Alert tone="info" className="mt-6">
         <AlertTitle>No authentication for public reads</AlertTitle>
         <AlertDescription>
-          This release exposes read-only endpoints without a key, behind a transparent rate limit.
-          Do not use it to attempt to infer unpublished, private, or personal information. Published
-          records trace to a registered source release; labelled synthetic fixtures remain marked{" "}
-          <code>is_synthetic=true</code>.
+          Read-only endpoints need no key and are rate-limited. Do not probe for unpublished,
+          private, or personal data. Published records trace to a registered source release.
         </AlertDescription>
       </Alert>
 
@@ -205,22 +202,21 @@ curl "${base}/v1/quality/summary"`}</code>
 
       <div className="mt-10">
         <h2 className="font-display text-2xl font-extrabold">Endpoint families</h2>
-        <div className="mt-4 grid gap-4 md:grid-cols-2">
+        <div className="mt-4 border border-[#d1d8e6] bg-white">
           {families.map((family) => (
-            <Card key={family.title} className="min-w-0">
-              <CardHeader>
-                <CardTitle className="text-xl">{family.title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-1.5 font-mono text-xs leading-relaxed">
-                  {family.endpoints.map((endpoint) => (
-                    <li key={endpoint} className="break-all">
-                      {endpoint}
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
+            <div
+              key={family.title}
+              className="grid gap-3 border-b border-[#d1d8e6] p-4 last:border-b-0 md:grid-cols-[13rem_1fr]"
+            >
+              <h3 className="font-ui text-sm font-bold text-[#0a0a0a]">{family.title}</h3>
+              <ul className="grid gap-x-6 gap-y-1 font-mono text-xs leading-relaxed sm:grid-cols-2">
+                {family.endpoints.map((endpoint) => (
+                  <li key={endpoint} className="break-all">
+                    {endpoint}
+                  </li>
+                ))}
+              </ul>
+            </div>
           ))}
         </div>
       </div>
@@ -228,15 +224,14 @@ curl "${base}/v1/quality/summary"`}</code>
       <section className="mt-10 border-t border-[#d1d8e6] pt-8">
         <h2 className="font-display text-2xl font-extrabold">Data rights are separate from code rights</h2>
         <p className="mt-3 max-w-3xl font-sans text-sm leading-relaxed text-[#5a5a58]">
-          The API software and schema are Apache-2.0 licensed. That license does not grant rights to
-          republish agency source data. Download endpoints expose only publication-approved records;
-          each dataset page records its redistribution status and terms review.
+          The API software and schema are Apache-2.0 licensed; that does not grant rights to
+          republish agency data. Downloads expose only publication-approved records, and each
+          dataset page records its redistribution status.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <Badge tone="muted">Apache-2.0 code</Badge>
           <Badge tone="warning">Source data rights vary</Badge>
           <Badge tone="success">Real sources attributed</Badge>
-          <Badge tone="sun">Synthetic records labelled</Badge>
         </div>
       </section>
     </div>

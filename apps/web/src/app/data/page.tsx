@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   type DatasetOut,
   type QualitySummary,
@@ -30,8 +30,6 @@ export default async function DataPage() {
   } catch (caught) {
     error = caught instanceof Error ? caught.message : "The source catalogue is unavailable.";
   }
-
-  const synthetic = sources.filter((source) => source.is_synthetic).length;
 
   return (
     <div className="container-page py-10">
@@ -65,7 +63,7 @@ export default async function DataPage() {
           <CardContent>
             <p className="eyebrow text-[#5a5a58]">Datasets</p>
             <p className="mt-2 font-display text-3xl font-extrabold">{formatNumber(sources.length)}</p>
-            <p className="mt-1 font-sans text-xs text-[#5a5a58]">{synthetic} synthetic fixtures</p>
+            <p className="mt-1 font-sans text-xs text-[#5a5a58]">Across registered agencies</p>
           </CardContent>
         </Card>
         <Card>
@@ -74,9 +72,7 @@ export default async function DataPage() {
             <p className="mt-2 font-display text-3xl font-extrabold">
               {formatNumber(quality?.published_facility_count)}
             </p>
-            <p className="mt-1 font-sans text-xs text-[#5a5a58]">
-              {formatNumber(quality?.synthetic_facility_count)} labelled synthetic
-            </p>
+            <p className="mt-1 font-sans text-xs text-[#5a5a58]">From published releases</p>
           </CardContent>
         </Card>
         <Card>
@@ -91,27 +87,6 @@ export default async function DataPage() {
           </CardContent>
         </Card>
       </div>
-
-      {synthetic > 0 ? (
-        <Alert tone="warning" className="mt-6">
-          <AlertTitle>Labelled synthetic fixtures are present</AlertTitle>
-          <AlertDescription>
-            This environment also contains deterministic synthetic fixtures for parser and product
-            testing. They are marked in the catalogue and on every generated facility record. The
-            directory and API mix them with real, rights-cleared source records; check each
-            facility&apos;s provenance and publication status before reuse.
-          </AlertDescription>
-        </Alert>
-      ) : (
-        <Alert tone="success" className="mt-6">
-          <AlertTitle>No synthetic facilities are published</AlertTitle>
-          <AlertDescription>
-            All published facility records trace to a registered real source release whose
-            redistribution status permits publication. Source-specific limits still apply; see the
-            rights register below.
-          </AlertDescription>
-        </Alert>
-      )}
 
       <div className="mt-10 overflow-hidden border border-[#d1d8e6]">
         <div className="table-scroll" role="region" aria-label="Dataset catalogue" tabIndex={0}>
@@ -131,17 +106,21 @@ export default async function DataPage() {
             </thead>
             <tbody>
               {sources.map((source) => (
-                <tr key={source.id} className="align-top hover:bg-[#f9fbff]">
+                <tr key={source.id} className="h-32 align-top hover:bg-[#f9fbff]">
                   <td className="border-b border-[#d1d8e6] p-3">
-                    <Link href={`/data/${source.slug}`} className="font-ui text-sm font-bold text-[#0038a8] underline">
+                    <Link
+                      href={`/data/${source.slug}`}
+                      title={source.name}
+                      className="line-clamp-2 font-ui text-sm font-bold text-[#0038a8] underline"
+                    >
                       {source.name}
                     </Link>
-                    <span className="mt-1 block text-xs text-[#5a5a58]">
+                    <span className="mt-1 line-clamp-2 text-xs text-[#5a5a58]">
                       {source.description ?? source.access_method ?? "No description"}
                     </span>
                   </td>
                   <td className="border-b border-[#d1d8e6] p-3">
-                    {source.agency}
+                    <span className="line-clamp-2">{source.agency}</span>
                     <span className="mt-1 block text-xs text-[#5a5a58]">
                       {source.source_url ? (
                         <a href={source.source_url} className="underline" rel="noreferrer" target="_blank">
@@ -153,9 +132,11 @@ export default async function DataPage() {
                     </span>
                   </td>
                   <td className="border-b border-[#d1d8e6] p-3 text-xs">
-                    {source.latest_release?.label ??
-                      source.latest_geography_release?.release_label ??
-                      "No release"}
+                    <span className="line-clamp-2">
+                      {source.latest_release?.label ??
+                        source.latest_geography_release?.release_label ??
+                        "No release"}
+                    </span>
                     <span className="mt-1 block text-[#5a5a58]">
                       {source.latest_release?.ingestion_status
                         ? titleCase(source.latest_release.ingestion_status)
@@ -167,7 +148,10 @@ export default async function DataPage() {
                   <td className="border-b border-[#d1d8e6] p-3 text-xs">
                     {coverageScopeLabel(source.coverage_scope)}
                     {source.coverage_note ? (
-                      <span className="mt-1 block max-w-[18rem] text-[#5a5a58]">
+                      <span
+                        title={source.coverage_note}
+                        className="mt-1 line-clamp-3 max-w-[18rem] text-[#5a5a58]"
+                      >
                         {source.coverage_note}
                       </span>
                     ) : null}
@@ -189,7 +173,9 @@ export default async function DataPage() {
                       {titleCase(source.redistribution_status)}
                     </Badge>
                     <span className="mt-1 block text-xs text-[#5a5a58]">
-                      {source.license_identifier ?? "No license recorded"}
+                      <span className="line-clamp-2">
+                        {source.license_identifier ?? "No license recorded"}
+                      </span>
                     </span>
                   </td>
                   <td className="border-b border-[#d1d8e6] p-3">
@@ -222,72 +208,51 @@ export default async function DataPage() {
         ) : null}
       </div>
 
-      <div className="mt-10 grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Publication rules</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 font-sans text-sm leading-relaxed text-[#5a5a58]">
-            <p>
-              A dataset is downloadable only when its publication gate permits the intended
-              redistribution. The legacy <code>not_applicable</code> value applied to test fixtures
-              with no third-party source-data rights; the working database publishes no such
-              fixture.
-            </p>
-            <p>
-              PhilHealth PDFs are published with attribution under PhilHealth&apos;s public reuse
-              statement. DepEd EBEIS is a verified public government result set; the source registry
-              approves institution-level publication with attribution, while school-head names remain
-              private. A verified, publicly available dataset with no explicit prohibition may also be
-              published under <code>publicly_available_verified</code> when only reviewed institutional
-              fields are exposed. OSM/HOT extracts are published under ODbL with visible attribution
-              and bbox-centre precision labels.
-            </p>
-            <p>
-              Source publication date, reference period, retrieval time, and processing time are
-              separate. Freshness is never implied by a single “updated” label.
-            </p>
-            <p>
-              Missing values stay unknown. No missing bed count, coordinate, or operational status
-              is converted to zero or inactive.
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Rights and publication vocabulary</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <dl className="space-y-3 font-sans text-sm">
-              {[
-                ["unknown", "No rights review has been completed. Do not republish."],
-                ["review_required", "Access or reuse terms are unresolved; publication stays blocked."],
-                ["approved_public_redistribution", "Terms permit public redistribution."],
-                ["approved_with_attribution", "Publication is permitted with the recorded attribution."],
-                [
-                  "publicly_available_verified",
-                  "Verified and publicly available with no explicit prohibition; reviewed institutional fields only.",
-                ],
-                ["restricted_non_redistributable", "Records may be retained internally but not republished."],
-                ["denied", "The source has denied the intended reuse."],
-                ["expired", "A previously recorded permission is no longer current."],
-              ].map(([status, description]) => (
-                <div key={status} className="grid gap-1 sm:grid-cols-[12rem_1fr] sm:gap-3">
-                  <dt className="font-ui text-xs font-bold uppercase tracking-wide text-[#0a0a0a]">
-                    {titleCase(status)}
-                  </dt>
-                  <dd className="text-[#5a5a58]">{description}</dd>
-                </div>
-              ))}
-            </dl>
-            <p className="mt-4 border-t border-[#d1d8e6] pt-3 text-xs text-[#5a5a58]">
-              Publication states are <code>blocked</code>, <code>internal_only</code>,{" "}
-              <code>quarantined</code>, <code>approved</code>, and <code>published</code>. The public
-              API returns only records whose source release is published.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      <section className="mt-10 grid border border-[#d1d8e6] bg-white lg:grid-cols-[0.85fr_1.15fr]">
+        <div className="flex flex-col border-b border-[#d1d8e6] p-4 lg:border-b-0 lg:border-r">
+          <h2 className="font-display text-xl font-bold">Publication rules</h2>
+          <ul className="mt-3 space-y-2 font-sans text-sm text-[#5a5a58]">
+            {[
+              "Only releases that pass their publication gate reach the directory and API.",
+              "Attribution and reuse terms stay with each dataset.",
+              "Reference, publication, and retrieval dates are separate; missing values stay null.",
+            ].map((rule) => (
+              <li key={rule} className="flex gap-3">
+                <span aria-hidden="true" className="mt-2 size-1.5 shrink-0 bg-[#0038a8]" />
+                <span>{rule}</span>
+              </li>
+            ))}
+          </ul>
+          <Link
+            href="/data/dictionary"
+            className="mt-auto pt-4 font-ui text-sm font-bold text-[#0038a8] no-underline"
+          >
+            Field definitions →
+          </Link>
+        </div>
+        <div className="p-4">
+          <h2 className="font-display text-xl font-bold">Rights states</h2>
+          <dl className="mt-3 grid gap-x-6 gap-y-2 font-sans text-sm sm:grid-cols-2">
+            {[
+              ["unknown", "No rights review."],
+              ["review_required", "Terms unresolved; blocked."],
+              ["approved_public_redistribution", "Public redistribution allowed."],
+              ["approved_with_attribution", "Allowed with recorded attribution."],
+              ["publicly_available_verified", "Verified public data; reviewed fields only."],
+              ["restricted_non_redistributable", "Internal use only."],
+              ["denied", "Reuse denied by source."],
+              ["expired", "Permission no longer current."],
+            ].map(([status, description]) => (
+              <div key={status}>
+                <dt className="font-ui text-xs font-bold uppercase tracking-wide text-[#0a0a0a]">
+                  {titleCase(status)}
+                </dt>
+                <dd className="mt-0.5 text-[#5a5a58]">{description}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </section>
     </div>
   );
 }

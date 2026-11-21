@@ -211,7 +211,7 @@ jobs:
 
       - name: Start API and web server
         run: |
-          uv run uvicorn philfacilities_api.main:app --host 127.0.0.1 --port 8010 > /tmp/philfacilities-api.log 2>&1 &
+          PHILFACILITIES_RATE_LIMIT_PER_MINUTE=100000 uv run uvicorn philfacilities_api.main:app --host 127.0.0.1 --port 8010 > /tmp/philfacilities-api.log 2>&1 &
           pnpm --filter @philfacilities/web start > /tmp/philfacilities-web.log 2>&1 &
           for _ in $(seq 1 60); do
             if curl --fail --silent http://127.0.0.1:8010/healthz > /dev/null \

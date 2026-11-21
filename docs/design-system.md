@@ -44,6 +44,8 @@ Implemented in `apps/web/src/app/globals.css`.
 
 The header renders at `rgba(0,34,110,0.94)` with a `1px` bottom rule; ink sections use `#0a0a0a` with white text. Do not introduce a second palette.
 
+The interactive API reference at `/docs` mirrors these tokens in `apps/api/philfacilities_api/scalar_theme.py` — light and dark modes, square corners, the `#ffcf4a` focus ring, and code-block surfaces with an accessible syntax palette. Dark mode uses ink surfaces with sun-yellow actions and a lightened blue for links. Update that file in the same change when a token changes.
+
 ## 4. Typography
 
 Measured scale (abridged; full viewport table in the audit):
