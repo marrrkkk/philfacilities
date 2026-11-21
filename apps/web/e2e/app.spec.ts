@@ -569,6 +569,10 @@ test.describe("responsive layout", () => {
       "/status",
     ]) {
       await page.goto(path, { waitUntil: "load" });
+      // App Router streams the page after `load`; measuring during the
+      // loading.tsx fallback destroys the evaluation context.
+      await page.waitForLoadState("networkidle");
+      await expect(page.getByRole("status", { name: "Loading page" })).toHaveCount(0);
       const metrics = await page.evaluate(() => ({
         innerWidth: window.innerWidth,
         scrollWidth: document.documentElement.scrollWidth,
@@ -591,7 +595,9 @@ test.describe("accessibility", () => {
     "/status",
   ]) {
     test(`axe finds no serious or critical violations on ${path}`, async ({ page }) => {
-      await page.goto(path);
+      await page.goto(path, { waitUntil: "load" });
+      await page.waitForLoadState("networkidle");
+      await expect(page.getByRole("status", { name: "Loading page" })).toHaveCount(0);
       const results = await new AxeBuilder({ page })
         .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
         .analyze();
