@@ -1,7 +1,7 @@
 # Ingestion
 
 **Implementation:** `apps/ingest/philfacilities_ingest/`
-**Authority for source metadata:** `sources/registry.py` + `sources/catalog.py`
+**Authority for source metadata:** `sources/registry_data.py` + `sources/catalog.py`
 **Authority for publication:** [data policy](data-policy.md)
 
 Ingestion is a first-class product component. It is reproducible, observable, source-aware, and safe to rerun. A failed download, schema change, or validation failure must never replace the last good public release.
@@ -14,7 +14,7 @@ discover → acquire → preserve → parse → validate → normalize
 ## 1. Design rules
 
 - **Acquisition and parsing are separate.** A connector owns discovery and acquisition; an adapter owns `parse → validate → normalize`. An adapter never downloads and never invents a missing value.
-- **The catalogue is data-driven.** A source is declared once in `sources/registry.py` and wired once in `sources/catalog.py`. The CLI, runner, checks, and scheduled jobs read that catalogue. Do not add a `load-<source>` command or a source-specific branch to `pipeline/`.
+- **The catalogue is data-driven.** A source is declared once in `sources/registry_data.py` and wired once in `sources/catalog.py`. The CLI, runner, checks, and scheduled jobs read that catalogue. Do not add a `load-<source>` command or a source-specific branch to `pipeline/`.
 - **Raw source truth is immutable.** Every acquired artifact is preserved with a SHA-256 before parsing. Original column names and values stay in `source.records.raw_payload`.
 - **Validation fails closed.** Missing required columns, unreadable files, and shape changes raise; they do not produce a guessed release. An empty parse or a release below its acceptance floor is quarantined before canonical writes.
 - **One writer per dataset.** A PostgreSQL session-level advisory lock covers the whole preserve/parse/apply/report lifecycle. A second worker fails fast instead of interleaving canonical writes.
@@ -30,7 +30,8 @@ discover → acquire → preserve → parse → validate → normalize
 | `storage.py` | Content-addressed raw store; filesystem and S3-compatible backends |
 | `contracts.py` | `ReleaseSpec`, `ParsedRelease`, `FacilityCandidate`, `ValidationResult`, adapter protocol |
 | `sources/definitions.py` | `SourceDefinition`, `AgencyRef`, `DatasetRef`, `RightsDecision`, `AccessSpec`, `CheckSpec` |
-| `sources/registry.py` | `REAL_SOURCES`: keys, URLs, access/rights metadata, rights basis, attribution |
+| `sources/registry_data.py` | `REAL_SOURCES`: keys, URLs, access/rights metadata, rights basis, attribution |
+| `sources/registry.py` | Publication decisions, source checks, acquisition helpers; re-exports the registry data |
 | `sources/catalog.py` | `SOURCES` and `CONNECTORS`: the single acquisition catalogue |
 | `sources/connectors/` | Reusable acquisition shapes: single file, PhilHealth index, OSM Parquet/PBF, EBEIS paging, geography/population |
 | `sources/<source>.py` | Source-specific parsing, validation, normalization |
@@ -51,7 +52,8 @@ discover → acquire → preserve → parse → validate → normalize
 | `aggregation.py` | Whole-registry evidence clustering, strong-bridge auto-merge, location promotion |
 | `fusion.py` | Attribute assertions/fusions and safe allowlisted application |
 | `release_rollback.py` | Pre-release canonical snapshots and conservative rollback |
-| `cli.py` | Typer command tree |
+| `cli.py` | Typer apps and ordered command registration |
+| `commands/` | Command bodies grouped by domain; `support.py` holds shared CLI helpers |
 
 ## 3. The release lifecycle
 
@@ -186,7 +188,7 @@ A release-level policy catches broad schema drift that row-level checks miss. Th
 - an empty parse is always fatal, because a zero-row snapshot would otherwise displace the last good release;
 - a failed release is quarantined before any canonical write, and a `QualityIssue` (`acceptance_rate_below_floor` or `release_empty`) is recorded.
 
-Sources may override the policy in `sources/registry.py` when their verified row counts justify a different floor.
+Sources may override the policy in `sources/registry_data.py` when their verified row counts justify a different floor.
 
 ## 8. Identity resolution
 

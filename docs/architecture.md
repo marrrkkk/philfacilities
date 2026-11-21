@@ -46,17 +46,17 @@ The canonical data, provenance, API, and source connectors are the product. The 
 - Applies the publication gate to every public query, detail response, statistic, and export.
 - Owns the public response schemas and the error envelope.
 
-Key modules: `main.py` (app, middleware, health), `api/` (route families), `services.py` (facility queries and publication filter), `rights.py` (rights vocabulary), `schemas.py` (response models), `models.py` (schema), `taxonomy.py` (public vocabularies).
+Key modules: `main.py` (app, middleware, health), `api/` (route families, including the split source routes registered by `api/sources.py`), `services/` (facility queries and publication filters behind a re-exporting package), `rights.py` (rights vocabulary), `schemas.py` (response models), `models.py` (schema), `taxonomy.py` (public vocabularies).
 
 ### Ingest (`apps/ingest`)
 
-- `sources/registry.py` + `sources/catalog.py` — the single source registry and connector catalog.
+- `sources/registry_data.py` + `sources/catalog.py` — the single source registry and connector catalog; `sources/registry.py` keeps publication checks and acquisition helpers and re-exports the data.
 - `sources/connectors/` — acquisition: URLs, paging, conditional requests, signatures, PDF indexes, OSM layers.
 - `sources/<source>.py` — adapters that only `parse → validate → normalize`.
 - `pipeline/` — release preservation, staging, canonical writes, geography, stats, run reporting.
 - `source_runner.py` — generic `run_source`, `validate_source`, `run_selection`.
 - `acquisition.py`, `storage.py`, `validators.py`, `matching.py`, `fusion.py`, `manifest.py`, `release_rollback.py`.
-- `cli.py` — Typer command tree.
+- `cli.py` — Typer apps and ordered command registration; `commands/` holds command bodies grouped by domain.
 
 No source-specific branch belongs in `pipeline/`; new sources register metadata and a connector.
 

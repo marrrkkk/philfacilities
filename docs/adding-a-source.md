@@ -7,7 +7,7 @@ The [source register](sources.md) records what was researched; the [data policy]
 ## 1. Checklist
 
 1. Record the access method, terms, rights basis, and publication decision.
-2. Add a `RealSource` entry to `sources/registry.py`.
+2. Add a `RealSource` entry to `sources/registry_data.py`.
 3. Add `sources/<source>.py` with an adapter implementing `parse → validate → normalize`.
 4. Register the acquisition route in `sources/catalog.py`.
 5. Add a deterministic fixture and parser/validation tests.
@@ -32,7 +32,7 @@ Add the source to [sources.md](sources.md) and the rights register [`DATA-LICENS
 
 ## 3. Add source metadata
 
-In `apps/ingest/philfacilities_ingest/sources/registry.py`, add a `RealSource` to `REAL_SOURCES`:
+In `apps/ingest/philfacilities_ingest/sources/registry_data.py`, add a `RealSource` to `REAL_SOURCES`:
 
 ```python
 "foo-directory": RealSource(
