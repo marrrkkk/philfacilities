@@ -14,48 +14,16 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import json
-from collections.abc import Iterable
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from philfacilities_ingest.config import get_settings
+from philfacilities_ingest.reporting import markdown_table, write_report
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Connection
 
 DEFAULT_OUTPUT_DIR = Path("var/reports")
-
-
-def format_value(value: Any) -> str:
-    if value is None:
-        return "NULL"
-    if isinstance(value, bool):
-        return "true" if value else "false"
-    if isinstance(value, (dict, list)):
-        return json.dumps(value, ensure_ascii=False, sort_keys=True)
-    if isinstance(value, datetime):
-        return value.isoformat()
-    text_value = str(value).replace("\n", " ").strip()
-    return text_value.replace("|", "\\|")
-
-
-def markdown_table(headers: Iterable[str], rows: Iterable[Iterable[Any]]) -> str:
-    lines = ["| " + " | ".join(headers) + " |", "|" + "|".join("---" for _ in headers) + "|"]
-    for row in rows:
-        lines.append("| " + " | ".join(format_value(value) for value in row) + " |")
-    return "\n".join(lines)
-
-
-def write_report(path: Path, title: str, generated_at: str, intro: str, body: str) -> None:
-    path.write_text(
-        f"# {title}\n\n"
-        f"**Generated:** {generated_at}  \n"
-        f"**Source of truth:** the configured PhilFacilities PostgreSQL database.  \n\n"
-        f"{intro}\n\n"
-        f"{body}\n",
-        encoding="utf-8",
-    )
 
 
 def dataset_rows(connection: Connection) -> list[dict[str, Any]]:

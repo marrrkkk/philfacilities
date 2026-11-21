@@ -3,7 +3,7 @@
 **Research baseline:** 15 November 2026; category-search additions 16 November 2026.  
 **Purpose:** the reference catalog of Philippine facility and enrichment sources used to decide what the ingestion system may acquire. It records official URLs, observed fields, access reality, evidence state, and the publication constraint for each candidate.
 
-This is a catalog, not an approval list. A row can be reachable, complete, and still unusable: the exact release must be acquired, inspected, parsed, validated, and rights-reviewed before it becomes a dataset. Registration in `sources/registry.py` is also not a publication decision — see [data policy](data-policy.md).
+This is a catalog, not an approval list. A row can be reachable, complete, and still unusable: the exact release must be acquired, inspected, parsed, validated, and rights-reviewed before it becomes a dataset. Registration in `sources/registry_data.py` is also not a publication decision — see [data policy](data-policy.md).
 
 ## How to read this register
 
