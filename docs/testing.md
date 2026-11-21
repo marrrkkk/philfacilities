@@ -22,7 +22,8 @@ uv run ruff check .
 uv run ruff format --check .
 uv run mypy
 uv run pytest
-uv run pytest -m "not integration" -q --cov --cov-fail-under=60
+uv run pytest --require-integration        # fail if integration tests cannot run
+uv run pytest --require-integration -q --cov --cov-fail-under=60   # coverage floor
 
 pnpm lint
 pnpm typecheck
@@ -32,11 +33,12 @@ pnpm --filter @philfacilities/web test:e2e
 uv run python scripts/check_markdown_links.py
 ```
 
-`just check` runs lint, typecheck, pytest, build, and the link check.
+`just check` runs lint, typecheck, pytest, build, and the link check. `just test-required`
+runs the suite with the integration guard that CI uses.
 
 Mypy is deliberately scoped in `pyproject.toml` to the ingest core modules (`contracts`, `storage`, `replay`, and the dataset lock); widen the file list module by module rather than adding a whole-package baseline. CI runs the same command.
 
-The coverage floor covers the non-integration suite (`--cov-fail-under=60`). It is a backstop against silent test loss, not a claim that parser and API behaviour is fully covered; the test-database suite exercises the integration-only writers. Coverage over the integration suite is currently unreliable with the Python 3.14/SQLAlchemy C-extension combination, so the gate deliberately excludes it.
+The coverage floor (`--cov-fail-under=60`) is measured on the full suite under Python 3.12, including the integration tests. It is a backstop against silent test loss, not a claim that parser and API behaviour is fully covered. Coverage measurement is unreliable with the Python 3.14/SQLAlchemy C-extension combination, so the 3.14 CI leg runs the same tests without `--cov`. Running the floor over the full suite also avoids a false pass caused by skipping the database-dependent tests.
 
 Focused runs:
 
@@ -68,6 +70,31 @@ Safety rules enforced by `conftest.py`:
 - integration tests skip when the database is unavailable, so parser/unit tests remain runnable without Docker.
 
 Never point the test URL at the working database.
+
+### Integration guard
+
+Locally, a missing test database skips integration tests so parsers and other unit
+tests remain runnable. In CI that behaviour would be misleading: a failed database
+service could produce a green build with every integration test skipped. Pass
+`--require-integration` to make the missing database a hard failure. The same flag
+also fails a run where a filter or marker typo deselects every integration test.
+
+CI runs `pytest --require-integration` on Python 3.12 and 3.14. The workflow is
+split into four required jobs plus a single `ci-ok` aggregate that branch
+protection can target:
+
+| Job | Checks | Python |
+|---|---|---|
+| `quality` | Ruff lint/format, mypy, Markdown links | 3.14 |
+| `python-tests` | Full suite with the integration guard; coverage floor on 3.12 only | 3.12, 3.14 |
+| `web` | Generated-client drift, ESLint, TypeScript, production build | Node 24 |
+| `e2e` | Migrations, synthetic demo, Playwright functional/accessibility checks | 3.14 / Node 24 |
+
+`tests/test_test_harness.py` verifies the flag's behaviour and asserts that the
+workflow still passes it, uses a version matrix, gives every required job a
+timeout, and keeps the `ci-ok` aggregate. Dependency audits are advisory and run
+on a weekly schedule in `.github/workflows/dependencies.yml`, so a newly
+published CVE cannot fail an unrelated pull request.
 
 ## 4. Markers
 
