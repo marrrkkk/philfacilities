@@ -27,6 +27,13 @@ const facilityFields = [
   ["ownership_type, operator_type", "controlled string", "Specific public, private, joint, or unknown owner/operator type; ownership and operation are separate."],
   ["public_access_class", "controlled string", "PUBLIC_FREE, PUBLIC_PAID_OR_CONDITIONAL, SERVICE_USERS_ONLY, APPOINTMENT_ONLY, MEMBERS_STUDENTS_ONLY, STAFF_ONLY, RESTRICTED, or UNKNOWN."],
   ["functions", "string array", "Function codes recorded for the facility, such as HEALTHCARE or EVACUATION_SITE."],
+  ["function_details[]", "array", "Per-source function claims with source value, designation status, validity, and optional capacity."],
+  ["roles[]", "array", "Owner, operator, host, funder, regulator, and accreditor roles. Entity type and evidence are recorded separately."],
+  ["services[]", "array", "Services delivered at the facility, with service code, optional name, source field, and validity."],
+  ["contacts[]", "array", "Source-supplied phone, email, website, opening hours, or other contact values. Missing contact types are not inferred."],
+  ["relationships[]", "array", "Explicit links to related facilities, such as a parent site or part-of relationship. Links do not merge identities."],
+  ["accreditations[]", "array", "Dated, authority-specific accreditation rows. Accreditation is not ownership and not proof of current operation."],
+  ["location.postal_code", "string or null", "Postal code preserved as text. Null means the source did not supply one."],
   ["record_status", "controlled string", "Registry presence, not real-time operational status."],
   ["publication_status", "public or internal", "Only public records appear in the public API."],
   ["is_synthetic", "boolean", "True for generated demonstration records."],
@@ -41,6 +48,26 @@ const precisionValues = [
   ["map_geocoded", "Coordinates derived by geocoding an address."],
   ["barangay_centroid", "Area-level point for a barangay, not a building."],
   ["unknown", "Coordinates may exist, but the source supplied no precision."],
+];
+
+const contactTypes = [
+  ["phone", "Telephone or mobile number as preserved from the source."],
+  ["email", "Email address as published for the facility or its operator."],
+  ["website", "Official or source-linked website, preserved as text."],
+  ["opening_hours", "Source-stated opening or service hours. Not live availability."],
+  ["other", "Other contact value that does not fit the typed fields."],
+];
+
+const coverageScopes = [
+  ["NATIONAL_OFFICIAL_INVENTORY", "Agency-published national inventory, subject to the source's own completeness limits."],
+  ["NATIONAL_PARTIAL", "National in intent but known to cover only part of the target universe."],
+  ["REGIONAL", "Covers one or more regions but not the whole country."],
+  ["PARTICIPATING_LGUS", "Only local government units that participate in or report to the source."],
+  ["SELECTED_LGUS", "A deliberately selected set of LGUs, not a complete national list."],
+  ["SINGLE_LGU", "One city or municipality only."],
+  ["DIRECTORY_SUBSET", "A directory subset selected for a specific programme or purpose."],
+  ["DISCOVERY_LAYER", "A discovery layer used to find candidates; it is not an official inventory."],
+  ["UNKNOWN_COVERAGE", "Coverage has not been reviewed or documented."],
 ];
 
 const provenanceFields = [
@@ -167,8 +194,10 @@ export default function DataDictionaryPage() {
       </h1>
       <p className="mt-4 max-w-3xl font-sans text-base leading-relaxed text-[#5a5a58]">
         This dictionary describes the public API, downloads, and facility profiles. The OpenAPI
-        document remains the machine-readable contract. Published records trace to a registered
-        source release; any remaining synthetic fixtures are labelled <code>is_synthetic=true</code>.
+        document remains the machine-readable contract. Category, subtype, ownership, operator,
+        contact, and access labels come from <code>GET /v1/taxonomy</code>, so clients do not need a
+        second hardcoded vocabulary. Published records trace to a registered source release; any
+        remaining synthetic fixtures are labelled <code>is_synthetic=true</code>.
       </p>
 
       <div className="mt-6 flex flex-wrap gap-3">
@@ -269,6 +298,48 @@ export default function DataDictionaryPage() {
         />
       </section>
 
+      <section className="mt-10" aria-labelledby="contact-roles">
+        <h2 id="contact-roles" className="font-display text-2xl font-extrabold">
+          Contacts, roles, services, and relationships
+        </h2>
+        <p className="mt-2 max-w-3xl font-sans text-sm leading-relaxed text-[#5a5a58]">
+          These arrays appear in <code>GET /v1/facilities/&#123;id-or-slug&#125;</code>. Contact and
+          service values are source claims, not a live channel check. Role entities are recorded
+          even when they cannot be resolved to another canonical facility.
+        </p>
+        <div className="mt-4 grid gap-6 lg:grid-cols-2">
+          <div className="min-w-0">
+            <h3 className="font-display text-xl font-extrabold">Contact types</h3>
+            <FieldTable
+              caption="Contact type values"
+              columns={["Type", "Kind", "Meaning"]}
+              rows={contactTypes.map(([value, meaning]) => [value, "enum", meaning])}
+            />
+          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl">How to read these records</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 font-sans text-sm leading-relaxed text-[#5a5a58]">
+              <p>
+                <code>roles[]</code> separates owner, operator, host, funder, regulator, and
+                accreditor. Ownership does not imply operation, and accreditation does not imply
+                ownership.
+              </p>
+              <p>
+                <code>services[]</code> and <code>function_details[]</code> preserve the source
+                field and validity period. A service listed in a registry is not proof that it is
+                available today.
+              </p>
+              <p>
+                <code>relationships[]</code> are explicit links to other canonical records. They do
+                not merge identities, and each linked facility keeps its own sources.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+
       <section className="mt-10" aria-labelledby="provenance">
         <h2 id="provenance" className="font-display text-2xl font-extrabold">
           Provenance and releases
@@ -290,6 +361,23 @@ export default function DataDictionaryPage() {
             rows={redistributionValues.map(([value, meaning]) => [value, "enum", meaning])}
           />
         </div>
+      </section>
+
+      <section className="mt-10" aria-labelledby="coverage-metadata">
+        <h2 id="coverage-metadata" className="font-display text-2xl font-extrabold">
+          Dataset coverage
+        </h2>
+        <p className="mt-2 max-w-3xl font-sans text-sm leading-relaxed text-[#5a5a58]">
+          Coverage is a property of the source dataset, not of the facility record. A national
+          registry can still be partial; a single-LGU release is not a national statement. Read{" "}
+          <code>coverage_scope</code> and <code>coverage_note</code> together, and never treat a
+          published count as the size of the real-world facility universe.
+        </p>
+        <FieldTable
+          caption="Dataset coverage scopes"
+          columns={["Scope", "Type", "Meaning"]}
+          rows={coverageScopes.map(([value, meaning]) => [value, "enum", meaning])}
+        />
       </section>
 
       <section className="mt-10" aria-labelledby="identity-queue">

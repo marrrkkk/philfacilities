@@ -16,7 +16,7 @@ import {
   type DatasetOut,
   type ReleaseOut,
 } from "@/lib/api";
-import { formatDate, formatDateTime, formatNumber, titleCase } from "@/lib/format";
+import { coverageScopeLabel, formatDate, formatDateTime, formatNumber, titleCase } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 type Params = Promise<{ dataset: string }>;
@@ -60,6 +60,7 @@ export default async function DatasetPage({ params }: { params: Params }) {
       <div className="mt-5 flex flex-wrap gap-1.5">
         {source.is_synthetic ? <Badge tone="sun">Synthetic fixture</Badge> : null}
         <Badge tone="muted">{source.agency_code}</Badge>
+        <Badge tone="muted">{coverageScopeLabel(source.coverage_scope)}</Badge>
         <Badge tone={source.redistribution_status === "not_applicable" ? "muted" : "warning"}>
           {titleCase(source.redistribution_status)}
         </Badge>
@@ -103,6 +104,8 @@ export default async function DatasetPage({ params }: { params: Params }) {
               <dl className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
                 {[
                   ["Agency", source.agency],
+                  ["Coverage scope", coverageScopeLabel(source.coverage_scope)],
+                  ["Coverage note", source.coverage_note ?? "Not recorded"],
                   ["Access method", titleCase(source.access_method ?? "unknown")],
                   ["Publication gate", titleCase(source.publication_gate_status ?? "unknown")],
                   ["Publication status", titleCase(source.publication_status)],
