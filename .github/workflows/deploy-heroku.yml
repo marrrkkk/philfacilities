@@ -1,0 +1,39 @@
+name: Deploy to Heroku
+
+# GitHub main is the single source of truth for deployments. Vercel deploys
+# through its Git integration; this workflow does the same for the API on
+# Heroku. Do not deploy either service from a local checkout.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: heroku-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy API to Heroku
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      HEROKU_APP: philfacilities-api
+      HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check deploy secret
+        run: |
+          if [ -z "${HEROKU_API_KEY:-}" ]; then
+            echo "HEROKU_API_KEY is not configured; skipping deploy."
+            exit 1
+          fi
+
+      - name: Push main to Heroku
+        run: |
+          git push "https://heroku:${HEROKU_API_KEY}@git.heroku.com/${HEROKU_APP}.git" HEAD:main
