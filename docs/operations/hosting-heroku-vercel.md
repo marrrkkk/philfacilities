@@ -41,6 +41,10 @@ The MCP adapter is mounted into the API app (see [MCP](../mcp.md) §3), so no
 second dyno is needed. It still calls the public API over HTTP and holds no
 database credentials.
 
+The deployed app uses the `heroku-26` stack. Set it once with
+`heroku stack:set heroku-26 -a <app>`; a stack change requires a redeploy before
+it takes effect.
+
 ## 2. Heroku API, database, and MCP
 
 Replace `<api-app>` with your app name and `<domain>` with your API hostname.
