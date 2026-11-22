@@ -23,6 +23,7 @@ env:
   HEROKU_APP: philfacilities-api
   HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
   API_URL: https://philfacilities-api-f4c4b7a4d35d.herokuapp.com
+  PGBIN: /usr/lib/postgresql/18/bin
 
 jobs:
   publish:
@@ -39,10 +40,17 @@ jobs:
             exit 1
           fi
 
-      - name: Install PostgreSQL client and httpx
+      - name: Install PostgreSQL 18 client and httpx
+        # The projection dump is produced by pg_dump 17; the hosted server is
+        # PostgreSQL 18. The runner's default client (16) is too old to read
+        # the custom-format archive, so install the matching client from PGDG.
         run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
+            https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          sudo sh -c 'echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt noble-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
           sudo apt-get update -qq
-          sudo apt-get install -y -qq postgresql-client
+          sudo apt-get install -y -qq postgresql-client-18
           python3 -m pip install --quiet httpx
 
       - name: Download projection assets
@@ -88,7 +96,7 @@ jobs:
         run: |
           MANIFEST="$(find var/publish -maxdepth 1 -name 'public-*.manifest.json' -print -quit)"
           EXPECTED="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["source_revision"])' "${MANIFEST}")"
-          ACTUAL="$(psql "${DB_URL}" -Atc "select coalesce(max(version_num), 'none') from alembic_version" 2>/dev/null || true)"
+          ACTUAL="$("${PGBIN}/psql" "${DB_URL}" -Atc "select coalesce(max(version_num), 'none') from alembic_version" 2>/dev/null || true)"
           if [ "${EXPECTED}" != "${ACTUAL}" ]; then
             echo "Migration revision mismatch: projection=${EXPECTED} hosted=${ACTUAL}." >&2
             echo "Apply migrations to the hosted database before publishing." >&2
@@ -101,12 +109,12 @@ jobs:
           DB_URL: ${{ steps.database.outputs.url }}
         run: |
           DUMP="$(find var/publish -maxdepth 1 -name 'public-*.dump' -print -quit)"
-          pg_restore \
+          "${PGBIN}/pg_restore" \
             --dbname "${DB_URL}" \
             --no-owner --no-privileges --exit-on-error \
             --clean --if-exists \
             "${DUMP}"
-          psql "${DB_URL}" -c 'ANALYZE;'
+          "${PGBIN}/psql" "${DB_URL}" -c 'ANALYZE;'
 
       - name: Verify deployed API
         run: |
