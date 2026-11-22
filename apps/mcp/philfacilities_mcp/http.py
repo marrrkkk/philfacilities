@@ -24,8 +24,14 @@ def create_http_app(
     settings: McpSettings | None = None,
     server: MCPServer | None = None,
     api: ApiClient | None = None,
+    streamable_http_path: str = "/mcp",
 ):
-    """Return a Starlette app with ``/mcp``, ``/healthz`` and ``/readyz``."""
+    """Return a Starlette app with ``/mcp``, ``/healthz`` and ``/readyz``.
+
+    ``streamable_http_path`` exists for mounting behind a parent app: set it to
+    ``/`` and mount at ``/mcp`` so only MCP paths are captured and the parent's
+    own 404 handling still applies to every other path.
+    """
 
     settings = settings or get_settings()
     api = api or ApiClient(settings)
@@ -67,7 +73,7 @@ def create_http_app(
         )
 
     return server.streamable_http_app(
-        streamable_http_path="/mcp",
+        streamable_http_path=streamable_http_path,
         stateless_http=True,
         json_response=True,
         transport_security=security,

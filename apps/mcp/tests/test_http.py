@@ -77,3 +77,16 @@ def test_unknown_host_is_rejected():
     with app_with(lambda _: httpx.Response(200, json={})) as client:
         response = client.post("/mcp", json=INITIALIZE, headers={"host": "evil.example"})
     assert response.status_code == 421
+
+
+def test_custom_streamable_path_supports_mounting_under_a_prefix():
+    http = httpx.AsyncClient(
+        transport=httpx.MockTransport(lambda _: httpx.Response(200, json={})),
+        base_url=SETTINGS.api_base_url,
+    )
+    api = ApiClient(SETTINGS, http_client=http)
+    http_app = create_http_app(settings=SETTINGS, api=api, streamable_http_path="/")
+    with TestClient(http_app) as client:
+        response = client.post("/", json=INITIALIZE)
+    assert response.status_code == 200, response.text
+    assert response.json()["result"]["serverInfo"]["name"] == "philfacilities"

@@ -22,13 +22,13 @@ Never place restricted FOI files or agreement-bound data in a public staging or 
 |---|---|---|
 | `web` | Next.js Node runtime | Independent web deployment |
 | `api` | FastAPI ASGI container | Independent API service |
-| `mcp` | Python stdio process or Streamable HTTP ASGI service | Independent read-only adapter over `/v1`; no database access |
+| `mcp` | Python stdio process, Streamable HTTP ASGI service, or mounted on the API | Read-only adapter over `/v1`; no database access. The mounted mode is described in [MCP](mcp.md) §3 and used by the [Heroku + Vercel runbook](operations/hosting-heroku-vercel.md) |
 | `ingest` | Python CLI/job container | Scheduled/manual job; not internet-facing |
 | PostgreSQL/PostGIS | Database service | Persistent managed or self-hosted |
 | Object storage | S3-compatible | Private raw objects; approved public exports |
 | Tiles (optional) | Martin or similar | Only if a self-hosted basemap is added |
 
-The web app calls the API over HTTP; ingest writes the database and raw store; the MCP service calls the API over HTTP with no database credentials. No service reads another's internal files.
+The web app calls the API over HTTP; ingest writes the database and raw store; the MCP service calls the API over HTTP with no database credentials. No service reads another's internal files. A concrete single-dyno hosting recipe is in [Heroku + Vercel](operations/hosting-heroku-vercel.md); it records the deviations from §§4–5 and §11 that the Student Pack tier forces.
 
 ## 3. Configuration
 
@@ -133,4 +133,4 @@ For a wrong, restricted, or withdrawn source: pause ingestion/publication for th
 
 ## 11. Launch gates
 
-Not yet configured or verified in this checkout: hosted API/web deployment and production URL; production rate-limit policy and external monitoring/paging; production backup schedule, off-host retention, encryption, and PITR; licensed production basemap; hosted scheduled-run evidence and alert destination; external security and legal/privacy review; and query-plan/caching work for unfiltered facility-list latency and bulk exports.
+The [Heroku + Vercel runbook](operations/hosting-heroku-vercel.md) describes a hosted API/web deployment and production URL; it is a procedure, not a provisioned environment in this checkout. Still not configured or verified: production rate-limit policy and external monitoring/paging; production backup schedule, off-host retention, encryption, and PITR; licensed production basemap; hosted scheduled-run evidence and alert destination; external security and legal/privacy review; and query-plan/caching work for unfiltered facility-list latency and bulk exports.

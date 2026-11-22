@@ -40,6 +40,7 @@ Start with the route that matches your task, then follow the links. Each documen
 | [MCP](mcp.md) | Read-only MCP adapter: transports, curated tools, client setup, caveats, operations |
 | [Testing](testing.md) | Test layers, fixtures, commands, contract checks, E2E, CI, verification checklist |
 | [Operations](operations.md) | Runtime configuration, migrations, backups, monitoring, incidents, security, launch gaps |
+| [Heroku + Vercel hosting](operations/hosting-heroku-vercel.md) | Single-dyno deployment runbook: buildpack setup, domain/CORS wiring, ingest jobs, credit management, tier deviations |
 | [Contributing](contributing.md) | Branch/commit/PR workflow, review expectations, documentation duties |
 
 Retained evidence and decisions:

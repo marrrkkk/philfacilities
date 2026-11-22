@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Heroku's Python buildpack runs `uv sync --locked --no-default-groups` at the
+# workspace root, which does not install uv workspace members. This repository
+# is a uv workspace: the API (and, when mounted, the MCP adapter) live in
+# members. Sync them into the same environment after the buildpack step.
+set -euo pipefail
+uv sync --locked --all-packages --no-default-groups

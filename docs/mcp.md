@@ -11,9 +11,10 @@ The Model Context Protocol (MCP) server lets AI clients ask about published faci
 | Transport | Command | Use |
 |---|---|---|
 | stdio | `uv run philfacilities-mcp` or `just mcp` | Local clients; the API must be running |
-| Streamable HTTP | `uv run philfacilities-mcp-http` or `just mcp-http` | Hosted clients; serves `POST /mcp` plus `/healthz` and `/readyz` |
+| Streamable HTTP | `uv run philfacilities-mcp-http` or `just mcp-http` | Standalone hosted server; serves `POST /mcp` plus `/healthz` and `/readyz` |
+| Mounted on the API | `POST /mcp` on the API service | Single-process hosting; see [Heroku + Vercel hosting](operations/hosting-heroku-vercel.md) |
 
-Both register the same tools from the same code. HTTP is **stateless**: one JSON-RPC message per POST with a JSON reply, no sessions, no GET event stream, no server-initiated messages. GET/DELETE on `/mcp` are unsupported.
+All three register the same tools from the same code. HTTP is **stateless**: one JSON-RPC message per POST with a JSON reply, no sessions, no GET event stream, no server-initiated messages. GET/DELETE on `/mcp` are unsupported.
 
 ## 2. Local setup
 
@@ -64,6 +65,29 @@ Client config: `{ "mcpServers": { "philfacilities": { "url": "https://mcp.exampl
 
 `/healthz` reports process liveness; `/readyz` checks the upstream API and returns `503` when unreachable. Neither requires an MCP handshake.
 
+### Mounted on the API service
+
+To avoid a second always-on process, the HTTP app can be mounted on the public
+API at `/mcp` (`apps/api/philfacilities_api/mcp_mount.py`). The adapter still
+calls `/v1` over HTTP, has no database credentials, and applies no rights
+logic of its own; the API's middleware continues to wrap it. A fresh MCP app
+is built for each application lifespan because the SDK's session manager
+refuses to run twice on the same instance.
+
+```bash
+PHILFACILITIES_API_BASE_URL=https://api.example.org \
+PHILFACILITIES_MCP_ALLOWED_HOSTS=api.example.org,api.example.org:* \
+PHILFACILITIES_MCP_ALLOWED_ORIGINS=https://example.org \
+PHILFACILITIES_MCP_FORWARDED_ALLOW_IPS=127.0.0.1 \
+  uvicorn philfacilities_api.main:app --host 0.0.0.0 --port $PORT
+```
+
+Client config: `{ "mcpServers": { "philfacilities": { "url": "https://api.example.org/mcp" } } }`.
+
+In mounted mode `GET /healthz` is the **API's** health endpoint; MCP readiness
+is at `GET /mcp/readyz`. The standalone HTTP entrypoint keeps both MCP
+endpoints at the root.
+
 ## 4. Tools
 
 | Tool | What it answers | API path |
@@ -93,20 +117,23 @@ All variables use the `PHILFACILITIES_` prefix; see [`.env.example`](../.env.exa
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `API_BASE_URL` | `http://127.0.0.1:8010` | Public API origin |
-| `REQUEST_TIMEOUT_SECONDS` | `15` | Per-request timeout |
-| `MCP_HOST` | `127.0.0.1` | HTTP bind host |
-| `MCP_PORT` | `8011` | HTTP bind port |
-| `MCP_ALLOWED_HOSTS` | `127.0.0.1:*,localhost:*` | Comma-separated Host allowlist |
-| `MCP_ALLOWED_ORIGINS` | empty | Comma-separated Origin allowlist |
-| `MCP_FORWARDED_ALLOW_IPS` | `127.0.0.1` | Trusted proxy addresses |
+| `PHILFACILITIES_API_BASE_URL` | `http://127.0.0.1:8010` | Public API origin |
+| `PHILFACILITIES_REQUEST_TIMEOUT_SECONDS` | `15` | Per-request timeout |
+| `PHILFACILITIES_MCP_HOST` | `127.0.0.1` | HTTP bind host (standalone only) |
+| `PHILFACILITIES_MCP_PORT` | `8011` | HTTP bind port (standalone only) |
+| `PHILFACILITIES_MCP_ALLOWED_HOSTS` | `127.0.0.1:*,localhost:*` | Comma-separated Host allowlist |
+| `PHILFACILITIES_MCP_ALLOWED_ORIGINS` | empty | Comma-separated Origin allowlist |
+| `PHILFACILITIES_MCP_FORWARDED_ALLOW_IPS` | `127.0.0.1` | Trusted proxy addresses |
 
-In production, set `API_BASE_URL` to the **internal** API origin: that keeps the public contract and publication gate without a public internet round trip.
+In production, set `PHILFACILITIES_API_BASE_URL` to the internal API origin where
+one is available: that keeps the public contract and publication gate without
+a public internet round trip. A single-process deployment such as Heroku uses
+the public origin.
 
 ## 7. Security and operations
 
 - Public and read-only, no API key, matching the public read API.
-- Edge rate limiting is required before public launch: the API limiter is per client IP and a hosted MCP service aggregates callers under one IP. Do not raise the API's global limit for this alone; put a limit in front of `/mcp`.
+- Edge rate limiting is required before public launch: the API limiter is per client IP and a hosted MCP service aggregates callers under one IP. When mounted, the API's limiter already wraps `/mcp`, but that still counts one IP for all callers. Do not raise the API's global limit for this alone; put a limit in front of `/mcp`.
 - Cache only static reference responses (`/v1/taxonomy`, `/v1/sources`). Never cache facility, provenance, or coverage responses.
 - Expected failures become `is_error` tool results with the API error code and request ID; unexpected exceptions are sanitized by the SDK.
 - An incident that blocks a source or facility in the API takes effect on the next tool call — there is no separate MCP cache or allowlist.

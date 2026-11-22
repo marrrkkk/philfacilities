@@ -14,6 +14,7 @@ from .api.router import api_router
 from .config import get_settings
 from .db import engine
 from .examples import ERROR_EXAMPLES, SCHEMA_EXAMPLES
+from .mcp_mount import mcp_lifespan, mount_mcp
 from .middleware import (
     RateLimitMiddleware,
     RequestContextMiddleware,
@@ -49,8 +50,15 @@ must not be treated as official government records.
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    yield
-    engine.dispose()
+    # Mounted child apps do not inherit the parent's lifespan. Enter the MCP
+    # app's lifespan here so its session manager and API client are started.
+    # engine.dispose() is synchronous, so it is called in finally, not as an
+    # async exit callback.
+    async with mcp_lifespan():
+        try:
+            yield
+        finally:
+            engine.dispose()
 
 
 app = FastAPI(
@@ -222,3 +230,7 @@ def api_index():
             "records, if any, are labelled is_synthetic=true."
         ),
     }
+
+
+# Last: the mount is a catch-all, so every route above keeps precedence.
+mount_mcp(app)
