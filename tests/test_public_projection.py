@@ -36,6 +36,13 @@ def test_public_filters() -> None:
     assert build.table_filter("source.agencies") is None
 
 
+def test_dump_includes_all_migration_schemas() -> None:
+    command = build._dump_command("scratch_test")
+    assert "--schema" in command
+    assert "history" in command
+    assert "core" in command
+
+
 def test_record_reference_query_is_set_based() -> None:
     query = build.record_reference_query("src.id")
     assert "publication_status = 'public'" in query

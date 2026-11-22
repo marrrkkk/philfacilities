@@ -374,6 +374,11 @@ def _run_migrations(scratch_url: str) -> None:
 
 
 def _dump_command(scratch_db: str) -> list[str]:
+    # Include `history` (and every other schema created by migrations) even
+    # though the projection copies no rows into it. pg_restore --clean then
+    # drops and recreates these empty tables in dependency order; otherwise a
+    # stale FK such as history.facility_change_events -> core.facilities blocks
+    # dropping the primary key on an already-provisioned hosted database.
     schemas = [
         "source",
         "core",
@@ -383,6 +388,7 @@ def _dump_command(scratch_db: str) -> list[str]:
         "geo",
         "stats",
         "quality",
+        "history",
     ]
     common: list[str] = []
     for schema in schemas:
