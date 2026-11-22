@@ -50,6 +50,19 @@ backup-db:
 restore-verify *args:
     scripts/db_restore_verify.sh {{args}}
 
+# Build the public-only read model that Heroku serves (does not touch Heroku).
+# Requires PHILFACILITIES_DATABASE_URL pointing at the authoritative database.
+publish:
+    uv run python scripts/build_public_projection.py
+
+# Package the latest dump as a GitHub release and trigger the Heroku publish.
+publish-deploy *args:
+    scripts/publish_deploy.sh {{args}}
+
+# Verify a deployed projection against its manifest.
+verify-public *args:
+    uv run python scripts/verify_public_projection.py {{args}}
+
 smoke:
     scripts/smoke_check.sh
 

@@ -208,7 +208,7 @@ local `.venv`: the CLI uploads source files and can exhaust memory. The
 `HEROKU_API_KEY` repository secret expires 2026-12-22 and must be rotated.
 
 Verified 2026-11-22: `/healthz` and `/mcp/readyz` return `ok`, the Vercel page
-renders with the nonce CSP, and `/v1/statistics` reports 127 018 published
+renders with the nonce CSP, and `/v1/statistics` reports 229 274 published
 facilities. The initial `Source monitoring` run published the approved sources
 but exited non-zero: several PhilHealth loaders hit `ForeignKeyViolation` or
 duplicate `release_facility_snapshot` errors, and one due-source check could not
@@ -218,32 +218,44 @@ investigate before treating the load as complete.
 ### Free-tier quota constraint (important)
 
 `heroku-postgresql:essential-0` is capped at **1 GB total** (including indexes
-and TOAST). The GitHub ingest run pushed the database to 1.31 GB and Heroku
-flagged it as above limits. With no paid upgrade available, the hosted database
-was replaced with a **minimal API projection** of the local development data:
+and TOAST). The first GitHub ingest run pushed the database to 1.31 GB and Heroku
+flagged it as above limits. A full ingest writes ~4.5 GB of provenance
+(assertions, source records, raw payloads), so it can never run on this plan.
+The hosted database is therefore a **read-only public projection**, not an
+ingestion target. The GitHub secret `PHILFACILITIES_DATABASE_URL` stays removed
+so the scheduled `Source monitoring` workflow cannot refill the hosted database.
 
-- All **273,369** facilities were copied, together with the tables the public
-  API reads: locations, slug aliases, functions/roles/services/contacts,
-  school/health/utility profiles, geo units and boundaries, population
-  observations, and source dataset/release metadata.
-- Provenance-heavy tables were deliberately omitted: `attribute_assertions`,
-  `facility_attribute_fusions`, `source.records`, `facility_source_links`,
-  release snapshots, change history and quality tables. The 19 foreign keys
-  from the copied tables to `source.records` were dropped in the hosted schema.
-- After `VACUUM (FULL, ANALYZE)` the database is **722 MB**, leaving ~300 MB of
-  headroom. The publication gate still hides the 44,095 internal rows, so
-  `/v1/statistics` reports **229,274 public facilities**.
-- `stats.api_field_coverage` was refreshed once after the copy so `GET /v1/fields`
-  is a fast indexed read (~1 s) instead of an 80 s on-demand computation that
-  would exceed Heroku's 30 s router timeout.
-- The GitHub secret `PHILFACILITIES_DATABASE_URL` was removed, so the scheduled
-  `Source monitoring` workflow skips its jobs and cannot refill the omitted
-  provenance tables. Re-ingestion on the hosted instance requires a larger plan.
+#### How updates reach Heroku
 
-Heroku's dashboard `Data Size` metric lags behind the actual size; verify with
+1. **Ingest locally.** Run the normal ingest CLI against the authoritative
+   database on your machine. All releases, assertions, internal rows and raw
+   payloads stay there.
+2. **Build the projection.** `just publish` copies only public facilities,
+   current locations, profiles, global lookups and a slim source-evidence layer
+   into a scratch database, drops unused indexes, refreshes
+   `stats.api_field_coverage`, vacuums, and writes a dump plus manifest under
+   `var/publish/`. It never connects to Heroku.
+3. **Deploy.** `scripts/publish_deploy.sh` uploads the dump and manifest as a
+   GitHub release and triggers
+   [`.github/workflows/publish-heroku.yml`](../../.github/workflows/publish-heroku.yml).
+   The workflow verifies the checksum and migration revision, restores the
+   projection, and runs `scripts/verify_public_projection.py` against the live
+   API. If verification fails, re-run the workflow with the previous release tag.
+
+The projection contains **229,274 public facilities** and their current
+locations, profiles, slug aliases, functions/roles/services/contacts, agencies,
+datasets, releases, population observations and geo lookups. It keeps slim
+`source.records` (no raw payload) and `source.facility_source_links` (no evidence)
+so detail pages and the publication gate work — the earlier 722 MB copy omitted
+those tables and every facility detail request returned 404. It excludes
+`attribute_assertions`, fusions, snapshots, change history, quality issues,
+internal rows and non-current locations.
+
+A local probe measured **~835 MB** after compaction. Heroku's dashboard `Data
+Size` metric lags behind the actual size; verify with
 `SELECT pg_database_size(current_database())` in a one-off dyno rather than
-trusting `heroku pg:info` immediately after a large deletion.
+trusting `heroku pg:info` immediately after a restore.
 
-This is a deliberate no-cost trade-off: the hosted API serves the full facility
-catalogue with directory, map, detail, profiles, sources metadata and downloads;
-field-level provenance/assertions remain in the local development database only.
+This is a deliberate no-cost trade-off: directory, map, detail, profiles,
+sources metadata, statistics and downloads work; field-level assertions remain
+in the authoritative local database only.

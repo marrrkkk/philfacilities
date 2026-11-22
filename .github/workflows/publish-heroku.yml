@@ -1,0 +1,123 @@
+name: Publish public projection to Heroku
+
+# Heroku Postgres (essential-0) is a read-only public projection of the
+# authoritative database. Ingestion never runs there. This workflow installs a
+# finished, public-only dump that was built locally by
+# scripts/build_public_projection.py and published as a GitHub release.
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release tag holding public-<stamp>.dump and its manifest"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-heroku
+  cancel-in-progress: false
+
+env:
+  HEROKU_APP: philfacilities-api
+  HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+  API_URL: https://philfacilities-api-f4c4b7a4d35d.herokuapp.com
+
+jobs:
+  publish:
+    name: Restore public projection and verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check deploy secret
+        run: |
+          if [ -z "${HEROKU_API_KEY:-}" ]; then
+            echo "HEROKU_API_KEY is not configured." >&2
+            exit 1
+          fi
+
+      - name: Install PostgreSQL client and httpx
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client
+          python3 -m pip install --quiet httpx
+
+      - name: Download projection assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          mkdir -p var/publish
+          gh release download "${RELEASE_TAG}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --dir var/publish \
+            --pattern 'public-*.dump' \
+            --pattern 'public-*.manifest.json'
+          test -n "$(find var/publish -maxdepth 1 -name 'public-*.dump' -print -quit)"
+          test -n "$(find var/publish -maxdepth 1 -name 'public-*.manifest.json' -print -quit)"
+
+      - name: Verify dump checksum
+        run: |
+          DUMP="$(find var/publish -maxdepth 1 -name 'public-*.dump' -print -quit)"
+          MANIFEST="$(find var/publish -maxdepth 1 -name 'public-*.manifest.json' -print -quit)"
+          EXPECTED="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["sha256"])' "${MANIFEST}")"
+          ACTUAL="$(sha256sum "${DUMP}" | cut -d' ' -f1)"
+          if [ "${EXPECTED}" != "${ACTUAL}" ]; then
+            echo "Checksum mismatch: expected ${EXPECTED}, got ${ACTUAL}" >&2
+            exit 1
+          fi
+          echo "Checksum OK: ${ACTUAL}"
+
+      - name: Resolve Heroku database URL
+        id: database
+        run: |
+          CONFIG="$(curl -fsS \
+            -H "Authorization: Bearer ${HEROKU_API_KEY}" \
+            -H 'Accept: application/vnd.heroku+json; version=3' \
+            "https://api.heroku.com/apps/${HEROKU_APP}/config-vars")"
+          DB_URL="$(printf '%s' "${CONFIG}" | python3 -c 'import json,sys; print(json.load(sys.stdin)["DATABASE_URL"])')"
+          DB_URL="$(printf '%s' "${DB_URL}" | python3 -c 'import sys; u=sys.stdin.read().strip(); print(u if "sslmode=" in u else u + ("&" if "?" in u else "?") + "sslmode=require")')"
+          echo "url=${DB_URL}" >> "$GITHUB_OUTPUT"
+
+      - name: Check migration revision
+        env:
+          DB_URL: ${{ steps.database.outputs.url }}
+        run: |
+          MANIFEST="$(find var/publish -maxdepth 1 -name 'public-*.manifest.json' -print -quit)"
+          EXPECTED="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["source_revision"])' "${MANIFEST}")"
+          ACTUAL="$(psql "${DB_URL}" -Atc "select coalesce(max(version_num), 'none') from alembic_version" 2>/dev/null || true)"
+          if [ "${EXPECTED}" != "${ACTUAL}" ]; then
+            echo "Migration revision mismatch: projection=${EXPECTED} hosted=${ACTUAL}." >&2
+            echo "Apply migrations to the hosted database before publishing." >&2
+            exit 1
+          fi
+          echo "Revision OK: ${ACTUAL}"
+
+      - name: Restore projection
+        env:
+          DB_URL: ${{ steps.database.outputs.url }}
+        run: |
+          DUMP="$(find var/publish -maxdepth 1 -name 'public-*.dump' -print -quit)"
+          pg_restore \
+            --dbname "${DB_URL}" \
+            --no-owner --no-privileges --exit-on-error \
+            --clean --if-exists \
+            "${DUMP}"
+          psql "${DB_URL}" -c 'ANALYZE;'
+
+      - name: Verify deployed API
+        run: |
+          sleep 5
+          MANIFEST="$(find var/publish -maxdepth 1 -name 'public-*.manifest.json' -print -quit)"
+          python3 scripts/verify_public_projection.py \
+            --url "${API_URL}" \
+            --manifest "${MANIFEST}"
+
+      - name: Report failure
+        if: failure()
+        run: |
+          echo "Publish failed. The previous projection may still be installed." >&2
+          echo "Roll back by re-running this workflow with the previous release tag." >&2
