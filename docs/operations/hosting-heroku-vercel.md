@@ -189,3 +189,17 @@ Record these in any launch review:
 3. **`/mcp` rate limiting.** The API's per-IP limiter already wraps the mounted
    MCP endpoint, but a hosted MCP aggregates callers under one IP. An edge
    limit in front of `/mcp` is still a launch gate (see [MCP](../mcp.md) §7).
+
+## 9. Live deployment values
+
+| Item | Value |
+|---|---|
+| Heroku app | `philfacilities-api` (region `us`, stack `heroku-26`) |
+| API URL | `https://philfacilities-api-f4c4b7a4d35d.herokuapp.com` |
+| Vercel project | `philfacilities-web` (Git-connected to this repository) |
+| Web URL | `https://philfacilities-web.vercel.app` |
+| Vercel function region | `sin1` (Singapore) where the plan allows it |
+
+Deploy the web app by pushing to GitHub — the Vercel Git integration builds it
+in the cloud. Avoid running `vercel deploy` from a workstation with a large
+local `.venv`: the CLI uploads source files and can exhaust memory.
