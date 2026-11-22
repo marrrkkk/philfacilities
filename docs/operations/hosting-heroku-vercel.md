@@ -198,8 +198,19 @@ Record these in any launch review:
 | API URL | `https://philfacilities-api-f4c4b7a4d35d.herokuapp.com` |
 | Vercel project | `philfacilities-web` (Git-connected to this repository) |
 | Web URL | `https://philfacilities-web.vercel.app` |
-| Vercel function region | `sin1` (Singapore) where the plan allows it |
+| Vercel function region | `iad1` (project default) |
 
-Deploy the web app by pushing to GitHub — the Vercel Git integration builds it
-in the cloud. Avoid running `vercel deploy` from a workstation with a large
-local `.venv`: the CLI uploads source files and can exhaust memory.
+Both services deploy **only from GitHub `main`**: Vercel through its Git
+integration (project Root Directory `apps/web`), and Heroku through
+[`.github/workflows/deploy-heroku.yml`](../../.github/workflows/deploy-heroku.yml).
+Never run `vercel deploy` or `git push heroku` from a workstation with a large
+local `.venv`: the CLI uploads source files and can exhaust memory. The
+`HEROKU_API_KEY` repository secret expires 2026-12-22 and must be rotated.
+
+Verified 2026-11-22: `/healthz` and `/mcp/readyz` return `ok`, the Vercel page
+renders with the nonce CSP, and `/v1/statistics` reports 127 018 published
+facilities. The initial `Source monitoring` run published the approved sources
+but exited non-zero: several PhilHealth loaders hit `ForeignKeyViolation` or
+duplicate `release_facility_snapshot` errors, and one due-source check could not
+reach Geofabrik. Those are data/ingestion signals, not deployment failures;
+investigate before treating the load as complete.
