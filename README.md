@@ -1,8 +1,4 @@
-<p align="center">
-  <img src="docs/assets/philfacilities-icon.svg" alt="PhilFacilities icon — a facility pin grounded on a registry baseline" width="96" height="96">
-</p>
-
-# PhilFacilities
+# <img src="docs/assets/philfacilities-mark.svg" alt="" width="32" height="32" align="absmiddle" /> PhilFacilities
 
 [![CI](https://github.com/marrrkkk/philfacilities/actions/workflows/ci.yml/badge.svg)](https://github.com/marrrkkk/philfacilities/actions/workflows/ci.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
