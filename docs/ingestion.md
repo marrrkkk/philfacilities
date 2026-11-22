@@ -113,6 +113,14 @@ A release that does not parse or validate remains a `failed` run and is quaranti
 
 ## 6. Storage layers
 
+> **Hosted read model.** The Heroku database is a derived, public-only
+> projection built by `scripts/build_public_projection.py`, never an ingestion
+> target. `just publish` copies public facilities, current locations, profiles,
+> global lookups and slim source evidence into a scratch database, dumps it with
+> a manifest, and a GitHub workflow installs it. Assertions, raw payloads,
+> internal rows and change history stay in the authoritative database. See
+> [Hosting](operations/hosting-heroku-vercel.md#free-tier-quota-constraint-important).
+
 ### Raw layer
 
 Exact agency file/response plus URL, retrieval time, HTTP metadata, source publication/reference date, SHA-256, access/terms classification, parser version, and release label:
