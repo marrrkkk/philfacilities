@@ -82,7 +82,9 @@ export function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     {
-      source: "/((?!_next/static|_next/image|favicon.ico|vendor/).*)",
+      // With basePath="/facilities" the prefix is part of the incoming path.
+      source:
+        "/((?!_next/static|_next/image|facilities/_next/static|facilities/_next/image|favicon.ico|vendor/).*)",
       missing: [
         { type: "header", key: "next-router-prefetch" },
         { type: "header", key: "purpose", value: "prefetch" },

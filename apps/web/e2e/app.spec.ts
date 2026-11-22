@@ -36,6 +36,10 @@ const CONTACT_VALUE = process.env.PHILFACILITIES_E2E_CONTACT_VALUE ?? "";
 const API_ORIGIN = new URL(
   process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8010",
 ).origin;
+// Must match `basePath` in next.config.ts. Keep navigation assertions tied to
+// this constant so a basePath change cannot silently leave tests hitting 404s.
+const BASE_PATH = "/facilities";
+const route = (path: string) => `${BASE_PATH}${path}`;
 
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -85,7 +89,7 @@ async function readHeaderState(page: Page) {
 }
 
 async function gotoHydrated(page: Page, path: string) {
-  await page.goto(path);
+  await page.goto(route(path));
   // Hydration reconciles uncontrolled inputs to defaultValue and can discard
   // keystrokes typed before the client bundle is interactive.
   await page.waitForFunction(() => document.documentElement.dataset.hydrated === "true");
@@ -154,7 +158,7 @@ test.describe("directory", () => {
   });
 
   test("missing coordinates stay labelled as unknown", async ({ page }) => {
-    await page.goto("/directory?has_coordinates=false");
+    await page.goto(route("/directory?has_coordinates=false"));
     await expectDirectoryHeading(page);
     await expect(page.getByText("Coordinates unknown").first()).toBeVisible();
   });
@@ -182,7 +186,7 @@ test.describe("directory", () => {
     const subtype = category?.subtypes?.[0];
     expect(subtype).toBeTruthy();
 
-    await page.goto("/directory");
+    await page.goto(route("/directory"));
     await expectDirectoryHeading(page);
 
     const categorySelect = page.locator("#filter-type");
@@ -207,9 +211,11 @@ test.describe("directory", () => {
     expect(subtype).toBeTruthy();
 
     await page.goto(
-      `/directory?type=${category?.code}&subtype=${subtype?.code}&q=${encodeURIComponent(
-        SCHOOL_SEARCH,
-      )}`,
+      route(
+        `/directory?type=${category?.code}&subtype=${subtype?.code}&q=${encodeURIComponent(
+          SCHOOL_SEARCH,
+        )}`,
+      ),
     );
     await expectDirectoryHeading(page);
     await expect(page.locator("#filter-type")).toHaveValue(category?.code ?? "");
@@ -225,7 +231,7 @@ test.describe("directory", () => {
 
 test.describe("facility profile", () => {
   test("shows provenance, source attribution, and quality caveats", async ({ page }) => {
-    await page.goto(`/facilities/${SCHOOL_SLUG}`);
+    await page.goto(route(`/facilities/${SCHOOL_SLUG}`));
 
     await expect(
       page.getByRole("heading", { name: SCHOOL_NAME, level: 1 }),
@@ -245,7 +251,7 @@ test.describe("facility profile", () => {
     page,
   }) => {
     test.skip(!CONTACT_SLUG, "contact fixture not configured");
-    await page.goto(`/facilities/${CONTACT_SLUG}`);
+    await page.goto(route(`/facilities/${CONTACT_SLUG}`));
     await expect(
       page.getByRole("heading", { name: CONTACT_NAME, level: 1 }),
     ).toBeVisible();
@@ -259,7 +265,7 @@ test.describe("facility profile", () => {
   test("keeps wide tables inside their own scroll region on mobile", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "mobile-chromium", "mobile viewport regression");
 
-    await page.goto(`/facilities/${SCHOOL_SLUG}`);
+    await page.goto(route(`/facilities/${SCHOOL_SLUG}`));
     await expect(
       page.getByRole("heading", { name: SCHOOL_NAME, level: 1 }),
     ).toBeVisible();
@@ -300,7 +306,7 @@ test.describe("map", () => {
         response.url().includes("/vendor/maplibre-gl/") && response.status() === 200,
     );
 
-    await page.goto(`/map?q=${encodeURIComponent(MAP_QUERY)}`);
+    await page.goto(route(`/map?q=${encodeURIComponent(MAP_QUERY)}`));
     await workerResponse;
     await expect(page.locator("canvas.maplibregl-canvas")).toBeVisible();
     await expect(
@@ -326,7 +332,7 @@ test.describe("map", () => {
   test("keeps the text result list when basemap tiles fail", async ({ page }, testInfo) => {
     await page.route("**/tile.openstreetmap.org/**", (route) => route.abort());
 
-    await page.goto(`/map?q=${encodeURIComponent(MAP_QUERY)}`);
+    await page.goto(route(`/map?q=${encodeURIComponent(MAP_QUERY)}`));
     await expect(page.locator("canvas.maplibregl-canvas")).toBeVisible();
     await expect(
       page.getByRole("alert").filter({ hasText: /basemap could not load/i }).first(),
@@ -383,7 +389,9 @@ test.describe("map", () => {
     page,
   }, testInfo) => {
     await page.goto(
-      `/directory?type=school&location_precision=${LOCATION_PRECISION}&province_code=${FILTER_PROVINCE_CODE}&updated_since=2026-11-01&q=${encodeURIComponent(FILTER_SCHOOL_SEARCH)}`,
+      route(
+        `/directory?type=school&location_precision=${LOCATION_PRECISION}&province_code=${FILTER_PROVINCE_CODE}&updated_since=2026-11-01&q=${encodeURIComponent(FILTER_SCHOOL_SEARCH)}`,
+      ),
     );
     const mapLink = page.getByRole("link", { name: "View on map" });
     const href = await mapLink.getAttribute("href");
@@ -419,7 +427,7 @@ test.describe("map", () => {
 
 test.describe("data dictionary", () => {
   test("documents missing-value, precision, and identity review semantics", async ({ page }) => {
-    await page.goto("/data/dictionary");
+    await page.goto(route("/data/dictionary"));
     await expect(
       page.getByRole("heading", {
         name: "Every field, its meaning, and what the data cannot tell you.",
@@ -451,7 +459,7 @@ test.describe("data dictionary", () => {
 
 test.describe("source register", () => {
   test("shows coverage metadata and latest ingestion-run metrics", async ({ page }) => {
-    await page.goto("/sources");
+    await page.goto(route("/sources"));
     await expect(
       page.getByRole("heading", {
         name: "Agencies, releases, access paths, and rights.",
@@ -473,7 +481,7 @@ test.describe("source register", () => {
 
 test.describe("status", () => {
   test("shows measured service state and identity review counts", async ({ page }) => {
-    await page.goto("/status");
+    await page.goto(route("/status"));
     await expect(page.getByRole("heading", { name: "Service and data status" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Identity review" })).toBeVisible();
     await expect(page.getByText(/pending$/).first()).toBeVisible();
@@ -482,7 +490,7 @@ test.describe("status", () => {
   });
 
   test("shows latest ingestion runs and per-source run metrics", async ({ page }) => {
-    await page.goto("/status");
+    await page.goto(route("/status"));
     await expect(
       page.getByRole("heading", { name: "Latest ingestion runs" }),
     ).toBeVisible();
@@ -501,7 +509,7 @@ test.describe("status", () => {
 
 test.describe("keyboard access", () => {
   test("skip link moves focus to the main content", async ({ page }) => {
-    await page.goto("/");
+    await page.goto(route("/"));
     await page.keyboard.press("Tab");
 
     const skipLink = page.getByRole("link", { name: "Skip to main content" });
@@ -518,7 +526,7 @@ test.describe("keyboard access", () => {
   }, testInfo) => {
     test.skip(testInfo.project.name !== "desktop-chromium", "desktop navigation focus test");
 
-    await page.goto("/");
+    await page.goto(route("/"));
     await page.keyboard.press("Tab");
     await page.keyboard.press("Tab");
     await page.keyboard.press("Tab");
@@ -544,7 +552,7 @@ test.describe("design tokens", () => {
     test.skip(testInfo.project.name !== "desktop-chromium", "measured desktop tokens");
 
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto("/");
+    await page.goto(route("/"));
 
     const desktop = await readHeaderState(page);
     expect(desktop.headerBarHeight).toBe(68);
@@ -699,7 +707,7 @@ test.describe("security headers", () => {
       "/sources",
       "/status",
       "/about",
-    ]) {
+    ].map(route)) {
       await page.goto(path, { waitUntil: "load" });
       await page.waitForTimeout(150);
     }
@@ -721,7 +729,7 @@ test.describe("responsive layout", () => {
       "/data/dictionary",
       "/api",
       "/status",
-    ]) {
+    ].map(route)) {
       await page.goto(path, { waitUntil: "load" });
       // App Router streams the page after `load`; measuring during the
       // loading.tsx fallback destroys the evaluation context.
@@ -747,7 +755,7 @@ test.describe("accessibility", () => {
     "/data/dictionary",
     "/api",
     "/status",
-  ]) {
+  ].map(route)) {
     test(`axe finds no serious or critical violations on ${path}`, async ({ page }) => {
       await page.goto(path, { waitUntil: "load" });
       await page.waitForLoadState("networkidle");
