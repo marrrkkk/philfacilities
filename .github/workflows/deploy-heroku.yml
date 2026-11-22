@@ -35,15 +35,5 @@ jobs:
           fi
 
       - name: Push main to Heroku
-        # OAuth tokens contain characters that are unsafe in a git URL; let
-        # git ask for credentials over a helper instead of embedding the token.
         run: |
-          cat > /tmp/heroku-askpass.sh <<'SCRIPT'
-          #!/bin/sh
-          case "$1" in
-            *Username*) echo heroku ;;
-            *Password*) printf '%s\n' "$HEROKU_API_KEY" ;;
-          esac
-          SCRIPT
-          chmod +x /tmp/heroku-askpass.sh
-          GIT_ASKPASS=/tmp/heroku-askpass.sh git push https://git.heroku.com/${HEROKU_APP}.git HEAD:main
+          git push "https://heroku:${HEROKU_API_KEY}@git.heroku.com/${HEROKU_APP}.git" HEAD:main
