@@ -219,21 +219,31 @@ investigate before treating the load as complete.
 
 `heroku-postgresql:essential-0` is capped at **1 GB total** (including indexes
 and TOAST). The GitHub ingest run pushed the database to 1.31 GB and Heroku
-flagged it as above limits. To restore compliance without paid upgrades:
+flagged it as above limits. With no paid upgrade available, the hosted database
+was replaced with a **minimal API projection** of the local development data:
 
-- `VACUUM (FULL, ANALYZE)` was run on every table (76 MB reclaimed).
-- All 1,731,686 rows in `core.attribute_assertions` were deleted; the table and
-  its schema remain, so `/v1/facilities/{id}/assertions` returns an empty list
-  instead of an error. Actual database size is now **787 MB**. The full
-  assertion history remains in the local development database.
+- All **273,369** facilities were copied, together with the tables the public
+  API reads: locations, slug aliases, functions/roles/services/contacts,
+  school/health/utility profiles, geo units and boundaries, population
+  observations, and source dataset/release metadata.
+- Provenance-heavy tables were deliberately omitted: `attribute_assertions`,
+  `facility_attribute_fusions`, `source.records`, `facility_source_links`,
+  release snapshots, change history and quality tables. The 19 foreign keys
+  from the copied tables to `source.records` were dropped in the hosted schema.
+- After `VACUUM (FULL, ANALYZE)` the database is **722 MB**, leaving ~300 MB of
+  headroom. The publication gate still hides the 44,095 internal rows, so
+  `/v1/statistics` reports **229,274 public facilities**.
+- `stats.api_field_coverage` was refreshed once after the copy so `GET /v1/fields`
+  is a fast indexed read (~1 s) instead of an 80 s on-demand computation that
+  would exceed Heroku's 30 s router timeout.
 - The GitHub secret `PHILFACILITIES_DATABASE_URL` was removed, so the scheduled
-  `Source monitoring` workflow skips its jobs and cannot refill the tables.
-  Re-ingestion on the hosted instance requires a larger database plan.
+  `Source monitoring` workflow skips its jobs and cannot refill the omitted
+  provenance tables. Re-ingestion on the hosted instance requires a larger plan.
 
 Heroku's dashboard `Data Size` metric lags behind the actual size; verify with
 `SELECT pg_database_size(current_database())` in a one-off dyno rather than
 trusting `heroku pg:info` immediately after a large deletion.
 
-This is a deliberate trade-off forced by the no-cost constraint: hosted
-facilities, locations, profiles, sources and downloads work; field-level
-assertions are available locally only.
+This is a deliberate no-cost trade-off: the hosted API serves the full facility
+catalogue with directory, map, detail, profiles, sources metadata and downloads;
+field-level provenance/assertions remain in the local development database only.
