@@ -214,3 +214,26 @@ but exited non-zero: several PhilHealth loaders hit `ForeignKeyViolation` or
 duplicate `release_facility_snapshot` errors, and one due-source check could not
 reach Geofabrik. Those are data/ingestion signals, not deployment failures;
 investigate before treating the load as complete.
+
+### Free-tier quota constraint (important)
+
+`heroku-postgresql:essential-0` is capped at **1 GB total** (including indexes
+and TOAST). The GitHub ingest run pushed the database to 1.31 GB and Heroku
+flagged it as above limits. To restore compliance without paid upgrades:
+
+- `VACUUM (FULL, ANALYZE)` was run on every table (76 MB reclaimed).
+- All 1,731,686 rows in `core.attribute_assertions` were deleted; the table and
+  its schema remain, so `/v1/facilities/{id}/assertions` returns an empty list
+  instead of an error. Actual database size is now **787 MB**. The full
+  assertion history remains in the local development database.
+- The GitHub secret `PHILFACILITIES_DATABASE_URL` was removed, so the scheduled
+  `Source monitoring` workflow skips its jobs and cannot refill the tables.
+  Re-ingestion on the hosted instance requires a larger database plan.
+
+Heroku's dashboard `Data Size` metric lags behind the actual size; verify with
+`SELECT pg_database_size(current_database())` in a one-off dyno rather than
+trusting `heroku pg:info` immediately after a large deletion.
+
+This is a deliberate trade-off forced by the no-cost constraint: hosted
+facilities, locations, profiles, sources and downloads work; field-level
+assertions are available locally only.
