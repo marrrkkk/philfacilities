@@ -9,6 +9,13 @@ The web app is a client of the canonical API. It never connects to PostgreSQL an
 
 ## 1. Routes
 
+The app is deployed with `basePath: "/facilities"` so it can live at
+`philapi.tech/facilities` alongside sibling dataset clients. Every route below
+is served under that prefix (for example `/directory` →
+`/facilities/directory`). `next/link` applies the prefix automatically; plain
+anchors and `next/image` sources must include it explicitly. The root `/`
+redirects to `/facilities` at the edge.
+
 | Route | Purpose |
 |---|---|
 | `/` | Landing page with search, measured coverage, entry points, and provenance explanation |

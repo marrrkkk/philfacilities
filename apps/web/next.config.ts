@@ -12,6 +12,9 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // The web client is one dataset of philapi.tech. Keep every route under
+  // /facilities so sibling datasets can be added at their own paths later.
+  basePath: "/facilities",
   poweredByHeader: false,
   reactStrictMode: true,
   transpilePackages: ["@philfacilities/api-client"],
