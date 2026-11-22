@@ -251,11 +251,28 @@ those tables and every facility detail request returned 404. It excludes
 `attribute_assertions`, fusions, snapshots, change history, quality issues,
 internal rows and non-current locations.
 
-A local probe measured **~835 MB** after compaction. Heroku's dashboard `Data
-Size` metric lags behind the actual size; verify with
+A local probe measured **~835 MB** after compaction; the first hosted publish
+measured **842 MB**, leaving ~180 MB of headroom. Heroku's dashboard `Data Size`
+metric lags behind the actual size; verify with
 `SELECT pg_database_size(current_database())` in a one-off dyno rather than
 trusting `heroku pg:info` immediately after a restore.
 
 This is a deliberate no-cost trade-off: directory, map, detail, profiles,
 sources metadata, statistics and downloads work; field-level assertions remain
 in the authoritative local database only.
+
+#### First hosted publish (verified 2026-11-22)
+
+The projection was built from the authoritative local database with
+`just publish` (199 MB dump, 229,274 public facilities, 720,104 slim records,
+585,356 links), published as GitHub release
+[`public-20261122`](https://github.com/marrrkkk/philfacilities/releases/tag/public-20261122),
+and installed by
+[workflow run 45036469147](https://github.com/marrrkkk/philfacilities/actions/runs/45036469147).
+The workflow verified the checksum and the `0026_api_field_coverage_mv`
+revision, restored with the PostgreSQL 18 client, and passed the API check.
+Live verification: `/healthz`, `/v1/statistics`, a facility detail by id and
+slug, `/v1/facilities/{id}?include=sources` (source_count 4), `/v1/fields` and
+`/mcp/readyz` all returned 200; `/v1/statistics` reports 229,274; the web
+detail page renders the facility name. A Heroku backup (`b001`) was captured
+before the restore as a rollback point.
